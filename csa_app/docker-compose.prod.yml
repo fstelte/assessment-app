@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        INSTALL_DEV: "false"
+    command: poetry run gunicorn autoapp:create_app() -b 0.0.0.0:5000 --workers 4 --timeout 120
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY}
+      DATABASE_URL: postgresql+psycopg://csa:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/csa
+      SECURITY_HEADERS_ENABLED: "1"
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: csa
+      POSTGRES_USER: csa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - prod-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  prod-db-data:

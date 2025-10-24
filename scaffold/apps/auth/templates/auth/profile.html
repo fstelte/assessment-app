@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1 class="mb-4">Profile</h1>
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ form.first_name.label(class="form-label") }}
+            {{ form.first_name(class="form-control", value=form.first_name.data or "") }}
+        </div>
+        <div class="col-md-6">
+            {{ form.last_name.label(class="form-label") }}
+            {{ form.last_name(class="form-control", value=form.last_name.data or "") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.theme.label(class="form-label") }}
+            {{ form.theme(class="form-control", value=form.theme.data or "dark") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.current_password.label(class="form-label") }}
+            {{ form.current_password(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+            {{ form.new_password.label(class="form-label") }}
+            {{ form.new_password(class="form-control") }}
+        </div>
+    </div>
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('auth.mfa_manage') }}" class="btn btn-outline-light ms-2">Manage MFA</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        INSTALL_DEV: "true"
+    command: poetry run flask --app autoapp --debug run --host=0.0.0.0 --port=5000
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      DATABASE_URL: sqlite:////app/instance/dev.db
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - dev-instance:/app/instance
+    restart: unless-stopped
+
+volumes:
+  dev-instance:

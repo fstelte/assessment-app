@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Import CSV | BIA{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">
+        Upload CSV exports
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">
+          Provide the CSV files generated from an earlier export. At minimum include the <strong>BIA CSV</strong> file;
+          the other files are optional and will be processed when present.
+        </p>
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('bia.import_csv_view') }}" class="vstack gap-3">
+          {{ form.hidden_tag() }}
+          <div>
+            {{ form.bia.label(class="form-label") }}
+            {{ form.bia(class="form-control") }}
+            {% if form.bia.errors %}
+              <div class="form-text text-danger">{{ form.bia.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.components.label(class="form-label") }}
+            {{ form.components(class="form-control") }}
+            {% if form.components.errors %}
+              <div class="form-text text-danger">{{ form.components.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.consequences.label(class="form-label") }}
+            {{ form.consequences(class="form-control") }}
+            {% if form.consequences.errors %}
+              <div class="form-text text-danger">{{ form.consequences.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.availability_requirements.label(class="form-label") }}
+            {{ form.availability_requirements(class="form-control") }}
+            {% if form.availability_requirements.errors %}
+              <div class="form-text text-danger">{{ form.availability_requirements.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.ai_identification.label(class="form-label") }}
+            {{ form.ai_identification(class="form-control") }}
+            {% if form.ai_identification.errors %}
+              <div class="form-text text-danger">{{ form.ai_identification.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.summary.label(class="form-label") }}
+            {{ form.summary(class="form-control") }}
+            {% if form.summary.errors %}
+              <div class="form-text text-danger">{{ form.summary.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div class="text-end">
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 mt-4 mt-lg-0">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">Need a template?</div>
+      <div class="card-body">
+        <p class="text-secondary mb-2">Export an existing BIA to generate compatible CSV files:</p>
+        <a href="{{ url_for('bia.dashboard') }}#exports" class="btn btn-outline-light btn-sm">Go to exports</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

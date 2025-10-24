@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Assessment Overzicht{% endblock %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">Assessment Overzicht</h1>
+      <p class="text-muted mb-0">Alle assessments binnen het platform, inclusief status en snelle exportmogelijkheden.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('assessments.start') }}">Nieuwe assessment starten</a>
+  </div>
+
+  {% if year_groups %}
+    {% for grouping in year_groups %}
+      <section id="year-{{ grouping.year }}" class="mb-5">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-3 gap-3">
+          <h2 class="h4 mb-0">{{ grouping.year }}</h2>
+          <div class="d-flex flex-wrap gap-2">
+            {% for month in grouping.months %}
+              <a class="btn btn-outline-secondary btn-sm" href="#year-{{ grouping.year }}-month-{{ '%02d'|format(month.month) }}">
+                {{ month.label }} ({{ month.assessments|length }})
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% for month in grouping.months %}
+          <div id="year-{{ grouping.year }}-month-{{ '%02d'|format(month.month) }}" class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h3 class="h5 mb-0">{{ month.label }} {{ grouping.year }}</h3>
+              <span class="badge text-bg-dark">{{ month.assessments|length }} assessments</span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Sjabloon</th>
+                    <th scope="col">Primaire eigenaar</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Laatst bijgewerkt</th>
+                    <th scope="col" class="text-end">Acties</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for assessment in month.assessments %}
+                    {% set primary_assignment = (assessment.assignments | selectattr('is_primary') | list | first) %}
+                    {% set primary_user = primary_assignment.assignee if primary_assignment else None %}
+                    <tr>
+                      <td>{{ assessment.id }}</td>
+                      <td>
+                        {% set control_display = assessment.template.control and ([assessment.template.control.section, assessment.template.control.domain] | select('string') | join(' ')) %}
+                        <strong>
+                          {% if assessment.template.control %}
+                            {{ control_display or assessment.template.name }}
+                          {% else %}
+                            {{ assessment.template.name }}
+                          {% endif %}
+                        </strong>
+                        {% if assessment.template.control %}
+                          {% if assessment.template.control.section %}
+                            <div class="text-muted small">Code: {{ assessment.template.control.section }}</div>
+                          {% endif %}
+                          {% if assessment.template.control.domain %}
+                            <div class="text-muted small">Control: {{ assessment.template.control.domain }}</div>
+                          {% endif %}
+                          {% if assessment.template.name and assessment.template.name != (control_display or assessment.template.name) %}
+                            <div class="text-muted small">Sjabloon: {{ assessment.template.name }}</div>
+                          {% endif %}
+                          {% if assessment.template.control.description %}
+                            <div class="text-muted small">{{ assessment.template.control.description }}</div>
+                          {% endif %}
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if primary_user %}
+                          {{ primary_user.full_name }}<br>
+                          <span class="text-muted small">{{ primary_user.email }}</span>
+                        {% else %}
+                          <span class="text-muted">Onbekend</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% set label = status_labels.get(assessment.status, assessment.status.value.replace('_', ' ')|title) %}
+                        {% set badge = badge_classes.get(assessment.status, 'secondary') %}
+                        <span class="badge text-bg-{{ badge }}">{{ label }}</span>
+                      </td>
+                      <td>{{ assessment.updated_at or 'Onbekend' }}</td>
+                      <td class="text-end">
+                        <div class="d-inline-flex flex-wrap justify-content-end gap-2">
+                          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('assessments.detail', assessment_id=assessment.id) }}">Bekijken</a>
+                          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('assessments.export', assessment_id=assessment.id) }}">Export</a>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      </section>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">Er zijn nog geen assessments beschikbaar.</div>
+  {% endif %}
+{% endblock %}

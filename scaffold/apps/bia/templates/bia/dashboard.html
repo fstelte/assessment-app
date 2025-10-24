@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}BIA Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
+	<div>
+		<h1 class="mb-1">Business Impact Analyses</h1>
+		<p class="text-secondary mb-0">Track, update and export your organisation's BIAs from a single workspace.</p>
+	</div>
+	<div class="btn-group" role="group" aria-label="BIA actions">
+		<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary">New BIA</a>
+		<a href="{{ url_for('bia.import_csv_view') }}" class="btn btn-outline-light">Import CSV</a>
+		<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary">Import SQL</a>
+	</div>
+</div>
+
+{% if contexts %}
+	<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+		{% for context in contexts %}
+			<div class="col">
+				<div class="card h-100 bg-dark border-secondary">
+					<div class="card-body d-flex flex-column">
+						<div class="d-flex justify-content-between align-items-start mb-3">
+							<div>
+								<h5 class="card-title mb-1">{{ context.name }}</h5>
+								<p class="card-subtitle text-secondary small mb-0">Owner: {{ context.responsible or 'Not assigned' }}</p>
+							</div>
+							<span class="badge text-bg-secondary">{{ context.components | length }} components</span>
+						</div>
+						<p class="text-secondary flex-grow-1">
+							{% if context.service_description %}
+								{{ context.service_description | truncate(120, True, '...') }}
+							{% else %}
+								No service description captured yet.
+							{% endif %}
+						</p>
+						<div class="d-flex flex-wrap gap-2 mt-3">
+							<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="btn btn-outline-light btn-sm">View</a>
+							<a href="{{ url_for('bia.export_item', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export HTML</a>
+							<a href="{{ url_for('bia.export_csv', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+							<a href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
+							{% if context.author == current_user %}
+								<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+							{% endif %}
+						</div>
+					</div>
+					<div class="card-footer text-secondary small">
+						Last updated {{ context.last_update or 'never' }}
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% else %}
+	<div class="alert alert-info">
+		<strong>No BIAs recorded yet.</strong> Create a new analysis or import an existing dataset to get started.
+	</div>
+{% endif %}
+{% endblock %}

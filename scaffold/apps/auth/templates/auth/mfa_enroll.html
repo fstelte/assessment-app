@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}MFA Enrollment{% endblock %}
+{% block content %}
+<h1 class="mb-4">Enable Multi-Factor Authentication</h1>
+<p>Scan the QR code in your authenticator app and enter the 6-digit code to finish setup.</p>
+<div class="mb-3">
+    <code>{{ provisioning.uri }}</code>
+</div>
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.otp_token.label(class="form-label") }}
+        {{ form.otp_token(class="form-control") }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}

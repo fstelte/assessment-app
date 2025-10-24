@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Components | BIA{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Component library</h1>
+  <form class="d-flex gap-2" method="get" action="{{ url_for('bia.view_components') }}">
+    <select class="form-select" name="scope">
+      <option value="all" {% if selected_scope|lower == 'all' %}selected{% endif %}>All BIAs</option>
+      {% for context in contexts %}
+        <option value="{{ context.name }}" {% if context.name == selected_scope %}selected{% endif %}>{{ context.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline-light">Filter</button>
+  </form>
+</div>
+
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header border-secondary">Add a component</div>
+  <div class="card-body">
+    <form id="add-component-form" action="{{ url_for('bia.add_component') }}" method="post" class="row g-3 align-items-end">
+      {{ component_form.hidden_tag() }}
+      <div class="col-md-4">
+        <label for="bia-id" class="form-label">BIA</label>
+        <select id="bia-id" name="bia_id" class="form-select" required>
+          <option value="" disabled selected>Select a BIA</option>
+          {% for context in contexts %}
+            <option value="{{ context.id }}">{{ context.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">{{ component_form.name.label(class="form-label") }}{{ component_form.name(class="form-control") }}</div>
+      <div class="col-md-4">{{ component_form.info_owner.label(class="form-label") }}{{ component_form.info_owner(class="form-control") }}</div>
+      <div class="col-md-4">{{ component_form.info_type.label(class="form-label") }}{{ component_form.info_type(class="form-control") }}</div>
+      <div class="col-md-4">{{ component_form.user_type.label(class="form-label") }}{{ component_form.user_type(class="form-control") }}</div>
+      <div class="col-md-4">{{ component_form.process_dependencies.label(class="form-label") }}{{ component_form.process_dependencies(class="form-control") }}</div>
+      <div class="col-12">{{ component_form.description.label(class="form-label") }}{{ component_form.description(class="form-control", rows=2) }}</div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">Add component</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary">Existing components</div>
+  <div class="card-body p-0">
+    {% if components %}
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Component</th>
+            <th scope="col">BIA</th>
+            <th scope="col">Owner</th>
+            <th scope="col">Users</th>
+            <th scope="col">Consequences</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for component in components %}
+          <tr>
+            <td>{{ component.name }}</td>
+            <td>{{ component.context_scope.name if component.context_scope else 'Not linked' }}</td>
+            <td>{{ component.info_owner or 'Not set' }}</td>
+            <td>{{ component.user_type or 'Not set' }}</td>
+            <td>{{ component.consequences | length }}</td>
+            <td>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#edit-component-{{ component.id }}" aria-expanded="false" aria-controls="edit-component-{{ component.id }}">Edit</button>
+                <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="btn btn-outline-secondary btn-sm">Consequences</a>
+                <button class="btn btn-outline-danger btn-sm" type="button" data-delete-url="{{ url_for('bia.delete_component', component_id=component.id) }}">Delete</button>
+              </div>
+            </td>
+          </tr>
+          <tr class="collapse" id="edit-component-{{ component.id }}">
+            <td colspan="6" class="bg-secondary bg-opacity-10">
+              <form class="component-edit-form row g-3" data-action="{{ url_for('bia.update_component', component_id=component.id) }}">
+                {{ component_form.hidden_tag() }}
+                <div class="col-md-4">
+                  <label class="form-label" for="name-{{ component.id }}">Name</label>
+                  <input type="text" id="name-{{ component.id }}" name="name" class="form-control" value="{{ component.name }}" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="bia_id-{{ component.id }}">BIA</label>
+                  <select id="bia_id-{{ component.id }}" name="bia_id" class="form-select" required>
+                    {% for context in contexts %}
+                      <option value="{{ context.id }}" {% if component.context_scope and component.context_scope.id == context.id %}selected{% endif %}>{{ context.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="info_owner-{{ component.id }}">Owner</label>
+                  <input type="text" id="info_owner-{{ component.id }}" name="info_owner" class="form-control" value="{{ component.info_owner }}">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="info_type-{{ component.id }}">Information type</label>
+                  <input type="text" id="info_type-{{ component.id }}" name="info_type" class="form-control" value="{{ component.info_type }}">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="user_type-{{ component.id }}">User type</label>
+                  <input type="text" id="user_type-{{ component.id }}" name="user_type" class="form-control" value="{{ component.user_type }}">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label" for="process_dependencies-{{ component.id }}">Process dependencies</label>
+                  <input type="text" id="process_dependencies-{{ component.id }}" name="process_dependencies" class="form-control" value="{{ component.process_dependencies }}">
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label" for="description-{{ component.id }}">Description</label>
+                  <textarea id="description-{{ component.id }}" name="description" class="form-control" rows="2">{{ component.description }}</textarea>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-outline-light btn-sm">Save changes</button>
+                </div>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="p-4 text-secondary">No components found for this selection.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function () {
+  const addForm = document.getElementById('add-component-form');
+  const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+  const csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+  const handleErrors = (messages) => {
+    if (!messages) {
+      window.alert('An unexpected error occurred.');
+      return;
+    }
+    const details = Object.entries(messages).map(([field, errs]) => `${field}: ${errs.join(', ')}`).join('\n');
+    window.alert(`Validation failed:\n${details}`);
+  };
+
+  if (addForm) {
+    addForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const formData = new FormData(addForm);
+      fetch(addForm.action, {
+        method: 'POST',
+        body: formData,
+      }).then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.reload();
+          } else {
+            handleErrors(data.errors);
+          }
+        })
+        .catch(() => window.alert('Could not add the component.'));
+    });
+  }
+
+  document.querySelectorAll('.component-edit-form').forEach((form) => {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const formData = new FormData(form);
+      fetch(form.dataset.action, {
+        method: 'POST',
+        body: formData,
+      }).then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.reload();
+          } else {
+            handleErrors(data.errors);
+          }
+        })
+        .catch(() => window.alert('Could not update the component.'));
+    });
+  });
+
+  document.querySelectorAll('[data-delete-url]').forEach((button) => {
+    button.addEventListener('click', function () {
+      if (!window.confirm('Delete this component?')) {
+        return;
+      }
+      const payload = new FormData();
+      if (csrfToken) {
+        payload.append('csrf_token', csrfToken);
+      }
+      fetch(this.dataset.deleteUrl, {
+        method: 'POST',
+        body: payload,
+      }).then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.reload();
+          } else {
+            window.alert('Could not delete the component.');
+          }
+        })
+        .catch(() => window.alert('Could not delete the component.'));
+    });
+  });
+})();
+</script>
+{% endblock %}

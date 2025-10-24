@@ -1,0 +1,72 @@
+[tool.poetry]
+name = "scaffold-app"
+version = "0.1.0"
+description = "Unified scaffold for bia_app and csa_app domains"
+authors = ["Ferry Stelte <fstelte@stelte.nl>"]
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "scaffold" }]
+include = ["migrations/**", "alembic.ini"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+click = "^8.1.7"
+dnspython = ">=2.6.1"
+email-validator = "^2.1.0.post1"
+flask = "^3.0.0"
+flask-bcrypt = "^1.0.1"
+flask-login = "^0.6.3"
+flask-migrate = "^4.0.5"
+flask-moment = "^1.0.5"
+flask-sqlalchemy = "^3.1.1"
+flask-talisman = "^1.1.0"
+flask-wtf = "^1.2.1"
+wtforms = "^3.1.2"
+gunicorn = "^22.0.0"
+numpy = ">=1.22.2"
+pandas = "^2.2.0"
+psycopg = { extras = ["binary"], version = "^3.1.18" }
+pyotp = "^2.9.0"
+pymysql = "^1.1.0"
+python-dotenv = "^1.0.1"
+sqlalchemy = "^2.0.32"
+werkzeug = ">=3.0.6"
+zipp = ">=3.19.1"
+
+[tool.poetry.extras]
+postgresql = ["psycopg"]
+mariadb = ["pymysql"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-flask = "^1.3.0"
+pytest-cov = "^5.0.0"
+black = "^24.3.0"
+ruff = "^0.6.8"
+bandit = "^1.7.7"
+alembic = "^1.13.1"
+tox = "^4.12.1"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E203"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.poetry.scripts]
+scaffold = "scaffold.cli:main"
+lint = "scaffold.scripts:lint"
+test = "scaffold.scripts:test"
+run = "scaffold.scripts:run"
+
+[build-system]
+requires = ["poetry-core>=1.6.1"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}CSV Export | {{ item.name }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary">CSV export ready</div>
+  <div class="card-body">
+    <p class="text-secondary">
+      The BIA export for <strong>{{ item.name }}</strong> completed successfully. Download the generated CSV files below.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">File</th>
+            <th scope="col">Category</th>
+            <th scope="col">Size</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in exported_files %}
+          <tr>
+            <td>{{ file.filename }}</td>
+            <td>
+              {% if 'bia' in file.filename %}
+                <span class="badge text-bg-primary">BIA</span>
+              {% elif 'components' in file.filename %}
+                <span class="badge text-bg-info">Components</span>
+              {% elif 'consequences' in file.filename %}
+                <span class="badge text-bg-warning">Consequences</span>
+              {% elif 'availability' in file.filename %}
+                <span class="badge text-bg-secondary">Availability</span>
+              {% elif 'ai_identification' in file.filename %}
+                <span class="badge text-bg-danger">AI Identification</span>
+              {% elif 'summary' in file.filename %}
+                <span class="badge text-bg-success">Summary</span>
+              {% else %}
+                <span class="badge text-bg-light text-dark">Data</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set size = file.size %}
+              {% if size < 1024 %}
+                {{ size }} bytes
+              {% elif size < 1048576 %}
+                {{ '%.1f'|format(size / 1024) }} KB
+              {% else %}
+                {{ '%.1f'|format(size / 1048576) }} MB
+              {% endif %}
+            </td>
+            <td>
+              <a class="btn btn-outline-light btn-sm" href="{{ url_for('bia.download_csv_file', folder=file.path, filename=file.filename) }}">Download</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-info mt-3" role="alert">
+      Files are stored at <code>exports/{{ export_folder }}/</code> on the server.
+    </div>
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-light">Close</a>
+      <button type="button" class="btn btn-primary" data-download-all>Download all</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const downloadAllButton = document.querySelector('[data-download-all]');
+  if (!downloadAllButton) {
+    return;
+  }
+  downloadAllButton.addEventListener('click', function () {
+    document.querySelectorAll('a.btn[href*="download_csv"]').forEach((link, index) => {
+      setTimeout(() => {
+        const anchor = document.createElement('a');
+        anchor.href = link.href;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener';
+        anchor.click();
+      }, index * 400);
+    });
+  });
+})();
+</script>
+{% endblock %}

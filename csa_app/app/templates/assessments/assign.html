@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Assessment toewijzen{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <h1 class="mb-4">Self-assessment toewijzen</h1>
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.assignee_id.label(class="form-label") }}
+          {{ form.assignee_id(class="form-select") }}
+          {% for error in form.assignee_id.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+          <div class="form-text">Selecteer een actieve gebruiker die verantwoordelijk wordt voor deze beoordeling.</div>
+        </div>
+        <div class="mb-3">
+          {{ form.template_id.label(class="form-label") }}
+          {{ form.template_id(class="form-select") }}
+          {% for error in form.template_id.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+          <div class="form-text">Kies het sjabloon dat van toepassing is op de control.</div>
+        </div>
+        <div class="mb-3">
+          {{ form.due_date.label(class="form-label") }}
+          {{ form.due_date(class="form-control", placeholder="YYYY-MM-DD") }}
+          {% for error in form.due_date.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+          <div class="form-text">Optioneel: stel een vervaldatum voor deze beoordeling in.</div>
+        </div>
+        <div class="text-end">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

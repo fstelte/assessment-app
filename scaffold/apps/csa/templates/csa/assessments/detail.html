@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Assessment {{ assessment.id }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+      <div>
+        {% set control = assessment.template.control %}
+        {% if control %}
+          {% set control_display = (control.section ~ " " ~ control.domain).strip() %}
+          <h1 class="h3 mb-1">{{ control_display or assessment.template.name }}</h1>
+          {% if control.section %}
+            <p class="text-secondary mb-0">Code: {{ control.section }}</p>
+          {% endif %}
+          {% if control.domain %}
+            <p class="text-secondary mb-0">Control: {{ control.domain }}</p>
+          {% endif %}
+          {% if control.description %}
+            <p class="text-secondary small mb-0">{{ control.description }}</p>
+          {% endif %}
+        {% else %}
+          <h1 class="h3 mb-1">{{ assessment.template.name }}</h1>
+        {% endif %}
+      </div>
+      <span class="badge bg-{{ badge_class }} align-self-center text-uppercase">{{ status_label }}</span>
+    </div>
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Started</dt>
+          <dd class="col-sm-8">{{ assessment.started_at or "Not started" }}</dd>
+          <dt class="col-sm-4">Submitted</dt>
+          <dd class="col-sm-8">{{ assessment.submitted_at or "Not submitted" }}</dd>
+          <dt class="col-sm-4">Last update</dt>
+          <dd class="col-sm-8">{{ assessment.updated_at or "N/A" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <h2 class="h4 mb-3">Questions</h2>
+    {% if has_questions %}
+      {% if not can_edit %}
+        <div class="alert alert-info">This assessment is locked because it has already been submitted.</div>
+      {% endif %}
+      <form method="post">
+        {{ form.hidden_tag() }}
+        {% for section in layout %}
+          <div class="card bg-dark border-secondary mb-3">
+            <div class="card-header border-secondary fw-semibold">{{ section.label }}</div>
+            <div class="card-body">
+              {% if section.questions %}
+                {% for question in section.questions %}
+                  {% set field = form[question['field_name']] %}
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ field.id }}">{{ field.label.text }}</label>
+                    {{ field(class="form-control", rows=4) }}
+                  </div>
+                {% endfor %}
+              {% else %}
+                <p class="text-secondary mb-0">No questions configured for this section.</p>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+        <div class="d-flex justify-content-end gap-2">
+          {{ form.save(class="btn btn-outline-light", disabled=not can_edit) }}
+          {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit) }}
+        </div>
+      </form>
+    {% else %}
+      <p class="text-secondary">This template does not have any questions yet.</p>
+    {% endif %}
+
+    {% if review_form %}
+      <hr class="my-4">
+      <h2 class="h4">Review</h2>
+      <form method="post">
+        {{ review_form.hidden_tag() }}
+        <div class="mb-3">
+          {{ review_form.comment.label(class="form-label fw-semibold") }}
+          {{ review_form.comment(class="form-control", rows=4) }}
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <button type="submit" name="review_action" value="return" class="btn btn-outline-warning">{{ review_form.return_to_assignee.label.text }}</button>
+          <button type="submit" name="review_action" value="approve" class="btn btn-success">{{ review_form.approve.label.text }}</button>
+        </div>
+      </form>
+    {% endif %}
+
+    {% if assessment.review_comment %}
+      <div class="alert alert-secondary border-secondary mt-4">
+        <strong>Latest review comment:</strong>
+        <div class="mt-1">{{ assessment.review_comment }}</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

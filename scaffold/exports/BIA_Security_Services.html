@@ -1,0 +1,2027 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BIA Report – Security Services</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>
+      body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+      .badge-impact { text-transform: capitalize; }
+      .section-card { margin-bottom: 1.5rem; }
+    </style>
+  </head>
+  <body class="bg-dark text-light">
+    <div class="container my-5">
+      <header class="mb-4">
+        <h1 class="display-6">Business Impact Analysis</h1>
+        <p class="text-secondary mb-0">Report generated from the live application data.</p>
+      </header>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary shadow">
+          <div class="card-header border-secondary">
+            <h2 class="h4 mb-0">Security Services</h2>
+          </div>
+          <div class="card-body row g-4">
+            <div class="col-lg-8">
+              <h3 class="h5">Executive summary</h3>
+              <p class="mb-0">Security Services levert vooral diensten aan teams binnen SIDN. De tooling die in deze BIA opgenomen zijn worden hiervoor gebruikt. De tools zijn vooral bedoeld om inzicht te creeëren en te verschaffen.</p>
+            </div>
+            <div class="col-lg-4">
+              <dl class="row mb-0">
+                <dt class="col-sm-5">Owner</dt>
+                <dd class="col-sm-7">Ferry Stelte</dd>
+                <dt class="col-sm-5">Coordinator</dt>
+                <dd class="col-sm-7">Jorrit Berend</dd>
+                <dt class="col-sm-5">Project lead</dt>
+                <dd class="col-sm-7">Jorrit Berends</dd>
+                <dt class="col-sm-5">Product owner</dt>
+                <dd class="col-sm-7">Ferry Stelte</dd>
+                <dt class="col-sm-5">Risk owner</dt>
+                <dd class="col-sm-7">Ferry Stelte</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary">
+          <div class="card-header border-secondary">
+            <h2 class="h5 mb-0">Scope & context</h2>
+          </div>
+          <div class="card-body">
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <h3 class="h6 text-secondary text-uppercase">Service description</h3>
+                <p>Alle processen en producten van het security services team</p>
+                <h3 class="h6 text-secondary text-uppercase">Scope</h3>
+                <p>Alle processen en producten van het security services team</p>
+              </div>
+              <div class="col-lg-6">
+                <table class="table table-dark table-striped mb-0">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Knowledge</th>
+                      <td>Deels, het TOM en hybride SOC worden nog geimplementeerd</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Interfaces</th>
+                      <td>Vanta, Vectra, Splunk, Nexpose, Pentera, Generiek Tech ICT, Microsoft Defender Suite</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Mission critical</th>
+                      <td>Nee geen koppeling met missie kritische systemen, SIEM wel met DRS (Logging)</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Support contracts</th>
+                      <td>Vanta, Vectra, Splunk: leveranciers. Technisch beheer door application Ops</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Security supplier</th>
+                      <td>Security Services</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Users</th>
+                      <td>100</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">AI model in scope</th>
+                      <td>Yes</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Last update</th>
+                      <td>2025-10-16</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary">
+          <div class="card-header border-secondary">
+            <h2 class="h5 mb-0">Risk assessments</h2>
+          </div>
+          <div class="card-body">
+            <div class="row g-4">
+              <div class="col-lg-4">
+                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+                  <div class="card-body text-center">
+                    <div class="text-secondary text-uppercase mb-2">People</div>
+                    <span class="badge text-bg-secondary">Not required</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+                  <div class="card-body text-center">
+                    <div class="text-secondary text-uppercase mb-2">Process</div>
+                    <span class="badge text-bg-secondary">Not required</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+                  <div class="card-body text-center">
+                    <div class="text-secondary text-uppercase mb-2">Technology</div>
+                    <span class="badge text-bg-success">Required</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <h3 class="h6 text-secondary text-uppercase">AI identification</h3>
+              
+                <ul class="list-group list-group-flush">
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                    <li class="list-group-item bg-dark text-light border-secondary">
+                      <div class="d-flex justify-content-between">
+                        <span><strong>Vectra</strong></span>
+                        <span class="badge text-bg-info">High risk</span>
+                      </div>
+                      <p class="mb-0 small text-secondary">Hoge potentiele mate van autonomie, anomaly detectie, mogelijkheid tot automatisch ingrijpen op basis van algoritme</p>
+                    </li>
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                    <li class="list-group-item bg-dark text-light border-secondary">
+                      <div class="d-flex justify-content-between">
+                        <span><strong>Pentera</strong></span>
+                        <span class="badge text-bg-info">Limited risk</span>
+                      </div>
+                      <p class="mb-0 small text-secondary">Genereren van een rapport</p>
+                    </li>
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                    
+                    
+                  
+                </ul>
+              
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary">
+          <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Consequences</h2>
+            <div class="d-flex gap-2">
+              
+              
+              <span class="badge badge-impact bg-dark-red">C: catastrophic</span>
+              
+              
+              <span class="badge badge-impact bg-dark-red">I: catastrophic</span>
+              
+              
+              <span class="badge badge-impact bg-dark-red">A: catastrophic</span>
+              
+            </div>
+          </div>
+          <div class="card-body">
+            
+            <div class="table-responsive">
+              <table class="table table-dark table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">Component</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Security property</th>
+                    <th scope="col">Worst case</th>
+                    <th scope="col">Realistic case</th>
+                    <th scope="col">CIA impact (realistic)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-red">major</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-dark-red">catastrophic</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-dark-red">catastrophic</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>Financial</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-red">major</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-red">major</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Availability</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>Operational</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-yellow">minor</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>Regulatory</td>
+                    <td class="text-uppercase">Integrity</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      I: <span class="badge badge-impact bg-yellow">minor</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>Reputation and Trust</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>Privacy</td>
+                    <td class="text-uppercase">Confidentiality</td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-orange">moderate</span>
+                    </td>
+                    <td>
+                      
+                      <span class="badge badge-impact bg-yellow">minor</span>
+                    </td>
+                    <td>
+                      C: <span class="badge badge-impact bg-orange">moderate</span><br>
+                      I: <span class="badge badge-impact bg-green">Very Low</span><br>
+                      A: <span class="badge badge-impact bg-green">Very Low</span>
+                    </td>
+                  </tr>
+                  
+                </tbody>
+              </table>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary">
+          <div class="card-header border-secondary">
+            <h2 class="h5 mb-0">Components</h2>
+          </div>
+          <div class="card-body">
+            
+            <div class="table-responsive">
+              <table class="table table-dark table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">Component</th>
+                    <th scope="col">Information type</th>
+                    <th scope="col">Owner</th>
+                    <th scope="col">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>Meta data en de evidence wordt opgeslagen in buckets</td>
+                    <td>Ferry Stelte</td>
+                    <td>SaaS dienst</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>Alle logging informatie (vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Splunk ES maakt gebruik van de splunk onderlaag. Die draait op fysieke on-prem servers in de 2 datacenters.</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>Netwerk verkeer, Veel AI gebaseerde gedragsinformatie (Vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Een deel on-prem in DC arnhem (NDR) en een deel in AWS (SAAS). Brain en splitters zitten in het on-prem stuk. In AWS cloud draait de contol plane. In Azure hebben we storgae buckets voor de logging.</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>IP adressen, device meta data informatie, CVE&#39;s (Intern)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Nexpose console on-prem en 5 rapid scanners. (Vm-ware)</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>Risico tickets (intel voor boefjes) (Vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Jira (SaaS) en de plugin die actief onderhouden wordt</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>Alle informatie van de backup servers. Dus eigenlijk is dat alle SIDN data.</td>
+                    <td>Ferry Stelte</td>
+                    <td>2 fysieke archive servers in beheer bij BIT in Ede. Netwerk koppeling bij Application Ops.</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>Secrets (Strict vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Fysieke TPM servers in beheer bij application ops in on-prem netwerk van SIDN.</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>EPICS, Objectieven, Sleutel resultaten, eigenaren, voortgang, activiteiten, wie een boef is :)</td>
+                    <td>Kia</td>
+                    <td>Jira  (SaaS) en de plugin die actief onderhouden wordt</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>Secrets en certificaten van Security Services (vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Draait op VM ware in on-prem omgeving van SIDN</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>Pentest gegevens, IP adressen, kwetsbaarheden, credentials (Vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Dedicated Pentera server in de on-prem ongeving van SIDN.</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>Certificaten (Strict vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>HARICA is een centrale online dienst</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>Netwerk verkeer (Vertrouwelijk)</td>
+                    <td>Ferry Stelte</td>
+                    <td>Wij hebben zelf 2 AED&#39;s, Arbor Edge Defense, devices in ons netwerk, in ede1 en in arn2</td>
+                  </tr>
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>operationele stuur informatie</td>
+                    <td>&lt;tbd&gt;</td>
+                    <td>De unix (redhat) NUC valt onder beheer van application OPS en staat in de MER ruimte</td>
+                  </tr>
+                  
+                </tbody>
+              </table>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="card bg-dark border-secondary">
+          <div class="card-header border-secondary">
+            <h2 class="h5 mb-0">Availability requirements</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-dark table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">Component</th>
+                    <th scope="col">MTD</th>
+                    <th scope="col">RTO</th>
+                    <th scope="col">RPO</th>
+                    <th scope="col">MASL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                  
+                  <tr>
+                    <td>Vanta</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>98.5%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Splunk-SIEM</td>
+                    <td>1 uur</td>
+                    <td>1 uur</td>
+                    <td>1 uur</td>
+                    <td>99,9%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Vectra</td>
+                    <td>1 week</td>
+                    <td>1 dag</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Nexpose</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>T risk register (Jira plugin)</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 wee</td>
+                    <td>98,5%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Archive server</td>
+                    <td>1 dag</td>
+                    <td>1 dag</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>TPM</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>OKR board (Jira plugin)</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 week</td>
+                    <td>98,5%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Vault-secrets</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Pentera</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>98,5%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Certificaten beheer</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Arbor Edge Defence</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 dag</td>
+                    <td>99%</td>
+                  </tr>
+                  
+                  
+                  <tr>
+                    <td>Tech Informatie Scherm</td>
+                    <td>1 week</td>
+                    <td>5 dagen</td>
+                    <td>1 week</td>
+                    <td>98,5%</td>
+                  </tr>
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

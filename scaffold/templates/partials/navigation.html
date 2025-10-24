@@ -1,0 +1,33 @@
+{% set entries = nav_entries() if nav_entries is not none else [] %}
+{% macro render_nav_item(item) -%}
+  <li class="nav-item">
+    <a class="nav-link{% if request.endpoint == item.endpoint %} active{% endif %}" href="{{ item.url }}">{{ item.label }}</a>
+  </li>
+{%- endmacro %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('template.index') }}">Assessment App</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {% for entry in entries %}
+          {{ render_nav_item(entry) }}
+        {% endfor %}
+      </ul>
+      <div class="d-flex gap-2">
+        {% if current_user.is_authenticated %}
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.profile') }}">Profile</a>
+          {% if current_user.has_role('admin') %}
+            <a class="btn btn-outline-warning btn-sm" href="{{ url_for('admin.list_users') }}">Admin</a>
+          {% endif %}
+          <a class="btn btn-danger btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">Login</a>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('auth.register_user') }}">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>

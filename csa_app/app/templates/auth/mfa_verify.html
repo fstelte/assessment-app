@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}MFA Verifiëren{% endblock %}
+{% block content %}
+  <h1 class="mb-4">Voer uw MFA-code in</h1>
+  <p class="mb-3">Deze stap is vereist omdat multi-factor authenticatie is ingeschakeld voor uw account.</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.otp_token.label(class="form-label") }}
+      {{ form.otp_token(class="form-control", autofocus=True, inputmode="numeric") }}
+      {% for error in form.otp_token.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="form-check mb-3">
+      {{ form.remember_device(class="form-check-input") }}
+      {{ form.remember_device.label(class="form-check-label") }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+  </form>
+{% endblock %}

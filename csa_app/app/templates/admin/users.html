@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Gebruikersbeheer{% endblock %}
+{% block content %}
+  <h1 class="mb-4">Gebruikersbeheer</h1>
+  <p class="text-muted">Activeer nieuwe accounts, beheer rollen en open MFA-beheer voor specifieke gebruikers.</p>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Naam</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>MFA</th>
+          <th>Rollen</th>
+          <th class="text-end">Acties</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          {% set is_protected_admin = user.id in (protected_admin_ids|default([], true)) %}
+          <tr {% if user.id == current_user.id %}class="table-info"{% endif %}>
+            <td>
+              {{ user.full_name }}
+              {% if user.id == current_user.id %}
+                <span class="badge bg-secondary ms-1">U</span>
+              {% endif %}
+            </td>
+            <td>{{ user.email }}</td>
+            <td>
+              {% set status = user.status.value %}
+              {% if status == 'active' %}
+                <span class="badge bg-success">Actief</span>
+              {% elif status == 'pending' %}
+                <span class="badge bg-warning text-dark">In afwachting</span>
+              {% else %}
+                <span class="badge bg-danger">Uitgeschakeld</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.mfa_is_enrolled %}
+                <span class="badge bg-success">Ingeschakeld</span>
+              {% elif user.mfa_is_enabled %}
+                <span class="badge bg-warning text-dark">Nog te voltooien</span>
+              {% else %}
+                <span class="badge bg-secondary">Uit</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set user_remove_forms = remove_forms.get(user.id, {}) %}
+              {% if user.roles %}
+                <ul class="list-unstyled mb-0">
+                  {% for role in user.roles %}
+                    <li class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                      <span class="badge bg-info text-dark">{{ role.description or role.name.title() }}</span>
+                      {% set remove_meta = user_remove_forms.get(role.name) %}
+                      {% if remove_meta %}
+                        {% if remove_meta.form %}
+                          <form method="post" action="{{ url_for('admin.remove_user_role', user_id=user.id) }}" class="m-0">
+                            {{ remove_meta.form.csrf_token }}
+                            {{ remove_meta.form.role() }}
+                            {{ remove_meta.form.submit(class="btn btn-sm btn-outline-danger") }}
+                          </form>
+                        {% elif remove_meta.disabled_reason %}
+                          <span class="text-muted small">{{ remove_meta.disabled_reason }}</span>
+                        {% endif %}
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <span class="text-muted">Geen</span>
+              {% endif %}
+              {% set role_form = assign_forms.get(user.id) %}
+              {% if role_form %}
+                {% if role_form.role.choices %}
+                  <form method="post" action="{{ url_for('admin.assign_user_role', user_id=user.id) }}" class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center mt-2">
+                    {{ role_form.csrf_token }}
+                    {{ role_form.role.label(class="visually-hidden") }}
+                    {{ role_form.role(class="form-select form-select-sm") }}
+                    {{ role_form.submit(class="btn btn-sm btn-outline-secondary") }}
+                  </form>
+                {% else %}
+                  <div class="form-text mt-2">Geen extra rollen beschikbaar.</div>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-flex flex-wrap justify-content-end gap-2">
+                {% if user.status != UserStatus.ACTIVE %}
+                  <form method="post" action="{{ url_for('admin.activate_user', user_id=user.id) }}" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-success" type="submit">Activeer</button>
+                  </form>
+                {% endif %}
+                {% if user.status != UserStatus.DISABLED and not is_protected_admin %}
+                  <form method="post" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-warning" type="submit">Deactiveren</button>
+                  </form>
+                {% endif %}
+                {% if not is_protected_admin and user.id != current_user.id %}
+                  <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="m-0" onsubmit="return confirm('Weet u zeker dat u deze gebruiker wilt verwijderen?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Verwijderen</button>
+                  </form>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.manage_user_mfa', user_id=user.id) }}">MFA beheren</a>
+              </div>
+              {% if is_protected_admin %}
+                <div class="form-text text-muted mt-2">Laatste administrator kan niet worden gedeactiveerd of verwijderd.</div>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">Geen gebruikers gevonden.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

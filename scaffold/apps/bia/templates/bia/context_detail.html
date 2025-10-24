@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} | BIA{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+</div>
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <h1 class="mb-1">{{ item.name }}</h1>
+    <p class="text-secondary mb-0">Last updated {{ item.last_update or 'never' }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Edit</a>
+    <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Summary</a>
+    <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export HTML</a>
+    <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+    <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
+    <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" class="d-inline">
+      <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this BIA?');">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for property, value in max_cia_impact.items() %}
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body">
+        <div class="text-secondary text-uppercase small">{{ property.capitalize() }}</div>
+        <span class="badge {{ bia_get_impact_color(value) }}">{{ value.capitalize() }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="col-md-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body">
+        <div class="text-secondary text-uppercase small">Components</div>
+        <div class="display-6">{{ item.components | length }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span>Components</span>
+        <a href="{{ url_for('bia.view_components') }}?scope={{ item.name | urlencode }}" class="btn btn-outline-light btn-sm">Manage</a>
+      </div>
+      <div class="card-body p-0">
+        {% if item.components %}
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Users</th>
+                <th scope="col">Consequences</th>
+                <th scope="col">AI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for component in item.components %}
+              <tr>
+                <td>{{ component.name }}</td>
+                <td>{{ component.info_owner or 'Not set' }}</td>
+                <td>{{ component.user_type or 'Not set' }}</td>
+                <td>{{ component.consequences | length }}</td>
+                <td>
+                  {% set ai_record = ai_identifications.get(component.id) %}
+                  {% if ai_record %}
+                    <span class="badge bg-info text-dark">{{ ai_record.category }}</span>
+                  {% else %}
+                    <span class="text-secondary">None</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="p-4 text-secondary">No components linked yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header border-secondary">Overview</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Responsible</dt>
+          <dd class="col-sm-7">{{ item.responsible or 'Not set' }}</dd>
+          <dt class="col-sm-5">Coordinator</dt>
+          <dd class="col-sm-7">{{ item.coordinator or 'Not set' }}</dd>
+          <dt class="col-sm-5">Project leader</dt>
+          <dd class="col-sm-7">{{ item.project_leader or 'Not set' }}</dd>
+          <dt class="col-sm-5">Risk owner</dt>
+          <dd class="col-sm-7">{{ item.risk_owner or 'Not set' }}</dd>
+          <dt class="col-sm-5">Product owner</dt>
+          <dd class="col-sm-7">{{ item.product_owner or 'Not set' }}</dd>
+          <dt class="col-sm-5">Technical admin</dt>
+          <dd class="col-sm-7">{{ item.technical_administrator or 'Not set' }}</dd>
+          <dt class="col-sm-5">Security manager</dt>
+          <dd class="col-sm-7">{{ item.security_manager or 'Not set' }}</dd>
+          <dt class="col-sm-5">Incident contact</dt>
+          <dd class="col-sm-7">{{ item.incident_contact or 'Not set' }}</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">Summary</div>
+      <div class="card-body">
+        {% if item.summary %}
+          <p class="mb-0">{{ item.summary.content }}</p>
+        {% else %}
+          <p class="text-secondary mb-0">No summary captured yet. Use the manage summary action to add one.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary">Consequences</div>
+  <div class="card-body p-0">
+    {% if consequences %}
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Component</th>
+            <th scope="col">Category</th>
+            <th scope="col">Security property</th>
+            <th scope="col">Realistic impact</th>
+            <th scope="col">Worst case</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for consequence in consequences %}
+          <tr>
+            <td>{{ consequence.component.name }}</td>
+            <td>{{ consequence.consequence_category or 'Not set' }}</td>
+            <td>{{ consequence.security_property or 'Not set' }}</td>
+            <td><span class="badge {{ bia_get_impact_color(consequence.consequence_realisticcase) }}">{{ consequence.consequence_realisticcase or 'Unknown' }}</span></td>
+            <td><span class="badge {{ bia_get_impact_color(consequence.consequence_worstcase) }}">{{ consequence.consequence_worstcase or 'Unknown' }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="p-4 text-secondary">No consequences captured yet. Add consequences via the component manager.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

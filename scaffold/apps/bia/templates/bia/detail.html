@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ context.name }} | BIA{% endblock %}
+{% block content %}
+<a class="btn btn-link text-decoration-none text-secondary mb-3" href="{{ dashboard_url }}">&larr; Back to overview</a>
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-4 mb-4">
+	<div>
+		<h1 class="mb-1">{{ context.name }}</h1>
+		<p class="text-secondary mb-0">Last updated {{ context.last_update or "–" }}</p>
+	</div>
+	<div class="text-end">
+		<span class="text-secondary small d-block">Owner</span>
+		<div class="fw-semibold">{{ context.responsible or "Not set" }}</div>
+		{% if context.coordinator %}
+			<div class="text-secondary small">Coordinator: {{ context.coordinator }}</div>
+		{% endif %}
+	</div>
+</div>
+
+<div class="row g-3 mb-5">
+	{% for card in impact_cards.values() %}
+	<div class="col-md-4">
+		<div class="card bg-dark border-secondary h-100">
+			<div class="card-body">
+				<div class="d-flex justify-content-between align-items-start">
+					<div>
+						<p class="text-secondary text-uppercase small mb-1">{{ card.label }}</p>
+						<span class="{{ card.badge_class }}">{{ card.level }}</span>
+					</div>
+					<span class="text-secondary small">CIA Impact</span>
+				</div>
+			</div>
+		</div>
+	</div>
+	{% endfor %}
+	<div class="col-md-4">
+		<div class="card bg-dark border-secondary h-100">
+			<div class="card-body">
+				<p class="text-secondary text-uppercase small mb-1">Components</p>
+				<p class="display-6 mb-0">{{ component_count }}</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row g-4">
+	<div class="col-lg-7">
+		<div class="card bg-dark border-secondary h-100">
+			<div class="card-header border-secondary">Components</div>
+			<div class="card-body p-0">
+				{% if components %}
+				<div class="table-responsive">
+					<table class="table table-dark table-hover align-middle mb-0">
+						<thead>
+							<tr>
+								<th scope="col">Name</th>
+								<th scope="col">Information Owner</th>
+								<th scope="col">Users</th>
+								<th scope="col">Consequences</th>
+								<th scope="col">AI</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for component in components %}
+							<tr>
+								<td class="fw-semibold">{{ component.name }}</td>
+								<td>{{ component.info_owner or "–" }}</td>
+								<td>{{ component.user_type or "–" }}</td>
+								<td>{{ component.consequences | length }}</td>
+								<td>
+									{% set ai_entries = ai_flags.get(component.id, []) %}
+									{% if ai_entries %}
+										<span class="badge bg-info text-dark">{{ ai_entries | join(', ') }}</span>
+									{% else %}
+										<span class="text-secondary">None</span>
+									{% endif %}
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				{% else %}
+					<div class="p-4 text-secondary">No components captured yet.</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="col-lg-5">
+		<div class="card bg-dark border-secondary mb-4">
+			<div class="card-header border-secondary">Mission & Scope</div>
+			<div class="card-body">
+				<p class="mb-2"><span class="text-secondary small d-block">Mission Criticality</span>{{ context.mission_critical or "Not defined" }}</p>
+				<p class="mb-2"><span class="text-secondary small d-block">Scope</span>{{ context.scope_description or "Not documented" }}</p>
+				{% if context.summary and context.summary.content %}
+					<div>
+						<span class="text-secondary small d-block">Executive Summary</span>
+						<p class="mb-0">{{ context.summary.content }}</p>
+					</div>
+				{% endif %}
+			</div>
+		</div>
+		<div class="card bg-dark border-secondary">
+			<div class="card-header border-secondary">Key Contacts</div>
+			<div class="card-body">
+				<div class="row g-3 small text-secondary">
+					<div class="col-6">
+						<div class="text-uppercase">Product Owner</div>
+						<div class="text-light">{{ context.product_owner or "–" }}</div>
+					</div>
+					<div class="col-6">
+						<div class="text-uppercase">Risk Owner</div>
+						<div class="text-light">{{ context.risk_owner or "–" }}</div>
+					</div>
+					<div class="col-6">
+						<div class="text-uppercase">Security Manager</div>
+						<div class="text-light">{{ context.security_manager or "–" }}</div>
+					</div>
+					<div class="col-6">
+						<div class="text-uppercase">Incident Contact</div>
+						<div class="text-light">{{ context.incident_contact or "–" }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

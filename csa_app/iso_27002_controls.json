@@ -1,0 +1,145 @@
+{
+    "framework": "ISO 27002:2022",
+    "controls": [
+        {
+            "id": "ISO27002:2022 5.1",
+            "section": "Policies for information security - Zorg ervoor dat er een beleidskader is dat richting geeft aan en ondersteuning biedt voor informatiebeveiliging, in lijn met de bedrijfsdoelstellingen.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.2",
+            "section": "Information security roles and responsibilities - Definieer en wijs alle informatiebeveiligingsverantwoordelijkheden duidelijk toe binnen de organisatie.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.3",
+            "section": "Segregation of duties - Zorg ervoor dat conflicterende taken en verantwoordelijkheden worden gescheiden om ongeautoriseerde of onopzettelijke wijzigingen te voorkomen.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.7",
+            "section": "Threat intelligence - Verzamel en analyseer informatie over beveiligingsdreigingen om passende mitigerende maatregelen te kunnen nemen.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.14",
+            "section": "Information transfer - Stel regels en procedures op voor de veilige overdracht van informatie, zowel binnen als buiten de organisatie.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.23",
+            "section": "Information security for use of cloud services - Beheer de informatiebeveiligingsrisico's die gepaard gaan met het gebruik van clouddiensten.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.30",
+            "section": "ICT readiness for business continuity - Zorg ervoor dat de IT-infrastructuur voorbereid is om de bedrijfscontinuïteit te waarborgen tijdens een crisis of calamiteit.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 5.37",
+            "section": "Documented operating procedures - Zorg ervoor dat IT-systemen correct en veilig worden bediend door middel van gedocumenteerde operationele procedures.",
+            "domain": "5 Organisational Controls"
+        },
+        {
+            "id": "ISO27002:2022 6.2",
+            "section": "Terms and conditions of employment - Zorg ervoor dat medewerkers hun informatiebeveiligingsverantwoordelijkheden begrijpen en aanvaarden via de arbeidsvoorwaarden.",
+            "domain": "6 People Controls"
+        },
+        {
+            "id": "ISO27002:2022 6.3",
+            "section": "Information security awareness, education and training - Zorg ervoor dat personeel en relevante partijen de juiste training en bewustwording krijgen over informatiebeveiliging.",
+            "domain": "6 People Controls"
+        },
+        {
+            "id": "ISO27002:2022 6.4",
+            "section": "Disciplinary process - Implementeer een formeel disciplinair proces voor medewerkers die het informatiebeveiligingsbeleid schenden.",
+            "domain": "6 People Controls"
+        },
+        {
+            "id": "ISO27002:2022 6.7",
+            "section": "Remote working - Beveilig de informatie die wordt benaderd, verwerkt of opgeslagen bij thuis- en telewerken.",
+            "domain": "6 People Controls"
+        },
+        {
+            "id": "ISO27002:2022 6.8",
+            "section": "Information security event reporting - Zorg voor een mechanisme waarmee medewerkers informatiebeveiligingsincidenten tijdig kunnen melden.",
+            "domain": "6 People Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.2",
+            "section": "Physical entry - Beveilig fysieke locaties door alleen geautoriseerde personen toegang te verlenen.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.4",
+            "section": "Physical security monitoring - Monitor fysieke locaties continu op ongeautoriseerde toegang.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.5",
+            "section": "Protecting against physical and environmental threats - Ontwerp en implementeer bescherming tegen fysieke en omgevingsdreigingen zoals brand, water, en natuurrampen.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.6",
+            "section": "Working in secure areas - Implementeer procedures voor veilig werken in beveiligde gebieden.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.10",
+            "section": "Storage media - Beheer en beveilig opslagmedia (zoals USB-sticks, harde schijven) gedurende hun gehele levenscyclus.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 7.14",
+            "section": "Secure disposal or re-use of equipment - Zorg ervoor dat apparatuur veilig wordt verwijderd of hergebruikt om datalekken te voorkomen.",
+            "domain": "7 Physical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.1",
+            "section": "User endpoint devices - Beveilig de eindgebruikersapparaten (laptops, mobiele telefoons) om informatie te beschermen.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.2",
+            "section": "Privileged access rights - Beperk en beheer de toewijzing en het gebruik van geprivilegieerde toegangsrechten.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.3",
+            "section": "Information access restriction - Beperk de toegang tot informatie en systemen op basis van het 'need-to-know' principe.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.5",
+            "section": "Secure authentication - Zorg ervoor dat gebruikers op een veilige manier authenticeren om hun identiteit te verifiëren.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.9",
+            "section": "Configuration management - Beheer de configuratie van hardware, software, services en netwerken om de beveiliging te waarborgen.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.12",
+            "section": "Data leakage prevention - Implementeer technische maatregelen om het ongeautoriseerd openbaar maken of lekken van gevoelige informatie te voorkomen.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.16",
+            "section": "Monitoring activities - Monitor netwerken, systemen en applicaties op afwijkend gedrag en potentiële beveiligingsincidenten.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.23",
+            "section": "Web filtering - Beperk de toegang van gebruikers tot externe websites om blootstelling aan kwaadaardige content te verminderen.",
+            "domain": "8 Technical Controls"
+        },
+        {
+            "id": "ISO27002:2022 8.28",
+            "section": "Secure coding - Pas veilige ontwikkelprincipes toe bij de ontwikkeling van software om beveiligingskwetsbaarheden te voorkomen.",
+            "domain": "8 Technical Controls"
+        }
+    ]
+}

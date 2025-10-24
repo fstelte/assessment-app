@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{% if item %}Edit BIA{% else %}New BIA{% endif %}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-9 col-xl-8">
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-4">{% if item %}Edit {{ item.name }}{% else %}Create a new BIA{% endif %}</h1>
+        <form method="post">
+          {{ form.hidden_tag() }}
+
+          <h2 class="h5 text-uppercase text-secondary mb-3">General information</h2>
+          <div class="row g-3">
+            <div class="col-md-6">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.user_amount.label(class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">{{ form.start_date.label(class="form-label") }}{{ form.start_date(class="form-control", type="date") }}</div>
+            <div class="col-md-6">{{ form.end_date.label(class="form-label") }}{{ form.end_date(class="form-control", type="date") }}</div>
+          </div>
+          <div class="mt-3">{{ form.service_description.label(class="form-label") }}{{ form.service_description(class="form-control", rows=3) }}</div>
+          <div class="mt-3">{{ form.scope_description.label(class="form-label") }}{{ form.scope_description(class="form-control", rows=3) }}</div>
+
+          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Contacts</h2>
+          <div class="row g-3">
+            <div class="col-md-6">{{ form.responsible.label(class="form-label") }}{{ form.responsible(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.coordinator.label(class="form-label") }}{{ form.coordinator(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.project_leader.label(class="form-label") }}{{ form.project_leader(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.product_owner.label(class="form-label") }}{{ form.product_owner(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.risk_owner.label(class="form-label") }}{{ form.risk_owner(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.technical_administrator.label(class="form-label") }}{{ form.technical_administrator(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.security_manager.label(class="form-label") }}{{ form.security_manager(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.incident_contact.label(class="form-label") }}{{ form.incident_contact(class="form-control") }}</div>
+          </div>
+
+          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Dependencies & contracts</h2>
+          <div class="mt-3">{{ form.mission_critical.label(class="form-label") }}{{ form.mission_critical(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.knowledge.label(class="form-label") }}{{ form.knowledge(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.interfaces.label(class="form-label") }}{{ form.interfaces(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.support_contracts.label(class="form-label") }}{{ form.support_contracts(class="form-control") }}</div>
+          <div class="mt-3">{{ form.security_supplier.label(class="form-label") }}{{ form.security_supplier(class="form-control") }}</div>
+
+          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Risk posture</h2>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                {{ form.risk_assessment_human(class="form-check-input", role="switch") }}
+                {{ form.risk_assessment_human.label(class="form-check-label") }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                {{ form.risk_assessment_process(class="form-check-input", role="switch") }}
+                {{ form.risk_assessment_process.label(class="form-check-label") }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                {{ form.risk_assessment_technological(class="form-check-input", role="switch") }}
+                {{ form.risk_assessment_technological.label(class="form-check-label") }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                {{ form.ai_model(class="form-check-input", role="switch") }}
+                {{ form.ai_model.label(class="form-check-label") }}
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{{ url_for('bia.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if item %}
+    <div class="card bg-dark border-secondary">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Next steps</h2>
+        <p class="text-secondary mb-3">Use these quick links to continue refining {{ item.name }}.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-light btn-sm">View BIA</a>
+          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Manage summary</a>
+          <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Export HTML</a>
+          <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Export CSV</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

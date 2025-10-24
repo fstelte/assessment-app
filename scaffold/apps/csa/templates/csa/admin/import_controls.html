@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Import Controls{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="mb-4">
+      <h1 class="h3 mb-1">Import controls</h1>
+      <p class="text-secondary mb-0">Upload a JSON catalogue or load the bundled ISO 27002 reference set.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.data_file.label(class="form-label") }}
+        {{ form.data_file(class="form-control" if not form.data_file.errors else "form-control is-invalid") }}
+        {% for error in form.data_file.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+        <div class="form-text">The file must contain a top-level <code>controls</code> array.</div>
+      </div>
+      <div class="text-end">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+
+    <hr class="my-4">
+
+    <form method="post">
+      <input type="hidden" name="action" value="import_builtin">
+      <button class="btn btn-outline-light" type="submit">Import bundled ISO 27002 dataset</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

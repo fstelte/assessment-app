@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Assessment {{ assessment.id }}{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          {% if assessment.template.control %}
+            {% set control_display = [assessment.template.control.section, assessment.template.control.domain] | select('string') | join(' ') %}
+            <h1 class="h3 mb-1">
+              {{ control_display or assessment.template.name }}
+            </h1>
+            {% if assessment.template.control.section %}
+              <p class="text-muted mb-0">Code: {{ assessment.template.control.section }}</p>
+            {% endif %}
+            {% if assessment.template.control.domain %}
+              <p class="text-muted mb-0">Control: {{ assessment.template.control.domain }}</p>
+            {% endif %}
+            {% if assessment.template.name and assessment.template.name != (control_display or assessment.template.name) %}
+              <p class="text-muted mb-0 small">Sjabloon: {{ assessment.template.name }}</p>
+            {% endif %}
+            {% if assessment.template.control.description %}
+              <p class="text-muted mb-0 small">{{ assessment.template.control.description }}</p>
+            {% endif %}
+          {% else %}
+            <h1 class="h3 mb-1">{{ assessment.template.name }}</h1>
+          {% endif %}
+        </div>
+          <span class="badge text-bg-{{ badge_class }} text-uppercase">{{ status_label }}</span>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Gestart op</dt>
+            <dd class="col-sm-8">{{ assessment.started_at or 'Nog niet gestart' }}</dd>
+            <dt class="col-sm-4">Ingediend op</dt>
+            <dd class="col-sm-8">{{ assessment.submitted_at or 'Nog niet ingediend' }}</dd>
+            <dt class="col-sm-4">Laatste update</dt>
+            <dd class="col-sm-8">{{ assessment.updated_at }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <h2 class="h4">Vragen</h2>
+      {% if has_questions %}
+        {% if not can_edit %}
+          <div class="alert alert-info">Deze assessment is al ingediend en kan niet meer worden gewijzigd.</div>
+        {% endif %}
+        <form method="post">
+          {{ form.hidden_tag() }}
+          {% for section in layout %}
+            <div class="card mb-3">
+              <div class="card-header">
+                {{ section.label }}
+              </div>
+              <div class="card-body">
+                {% if section.questions %}
+                  {% for question in section.questions %}
+                    {% set field = form[question['field_name']] %}
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold" for="{{ field.id }}">{{ field.label.text }}</label>
+                      {{ field(class="form-control", rows=4, readonly=not can_edit, disabled=not can_edit) }}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <p class="text-muted mb-0">Geen vragen in deze sectie.</p>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+          <div class="d-flex justify-content-end gap-2">
+            {{ form.save(class="btn btn-outline-secondary", disabled=not can_edit) }}
+            {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit) }}
+          </div>
+        </form>
+      {% else %}
+        <p class="text-muted">Er zijn nog geen vragen gekoppeld aan dit sjabloon.</p>
+      {% endif %}
+
+      {% if review_form %}
+        <hr class="my-4">
+        <h2 class="h4">Beoordeling</h2>
+        <form method="post">
+          {{ review_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ review_form.comment.label(class="form-label fw-semibold") }}
+            {{ review_form.comment(class="form-control", rows=4) }}
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="submit" name="review_action" value="return" class="btn btn-outline-warning">{{ review_form.return_to_assignee.label.text }}</button>
+            <button type="submit" name="review_action" value="approve" class="btn btn-success">{{ review_form.approve.label.text }}</button>
+          </div>
+        </form>
+      {% endif %}
+      {% if assessment.review_comment %}
+        <div class="alert alert-secondary mt-4">
+          <strong>Laatste reviewopmerking:</strong>
+          <div class="mt-1">{{ assessment.review_comment }}</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

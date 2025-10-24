@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Controls importeren{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <h1 class="mb-4">Controls importeren</h1>
+      <p class="text-muted">Upload een JSON-bestand met controles en bijbehorende metadata om beschikbare self-assessment sjablonen aan te maken.</p>
+      <form method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.data_file.label(class="form-label") }}
+          {{ form.data_file(class="form-control") }}
+          {% for error in form.data_file.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+          <div class="form-text">Het bestand moet het veld <code>controls</code> bevatten met control entries.</div>
+        </div>
+        <div class="text-end">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+      <hr class="my-4">
+      <form method="post">
+        <input type="hidden" name="action" value="import_builtin">
+        <button class="btn btn-outline-secondary" type="submit">Importeer standaard ISO 27002 dataset</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
