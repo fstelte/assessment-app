@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Scaffold Home{% endblock %}
+{% block title %}Assessment Platform{% endblock %}
 {% block content %}
 <div class="text-center py-5">
-  <h1 class="display-5 fw-bold">Scaffold Platform</h1>
+  <h1 class="display-5 fw-bold">Assessment Platform</h1>
   <p class="lead mt-3">Unified workspace for Business Impact Analysis and Control Self Assessment modules.</p>
   <div class="row g-3 mt-4 justify-content-center">
     {% for entry in nav_entries() if entry.endpoint not in ['auth.login', 'auth.register_user'] %}

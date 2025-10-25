@@ -72,6 +72,7 @@
             <td>
               <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#edit-component-{{ component.id }}" aria-expanded="false" aria-controls="edit-component-{{ component.id }}">Edit</button>
+                <button class="btn btn-outline-primary btn-sm" type="button" data-ai-manage data-component-id="{{ component.id }}">Identify AI</button>
                 <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="btn btn-outline-secondary btn-sm">Consequences</a>
                 <button class="btn btn-outline-danger btn-sm" type="button" data-delete-url="{{ url_for('bia.delete_component', component_id=component.id) }}">Delete</button>
               </div>
@@ -127,6 +128,40 @@
       <div class="p-4 text-secondary">No components found for this selection.</div>
     {% endif %}
   </div>
+  </div>
+
+  <div class="modal fade" id="ai-identification-modal" tabindex="-1" aria-labelledby="ai-identification-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content bg-dark border-secondary">
+        <div class="modal-header border-secondary">
+          <h2 class="modal-title h5" id="ai-identification-label">AI identification</h2>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="ai-identification-form" class="vstack gap-3">
+            <input type="hidden" id="ai-component-id" name="component_id">
+            <div>
+              <label class="form-label" for="ai-category">Risk category</label>
+              <select id="ai-category" name="category" class="form-select">
+                <option value="No AI">No AI</option>
+                <option value="Unacceptable risk">Unacceptable risk</option>
+                <option value="High risk">High risk</option>
+                <option value="Limited risk">Limited risk</option>
+                <option value="Minimal risk">Minimal risk</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="ai-motivation">Motivation</label>
+              <textarea id="ai-motivation" name="motivatie" class="form-control" rows="3" placeholder="Describe the reasoning for this classification"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-ai-save>Save</button>
+        </div>
+      </div>
+    </div>
 </div>
 
 <script>
@@ -134,6 +169,16 @@
   const addForm = document.getElementById('add-component-form');
   const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
   const csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
+  const aiModalElement = document.getElementById('ai-identification-modal');
+  const aiForm = document.getElementById('ai-identification-form');
+  const aiComponentIdField = document.getElementById('ai-component-id');
+  const aiCategoryField = document.getElementById('ai-category');
+  const aiMotivationField = document.getElementById('ai-motivation');
+  const aiSaveTrigger = document.querySelector('[data-ai-save]');
+  const aiRoutes = {
+    detail: '{{ url_for("bia.get_ai_identification", component_id=0)[:-1] }}',
+    upsert: '{{ url_for("bia.add_ai_identification", component_id=0)[:-1] }}'
+  };
   const handleErrors = (messages) => {
     if (!messages) {
       window.alert('An unexpected error occurred.');
@@ -142,6 +187,98 @@
     const details = Object.entries(messages).map(([field, errs]) => `${field}: ${errs.join(', ')}`).join('\n');
     window.alert(`Validation failed:\n${details}`);
   };
+
+  const openAiModal = (componentId) => {
+    if (!aiComponentIdField) {
+      return;
+    }
+    const modalInstance = aiModalElement ? window.bootstrap?.Modal.getOrCreateInstance(aiModalElement) : null;
+    aiComponentIdField.value = componentId;
+    const targetUrl = aiRoutes.detail + componentId;
+    fetch(targetUrl, { credentials: 'same-origin' })
+      .then((response) => {
+        if (response.status === 404) {
+          return { category: 'No AI', motivatie: '' };
+        }
+        if (!response.ok) {
+          throw new Error('Lookup failed');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (aiCategoryField) {
+          aiCategoryField.value = data.category || 'No AI';
+        }
+        if (aiMotivationField) {
+          aiMotivationField.value = data.motivatie || '';
+        }
+        modalInstance?.show();
+      })
+      .catch(() => {
+        if (aiCategoryField) {
+          aiCategoryField.value = 'No AI';
+        }
+        if (aiMotivationField) {
+          aiMotivationField.value = '';
+        }
+        modalInstance?.show();
+      });
+  };
+
+  document.querySelectorAll('[data-ai-manage]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const componentId = button.getAttribute('data-component-id');
+      if (componentId) {
+        openAiModal(componentId);
+      }
+    });
+  });
+
+  aiModalElement?.addEventListener('hidden.bs.modal', () => {
+    if (aiForm) {
+      aiForm.reset();
+    }
+  });
+
+  aiSaveTrigger?.addEventListener('click', () => {
+    if (!aiForm || !aiComponentIdField) {
+      return;
+    }
+    const componentId = aiComponentIdField.value;
+    if (!componentId) {
+      window.alert('Component reference missing.');
+      return;
+    }
+    const formData = new FormData();
+    if (csrfToken) {
+      formData.append('csrf_token', csrfToken);
+    }
+    formData.append('category', aiCategoryField ? aiCategoryField.value : 'No AI');
+    formData.append('motivatie', aiMotivationField ? aiMotivationField.value : '');
+
+    fetch(aiRoutes.upsert + componentId, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Save failed');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!data.success) {
+          throw new Error('Server rejected the request');
+        }
+        const modalInstance = aiModalElement ? window.bootstrap?.Modal.getInstance(aiModalElement) : null;
+        modalInstance?.hide();
+        window.location.reload();
+      })
+      .catch(() => {
+        window.alert('Unable to store AI identification.');
+      });
+  });
 
   if (addForm) {
     addForm.addEventListener('submit', function (event) {
