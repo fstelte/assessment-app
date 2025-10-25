@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+</div>
+
 <div class="container py-4">
-  <h1 class="mb-4">Importeer BIA SQL</h1>
-  <p class="lead">Upload een gevalideerd export-bestand (.sql) om de bestaande gegevens te vervangen. Alle records met dezelfde BIA-naam worden eerst verwijderd en vervolgens teruggezet vanuit het bestand.</p>
+  <h1 class="mb-4">Import BIA SQL</h1>
+  <p class="lead">Upload a validated export file (.sql) to replace the current data. All records with the same BIA name are removed first and then restored from the file.</p>
   <div class="alert alert-warning" role="alert">
-    Upload alleen SQL-bestanden die door deze applicatie zijn geëxporteerd. Het bestand wordt gecontroleerd op ongeoorloofde tabellen en SQL-injectie patronen.
+    Upload only SQL files that were exported by this application. The file is checked for unexpected tables and potential SQL injection patterns.
   </div>
   <form id="sql-upload-form" class="row g-3" method="post" enctype="multipart/form-data">
     {{ form.hidden_tag() }}

@@ -1,21 +1,44 @@
 {% extends "base.html" %}
 {% block title %}BIA Dashboard{% endblock %}
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
-	<div>
-		<h1 class="mb-1">Business Impact Analyses</h1>
-		<p class="text-secondary mb-0">Track, update and export your organisation's BIAs from a single workspace.</p>
+<div class="row g-4">
+	<div class="col-lg-3 col-xl-2">
+		<nav class="card bg-dark border-secondary sticky-top" style="top: 6rem;">
+			<div class="card-body p-3">
+				<h2 class="h6 text-uppercase text-secondary">Navigate</h2>
+				<ul class="nav flex-column gap-2 mt-3">
+					<li class="nav-item">
+						<a class="nav-link px-0 text-light d-flex align-items-center" href="{{ url_for('bia.dashboard') }}">
+							<i class="fas fa-chart-line me-2 text-secondary"></i>
+							Dashboard overview
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link px-0 text-light d-flex align-items-center" href="{{ url_for('bia.view_components') }}">
+							<i class="fas fa-boxes me-2 text-secondary"></i>
+							View components
+						</a>
+					</li>
+				</ul>
+				<hr class="border-secondary my-3">
+				<h2 class="h6 text-uppercase text-secondary mb-2">Actions</h2>
+				<div class="d-grid gap-2">
+					<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary btn-sm">New BIA</a>
+					<a href="{{ url_for('bia.import_csv_view') }}" class="btn btn-outline-light btn-sm">Import CSV</a>
+					<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary btn-sm">Import SQL</a>
+				</div>
+			</div>
+		</nav>
 	</div>
-	<div class="btn-group" role="group" aria-label="BIA actions">
-		<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary">New BIA</a>
-		<a href="{{ url_for('bia.import_csv_view') }}" class="btn btn-outline-light">Import CSV</a>
-		<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary">Import SQL</a>
-	</div>
-</div>
+	<div class="col-lg-9 col-xl-10">
+		<div class="mb-4">
+			<h1 class="mb-1">Business Impact Analyses</h1>
+			<p class="text-secondary mb-0">Track, update and export your organisation's BIAs from a single workspace.</p>
+		</div>
 
-{% if contexts %}
-	<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-		{% for context in contexts %}
+		{% if contexts %}
+		<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+			{% for context in contexts %}
 			<div class="col">
 				<div class="card h-100 bg-dark border-secondary">
 					<div class="card-body d-flex flex-column">
@@ -48,11 +71,13 @@
 					</div>
 				</div>
 			</div>
-		{% endfor %}
+			{% endfor %}
+		</div>
+		{% else %}
+		<div class="alert alert-info">
+			<strong>No BIAs recorded yet.</strong> Create a new analysis or import an existing dataset to get started.
+		</div>
+		{% endif %}
 	</div>
-{% else %}
-	<div class="alert alert-info">
-		<strong>No BIAs recorded yet.</strong> Create a new analysis or import an existing dataset to get started.
-	</div>
-{% endif %}
+</div>
 {% endblock %}

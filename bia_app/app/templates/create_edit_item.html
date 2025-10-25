@@ -287,7 +287,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token() }}'
-                }
+                },
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {
@@ -312,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.view-component-btn').forEach(button => {
         button.addEventListener('click', function() {
             const componentId = this.closest('.card').dataset.componentId;
-            fetch(`/get_component/${componentId}`)
+            fetch(`/get_component/${componentId}`, { credentials: 'same-origin' })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('view-component-name').textContent = data.name;
@@ -333,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
 document.querySelector('#viewComponentModal .edit-component-btn').addEventListener('click', function() {
     const componentId = this.getAttribute('data-component-id');
     console.log('Editing component with ID:', componentId);
-    fetch(`/get_component/${componentId}`)
+    fetch(`/get_component/${componentId}`, { credentials: 'same-origin' })
         .then(response => response.json())
         .then(data => {
             console.log('Received component data:', data);
@@ -383,7 +384,8 @@ document.querySelector('#viewComponentModal .edit-component-btn').addEventListen
             body: formData,
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
-            }
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
@@ -412,7 +414,8 @@ document.querySelector('#viewComponentModal .edit-component-btn').addEventListen
             body: formData,
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
-            }
+            },
+            credentials: 'same-origin'
         })
         .then(response => response.json())
         .then(data => {
@@ -450,7 +453,7 @@ document.querySelector('#viewComponentModal .edit-component-btn').addEventListen
                 const newViewBtn = componentList.querySelector(`[data-component-id="${data.id}"] .view-component-btn`);
                 newViewBtn.addEventListener('click', function() {
                     const componentId = this.getAttribute('data-component-id');
-                    fetch(`/get_component/${componentId}`)
+                    fetch(`/get_component/${componentId}`, { credentials: 'same-origin' })
                         .then(response => response.json())
                         .then(data => {
                             document.getElementById('view-component-name').textContent = data.name;

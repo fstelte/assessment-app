@@ -52,7 +52,15 @@ from .utils import (
     import_from_csv,
     import_sql_file,
 )
-
+def get_impact_color(impact):
+    impact_colors = {
+        'catastrophic': 'badge bg-danger',
+        'major': 'badge bg-warning text-dark',
+        'moderate': 'badge bg-info text-dark',
+        'minor': 'badge bg-primary',
+        'insignificant': 'badge bg-success'
+    }
+    return impact_colors.get(impact.lower(), 'badge bg-secondary')
 
 bp = Blueprint(
     "bia",

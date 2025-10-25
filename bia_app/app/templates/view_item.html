@@ -171,17 +171,17 @@
                     <tbody>
                         <tr>
                             <td class="text-center">
-                                <span class="badge cia-impact-badge">
+                                <span class="badge cia-impact-badge {{ get_impact_color(max_cia_impact['confidentiality']) }}">
                                     {{ max_cia_impact['confidentiality'] }}
                                 </span>
                             </td>
                             <td class="text-center">
-                                <span class="badge cia-impact-badge">
+                                <span class="badge cia-impact-badge {{ get_impact_color(max_cia_impact['integrity']) }}">
                                     {{ max_cia_impact['integrity'] }}
                                 </span>
                             </td>
                             <td class="text-center">
-                                <span class="badge cia-impact-badge">
+                                <span class="badge cia-impact-badge {{ get_impact_color(max_cia_impact['availability']) }}">
                                     {{ max_cia_impact['availability'] }}
                                 </span>
                             </td>
@@ -207,11 +207,15 @@
                         <td>{{ consequence.component.name }}</td>
                         <td>{{ consequence.consequence_category }}</td>
                         <td>{{ consequence.security_property }}</td>
-                        <td><span class="badge consequence-badge">{{ consequence.consequence_realisticcase }}</span></td>
                         <td>
-                            C: <span class="badge consequence-badge">{{ get_cia_impact(consequence, 'confidentiality') }}</span><br>
-                            I: <span class="badge consequence-badge">{{ get_cia_impact(consequence, 'integrity') }}</span><br>
-                            A: <span class="badge consequence-badge">{{ get_cia_impact(consequence, 'availability') }}</span>
+                            <span class="badge consequence-badge {{ get_impact_color(consequence.consequence_realisticcase) }}">
+                                {{ consequence.consequence_realisticcase }}
+                            </span>
+                        </td>
+                        <td>
+                            C: <span class="badge consequence-badge {{ get_impact_color(get_cia_impact(consequence, 'confidentiality')) }}">{{ get_cia_impact(consequence, 'confidentiality') }}</span><br>
+                            I: <span class="badge consequence-badge {{ get_impact_color(get_cia_impact(consequence, 'integrity')) }}">{{ get_cia_impact(consequence, 'integrity') }}</span><br>
+                            A: <span class="badge consequence-badge {{ get_impact_color(get_cia_impact(consequence, 'availability')) }}">{{ get_cia_impact(consequence, 'availability') }}</span>
                         </td>
                     </tr>
                     {% endfor %}
@@ -272,22 +276,27 @@ function setBadgeColor(badge, category) {
     switch(category.toLowerCase()) {
         case 'no ai':
         case 'insignificant':
+        case 'very low':
             badge.classList.add('bg-green');
             break;
         case 'unacceptable risk':
         case 'catastrophic':
+        case 'very high':
             badge.classList.add('bg-dark-red');
             break;
         case 'high risk':
         case 'major':
+        case 'high':
             badge.classList.add('bg-red');
             break;
         case 'limited risk':
         case 'moderate':
+        case 'medium':
             badge.classList.add('bg-orange');
             break;
         case 'minimal risk':
         case 'minor':
+        case 'low':
             badge.classList.add('bg-yellow');
             break;
         default:

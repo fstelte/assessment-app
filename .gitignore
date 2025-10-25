@@ -1,0 +1,54 @@
+# General Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.hypothesis/
+.dmypy.json
+
+# IDE / editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Deployment / runtime
+instance/*.db
+instance/*.sqlite*
+instance/*.log
+
+# Generated exports
+scaffold/apps/bia/exports/
+bia_app/app/exports/
+
+# Local environment overrides
+.env
+.env.*
+instance/scaffold.db

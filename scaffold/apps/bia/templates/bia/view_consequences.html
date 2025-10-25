@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Consequences | {{ component.name }}{% endblock %}
 {% block content %}
-<input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
+{% set csrf_field = consequence_form.csrf_token %}
+{% set csrf_value = csrf_field._value() if csrf_field else '' %}
+<input type="hidden" id="csrf-token" value="{{ csrf_value }}">
 <div class="mb-3">
   <a href="{{ url_for('bia.view_components') }}" class="text-secondary text-decoration-none">&larr; Back to components</a>
 </div>
@@ -69,7 +71,7 @@
       </div>
       <div class="modal-body">
         <form id="add-consequence-form" class="vstack gap-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {{ csrf_field if csrf_field else '' }}
           <div>
             {{ consequence_form.consequence_category.label(class="form-label") }}
             {{ consequence_form.consequence_category(class="form-select", multiple=true) }}
@@ -119,7 +121,7 @@
       </div>
       <div class="modal-body">
         <form id="edit-consequence-form" class="vstack gap-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_value }}">
           <input type="hidden" name="update_url" value="">
           <div>
             <label class="form-label" for="edit-consequence-category">Consequence category</label>
