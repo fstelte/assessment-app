@@ -23,7 +23,7 @@ from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
 from ...extensions import db
-from ..identity.models import User
+from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, User, UserStatus
 from .forms import (
     ChangePasswordForm,
     ComponentForm,
@@ -79,13 +79,39 @@ def inject_helpers():
         "bia_get_max_cia_impact": get_max_cia_impact,
     }
 
+def _can_manage_bia_owner() -> bool:
+    return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
+
+
+def _can_edit_context(context: ContextScope) -> bool:
+    if context.author:
+        return context.author == current_user
+    return current_user.has_role(ROLE_ADMIN)
+
 
 @bp.route("/")
 @bp.route("/index")
 @login_required
 def dashboard():
     contexts = ContextScope.query.order_by(ContextScope.last_update.desc()).all()
-    return render_template("bia/dashboard.html", contexts=contexts)
+    can_manage_owner = _can_manage_bia_owner()
+    owner_choices: list[User] = []
+    if can_manage_owner:
+        owner_choices = (
+            User.query.filter(User.status == UserStatus.ACTIVE)
+            .order_by(User.last_name.asc(), User.first_name.asc(), User.email.asc())
+            .all()
+        )
+    editable_context_ids = {context.id for context in contexts if _can_edit_context(context)}
+    owner_choice_ids = {user.id for user in owner_choices}
+    return render_template(
+        "bia/dashboard.html",
+        contexts=contexts,
+        can_manage_owner=can_manage_owner,
+        owner_choices=owner_choices,
+        owner_choice_ids=owner_choice_ids,
+        editable_context_ids=editable_context_ids,
+    )
 
 
 @bp.route("/item/new", methods=["GET", "POST"])
@@ -93,9 +119,13 @@ def dashboard():
 def new_item():
     form = ContextScopeForm()
     component_form = ComponentForm()
+    can_assign_owner = _can_manage_bia_owner()
     if form.validate_on_submit():
         context = ContextScope(author=_resolve_user())
-        _apply_context_form(form, context)
+        if context.author:
+            context.responsible = context.author.full_name
+            context.risk_owner = context.author.full_name
+        _apply_context_form(form, context, allow_owner_assignment=can_assign_owner)
         context.last_update = date.today()
         db.session.add(context)
         db.session.commit()
@@ -106,6 +136,7 @@ def new_item():
         form=form,
         component_form=component_form,
         item=None,
+        can_assign_owner=can_assign_owner,
     )
 
 
@@ -123,6 +154,7 @@ def view_item(item_id: int):
         consequences=consequences,
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
+        can_edit_context=_can_edit_context(item),
     )
 
 
@@ -130,14 +162,15 @@ def view_item(item_id: int):
 @login_required
 def edit_item(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
-    if item.author and item.author != current_user:
-        flash("You do not have permission to edit this BIA.", "danger")
+    if not _can_edit_context(item):
+        flash("Only the assigned assessment owner can edit this BIA.", "danger")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     form = ContextScopeForm(obj=item)
     component_form = ComponentForm()
+    can_assign_owner = _can_manage_bia_owner()
     if form.validate_on_submit():
-        _apply_context_form(form, item)
+        _apply_context_form(form, item, allow_owner_assignment=can_assign_owner)
         item.last_update = date.today()
         db.session.commit()
         flash("BIA updated successfully.", "success")
@@ -148,6 +181,7 @@ def edit_item(item_id: int):
         form=form,
         component_form=component_form,
         item=item,
+        can_assign_owner=can_assign_owner,
     )
 
 
@@ -156,13 +190,48 @@ def edit_item(item_id: int):
 @require_fresh_login(max_age_minutes=30)
 def delete_item(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
-    if item.author and item.author != current_user:
-        flash("You do not have permission to delete this BIA.", "danger")
+    if not _can_edit_context(item):
+        flash("Only the assigned assessment owner can delete this BIA.", "danger")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     db.session.delete(item)
     db.session.commit()
     flash("BIA deleted.", "success")
+    return redirect(url_for("bia.dashboard"))
+
+
+@bp.route("/item/<int:item_id>/owner", methods=["POST"])
+@login_required
+def update_owner(item_id: int):
+    context = ContextScope.query.get_or_404(item_id)
+    if not _can_manage_bia_owner():
+        flash("You do not have permission to assign BIA ownership.", "danger")
+        return redirect(url_for("bia.dashboard"))
+
+    owner_raw = (request.form.get("owner_id") or "").strip()
+    message: str
+    if not owner_raw:
+        context.author = None
+        context.responsible = None
+        context.risk_owner = None
+        message = "Owner cleared."
+    else:
+        try:
+            owner_id = int(owner_raw)
+        except ValueError:
+            flash("Invalid owner selection.", "danger")
+            return redirect(url_for("bia.dashboard"))
+        owner = User.query.filter(User.id == owner_id, User.status == UserStatus.ACTIVE).first()
+        if not owner:
+            flash("Selected owner is not available.", "danger")
+            return redirect(url_for("bia.dashboard"))
+        context.author = owner
+        context.responsible = owner.full_name
+        context.risk_owner = owner.full_name
+        message = f"Owner set to {owner.full_name}."
+    context.last_update = date.today()
+    db.session.commit()
+    flash(message, "success")
     return redirect(url_for("bia.dashboard"))
 
 
@@ -175,6 +244,11 @@ def add_component():
         context = ContextScope.query.get(context_id) if context_id else None
         if not context:
             return jsonify({"success": False, "errors": {"bia_id": ["Unknown BIA"]}}), 400
+        if not _can_edit_context(context):
+            return (
+                jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+                403,
+            )
         component = Component(
             name=form.name.data,
             info_type=form.info_type.data,
@@ -194,6 +268,11 @@ def add_component():
 @login_required
 def update_component(component_id: int):
     component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     form = ComponentForm()
     if form.validate_on_submit():
         component.name = form.name.data
@@ -211,6 +290,11 @@ def update_component(component_id: int):
 @login_required
 def delete_component(component_id: int):
     component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     db.session.delete(component)
     db.session.commit()
     return jsonify({"success": True})
@@ -260,6 +344,11 @@ def get_component(component_id: int):
 @login_required
 def add_consequence(component_id: int):
     component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     data = request.get_json() or {}
     form = ConsequenceForm(data=data)
     if form.validate():
@@ -303,6 +392,11 @@ def get_consequence(consequence_id: int):
 @login_required
 def edit_consequence(consequence_id: int):
     consequence = Consequences.query.get_or_404(consequence_id)
+    if not _can_edit_context(consequence.component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     data = request.get_json() or {}
     required = [
         "consequence_category",
@@ -327,6 +421,11 @@ def edit_consequence(consequence_id: int):
 @login_required
 def delete_consequence(consequence_id: int):
     consequence = Consequences.query.get_or_404(consequence_id)
+    if not _can_edit_context(consequence.component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     db.session.delete(consequence)
     db.session.commit()
     return jsonify({"success": True, "message": "Consequence deleted."})
@@ -365,10 +464,18 @@ def get_availability(component_id: int):
 @bp.route("/update_availability/<int:component_id>", methods=["POST"])
 @login_required
 def update_availability(component_id: int):
+    component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     availability = AvailabilityRequirements.query.filter_by(component_id=component_id).first()
     if availability is None:
-        availability = AvailabilityRequirements(component_id=component_id)
+        availability = AvailabilityRequirements(component=component)
         db.session.add(availability)
+    else:
+        availability.component = component
     availability.mtd = request.form.get("mtd")
     availability.rto = request.form.get("rto")
     availability.rpo = request.form.get("rpo")
@@ -381,6 +488,11 @@ def update_availability(component_id: int):
 @login_required
 def add_ai_identification(component_id: int):
     component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     existing = AIIdentificatie.query.filter_by(component_id=component.id).first()
     if existing:
         existing.category = request.form.get("category") or existing.category
@@ -400,6 +512,11 @@ def add_ai_identification(component_id: int):
 @login_required
 def update_ai_identification(component_id: int):
     component = Component.query.get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
     ai_record = AIIdentificatie.query.filter_by(component_id=component.id).first()
     if ai_record is None:
         ai_record = AIIdentificatie(component=component)
@@ -429,7 +546,7 @@ def get_ai_identification(component_id: int):
 @login_required
 def manage_summary(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
-    if item.author and item.author != current_user:
+    if not _can_edit_context(item):
         abort(403)
     form = SummaryForm(obj=item.summary)
     if form.validate_on_submit():
@@ -447,7 +564,7 @@ def manage_summary(item_id: int):
 @login_required
 def delete_summary(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
-    if item.author and item.author != current_user:
+    if not _can_edit_context(item):
         abort(403)
     if item.summary:
         db.session.delete(item.summary)
@@ -715,9 +832,15 @@ def import_sql_form():
     return render_template("bia/import_sql_form.html", form=form)
 
 
-def _apply_context_form(form: ContextScopeForm, context: ContextScope) -> None:
+def _apply_context_form(
+    form: ContextScopeForm,
+    context: ContextScope,
+    *,
+    allow_owner_assignment: bool = True,
+) -> None:
     context.name = form.name.data
-    context.responsible = form.responsible.data
+    if allow_owner_assignment:
+        context.responsible = form.responsible.data
     context.coordinator = form.coordinator.data
     context.start_date = form.start_date.data
     context.end_date = form.end_date.data
@@ -739,6 +862,8 @@ def _apply_context_form(form: ContextScopeForm, context: ContextScope) -> None:
     context.technical_administrator = form.technical_administrator.data
     context.security_manager = form.security_manager.data
     context.incident_contact = form.incident_contact.data
+    if context.author:
+        context.responsible = context.author.full_name
 
 
 def _collect_ai_identifications(context: ContextScope) -> dict[int, AIIdentificatie]:

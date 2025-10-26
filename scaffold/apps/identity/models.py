@@ -12,6 +12,15 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from ...extensions import db
 
 
+ROLE_ADMIN = "admin"
+ROLE_ASSESSMENT_MANAGER = "manager"
+
+_DEFAULT_ROLES: dict[str, str] = {
+    ROLE_ADMIN: "Platform administrator",
+    ROLE_ASSESSMENT_MANAGER: "Assessment manager",
+}
+
+
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp for defaults."""
 
@@ -54,6 +63,21 @@ class Role(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostic helper
         return f"<Role {self.name!r}>"
+
+
+def ensure_default_roles() -> None:
+    """Make sure the core authorisation roles exist in the database."""
+
+    created = False
+    for name, description in _DEFAULT_ROLES.items():
+        if Role.query.filter_by(name=name).first():
+            continue
+        role = Role(name=name, description=description)
+        db.session.add(role)
+        created = True
+
+    if created:
+        db.session.commit()
 
 
 class User(TimestampMixin, UserMixin, db.Model):

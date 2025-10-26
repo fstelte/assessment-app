@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import cast
 
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, PasswordField, StringField, SubmitField
+from wtforms import BooleanField, PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, ValidationError
 
 from ...extensions import db
@@ -76,7 +76,12 @@ class MFAVerifyForm(FlaskForm):
 class ProfileForm(FlaskForm):
     first_name = StringField("First name", validators=[Optional(), Length(max=120)])
     last_name = StringField("Last name", validators=[Optional(), Length(max=120)])
-    theme = StringField("Theme", validators=[Optional(), Length(max=20)])
+    theme = SelectField(
+        "Theme",
+        choices=[("dark", "Dark"), ("light", "Light")],
+        validators=[Optional()],
+        default="dark",
+    )
     current_password = PasswordField("Current password", validators=[Optional()])
     new_password = PasswordField("New password", validators=[Optional(), Length(min=8, max=255)])
     submit = SubmitField("Save changes")

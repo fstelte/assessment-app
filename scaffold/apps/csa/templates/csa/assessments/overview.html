@@ -6,7 +6,9 @@
     <h1 class="h3 mb-1">Assessment Overview</h1>
     <p class="text-secondary mb-0">Track every assessment, status, and owner from a single overview.</p>
   </div>
+  {% if current_user.has_role('admin') or current_user.has_role('manager') %}
   <a class="btn btn-outline-light" href="{{ url_for('csa.start_assessment') }}">Start assessment</a>
+  {% endif %}
 </div>
 
 {% if year_groups %}

@@ -35,9 +35,9 @@
                   <th scope="col">BIA</th>
                   <th scope="col">Components</th>
                   <th scope="col">Consequences</th>
-                  <th scope="col">Confidentiality (W/R)</th>
-                  <th scope="col">Integrity (W/R)</th>
-                  <th scope="col">Availability (W/R)</th>
+                  <th scope="col">Confidentiality (Realistic)</th>
+                  <th scope="col">Integrity (Realistic)</th>
+                  <th scope="col">Availability (Realistic)</th>
                 </tr>
               </thead>
               <tbody>
@@ -50,12 +50,20 @@
                   {% for prop in ['confidentiality', 'integrity', 'availability'] %}
                   {% set prop_data = impacts.get(prop) %}
                   <td>
-                    {% if prop_data and (prop_data.get('worstcase') or prop_data.get('realistic')) %}
-                      {% set worst = prop_data.get('worstcase') or 'n/a' %}
-                      {% set realistic = prop_data.get('realistic') or 'n/a' %}
-                      <span class="badge impact-badge {{ bia_get_impact_color(worst) }}">{{ worst }}</span>
-                      /
-                      <span class="badge impact-badge {{ bia_get_impact_color(realistic) }}">{{ realistic }}</span>
+                    {% if prop_data %}
+                      {% set realistic = prop_data.get('realistic') %}
+                      {% set fallback = prop_data.get('worstcase') %}
+                      {% if realistic %}
+                        <span class="badge impact-badge {{ bia_get_impact_color(realistic) }}">{{ realistic }}</span>
+                        {% if fallback and fallback != realistic %}
+                          <span class="text-secondary small d-block">Worst: {{ fallback }}</span>
+                        {% endif %}
+                      {% elif fallback %}
+                        <span class="badge impact-badge {{ bia_get_impact_color(fallback) }}">{{ fallback }}</span>
+                        <span class="text-secondary small d-block">(Worst-case shown)</span>
+                      {% else %}
+                        <span class="badge text-bg-secondary">N/A</span>
+                      {% endif %}
                     {% else %}
                       <span class="badge text-bg-secondary">N/A</span>
                     {% endif %}

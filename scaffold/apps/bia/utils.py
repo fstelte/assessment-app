@@ -136,7 +136,7 @@ def get_cia_impact(
 
 
 def get_max_cia_impact(consequences: Iterable[Consequences]) -> dict[str, str]:
-    """Summarise the maximum worst-case CIA impact across all consequences."""
+    """Summarise the maximum realistic-case CIA impact across all consequences."""
 
     result: dict[str, str] = {
         "confidentiality": "Very Low",
@@ -148,7 +148,7 @@ def get_max_cia_impact(consequences: Iterable[Consequences]) -> dict[str, str]:
         prop = (consequence.security_property or "").strip().lower()
         if prop not in result:
             continue
-        candidate = consequence.consequence_worstcase or consequence.consequence_realisticcase or "Very Low"
+        candidate = consequence.consequence_realisticcase or consequence.consequence_worstcase or "Very Low"
         if get_impact_level(candidate) > get_impact_level(result[prop]):
             result[prop] = candidate
 

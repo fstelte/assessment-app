@@ -11,6 +11,7 @@ from typing import Any
 
 import click
 from flask import Flask
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from .config import Settings
 from .core.registry import AppRegistry
@@ -18,6 +19,7 @@ from .core.security import init_session_security
 from .core.security_headers import init_security_headers
 from .templates.navigation import build_navigation
 from .extensions import db, login_manager, migrate
+from .apps.identity.models import ROLE_ADMIN, ensure_default_roles
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -35,6 +37,12 @@ def create_app(settings: Settings | None = None) -> Flask:
     _register_apps(app, app_settings)
     _register_cli_commands(app)
     app.context_processor(lambda: {"nav_entries": lambda: build_navigation(app)})
+
+    with app.app_context():
+        try:
+            ensure_default_roles()
+        except (OperationalError, ProgrammingError):  # pragma: no cover - happens before migrations
+            app.logger.debug("Default role provisioning skipped; tables not ready yet.", exc_info=True)
 
     return app
 
@@ -93,9 +101,9 @@ def _register_cli_commands(app: Flask) -> None:
         from .extensions import db
         from .apps.identity.models import Role, User, UserStatus
 
-        admin_role = Role.query.filter_by(name="admin").first()
+        admin_role = Role.query.filter_by(name=ROLE_ADMIN).first()
         if admin_role is None:
-            admin_role = Role(name="admin", description="Platform administrator")
+            admin_role = Role(name=ROLE_ADMIN, description="Platform administrator")
             db.session.add(admin_role)
             db.session.commit()
 

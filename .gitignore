@@ -46,7 +46,7 @@ instance/*.log
 
 # Generated exports
 scaffold/apps/bia/exports/
-bia_app/app/exports/
+scaffold/exports/
 
 # Local environment overrides
 .env

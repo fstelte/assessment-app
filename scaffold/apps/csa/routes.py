@@ -25,7 +25,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from ...extensions import db
-from ..identity.models import User, UserStatus
+from ..identity.models import (
+    ROLE_ADMIN,
+    ROLE_ASSESSMENT_MANAGER,
+    User,
+    UserStatus,
+)
 from .forms import (
     AssessmentAssignForm,
     AssessmentReviewForm,
@@ -88,6 +93,10 @@ def inject_status_helpers() -> dict[str, object]:
     }
 
 
+def _has_assessment_management_role() -> bool:
+    return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
+
+
 def _slugify_filename(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
     ascii_only = normalized.encode("ascii", "ignore").decode("ascii", "ignore")
@@ -98,7 +107,7 @@ def _slugify_filename(value: str) -> str:
 
 
 def _require_assignment_permission() -> None:
-    if not (current_user.has_role("admin") or current_user.has_role("manager")):
+    if not _has_assessment_management_role():
         abort(403)
 
 
@@ -211,6 +220,8 @@ def dashboard():
 @bp.route("/assessments/start", methods=["GET", "POST"])
 @login_required
 def start_assessment():
+    _require_assignment_permission()
+
     form = AssessmentStartForm()
     templates = _ordered_templates()
     form.template_id.choices = [
@@ -223,7 +234,7 @@ def start_assessment():
     ]
 
     if not templates:
-        if current_user.has_role("admin"):
+        if current_user.has_role(ROLE_ADMIN):
             flash("No templates available yet. Import controls first.", "warning")
             return redirect(url_for("csa.import_controls"))
         flash("There are no active templates yet. Contact an administrator.", "warning")
@@ -277,14 +288,14 @@ def assign_assessment():
     form.assignee_id.choices = [(user.id, user.full_name) for user in active_users]
 
     if not templates:
-        if current_user.has_role("admin"):
+        if current_user.has_role(ROLE_ADMIN):
             flash("No templates available. Import controls first.", "warning")
             return redirect(url_for("csa.import_controls"))
         flash("No templates available. Contact an administrator.", "warning")
         return redirect(url_for("template.index"))
 
     if not active_users:
-        if current_user.has_role("admin"):
+        if current_user.has_role(ROLE_ADMIN):
             flash("There are no active users to assign assessments to.", "warning")
             return redirect(url_for("admin.list_users"))
         flash("There are no active users to assign assessments to.", "warning")
@@ -353,16 +364,14 @@ def overview_assessments():
 @login_required
 def view_assessment(assessment_id: int):
     assessment = Assessment.query.get_or_404(assessment_id)
-    if not _user_can_access(assessment) and not (
-        current_user.has_role("admin") or current_user.has_role("manager")
-    ):
+    if not _user_can_access(assessment) and not _has_assessment_management_role():
         abort(403)
 
     question_set = assessment.template.question_set or {}
     form_class, layout = build_assessment_response_form(question_set)
     response_form = form_class()
 
-    review_allowed = current_user.has_role("admin") or current_user.has_role("manager")
+    review_allowed = _has_assessment_management_role()
     review_form = None
     if review_allowed and assessment.status == AssessmentStatus.SUBMITTED:
         review_form = AssessmentReviewForm()
@@ -486,7 +495,7 @@ def export_assessment(assessment_id: int):
         .get_or_404(assessment_id)
     )
 
-    if not (current_user.has_role("admin") or current_user.has_role("manager")) and not _user_can_access(assessment):
+    if not _has_assessment_management_role() and not _user_can_access(assessment):
         abort(403)
 
     responses_lookup = {
@@ -578,7 +587,7 @@ def export_assessment(assessment_id: int):
 @bp.route("/controls/import", methods=["GET", "POST"])
 @login_required
 def import_controls():
-    if not current_user.has_role("admin"):
+    if not current_user.has_role(ROLE_ADMIN):
         abort(403)
 
     form = ControlImportForm()

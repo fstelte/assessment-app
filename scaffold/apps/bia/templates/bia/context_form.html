@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{% if item %}Edit BIA{% else %}New BIA{% endif %}{% endblock %}
 {% block content %}
+{% set is_dark = theme != 'light' %}
+{% set border_class = 'border-secondary' if is_dark else 'border-secondary-subtle' %}
+{% set card_surface = 'bg-dark ' ~ border_class if is_dark else 'bg-white ' ~ border_class %}
+{% set outline_inverse = 'btn-outline-light' if is_dark else 'btn-outline-dark' %}
+{% set text_muted = 'text-secondary' if is_dark else 'text-muted' %}
 <div class="mb-4">
-  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+  <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; Back to dashboard</a>
 </div>
 
 <div class="row justify-content-center">
   <div class="col-lg-9 col-xl-8">
-    <div class="card bg-dark border-secondary mb-4">
+    <div class="card {{ card_surface }} mb-4">
       <div class="card-body p-4">
         <h1 class="h3 mb-4">{% if item %}Edit {{ item.name }}{% else %}Create a new BIA{% endif %}</h1>
         <form method="post">
           {{ form.hidden_tag() }}
 
-          <h2 class="h5 text-uppercase text-secondary mb-3">General information</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mb-3">General information</h2>
           <div class="row g-3">
             <div class="col-md-6">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}</div>
             <div class="col-md-6">{{ form.user_amount.label(class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
@@ -25,9 +30,17 @@
           <div class="mt-3">{{ form.service_description.label(class="form-label") }}{{ form.service_description(class="form-control", rows=3) }}</div>
           <div class="mt-3">{{ form.scope_description.label(class="form-label") }}{{ form.scope_description(class="form-control", rows=3) }}</div>
 
-          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Contacts</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Contacts</h2>
           <div class="row g-3">
-            <div class="col-md-6">{{ form.responsible.label(class="form-label") }}{{ form.responsible(class="form-control") }}</div>
+            <div class="col-md-6">
+              {{ form.responsible.label(class="form-label") }}
+              {% if can_assign_owner|default(False) %}
+                {{ form.responsible(class="form-control") }}
+              {% else %}
+                {{ form.responsible(class="form-control", readonly=True) }}
+                <div class="form-text {{ text_muted }}">Only assessment managers or administrators can assign the owner.</div>
+              {% endif %}
+            </div>
             <div class="col-md-6">{{ form.coordinator.label(class="form-label") }}{{ form.coordinator(class="form-control") }}</div>
             <div class="col-md-6">{{ form.project_leader.label(class="form-label") }}{{ form.project_leader(class="form-control") }}</div>
             <div class="col-md-6">{{ form.product_owner.label(class="form-label") }}{{ form.product_owner(class="form-control") }}</div>
@@ -37,14 +50,14 @@
             <div class="col-md-6">{{ form.incident_contact.label(class="form-label") }}{{ form.incident_contact(class="form-control") }}</div>
           </div>
 
-          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Dependencies & contracts</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Dependencies & contracts</h2>
           <div class="mt-3">{{ form.mission_critical.label(class="form-label") }}{{ form.mission_critical(class="form-control", rows=2) }}</div>
           <div class="mt-3">{{ form.knowledge.label(class="form-label") }}{{ form.knowledge(class="form-control", rows=2) }}</div>
           <div class="mt-3">{{ form.interfaces.label(class="form-label") }}{{ form.interfaces(class="form-control", rows=2) }}</div>
           <div class="mt-3">{{ form.support_contracts.label(class="form-label") }}{{ form.support_contracts(class="form-control") }}</div>
           <div class="mt-3">{{ form.security_supplier.label(class="form-label") }}{{ form.security_supplier(class="form-control") }}</div>
 
-          <h2 class="h5 text-uppercase text-secondary mt-4 mb-3">Risk posture</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Risk posture</h2>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="form-check form-switch">
@@ -81,7 +94,7 @@
     </div>
 
     {% if item %}
-    <div class="card bg-dark border-secondary mb-4">
+  <div class="card {{ card_surface }} mb-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h5 mb-0">Related components</h2>
@@ -92,13 +105,13 @@
         <div class="row g-3" id="bia-component-list">
           {% for component in item.components %}
           <div class="col-md-6 col-xl-4" data-component-id="{{ component.id }}">
-            <div class="card border-secondary h-100">
+            <div class="card {{ card_surface }} h-100">
               <div class="card-body">
-                <h3 class="h6 text-uppercase text-secondary">{{ component.name }}</h3>
-                <p class="text-secondary small mb-3">Linked to {{ item.name }}</p>
+                <h3 class="h6 text-uppercase {{ text_muted }}">{{ component.name }}</h3>
+                <p class="{{ text_muted }} small mb-3">Linked to {{ item.name }}</p>
                 <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-outline-light btn-sm w-50 bia-view-component" data-component-id="{{ component.id }}">
-                    <i class="fas fa-eye me-1"></i>View
+                  <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="{{ component.id }}">
+                              <i class="fas fa-eye me-1"></i>View
                   </button>
                   <button type="button" class="btn btn-outline-danger btn-sm w-50 bia-delete-component" data-component-id="{{ component.id }}">
                     <i class="fas fa-trash me-1"></i>Delete
@@ -116,15 +129,15 @@
       </div>
     </div>
 
-    <div class="card bg-dark border-secondary">
+    <div class="card {{ card_surface }}">
       <div class="card-body">
         <h2 class="h5 mb-3">Next steps</h2>
-        <p class="text-secondary mb-3">Use these quick links to continue refining {{ item.name }}.</p>
+        <p class="{{ text_muted }} mb-3">Use these quick links to continue refining {{ item.name }}.</p>
         <div class="d-flex flex-wrap gap-2">
-          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-light btn-sm">View BIA</a>
-          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Manage summary</a>
-          <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Export HTML</a>
-          <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-light btn-sm">Export CSV</a>
+          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">View BIA</a>
+          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage summary</a>
+          <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Export HTML</a>
+          <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Export CSV</a>
         </div>
       </div>
     </div>
@@ -132,31 +145,31 @@
     <!-- View component modal -->
     <div class="modal fade" id="biaViewComponentModal" tabindex="-1" aria-labelledby="biaViewComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content bg-dark border-secondary">
-          <div class="modal-header border-secondary">
+        <div class="modal-content {{ card_surface }}">
+          <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaViewComponentModalLabel">Component details</h2>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <dl class="row mb-0">
-              <dt class="col-sm-4 text-secondary">Name</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Name</dt>
               <dd class="col-sm-8" id="bia-view-component-name"></dd>
-              <dt class="col-sm-4 text-secondary">Information type</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Information type</dt>
               <dd class="col-sm-8" id="bia-view-component-info-type"></dd>
-              <dt class="col-sm-4 text-secondary">Owner</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Owner</dt>
               <dd class="col-sm-8" id="bia-view-component-info-owner"></dd>
-              <dt class="col-sm-4 text-secondary">User type</dt>
+              <dt class="col-sm-4 {{ text_muted }}">User type</dt>
               <dd class="col-sm-8" id="bia-view-component-user-type"></dd>
-              <dt class="col-sm-4 text-secondary">Dependencies</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Dependencies</dt>
               <dd class="col-sm-8" id="bia-view-component-process"></dd>
-              <dt class="col-sm-4 text-secondary">Description</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Description</dt>
               <dd class="col-sm-8" id="bia-view-component-description"></dd>
-              <dt class="col-sm-4 text-secondary">Consequences</dt>
+              <dt class="col-sm-4 {{ text_muted }}">Consequences</dt>
               <dd class="col-sm-8"><span id="bia-view-component-consequences"></span></dd>
             </dl>
           </div>
-          <div class="modal-footer border-secondary">
-            <a class="btn btn-outline-light" id="bia-view-consequences-link" target="_blank" rel="noopener">View consequences</a>
+          <div class="modal-footer {{ border_class }}">
+            <a class="btn {{ outline_inverse }}" id="bia-view-consequences-link" target="_blank" rel="noopener">View consequences</a>
             <button type="button" class="btn btn-primary" id="bia-edit-component-launch" data-component-id="">
               <i class="fas fa-edit me-1"></i>Edit
             </button>
@@ -171,10 +184,10 @@
     <!-- Add component modal -->
     <div class="modal fade" id="biaAddComponentModal" tabindex="-1" aria-labelledby="biaAddComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content bg-dark border-secondary">
-          <div class="modal-header border-secondary">
+        <div class="modal-content {{ card_surface }}">
+          <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaAddComponentModalLabel">Add new component</h2>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <form id="bia-component-form">
@@ -205,7 +218,7 @@
               </div>
             </form>
           </div>
-          <div class="modal-footer border-secondary">
+          <div class="modal-footer {{ border_class }}">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" id="bia-save-component">Save component</button>
           </div>
@@ -216,10 +229,10 @@
     <!-- Edit component modal -->
     <div class="modal fade" id="biaEditComponentModal" tabindex="-1" aria-labelledby="biaEditComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content bg-dark border-secondary">
-          <div class="modal-header border-secondary">
+        <div class="modal-content {{ card_surface }}">
+          <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaEditComponentModalLabel">Edit component</h2>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <form id="bia-edit-component-form">
@@ -251,7 +264,7 @@
               </div>
             </form>
           </div>
-          <div class="modal-footer border-secondary">
+          <div class="modal-footer {{ border_class }}">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" id="bia-save-edit-component">Save changes</button>
           </div>
@@ -333,12 +346,14 @@
         wrapper.className = 'col-md-6 col-xl-4';
         wrapper.dataset.componentId = component.id;
         wrapper.innerHTML = `
-          <div class="card border-secondary h-100">
+          <div class="card {{ card_surface }} h-100">
             <div class="card-body">
-              <h3 class="h6 text-uppercase text-secondary">${component.name}</h3>
-              <p class="text-secondary small mb-3">Linked to {{ item.name }}</p>
+              <h3 class="h6 text-uppercase {{ text_muted }}">
+                ${component.name}
+              </h3>
+              <p class="{{ text_muted }} small mb-3">Linked to {{ item.name }}</p>
               <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-light btn-sm w-50 bia-view-component" data-component-id="${component.id}">
+                <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="${component.id}">
                   <i class="fas fa-eye me-1"></i>View
                 </button>
                 <button type="button" class="btn btn-outline-danger btn-sm w-50 bia-delete-component" data-component-id="${component.id}">

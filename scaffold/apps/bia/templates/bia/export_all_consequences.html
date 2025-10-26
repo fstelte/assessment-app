@@ -37,8 +37,8 @@
                   <th scope="col">Component</th>
                   <th scope="col">Category</th>
                   <th scope="col">Security property</th>
-                  <th scope="col">Worst case</th>
                   <th scope="col">Realistic case</th>
+                  <th scope="col">Worst case</th>
                 </tr>
               </thead>
               <tbody>
@@ -50,12 +50,12 @@
                   <td>{{ consequence.consequence_category or 'N/A' }}</td>
                   <td><span class="badge text-bg-info text-uppercase">{{ consequence.security_property or 'N/A' }}</span></td>
                   <td>
-                    {% set worst = consequence.consequence_worstcase or 'N/A' %}
-                    <span class="badge impact-badge {{ bia_get_impact_color(worst) }}">{{ worst }}</span>
-                  </td>
-                  <td>
                     {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
                     <span class="badge impact-badge {{ bia_get_impact_color(realistic) }}">{{ realistic }}</span>
+                  </td>
+                  <td>
+                    {% set worst = consequence.consequence_worstcase or 'N/A' %}
+                    <span class="badge impact-badge {{ bia_get_impact_color(worst) }}">{{ worst }}</span>
                   </td>
                 </tr>
                 {% else %}
