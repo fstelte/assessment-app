@@ -568,10 +568,17 @@ def change_password():
 @bp.route("/export_data_inventory")
 @login_required
 def export_data_inventory():
+    """Export an inventory of all components and their BIA context as CSV.
+
+    This mirrors the legacy behaviour: build a small CSV with BIA, component,
+    information type, owner and administrator and return the generated file.
+    """
+
     components = Component.query.join(ContextScope).all()
     csv_buffer = io.StringIO()
     writer = csv.writer(csv_buffer)
-    writer.writerow(["BIA", "Component", "Information", "Owner", "Administrator"])
+    # Use friendly headers similar to the legacy exporter
+    writer.writerow(["BIA", "Systeem", "Informatie", "Eigenaar", "Beheer"])
     for component in components:
         writer.writerow(
             [
@@ -594,11 +601,15 @@ def export_data_inventory():
 def export_all_consequences():
     export_type = request.args.get("type", "detailed")
     bias = ContextScope.query.all()
+    # Summary export: produce a compact per-BIA summary of counts and max impacts
     if export_type == "summary":
         summaries = []
         for bia in bias:
             consequences = [consequence for component in bia.components for consequence in component.consequences]
             if not consequences:
+                continue
+            # Only include BIAs that actually have components and consequences
+            if len(bia.components) == 0 or len(consequences) == 0:
                 continue
             summaries.append(
                 {
@@ -615,6 +626,7 @@ def export_all_consequences():
         )
         filename = f"CIA_Consequences_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
+        # Detailed export: list every consequence with its parent BIA and component
         all_consequences = []
         for bia in bias:
             for component in bia.components:

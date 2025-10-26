@@ -52,3 +52,7 @@ bia_app/app/exports/
 .env
 .env.*
 instance/scaffold.db
+poetry.lock
+scaffold/exports/Data_Inventory_20251026_100052.csv
+scaffold/exports/CIA_Consequences_Summary_20251026_100116.html
+scaffold/exports/All_CIA_Consequences_20251026_100057.html

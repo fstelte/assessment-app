@@ -26,6 +26,9 @@
 					<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary btn-sm">New BIA</a>
 					<a href="{{ url_for('bia.import_csv_view') }}" class="btn btn-outline-light btn-sm">Import CSV</a>
 					<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary btn-sm">Import SQL</a>
+					<a href="{{ url_for('bia.export_data_inventory') }}" class="btn btn-outline-secondary btn-sm">Export data inventory (CSV)</a>
+					<a href="{{ url_for('bia.export_all_consequences') }}" class="btn btn-outline-secondary btn-sm">Export CIA consequences (detailed)</a>
+					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="btn btn-outline-secondary btn-sm">Export CIA consequences (summary)</a>
 				</div>
 			</div>
 		</nav>
