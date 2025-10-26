@@ -149,6 +149,8 @@ def mfa_verify():
 @login_required
 def profile():
     form = ProfileForm(obj=current_user)
+    if not form.is_submitted():
+        form.theme.data = current_user.theme_preference or "dark"
     if form.validate_on_submit():
         updated = False
 
