@@ -6,8 +6,11 @@ bia_app and csa_app domains while remaining extensible for future modules.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
+
+import tomllib
 
 import click
 from flask import Flask
@@ -36,7 +39,12 @@ def create_app(settings: Settings | None = None) -> Flask:
     init_security_headers(app)
     _register_apps(app, app_settings)
     _register_cli_commands(app)
-    app.context_processor(lambda: {"nav_entries": lambda: build_navigation(app)})
+    @app.context_processor
+    def inject_template_helpers() -> dict[str, Any]:
+        return {
+            "nav_entries": lambda: build_navigation(app),
+            "app_meta": _load_app_metadata(),
+        }
 
     with app.app_context():
         try:
@@ -129,3 +137,33 @@ def _register_cli_commands(app: Flask) -> None:
 
         db.session.commit()
         click.echo("Administrator account created or updated.")
+
+
+@lru_cache(maxsize=1)
+def _load_app_metadata() -> dict[str, str]:
+    """Return cached project metadata for templates."""
+
+    project_root = Path(__file__).resolve().parent.parent
+    pyproject_path = project_root / "pyproject.toml"
+    version = "0.0.0"
+    author = "Unknown author"
+    repo_url = "https://github.com/fstelte/assessment-app"
+    changelog_url = f"{repo_url}/blob/main/docs/history.md"
+
+    if pyproject_path.exists():
+        try:
+            data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+            poetry = data.get("tool", {}).get("poetry", {})
+            version = poetry.get("version", version)
+            authors = poetry.get("authors")
+            if isinstance(authors, list) and authors:
+                author = authors[0]
+        except (tomllib.TOMLDecodeError, OSError):  # pragma: no cover - defensive
+            pass
+
+    return {
+        "version": version,
+        "author": author,
+        "repository": repo_url,
+        "changelog": changelog_url,
+    }
