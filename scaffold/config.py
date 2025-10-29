@@ -11,6 +11,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.admin",
     "scaffold.apps.bia",
     "scaffold.apps.csa",
+    "scaffold.apps.pages",
     "scaffold.apps.template",
 ]
 

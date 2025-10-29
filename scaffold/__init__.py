@@ -13,7 +13,9 @@ from typing import Any
 import tomllib
 
 import click
-from flask import Flask
+from flask import Flask, request, session, url_for
+from werkzeug.routing import BuildError
+from flask_login import current_user
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from .config import Settings
@@ -21,6 +23,12 @@ from .core.registry import AppRegistry
 from .core.security import init_session_security
 from .core.security_headers import init_security_headers
 from .templates.navigation import build_navigation
+from .core.i18n import (
+    TranslationManager,
+    get_locale,
+    session_storage_key,
+    set_locale,
+)
 from .extensions import db, login_manager, migrate
 from .apps.identity.models import ROLE_ADMIN, ensure_default_roles
 
@@ -39,11 +47,43 @@ def create_app(settings: Settings | None = None) -> Flask:
     init_security_headers(app)
     _register_apps(app, app_settings)
     _register_cli_commands(app)
+    translations_path = Path(app.root_path) / "translations"
+    i18n_manager = TranslationManager(translations_path)
+    app.extensions["i18n"] = i18n_manager
+    app.jinja_env.globals.setdefault("_", lambda key, **kwargs: i18n_manager.translate(key, locale=get_locale(), **kwargs))
+
+    @app.before_request
+    def _determine_locale() -> None:
+        requested = (request.args.get("lang") or "").strip()
+        stored = session.get(session_storage_key())
+        user_locale = None
+        if current_user.is_authenticated:
+            user_locale = getattr(current_user, "locale_preference", None)
+
+        available_locales = i18n_manager.available_locales()
+        if not available_locales:
+            available_locales = [i18n_manager.default_locale]
+        available_set = set(available_locales)
+
+        candidates = [requested, user_locale, stored if isinstance(stored, str) else None, i18n_manager.default_locale]
+        target_locale = next((loc for loc in candidates if loc and loc in available_set), i18n_manager.default_locale)
+
+        set_locale(target_locale)
+        session[session_storage_key()] = get_locale()
+
     @app.context_processor
     def inject_template_helpers() -> dict[str, Any]:
+        metadata = dict(_load_app_metadata())
+        try:
+            metadata["changelog"] = url_for("pages.changelog")
+        except (RuntimeError, BuildError):
+            # Fallback in scenarios where the route is not available yet (e.g. migrations)
+            metadata.setdefault("changelog", "#")
         return {
             "nav_entries": lambda: build_navigation(app),
-            "app_meta": _load_app_metadata(),
+            "app_meta": metadata,
+            "current_locale": get_locale(),
+            "available_locales": i18n_manager.available_locales(),
         }
 
     with app.app_context():

@@ -6,7 +6,7 @@ from .routes import bp
 from ...templates.navigation import NavEntry
 
 NAVIGATION = [
-    NavEntry(endpoint="bia.dashboard", label="BIA", order=20),
+    NavEntry(endpoint="bia.dashboard", label="app.navigation.bia", order=20),
 ]
 
 

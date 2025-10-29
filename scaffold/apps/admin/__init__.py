@@ -12,5 +12,5 @@ def register(app):
 
 
 NAVIGATION = [
-    NavEntry(endpoint="admin.list_users", label="Admin", order=80),
+    NavEntry(endpoint="admin.list_users", label="app.navigation.admin", order=80),
 ]

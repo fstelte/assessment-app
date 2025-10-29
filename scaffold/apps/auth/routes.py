@@ -7,6 +7,7 @@ from flask_login import current_user, login_required, logout_user
 
 from ...extensions import db
 from ..identity.models import User, UserStatus
+from ...core.i18n import get_locale, session_storage_key, set_locale, gettext as _
 from .flow import (
     clear_mfa_state,
     current_remember_me,
@@ -63,6 +64,10 @@ def login():
         return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
 
     form = LoginForm()
+    form.email.label.text = _("auth.login.email")
+    form.password.label.text = _("auth.login.password")
+    form.remember_me.label.text = _("auth.login.remember_me")
+    form.submit.label.text = _("auth.login.submit")
     if form.validate_on_submit():
         user = User.find_by_email(form.email.data or "")
         if user is None or not user.check_password(form.password.data or ""):
@@ -149,8 +154,20 @@ def mfa_verify():
 @login_required
 def profile():
     form = ProfileForm(obj=current_user)
+    manager = current_app.extensions.get("i18n")
+    available_locales = manager.available_locales() if manager else ["en"]
+    if not available_locales:
+        available_locales = ["en"]
+
+    def _label(locale_code: str) -> str:
+        if manager:
+            return manager.translate(f"app.language.option.{locale_code}", locale=get_locale())
+        return locale_code.upper()
+
+    form.locale.choices = [(code, _label(code)) for code in available_locales]
     if not form.is_submitted():
         form.theme.data = current_user.theme_preference or "dark"
+        form.locale.data = current_user.locale_preference or available_locales[0]
     if form.validate_on_submit():
         updated = False
 
@@ -162,6 +179,11 @@ def profile():
             updated = True
         if form.theme.data and form.theme.data != current_user.theme_preference:
             current_user.theme_preference = form.theme.data
+            updated = True
+        if form.locale.data and form.locale.data != current_user.locale_preference:
+            current_user.locale_preference = form.locale.data
+            session[session_storage_key()] = current_user.locale_preference
+            set_locale(current_user.locale_preference)
             updated = True
 
         if form.new_password.data:

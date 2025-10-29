@@ -1,0 +1,99 @@
+{
+  "app": {
+    "title": "Assessment Platform",
+    "footer": {
+      "version": "Version {version}",
+      "built_by": "Built by {author}",
+      "github": "GitHub",
+      "changelog": "Change log"
+    },
+    "navigation": {
+      "brand": "Assessment Platform",
+      "home": "Home",
+      "bia": "BIA",
+      "profile": "Profile",
+      "admin": "Admin",
+      "logout": "Logout",
+      "login": "Login",
+      "register": "Register"
+    },
+    "home": {
+      "subtitle": "Unified workspace for Business Impact Analysis and Control Self Assessment modules."
+    },
+    "language": {
+      "label": "Language",
+      "option": {
+        "en": "English",
+        "nl": "Nederlands"
+      }
+    }
+  },
+  "bia": {
+    "flash": {
+      "created": "BIA created successfully.",
+      "updated": "BIA updated successfully.",
+      "deleted": "BIA deleted.",
+      "owner_forbidden": "Only the assigned assessment owner can edit this BIA.",
+      "owner_delete_forbidden": "Only the assigned assessment owner can delete this BIA.",
+      "owner_permission_denied": "You do not have permission to assign BIA ownership.",
+      "invalid_owner": "Invalid owner selection.",
+      "unavailable_owner": "Selected owner is not available.",
+      "owner_cleared": "Owner cleared.",
+      "owner_set": "Owner set to {name}.",
+      "summary_updated": "Summary updated.",
+      "summary_deleted": "Summary deleted.",
+      "csv_export_created": "CSV export created.",
+      "file_not_found": "Requested file was not found.",
+      "csv_required": "The BIA CSV file is required.",
+      "csv_import_success": "CSV files imported successfully.",
+      "csv_import_failed": "CSV import failed: {details}",
+      "password_updated": "Password updated.",
+      "current_password_invalid": "Current password was invalid.",
+      "sql_export_failed": "Failed to export SQL: {details}",
+      "sql_import_success": "SQL file imported successfully.",
+      "sql_import_unexpected": "Unexpected error while importing SQL."
+    }
+  },
+  "auth": {
+    "profile": {
+      "title": "Profile",
+      "manage_mfa": "Manage MFA"
+    },
+    "login": {
+      "title": "Sign in",
+      "heading": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "remember_me": "Remember me",
+      "submit": "Sign in"
+    }
+  },
+  "messages": {
+    "generic_error": "Something went wrong."
+  },
+  "pages": {
+    "changelog": {
+      "title": "Change log",
+      "intro": "Track feature updates and fixes delivered to the assessment platform.",
+      "updated": "Last updated {date}",
+      "archive_note": "For earlier milestones see docs/history.md in the repository.",
+      "entries": {
+        "20251029": {
+          "title": "Localization enhancements",
+          "items": {
+            "locale_preference": "Added per-user language preference managed from the profile page.",
+            "login_selector": "Introduced language selector on the login page with session persistence for guests.",
+            "catalog_repair": "Rebuilt translation catalogs to restore English labels and align Dutch equivalents."
+          }
+        },
+        "20251024": {
+          "title": "Initial scaffold",
+          "items": {
+            "foundation": "Bootstrapped the modular Flask scaffold with shared configuration and navigation.",
+            "documentation": "Documented architecture, deployments, and future migration roadmap."
+          }
+        }
+      }
+    }
+  }
+}

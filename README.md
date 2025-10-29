@@ -7,6 +7,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Consolidated SQLAlchemy metadata spanning BIA and CSA domains.
 - Unified authentication with MFA, role management, and session security hardening.
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
+ - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
 
@@ -30,6 +31,28 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 6. **Quality checks**
    - Run `poetry run lint` for Ruff and Black in check mode.
    - Run `poetry run test` for the pytest suite.
+
+   ## Internationalisation
+
+   The platform offers lightweight JSON-driven localisation that allows text to be translated without duplicating templates.
+
+   - **Translation files** live under `scaffold/translations/<locale>.json`. The default locale is `en`; add additional locales by dropping a new JSON file beside it. Nested keys mirror their usage in code, for example:
+
+      ```json
+      {
+         "app": {
+            "title": "Assessment Platform"
+         }
+      }
+      ```
+
+   - **Lookup helper**: use the `_()` function in templates (`{{ _('app.title') }}`) and the `gettext` helper in Python modules (`from scaffold.core.i18n import gettext as _`). Placeholders follow Python `str.format` semantics (`"Welcome {name}"`).
+
+   - **Active locale detection** happens per request: a `lang=<locale>` query parameter overrides the session preference which is stored under the key reported by `session_storage_key()`. The selected locale is exposed to templates via the `current_locale` variable along with `available_locales` for building selectors.
+
+   - **Extending translations**: when adding new UI copy, prefer wrapping strings with `_()` and creating matching entries in each locale JSON file. Missing keys gracefully fall back to the default locale, and unresolved keys render the original identifier to aid debugging.
+
+   - **Reloading**: translation files are read when the app starts. Reload the server after editing JSON files or call `TranslationManager.reload()` if hot-swapping translations programmatically.
 
 ## Deployment
 

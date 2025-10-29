@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('pages.changelog.title') }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h1 class="mb-3">{{ _('pages.changelog.title') }}</h1>
+    <p class="text-secondary">{{ _('pages.changelog.intro') }}</p>
+    {% if last_updated %}
+      <p class="text-secondary small">{{ _('pages.changelog.updated', date=last_updated) }}</p>
+    {% endif %}
+    {% for entry in entries %}
+      <section class="mb-5">
+        <h2 class="h4 mb-1">{{ entry.version }} · {{ _(entry.title_key) }}</h2>
+        <p class="text-secondary small mb-2">{{ entry.date }}</p>
+        <ul class="ps-3">
+          {% for item_key in entry.item_keys %}
+            <li>{{ _(item_key) }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+    <p class="text-secondary small">{{ _('pages.changelog.archive_note') }}</p>
+  </div>
+</div>
+{% endblock %}

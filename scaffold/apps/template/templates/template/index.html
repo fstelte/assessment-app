@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Assessment Platform{% endblock %}
+{% block title %}{{ _('app.title') }}{% endblock %}
 {% block content %}
 <div class="text-center py-5">
-  <h1 class="display-5 fw-bold">Assessment Platform</h1>
-  <p class="lead mt-3">Unified workspace for Business Impact Analysis and Control Self Assessment modules.</p>
+  <h1 class="display-5 fw-bold">{{ _('app.title') }}</h1>
+  <p class="lead mt-3">{{ _('app.home.subtitle') }}</p>
   <div class="row g-3 mt-4 justify-content-center">
     {% for entry in nav_entries() if entry.endpoint not in ['auth.login', 'auth.register_user'] %}
       <div class="col-auto">
-        <a class="btn btn-outline-light" href="{{ entry.url }}">{{ entry.label }}</a>
+        <a class="btn btn-outline-light" href="{{ entry.url }}">{{ _(entry.label) }}</a>
       </div>
     {% endfor %}
   </div>

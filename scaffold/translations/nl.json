@@ -1,0 +1,99 @@
+{
+  "app": {
+    "title": "Assessment Platform",
+    "footer": {
+      "version": "Versie {version}",
+      "built_by": "Gemaakt door {author}",
+      "github": "GitHub",
+      "changelog": "Wijzigingslog"
+    },
+    "navigation": {
+      "brand": "Assessment Platform",
+      "home": "Start",
+      "bia": "BIA",
+      "profile": "Profiel",
+      "admin": "Beheer",
+      "logout": "Afmelden",
+      "login": "Aanmelden",
+      "register": "Registreren"
+    },
+    "home": {
+      "subtitle": "Eén omgeving voor Business Impact Analysis en Control Self Assessment modules."
+    },
+    "language": {
+      "label": "Taal",
+      "option": {
+        "en": "Engels",
+        "nl": "Nederlands"
+      }
+    }
+  },
+  "bia": {
+    "flash": {
+      "created": "BIA succesvol aangemaakt.",
+      "updated": "BIA succesvol bijgewerkt.",
+      "deleted": "BIA verwijderd.",
+      "owner_forbidden": "Alleen de toegewezen eigenaar van de beoordeling mag deze BIA bewerken.",
+      "owner_delete_forbidden": "Alleen de toegewezen eigenaar van de beoordeling mag deze BIA verwijderen.",
+      "owner_permission_denied": "Je hebt geen rechten om de BIA-eigenaar toe te wijzen.",
+      "invalid_owner": "Ongeldige eigenaar geselecteerd.",
+      "unavailable_owner": "Geselecteerde eigenaar is niet beschikbaar.",
+      "owner_cleared": "Eigenaar verwijderd.",
+      "owner_set": "Eigenaar ingesteld op {name}.",
+      "summary_updated": "Samenvatting bijgewerkt.",
+      "summary_deleted": "Samenvatting verwijderd.",
+      "csv_export_created": "CSV-export aangemaakt.",
+      "file_not_found": "Het opgevraagde bestand is niet gevonden.",
+      "csv_required": "Het BIA-CSV-bestand is verplicht.",
+      "csv_import_success": "CSV-bestanden succesvol geïmporteerd.",
+      "csv_import_failed": "CSV-import mislukt: {details}",
+      "password_updated": "Wachtwoord bijgewerkt.",
+      "current_password_invalid": "Huidig wachtwoord ongeldig.",
+      "sql_export_failed": "SQL-export mislukt: {details}",
+      "sql_import_success": "SQL-bestand succesvol geïmporteerd.",
+      "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL."
+    }
+  },
+  "auth": {
+    "profile": {
+      "title": "Profiel",
+      "manage_mfa": "MFA beheren"
+    },
+    "login": {
+      "title": "Aanmelden",
+      "heading": "Aanmelden",
+      "email": "E-mail",
+      "password": "Wachtwoord",
+      "remember_me": "Onthoud mij",
+      "submit": "Aanmelden"
+    }
+  },
+  "messages": {
+    "generic_error": "Er is iets misgegaan."
+  },
+  "pages": {
+    "changelog": {
+      "title": "Wijzigingslog",
+      "intro": "Volg de nieuwste functies en fixes voor het assessmentplatform.",
+      "updated": "Laatst bijgewerkt {date}",
+      "archive_note": "Voor eerdere mijlpalen zie docs/history.md in de repository.",
+      "entries": {
+        "20251029": {
+          "title": "Lokalisatieverbeteringen",
+          "items": {
+            "locale_preference": "Per-gebruiker taalvoorkeur toegevoegd en beheerbaar gemaakt via de profielpagina.",
+            "login_selector": "Taalselector op de inlogpagina toegevoegd met sessieopslag voor gasten.",
+            "catalog_repair": "Vertaalbestanden opnieuw opgebouwd zodat Engelse labels terugkeren en Nederlandse varianten aansluiten."
+          }
+        },
+        "20251024": {
+          "title": "Initiele scaffold",
+          "items": {
+            "foundation": "Modulaire Flask-scaffold opgezet met gedeelde configuratie en navigatie.",
+            "documentation": "Architectuur-, deploy- en migratiedocumentatie opgesteld."
+          }
+        }
+      }
+    }
+  }
+}

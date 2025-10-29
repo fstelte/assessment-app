@@ -22,5 +22,5 @@ def register(app):
 
 
 NAVIGATION = [
-    NavEntry(endpoint="template.index", label="Home", order=10),
+    NavEntry(endpoint="template.index", label="app.navigation.home", order=10),
 ]

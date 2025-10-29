@@ -22,6 +22,7 @@ from flask import (
 from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
+from ...core.i18n import gettext as _
 from ...extensions import db
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, User, UserStatus
 from .forms import (
@@ -129,7 +130,7 @@ def new_item():
         context.last_update = date.today()
         db.session.add(context)
         db.session.commit()
-        flash("BIA created successfully.", "success")
+        flash(_("bia.flash.created"), "success")
         return redirect(url_for("bia.view_item", item_id=context.id))
     return render_template(
         "bia/context_form.html",
@@ -163,7 +164,7 @@ def view_item(item_id: int):
 def edit_item(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
     if not _can_edit_context(item):
-        flash("Only the assigned assessment owner can edit this BIA.", "danger")
+        flash(_("bia.flash.owner_forbidden"), "danger")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     form = ContextScopeForm(obj=item)
@@ -173,7 +174,7 @@ def edit_item(item_id: int):
         _apply_context_form(form, item, allow_owner_assignment=can_assign_owner)
         item.last_update = date.today()
         db.session.commit()
-        flash("BIA updated successfully.", "success")
+        flash(_("bia.flash.updated"), "success")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     return render_template(
@@ -191,12 +192,12 @@ def edit_item(item_id: int):
 def delete_item(item_id: int):
     item = ContextScope.query.get_or_404(item_id)
     if not _can_edit_context(item):
-        flash("Only the assigned assessment owner can delete this BIA.", "danger")
+        flash(_("bia.flash.owner_delete_forbidden"), "danger")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     db.session.delete(item)
     db.session.commit()
-    flash("BIA deleted.", "success")
+    flash(_("bia.flash.deleted"), "success")
     return redirect(url_for("bia.dashboard"))
 
 
@@ -205,7 +206,7 @@ def delete_item(item_id: int):
 def update_owner(item_id: int):
     context = ContextScope.query.get_or_404(item_id)
     if not _can_manage_bia_owner():
-        flash("You do not have permission to assign BIA ownership.", "danger")
+        flash(_("bia.flash.owner_permission_denied"), "danger")
         return redirect(url_for("bia.dashboard"))
 
     owner_raw = (request.form.get("owner_id") or "").strip()
@@ -214,21 +215,21 @@ def update_owner(item_id: int):
         context.author = None
         context.responsible = None
         context.risk_owner = None
-        message = "Owner cleared."
+        message = _("bia.flash.owner_cleared")
     else:
         try:
             owner_id = int(owner_raw)
         except ValueError:
-            flash("Invalid owner selection.", "danger")
+            flash(_("bia.flash.invalid_owner"), "danger")
             return redirect(url_for("bia.dashboard"))
         owner = User.query.filter(User.id == owner_id, User.status == UserStatus.ACTIVE).first()
         if not owner:
-            flash("Selected owner is not available.", "danger")
+            flash(_("bia.flash.unavailable_owner"), "danger")
             return redirect(url_for("bia.dashboard"))
         context.author = owner
         context.responsible = owner.full_name
         context.risk_owner = owner.full_name
-        message = f"Owner set to {owner.full_name}."
+        message = _("bia.flash.owner_set", name=owner.full_name)
     context.last_update = date.today()
     db.session.commit()
     flash(message, "success")
@@ -555,7 +556,7 @@ def manage_summary(item_id: int):
         else:
             db.session.add(Summary(content=form.content.data, context_scope=item))
         db.session.commit()
-        flash("Summary updated.", "success")
+        flash(_("bia.flash.summary_updated"), "success")
         return redirect(url_for("bia.view_item", item_id=item.id))
     return render_template("bia/manage_summary.html", form=form, item=item)
 
@@ -569,7 +570,7 @@ def delete_summary(item_id: int):
     if item.summary:
         db.session.delete(item.summary)
         db.session.commit()
-        flash("Summary deleted.", "success")
+        flash(_("bia.flash.summary_deleted"), "success")
     return redirect(url_for("bia.view_item", item_id=item.id))
 
 
@@ -616,7 +617,7 @@ def export_csv(item_id: int):
                 "size": len(content.encode("utf-8")),
             }
         )
-    flash("CSV export created.", "success")
+    flash(_("bia.flash.csv_export_created"), "success")
     return render_template(
         "bia/csv_export_overview.html",
         item=item,
@@ -631,7 +632,7 @@ def download_csv_file(folder: str, filename: str):
     export_folder = ensure_export_folder() / folder
     file_path = export_folder / filename
     if not file_path.exists():
-        flash("Requested file was not found.", "danger")
+        flash(_("bia.flash.file_not_found"), "danger")
         return redirect(url_for("bia.dashboard"))
     return send_file(file_path, as_attachment=True, download_name=filename)
 
@@ -656,14 +657,14 @@ def import_csv_view():
                 if uploaded and uploaded.filename:
                     csv_files[key] = uploaded.read().decode("utf-8")
             if "bia" not in csv_files:
-                flash("The BIA CSV file is required.", "danger")
+                flash(_("bia.flash.csv_required"), "danger")
                 return redirect(request.url)
             import_from_csv(csv_files)
-            flash("CSV files imported successfully.", "success")
+            flash(_("bia.flash.csv_import_success"), "success")
             return redirect(url_for("bia.dashboard"))
         except Exception as exc:  # pragma: no cover - surface errors to UI
             logging.exception("CSV import failed")
-            flash(f"CSV import failed: {exc}", "danger")
+            flash(_("bia.flash.csv_import_failed", details=exc), "danger")
     return render_template("bia/import_csv.html", form=form)
 
 
@@ -676,9 +677,9 @@ def change_password():
         if current_user.check_password(form.current_password.data):
             current_user.set_password(form.new_password.data)
             db.session.commit()
-            flash("Password updated.", "success")
+            flash(_("bia.flash.password_updated"), "success")
             return redirect(url_for("bia.dashboard"))
-        flash("Current password was invalid.", "danger")
+        flash(_("bia.flash.current_password_invalid"), "danger")
     return render_template("bia/change_password.html", form=form)
 
 
@@ -811,7 +812,7 @@ def export_bia_sql(item_id: int):
         return send_file(file_path, as_attachment=True, download_name=filename)
     except Exception as exc:  # pragma: no cover - IO failures are surfaced to users
         logging.exception("SQL export failed")
-        flash(f"Failed to export SQL: {exc}", "danger")
+        flash(_("bia.flash.sql_export_failed", details=exc), "danger")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
 
@@ -822,13 +823,13 @@ def import_sql_form():
     if form.validate_on_submit():
         try:
             import_sql_file(form.sql_file.data)
-            flash("SQL file imported successfully.", "success")
+            flash(_("bia.flash.sql_import_success"), "success")
             return redirect(url_for("bia.dashboard"))
         except (ValueError, PermissionError) as exc:
             flash(str(exc), "danger")
         except Exception:  # pragma: no cover - defensive logging
             logging.exception("SQL import failed")
-            flash("Unexpected error while importing SQL.", "danger")
+            flash(_("bia.flash.sql_import_unexpected"), "danger")
     return render_template("bia/import_sql_form.html", form=form)
 
 

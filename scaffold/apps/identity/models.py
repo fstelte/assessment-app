@@ -97,6 +97,7 @@ class User(TimestampMixin, UserMixin, db.Model):
     activated_at = db.Column(db.DateTime(timezone=True))
     deactivated_at = db.Column(db.DateTime(timezone=True))
     theme_preference = db.Column(db.String(20), default="dark", nullable=False)
+    locale_preference = db.Column(db.String(10), default="en", nullable=False)
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
     mfa_setting = db.relationship(

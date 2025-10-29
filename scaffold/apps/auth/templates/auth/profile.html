@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Profile{% endblock %}
+{% block title %}{{ _('auth.profile.title') }}{% endblock %}
 {% block content %}
-<h1 class="mb-4">Profile</h1>
+<h1 class="mb-4">{{ _('auth.profile.title') }}</h1>
 <form method="post">
     {{ form.hidden_tag() }}
     <div class="row g-3">
@@ -18,6 +18,10 @@
             {{ form.theme(class="form-select") }}
         </div>
         <div class="col-md-4">
+            <label class="form-label" for="{{ form.locale.id }}">{{ _('app.language.label') }}</label>
+            {{ form.locale(class="form-select") }}
+        </div>
+        <div class="col-md-4">
             {{ form.current_password.label(class="form-label") }}
             {{ form.current_password(class="form-control") }}
         </div>
@@ -28,7 +32,7 @@
     </div>
     <div class="mt-4">
         {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('auth.mfa_manage') }}" class="btn btn-outline-light ms-2">Manage MFA</a>
+        <a href="{{ url_for('auth.mfa_manage') }}" class="btn btn-outline-light ms-2">{{ _('auth.profile.manage_mfa') }}</a>
     </div>
 </form>
 {% endblock %}

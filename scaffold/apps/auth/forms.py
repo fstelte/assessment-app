@@ -82,6 +82,7 @@ class ProfileForm(FlaskForm):
         validators=[Optional()],
         default="dark",
     )
+    locale = SelectField("Language", choices=[], validators=[Optional()], default="en")
     current_password = PasswordField("Current password", validators=[Optional()])
     new_password = PasswordField("New password", validators=[Optional(), Length(min=8, max=255)])
     submit = SubmitField("Save changes")
