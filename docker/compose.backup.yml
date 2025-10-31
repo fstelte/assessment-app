@@ -1,0 +1,22 @@
+services:
+  db-backup:
+    build:
+      context: ..
+      dockerfile: docker/backup/Dockerfile
+    image: assessment-app-db-backup:latest
+    env_file:
+      - ../.env.production
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BACKUP_RETENTION_DAYS=2
+      - BACKUP_INTERVAL_SECONDS=86400
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      - AWS_S3_PREFIX=${AWS_S3_PREFIX:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-}
+    volumes:
+      - ./backups:/backups
+    restart: unless-stopped
+    ports:
+      - "9090:9090" # status endpoint

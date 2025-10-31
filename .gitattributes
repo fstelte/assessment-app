@@ -1,0 +1,7 @@
+# Ensure shell scripts use LF line endings in the repository
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+docker/backup/entrypoint.sh text eol=lf
+docker/backup-db.sh text eol=lf
+docker/healthcheck.sh text eol=lf
+docker/serve-status.py text eol=lf

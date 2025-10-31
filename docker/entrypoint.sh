@@ -98,4 +98,35 @@ python /app/docker/wait_for_db.py
 
 flask db upgrade
 
+# Background cleaner: remove files and folders inside /app/exports older than 1 day,
+# run every 4 hours and emit timestamped logs to stdout/stderr so Docker captures them.
+start_exports_cleaner() {
+  export_dir="/app/exports"
+
+  # Only start if directory exists to avoid creating it unintentionally.
+  if [ -d "$export_dir" ]; then
+    (
+      while true; do
+        if [ -d "$export_dir" ]; then
+          # Timestamp start (stdout)
+          printf '%s - exports-cleaner: starting sweep\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+          # Find and remove items older than 1 day (mtime +0 means strictly >24h)
+          # Use -mindepth 1 to avoid deleting the exports directory itself.
+          # Print the removed paths to stdout; errors will go to stderr.
+          find "$export_dir" -mindepth 1 -mtime +0 -print -exec rm -rf -- {} + || true
+
+          # Timestamp finish (stdout)
+          printf '%s - exports-cleaner: finished sweep\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+        fi
+
+        # Sleep for 4 hours (14400 seconds)
+        sleep 14400
+      done
+    ) &
+  fi
+}
+
+start_exports_cleaner
+
 exec gunicorn --bind "0.0.0.0:${PORT:-8000}" "scaffold:create_app()"

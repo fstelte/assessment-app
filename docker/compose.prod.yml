@@ -52,6 +52,7 @@ services:
       retries: 20
     restart: unless-stopped
 
+
 volumes:
   postgres-data:
   mariadb-data:

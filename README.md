@@ -119,3 +119,67 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
    - Run `poetry run test` before shipping changes.
 
 The `docs/` directory contains deeper dives into architecture, security, and operational playbooks. Use this README as the primary entry point for provisioning environments, deploying updates, and extending the platform with additional domain apps.
+
+## Backups
+
+We provide a small backup service that creates compressed backups of the application's database and stores them outside of Docker volumes (host mount). Features:
+
+- Supports SQLite and PostgreSQL (uses `pg_dump`) and creates gzipped backups.
+- Retention: backups older than 2 days are removed automatically (configurable via `BACKUP_RETENTION_DAYS`).
+- Optional offsite upload to S3 using `AWS_S3_BUCKET` / AWS credentials.
+- Health and monitoring: a lightweight HTTP status endpoint is available on port 9090 and a Docker healthcheck validates the most recent backup timestamp.
+
+Files added in `docker/`:
+
+- `backup-db.sh` — main backup script (creates backups, retention, optional S3 upload).
+- `s3_upload.py` — optional S3 uploader used by the backup script.
+- `serve-status.py` — small HTTP server exposing `/status` for monitoring.
+- `healthcheck.sh` — script used by the Dockerfile to report container health.
+- `backup/Dockerfile` and `backup/entrypoint.sh` — image and entrypoint for the backup container.
+- `compose.backup.yml` — example compose snippet for running the backup service.
+
+Quick start (one-off backup):
+
+```powershell
+docker run --rm -v C:\path\to\backups:/backups -e SQLALCHEMY_DATABASE_URI="sqlite:///instance/scaffold.db" assessment-app /app/docker/backup-db.sh
+```
+
+Run the backup container via Compose (recommended):
+
+1. Add or merge `docker/compose.backup.yml` into your `docker-compose.yml` or include it when starting compose.
+2. Ensure you mount a host path to `./backups` (or change the volume target) so backups live outside Docker-managed volumes.
+3. Configure environment variables as needed: `DATABASE_URL`, `BACKUP_RETENTION_DAYS`, `BACKUP_INTERVAL_SECONDS`, `AWS_S3_BUCKET`, etc.
+
+Example Compose service (already available in `docker/compose.backup.yml`):
+
+```yaml
+services:
+  db-backup:
+    build:
+      context: ..
+      dockerfile: docker/backup/Dockerfile
+      image: assessment-app-db-backup:latest
+      environment:
+         - DATABASE_URL=${DATABASE_URL}
+         - BACKUP_RETENTION_DAYS=2
+         - BACKUP_INTERVAL_SECONDS=86400
+         - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      volumes:
+         - ./backups:/backups
+      restart: unless-stopped
+      ports:
+         - "9090:9090"
+```
+
+Start the application and the backup service together using the following command:
+
+```bash
+docker compose -f docker/compose.prod.yml -f docker/compose.backup.yml --profile postgres up --build --force-recreate
+```
+
+Notes:
+
+- For Postgres backups the container must be able to reach the database host and credentials must be valid.
+- For consistent SQLite backups consider briefly stopping the app or scheduling backups during low traffic.
+- S3 upload requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (or an attached IAM role in your platform).
+

@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/poetry/bin:$PATH"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev libmariadb-dev ca-certificates curl \
+    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev libmariadb-dev ca-certificates curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - \
     && poetry config virtualenvs.create false
@@ -21,7 +21,8 @@ RUN poetry install --only main --no-interaction --no-ansi --no-root
 COPY . /app
 
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Ensure entrypoint uses LF endings inside the image (strip CRLF if present on host)
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENV FLASK_APP=scaffold:create_app
 ENV FLASK_ENV=production
