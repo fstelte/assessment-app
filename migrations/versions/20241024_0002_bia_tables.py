@@ -7,8 +7,9 @@ Create Date: 2025-10-24 14:58:00.000000
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -19,15 +20,47 @@ depends_on = None
 
 
 def upgrade() -> None:
-    bia_ai_category = sa.Enum(
-        "No AI",
-        "Unacceptable risk",
-        "High risk",
-        "Limited risk",
-        "Minimal risk",
-        name="bia_ai_category",
-    )
-    bia_ai_category.create(op.get_bind(), checkfirst=True)
+    bind = op.get_bind()
+    enum_values = "'No AI','Unacceptable risk','High risk','Limited risk','Minimal risk'"
+    false_default = sa.text("false") if bind.dialect.name == "postgresql" else sa.text("0")
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "DO $$\n"
+            "BEGIN\n"
+            "    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'bia_ai_category') THEN\n"
+            f"        CREATE TYPE bia_ai_category AS ENUM ({enum_values});\n"
+            "    END IF;\n"
+            "END\n"
+            "$$;"
+        )
+        bia_ai_enum = postgresql.ENUM(
+            "No AI",
+            "Unacceptable risk",
+            "High risk",
+            "Limited risk",
+            "Minimal risk",
+            name="bia_ai_category",
+            create_type=False,
+        )
+    else:
+        bia_ai_enum = sa.Enum(
+            "No AI",
+            "Unacceptable risk",
+            "High risk",
+            "Limited risk",
+            "Minimal risk",
+            name="bia_ai_category",
+        )
+        bia_ai_enum.create(bind, checkfirst=True)
+        bia_ai_enum = sa.Enum(
+            "No AI",
+            "Unacceptable risk",
+            "High risk",
+            "Limited risk",
+            "Minimal risk",
+            name="bia_ai_category",
+            create_type=False,
+        )
 
     op.create_table(
         "bia_context_scope",
@@ -46,10 +79,10 @@ def upgrade() -> None:
         sa.Column("security_supplier", sa.Text(), nullable=True),
         sa.Column("user_amount", sa.Integer(), nullable=True),
         sa.Column("scope_description", sa.Text(), nullable=True),
-        sa.Column("risk_assessment_human", sa.Boolean(), nullable=False, server_default=sa.text("0")),
-        sa.Column("risk_assessment_process", sa.Boolean(), nullable=False, server_default=sa.text("0")),
-        sa.Column("risk_assessment_technological", sa.Boolean(), nullable=False, server_default=sa.text("0")),
-        sa.Column("ai_model", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+    sa.Column("risk_assessment_human", sa.Boolean(), nullable=False, server_default=false_default),
+    sa.Column("risk_assessment_process", sa.Boolean(), nullable=False, server_default=false_default),
+    sa.Column("risk_assessment_technological", sa.Boolean(), nullable=False, server_default=false_default),
+    sa.Column("ai_model", sa.Boolean(), nullable=False, server_default=false_default),
         sa.Column("project_leader", sa.Text(), nullable=True),
         sa.Column("risk_owner", sa.Text(), nullable=True),
         sa.Column("product_owner", sa.Text(), nullable=True),
@@ -97,7 +130,7 @@ def upgrade() -> None:
         "bia_ai_identificatie",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("component_id", sa.Integer(), sa.ForeignKey("bia_components.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("category", bia_ai_category, nullable=False, server_default="No AI"),
+        sa.Column("category", bia_ai_enum, nullable=False, server_default="No AI"),
         sa.Column("motivatie", sa.Text(), nullable=True),
     )
 
@@ -116,4 +149,8 @@ def downgrade() -> None:
     op.drop_table("bia_availability_requirements")
     op.drop_table("bia_components")
     op.drop_table("bia_context_scope")
-    sa.Enum(name="bia_ai_category").drop(op.get_bind(), checkfirst=True)
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS bia_ai_category")
+    else:
+        sa.Enum(name="bia_ai_category").drop(bind, checkfirst=True)

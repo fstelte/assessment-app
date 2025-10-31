@@ -128,5 +128,30 @@ def gettext(key: str, **variables: Any) -> str:
     return fallback.translate(key, **variables)
 
 
+class _LazyTranslation:
+    """Deferred translation evaluated when coerced to a string."""
+
+    __slots__ = ("_key", "_variables")
+
+    def __init__(self, key: str, variables: dict[str, Any]):
+        self._key = key
+        self._variables = variables
+
+    def __str__(self) -> str:  # pragma: no cover - trivial
+        return gettext(self._key, **self._variables)
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging helper
+        return f"LazyTranslation({self._key!r}, {self._variables!r})"
+
+    def __html__(self) -> str:  # pragma: no cover - template compatibility
+        return str(self)
+
+
+def lazy_gettext(key: str, **variables: Any) -> _LazyTranslation:
+    """Return a translation placeholder evaluated upon rendering."""
+
+    return _LazyTranslation(key, dict(variables))
+
+
 def session_storage_key() -> str:
     return _SESSION_KEY

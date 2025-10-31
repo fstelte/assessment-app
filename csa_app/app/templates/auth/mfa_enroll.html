@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}MFA Registreren{% endblock %}
+{% block title %}{{ _('auth.mfa.enroll.page_title') }}{% endblock %}
 {% block content %}
-  <h1 class="mb-4">Activeer Multi-factor Authenticatie</h1>
-  <p class="mb-3">Scan de onderstaande gegevens in uw authenticator-app of voer het secret handmatig in.</p>
+  <h1 class="mb-4">{{ _('auth.mfa.enroll.page_heading') }}</h1>
+  <p class="mb-3">{{ _('auth.mfa.enroll.instructions') }}</p>
   <div class="card mb-4">
     <div class="card-body">
-      <h2 class="h5">Secret</h2>
+      <h2 class="h5">{{ _('auth.mfa.enroll.secret_label') }}</h2>
       <code class="d-block fs-5">{{ provisioning.secret }}</code>
-      <p class="mt-3 mb-1">Provisioning URI</p>
+      <p class="mt-3 mb-1">{{ _('auth.mfa.enroll.uri_label') }}</p>
       <textarea class="form-control" rows="3" readonly>{{ provisioning.uri }}</textarea>
     </div>
   </div>

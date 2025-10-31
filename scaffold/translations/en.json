@@ -52,7 +52,376 @@
       "sql_export_failed": "Failed to export SQL: {details}",
       "sql_import_success": "SQL file imported successfully.",
       "sql_import_unexpected": "Unexpected error while importing SQL."
+    },
+    "dashboard": {
+      "title": "BIA Dashboard",
+      "sidebar": {
+        "navigate": "Navigate",
+        "overview": "Dashboard overview",
+        "components": "View components",
+        "actions": "Actions",
+        "new_bia": "New BIA",
+        "import_csv": "Import CSV",
+        "import_sql": "Import SQL",
+        "export_inventory": "Export data inventory (CSV)",
+        "export_cia_detailed": "Export CIA consequences (detailed)",
+        "export_cia_summary": "Export CIA consequences (summary)"
+      },
+      "header": {
+        "title": "Business Impact Analyses",
+        "subtitle": "Track, update and export your organisation's BIAs from a single workspace."
+      },
+      "card": {
+        "risk_owner": "Risk owner",
+        "not_assigned": "Not assigned",
+        "owner_aria": "Select owner",
+        "owner_unassigned": "Unassigned",
+        "owner_save": "Save",
+        "components": "{count} components",
+        "no_description": "No service description captured yet.",
+        "action_view": "View",
+        "action_export_html": "Export HTML",
+        "action_export_csv": "Export CSV",
+        "action_export_sql": "Export SQL",
+        "action_edit": "Edit",
+        "last_updated": "Last updated {date}",
+        "never": "never"
+      },
+      "empty": {
+        "title": "No BIAs recorded yet.",
+        "body": "Create a new analysis or import an existing dataset to get started."
+      }
+    },
+    "context_form": {
+      "title_edit": "Edit BIA",
+      "title_new": "New BIA",
+      "back": "Back to dashboard",
+      "heading_edit": "Edit {name}",
+      "heading_new": "Create a new BIA",
+      "section": {
+        "general": "General information",
+        "contacts": "Contacts",
+        "dependencies": "Dependencies & contracts",
+        "risk": "Risk posture"
+      },
+      "fields": {
+        "name": { "label": "Service or product name" },
+        "user_amount": { "label": "Number of users" },
+        "start_date": { "label": "Start date" },
+        "end_date": { "label": "End date" },
+        "service_description": { "label": "Service description" },
+        "scope_description": { "label": "Scope description" },
+        "responsible": { "label": "End responsible" },
+        "coordinator": { "label": "Coordinator" },
+        "project_leader": { "label": "Project leader" },
+        "product_owner": { "label": "Product owner" },
+        "risk_owner": { "label": "Risk owner" },
+        "technical_administrator": { "label": "Technical administrator" },
+        "security_manager": { "label": "Security manager" },
+        "incident_contact": { "label": "Incident contact" },
+        "mission_critical": { "label": "Mission critical dependencies" },
+        "knowledge": { "label": "Knowledge within the organisation" },
+        "interfaces": { "label": "Interfaces with systems" },
+        "support_contracts": { "label": "Support contracts" },
+        "security_supplier": { "label": "Security supplier" },
+        "risk_assessment_human": { "label": "Requires people risk assessment" },
+        "risk_assessment_process": { "label": "Requires process risk assessment" },
+        "risk_assessment_technological": { "label": "Requires technology risk assessment" },
+        "ai_model": { "label": "Uses AI components" }
+      },
+      "component_fields": {
+        "name": { "label": "Component name" },
+        "info_type": { "label": "Information type" },
+        "info_owner": { "label": "Information owner" },
+        "user_type": { "label": "User type" },
+        "process_dependencies": { "label": "Process dependencies" },
+        "description": { "label": "Description" }
+      },
+      "responsible_hint": "Only assessment managers or administrators can assign the owner.",
+      "submit": "Save context",
+      "components": {
+        "title": "Related components",
+        "add": "Add component",
+        "linked_to": "Linked to {context}",
+        "empty": "No components added yet."
+      },
+      "next_steps": {
+        "title": "Next steps",
+        "subtitle": "Use these quick links to continue refining {context}.",
+        "view": "View BIA",
+        "summary": "Manage summary",
+        "export_html": "Export HTML",
+        "export_csv": "Export CSV"
+      },
+      "modals": {
+        "view": {
+          "title": "Component details",
+          "name": "Name",
+          "info_type": "Information type",
+          "info_owner": "Owner",
+          "user_type": "User type",
+          "dependencies": "Dependencies",
+          "description": "Description",
+          "consequences": "Consequences",
+          "consequence_link": "View consequences"
+        },
+        "add": {
+          "title": "Add new component",
+          "submit": "Save component"
+        },
+        "edit": {
+          "title": "Edit component",
+          "submit": "Save changes"
+        }
+      }
     }
+  },
+  "csa": {
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "status": {
+      "assigned": "Assigned",
+      "in_progress": "In progress",
+      "submitted": "In review",
+      "reviewed": "Reviewed"
+    },
+    "common": {
+      "unknown": "Unknown",
+      "not_started": "Not started",
+      "not_submitted": "Not submitted",
+      "not_reviewed": "Not reviewed",
+      "not_applicable": "N/A",
+      "not_applicable_short": "n/a",
+      "none": "None",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "flash": {
+      "no_templates_import_first": "No templates available yet. Import controls first.",
+      "no_templates_contact_admin": "There are no active templates yet. Contact an administrator.",
+      "invalid_template": "Invalid template selected.",
+      "assessment_started": "Self-assessment started.",
+      "no_active_users": "There are no active users to assign assessments to.",
+      "invalid_selection": "Invalid selection. Try again.",
+      "assessment_assigned": "Assessment '{template}' assigned to {assignee}.",
+      "assessment_locked": "This assessment is already submitted and cannot be edited.",
+      "submitted_for_review": "Assessment submitted for review.",
+      "responses_saved": "Responses saved.",
+      "review_approved": "Assessment approved.",
+      "review_comment_required": "Add a comment when returning an assessment.",
+      "review_returned": "Assessment returned to assignee.",
+      "unknown_review_action": "Unknown review action.",
+      "catalog_missing": "Built-in control catalogue not found on the server.",
+      "import_result": "Import completed. Created: {created}, updated: {updated}.",
+      "json_error": "Unable to read JSON: {error}"
+    },
+    "dashboard": {
+      "title": "CSA Dashboard",
+      "heading": "Control Self Assessment",
+      "lead": "Monitor progress, review assignments, and maintain the control catalogue.",
+      "cards": {
+        "assessments": {
+          "title": "Assessments",
+          "description": "Assessments captured across all templates."
+        },
+        "controls": {
+          "title": "Controls",
+          "description": "Unique controls available for assignment."
+        },
+        "workflow": {
+          "title": "Workflow Status"
+        }
+      },
+      "quick_actions": {
+        "title": "Quick Actions",
+        "start": "Start Assessment",
+        "assign": "Assign Assessment",
+        "overview": "Assessment Overview",
+        "import_controls": "Import Controls"
+      },
+      "latest": {
+        "title": "Recently Updated Assessments",
+        "assessment_number": "Assessment #{id}",
+        "updated": "Updated {timestamp}",
+        "empty": "No assessments have been recorded yet. Import control templates and start the CSA workflow to populate this list."
+      }
+    },
+    "assessments": {
+      "common": {
+        "code_label": "Code:",
+        "control_label": "Control:",
+        "version": "Version {version}"
+      },
+      "form": {
+        "answer_placeholder": "Enter your answer here."
+      },
+      "start": {
+        "title": "Start Assessment",
+        "heading": "Start a self-assessment",
+        "intro": "Choose an active template to begin completing control evidence.",
+        "fields": {
+          "template": {
+            "label": "Template",
+            "help": "Templates are backed by the imported control catalogue.",
+            "required": "Select a template."
+          }
+        },
+        "submit": "Start self-assessment",
+        "available": {
+          "title": "Available templates",
+          "empty": "No templates available yet. Import controls to populate this list."
+        }
+      },
+      "assign": {
+        "title": "Assign Assessment",
+        "heading": "Assign a self-assessment",
+        "intro": "Select an assignee, template, and optional due date for the assessment.",
+        "fields": {
+          "assignee": {
+            "label": "Assign to",
+            "help": "Only active users appear in this list.",
+            "required": "Select a user."
+          },
+          "template": {
+            "label": "Template",
+            "help": "Choose the template that aligns with the relevant control.",
+            "required": "Select a template."
+          },
+          "due_date": {
+            "label": "Due date",
+            "placeholder": "YYYY-MM-DD",
+            "help": "Optional: assign a target completion date."
+          }
+        },
+        "submit": "Assign"
+      },
+      "overview": {
+        "title": "Assessment Overview",
+        "heading": "Assessment Overview",
+        "intro": "Track every assessment, status, and owner from a single overview.",
+        "start_button": "Start assessment",
+        "count_badge": "{count} assessments",
+        "table": {
+          "id": "ID",
+          "template": "Template",
+          "primary_owner": "Primary owner",
+          "status": "Status",
+          "last_update": "Last update",
+          "actions": "Actions"
+        },
+        "empty": "No assessments available yet."
+      },
+      "detail": {
+        "title": "Assessment {id}",
+        "metadata": {
+          "started": "Started",
+          "submitted": "Submitted",
+          "updated": "Last update"
+        },
+        "questions": {
+          "title": "Questions",
+          "empty_section": "No questions configured for this section.",
+          "none": "This template does not have any questions yet."
+        },
+        "actions": {
+          "save": "Save responses",
+          "submit_for_review": "Submit for review"
+        },
+        "locked": "This assessment is locked because it has already been submitted.",
+        "review": {
+          "heading": "Review",
+          "comment_label": "Review comment",
+          "comment_placeholder": "Add context when approving or reasons when returning.",
+          "return_to_assignee": "Return to assignee",
+          "approve": "Approve",
+          "latest_comment": "Latest review comment:"
+        }
+      },
+      "export": {
+        "page_title": "Assessment {id} export",
+        "default_name": "Assessment {id}",
+        "framework_code": "Framework code",
+        "template_name": "Template",
+        "section": "Section",
+        "control_name": "Control name",
+        "description": "Description",
+        "assessment_id": "Assessment ID",
+        "template_version": "Template version",
+        "generated": "Generated",
+        "reviewed": "Reviewed",
+        "due_date": "Due date",
+        "review_comment": "Review comment",
+        "assignments": {
+          "title": "Assignments",
+          "name": "Name",
+          "email": "Email",
+          "primary": "Primary",
+          "assigned": "Assigned",
+          "empty": "No assignments recorded."
+        },
+        "qa": {
+          "title": "Questions and answers",
+          "no_answer": "No answer provided.",
+          "comment_label": "Comment:",
+          "answer_by": "By {responder}",
+          "answer_on": "on {timestamp}",
+          "no_questions_section": "No questions in this section.",
+          "no_sections": "This template does not contain questions."
+        },
+        "note": {
+          "label": "Note:",
+          "body": "This document is a static snapshot of the assessment detail view."
+        }
+      }
+    },
+    "admin": {
+      "import": {
+        "title": "Import Controls",
+        "heading": "Import controls",
+        "intro": "Upload a JSON catalogue or load the bundled ISO 27002 reference set.",
+        "fields": {
+          "data_file": {
+            "label": "JSON file",
+            "help": "The file must contain a top-level <code>controls</code> array.",
+            "required": "Select a JSON file.",
+            "allowed": "Only JSON files are accepted."
+          }
+        },
+        "submit": "Import controls",
+        "import_builtin": "Import bundled ISO 27002 dataset"
+      }
+    },
+    "roles": {
+      "assign": {
+        "role": "Role",
+        "required": "Select a role.",
+        "submit": "Add role"
+      },
+      "remove": {
+        "required": "Missing role identifier.",
+        "submit": "Remove"
+      }
+    }
+  },
+  "actions": {
+    "view": "View",
+    "delete": "Delete",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "close": "Close",
+    "export": "Export"
   },
   "auth": {
     "profile": {

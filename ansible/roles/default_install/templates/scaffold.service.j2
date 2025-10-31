@@ -1,0 +1,15 @@
+[Unit]
+Description=Scaffold application
+After=network.target
+
+[Service]
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_path }}
+EnvironmentFile={{ app_path }}/.env
+ExecStart={{ virtualenv_path }}/bin/gunicorn --bind {{ gunicorn_bind }} --workers {{ gunicorn_workers }} "scaffold:create_app()"
+Restart=on-failure
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

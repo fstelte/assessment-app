@@ -2,28 +2,39 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import HiddenField, SelectField, SubmitField
 from wtforms.validators import DataRequired
 
+from ..i18n import gettext as _, lazy_gettext as _l
+
+
+def _label(key: str) -> str:
+    return cast(str, _l(key))
+
 
 class ControlImportForm(FlaskForm):
     data_file = FileField(
-        "JSON-bestand",
+        _label("admin.import.fields.data_file"),
         validators=[
-            FileRequired(message="Selecteer een JSON-bestand."),
-            FileAllowed(["json"], message="Alleen JSON-bestanden zijn toegestaan."),
+            FileRequired(message=_("admin.import.errors.file_required")),
+            FileAllowed(["json"], message=_("admin.import.errors.file_allowed")),
         ],
     )
-    submit = SubmitField("Importeren")
+    submit = SubmitField(_label("admin.import.actions.submit"))
 
 
 class UserRoleAssignForm(FlaskForm):
-    role = SelectField("Rol", validators=[DataRequired(message="Kies een rol.")])
-    submit = SubmitField("Rol toevoegen")
+    role = SelectField(
+        _label("admin.roles.fields.role"),
+        validators=[DataRequired(message=_("admin.roles.errors.role_required"))],
+    )
+    submit = SubmitField(_label("admin.roles.actions.assign"))
 
 
 class UserRoleRemoveForm(FlaskForm):
-    role = HiddenField(validators=[DataRequired(message="Rol ontbreekt.")])
-    submit = SubmitField("Verwijderen")
+    role = HiddenField(validators=[DataRequired(message=_("admin.roles.errors.role_missing"))])
+    submit = SubmitField(_label("admin.roles.actions.remove"))

@@ -1,0 +1,58 @@
+---
+- name: Include common preparation steps
+  ansible.builtin.import_role:
+    name: common
+
+- name: Install Docker tooling
+  become: true
+  ansible.builtin.package:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Ensure Docker service is enabled
+  become: true
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add application user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    groups: docker
+    append: true
+
+- name: Checkout application source
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.git:
+    repo: "{{ app_repo }}"
+    dest: "{{ app_path }}"
+    version: "{{ app_version | default('main') }}"
+    accept_hostkey: true
+
+- name: Render Docker environment file
+  become: true
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ docker_env_path }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0640"
+
+- name: Deploy application with Docker Compose
+  become: true
+  become_user: "{{ app_user }}"
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_path }}"
+    files:
+      - "{{ app_path }}/{{ compose_file }}"
+    state: present
+    pull: true
+    build: true
+    recreate: smart
+    profiles:
+      - "{{ compose_profile }}"
+  environment:
+    COMPOSE_PROJECT_NAME: "{{ compose_project_name }}"

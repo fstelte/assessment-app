@@ -10,12 +10,13 @@ import tomllib
 
 import click
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, request, session
 
 from . import models  # noqa: F401  # ensure models register with SQLAlchemy metadata
 from .blueprints import register_blueprints
 from .config import CONFIG_BY_NAME
 from .extensions import csrf, db, login_manager, migrate, talisman
+from .i18n import TranslationManager, get_locale, session_storage_key, set_locale
 
 _PROJECT_VERSION: str | None = None
 _PROJECT_LICENSE: tuple[str, str] | None = None
@@ -44,6 +45,7 @@ def create_app(config_name: str | None = None) -> Flask:
     register_blueprints(app)
     _register_cli_commands(app)
     _register_template_globals(app)
+    _init_i18n(app)
 
     return app
 
@@ -156,6 +158,38 @@ def _register_template_globals(app: Flask) -> None:
             "current_year": datetime.now().year,
             "app_license": license_name,
             "app_license_url": license_url,
+        }
+
+
+def _init_i18n(app: Flask) -> None:
+    """Initialise JSON-backed translations and locale detection."""
+
+    translations_path = Path(app.root_path) / "translations"
+    manager = TranslationManager(translations_path)
+    app.extensions["i18n"] = manager
+
+    app.jinja_env.globals.setdefault(
+        "_",
+        lambda key, **kwargs: manager.translate(key, locale=get_locale(), **kwargs),
+    )
+
+    @app.before_request
+    def detect_locale() -> None:
+        requested = (request.args.get("lang") or "").strip()
+        stored = session.get(session_storage_key())
+        available = manager.available_locales() or [manager.default_locale]
+        available_set = set(available)
+
+        candidates = [requested, stored, manager.default_locale]
+        target = next((loc for loc in candidates if loc and loc in available_set), manager.default_locale)
+        set_locale(target)
+        session[session_storage_key()] = target
+
+    @app.context_processor
+    def inject_locale_helpers() -> dict[str, object]:
+        return {
+            "current_locale": get_locale() or manager.default_locale,
+            "available_locales": manager.available_locales(),
         }
 
 

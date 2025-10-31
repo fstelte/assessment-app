@@ -1745,4 +1745,4 @@ postgresql = ["psycopg"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "a94ad7036c37667f221cccd15d25ab60cb3bad87b75754fdf688698b05e57ad1"
+content-hash = "e5ae05445d54f3d6c6148144e6d02394f09acafecb1a075cde705155136e837d"

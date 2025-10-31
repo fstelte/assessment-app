@@ -6,10 +6,14 @@ import enum
 from datetime import UTC, datetime
 from typing import List
 
+import sqlalchemy as sa
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ...extensions import db
+from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.dialects import postgresql
 
 
 ROLE_ADMIN = "admin"
@@ -50,6 +54,48 @@ class UserStatus(enum.Enum):
     DISABLED = "disabled"
 
 
+_USER_STATUS_VALUES = tuple(member.value for member in UserStatus)
+
+
+class UserStatusType(sa.types.TypeDecorator):
+    """Persist :class:`UserStatus` values while returning enum instances."""
+
+    impl = sa.String()
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect: sa.engine.Dialect) -> sa.types.TypeEngine:
+        if dialect.name == "postgresql":
+            return postgresql.ENUM(
+                *_USER_STATUS_VALUES,
+                name="user_status",
+                create_type=False,
+            )
+        return sa.Enum(
+            UserStatus,
+            name="user_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        )
+
+    def process_bind_param(self, value: UserStatus | str | None, dialect: sa.engine.Dialect) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, UserStatus):
+            return value.value
+        if isinstance(value, str):
+            lowered = value.lower()
+            if lowered not in _USER_STATUS_VALUES:
+                raise ValueError(f"Invalid user status '{value}'")
+            return lowered
+        raise TypeError(f"Cannot bind value of type {type(value)!r} for UserStatus")
+
+    def process_result_value(self, value: str | None, dialect: sa.engine.Dialect) -> UserStatus | None:
+        if value is None:
+            return None
+        if isinstance(value, UserStatus):
+            return value
+        return UserStatus(value)
+
+
 class Role(TimestampMixin, db.Model):
     """Application role used for authorisation decisions."""
 
@@ -68,16 +114,22 @@ class Role(TimestampMixin, db.Model):
 def ensure_default_roles() -> None:
     """Make sure the core authorisation roles exist in the database."""
 
-    created = False
-    for name, description in _DEFAULT_ROLES.items():
-        if Role.query.filter_by(name=name).first():
-            continue
-        role = Role(name=name, description=description)
-        db.session.add(role)
-        created = True
+    try:
+        created = False
+        for name, description in _DEFAULT_ROLES.items():
+            if Role.query.filter_by(name=name).first():
+                continue
+            role = Role(name=name, description=description)
+            db.session.add(role)
+            created = True
 
-    if created:
-        db.session.commit()
+        if created:
+            db.session.commit()
+    except (ProgrammingError, OperationalError):
+        db.session.rollback()
+        logger = current_app.logger if current_app else None
+        if logger:
+            logger.debug("Default role provisioning skipped; tables not ready yet.")
 
 
 class User(TimestampMixin, UserMixin, db.Model):
@@ -91,7 +143,7 @@ class User(TimestampMixin, UserMixin, db.Model):
     first_name = db.Column(db.String(120))
     last_name = db.Column(db.String(120))
     password_hash = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(UserStatus, name="user_status"), default=UserStatus.PENDING, nullable=False)
+    status = db.Column(UserStatusType(), default=UserStatus.PENDING, nullable=False)
     is_service_account = db.Column(db.Boolean, default=False, nullable=False)
     last_login_at = db.Column(db.DateTime(timezone=True))
     activated_at = db.Column(db.DateTime(timezone=True))

@@ -1,0 +1,200 @@
+{
+  "app": {
+    "title": "Control Self-Assessment",
+    "navigation": {
+      "brand": "CSA",
+      "assessments_overview": "Assessment overzicht",
+      "start_assessment": "Start self-assessment",
+      "manage_dropdown": "Beheer & MFA",
+      "profile": "Mijn profiel",
+      "assign_assessment": "Assessment toewijzen",
+      "mfa_reset": "MFA resetten",
+      "mfa_setup": "MFA instellen",
+      "admin_users": "Gebruikersbeheer",
+      "admin_import_controls": "Controls importeren",
+      "greeting": "Hallo {name}",
+      "logout": "Afmelden",
+      "login": "Inloggen",
+      "register": "Registreren"
+    },
+    "footer": {
+      "version": "Versie {version}",
+      "license_prefix": "Licentie",
+      "github": "GitHub"
+    }
+  },
+  "form": {
+    "errors": {
+      "required": "Dit veld is verplicht.",
+      "email": "Voer een geldig e-mailadres in.",
+      "max_length": "Mag maximaal {max} tekens bevatten."
+    }
+  },
+  "auth": {
+    "register": {
+      "fields": {
+        "email": "E-mailadres",
+        "first_name": "Voornaam",
+        "last_name": "Achternaam",
+        "password": "Wachtwoord",
+        "confirm_password": "Bevestig wachtwoord"
+      },
+      "errors": {
+        "password_required": "Wachtwoord is verplicht.",
+        "password_length": "Wachtwoord moet minimaal 8 tekens lang zijn.",
+        "confirm_required": "Bevestiging is verplicht.",
+        "password_mismatch": "Wachtwoorden komen niet overeen."
+      },
+      "actions": {
+        "submit": "Registreren"
+      }
+    },
+    "login": {
+      "fields": {
+        "email": "E-mailadres",
+        "password": "Wachtwoord",
+        "remember_me": "Onthoud mij"
+      },
+      "actions": {
+        "submit": "Inloggen"
+      }
+    },
+    "mfa": {
+      "fields": {
+        "otp": "6-cijferige code"
+      },
+      "errors": {
+        "otp_length": "Voer de 6-cijferige code uit je authenticator in."
+      },
+      "enroll": {
+        "submit": "MFA activeren"
+      },
+      "verify": {
+        "remember_device": "Vertrouw dit apparaat",
+        "submit": "Verifiëren"
+      }
+    }
+  },
+  "admin": {
+    "import": {
+      "fields": {
+        "data_file": "JSON-bestand"
+      },
+      "errors": {
+        "file_required": "Selecteer een JSON-bestand.",
+        "file_allowed": "Alleen JSON-bestanden zijn toegestaan."
+      },
+      "actions": {
+        "submit": "Importeren"
+      }
+    },
+    "roles": {
+      "fields": {
+        "role": "Rol"
+      },
+      "errors": {
+        "role_required": "Kies een rol.",
+        "role_missing": "Rol ontbreekt."
+      },
+      "actions": {
+        "assign": "Rol toevoegen",
+        "remove": "Verwijderen"
+      }
+    }
+  },
+  "assessments": {
+    "start": {
+      "fields": {
+        "template": "Sjabloon"
+      },
+      "errors": {
+        "template_required": "Kies een sjabloon."
+      },
+      "actions": {
+        "submit": "Start self-assessment"
+      }
+    },
+    "assign": {
+      "fields": {
+        "assignee": "Toewijzen aan",
+        "template": "Sjabloon",
+        "due_date": "Vervaldatum"
+      },
+      "errors": {
+        "assignee_required": "Selecteer een gebruiker.",
+        "template_required": "Kies een sjabloon."
+      },
+      "actions": {
+        "submit": "Toewijzen"
+      }
+    },
+    "response": {
+      "actions": {
+        "save": "Antwoorden opslaan",
+        "submit_for_review": "Ter beoordeling indienen"
+      },
+      "fields": {
+        "answer_placeholder": "Typ het antwoord hier."
+      }
+    },
+    "review": {
+      "fields": {
+        "comment": "Reviewopmerking",
+        "comment_placeholder": "Licht een afkeuring toe of geef extra context bij goedkeuren."
+      },
+      "actions": {
+        "approve": "Goedkeuren",
+        "return_to_assignee": "Terug naar indiener"
+      }
+    }
+  },
+  "profile": {
+    "fields": {
+      "theme": "Thema",
+      "current_password": "Huidig wachtwoord",
+      "new_password": "Nieuw wachtwoord",
+      "confirm_password": "Bevestig nieuw wachtwoord"
+    },
+    "theme": {
+      "dark": "Donker",
+      "light": "Licht"
+    },
+    "errors": {
+      "password_length": "Minimaal 8 tekens.",
+      "password_mismatch": "Wachtwoorden komen niet overeen."
+    },
+    "actions": {
+      "submit": "Wijzigingen opslaan"
+    }
+  },
+  "public": {
+    "index": {
+      "title": "Welkom",
+      "heading": "Control Self-Assessment",
+      "lead_authenticated": "Welkom terug, {name}.",
+      "intro_authenticated": "Uw toegewezen self-assessments verschijnen hieronder. Start een nieuwe beoordeling wanneer u klaar bent.",
+      "cta_start": "Nieuwe self-assessment starten",
+      "pending_reviews": {
+        "title": "Assessments in afwachting van review ({count})",
+        "headers": {
+          "assessment": "Assessment",
+          "submitter": "Indiener",
+          "submitted_at": "Ingediend op"
+        },
+        "unknown_user": "Onbekend",
+        "unknown_date": "Onbekend",
+        "action_view": "Bekijken"
+      },
+      "templates_hint": "Nog geen sjablonen beschikbaar?",
+      "templates_hint_link": "Importeer de standaard dataset",
+      "open_assignments": {
+        "title": "Uw lopende assessments",
+        "status": "Status: {status}",
+        "action_open": "Open",
+        "empty": "U heeft nog geen lopende assessments."
+      },
+      "lead_guest": "Meld u aan om uw self assessments te beheren.",
+      "cta_login": "Inloggen"
+    }
+  }
+}

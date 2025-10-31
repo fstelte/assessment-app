@@ -1,0 +1,29 @@
+---
+- name: Ensure required system packages are present
+  become: true
+  package:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Ensure application group exists
+  become: true
+  group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure application user exists
+  become: true
+  user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    create_home: false
+    system: true
+
+- name: Create application directory
+  become: true
+  file:
+    path: "{{ app_path }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"

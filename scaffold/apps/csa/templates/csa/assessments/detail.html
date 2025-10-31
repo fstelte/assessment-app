@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Assessment {{ assessment.id }}{% endblock %}
+{% block title %}{{ _('csa.assessments.detail.title', id=assessment.id) }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-xl-8">
@@ -10,10 +10,10 @@
           {% set control_display = (control.section ~ " " ~ control.domain).strip() %}
           <h1 class="h3 mb-1">{{ control_display or assessment.template.name }}</h1>
           {% if control.section %}
-            <p class="text-secondary mb-0">Code: {{ control.section }}</p>
+            <p class="text-secondary mb-0">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</p>
           {% endif %}
           {% if control.domain %}
-            <p class="text-secondary mb-0">Control: {{ control.domain }}</p>
+            <p class="text-secondary mb-0">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</p>
           {% endif %}
           {% if control.description %}
             <p class="text-secondary small mb-0">{{ control.description }}</p>
@@ -28,20 +28,20 @@
     <div class="card bg-dark border-secondary mb-4">
       <div class="card-body">
         <dl class="row mb-0">
-          <dt class="col-sm-4">Started</dt>
-          <dd class="col-sm-8">{{ assessment.started_at or "Not started" }}</dd>
-          <dt class="col-sm-4">Submitted</dt>
-          <dd class="col-sm-8">{{ assessment.submitted_at or "Not submitted" }}</dd>
-          <dt class="col-sm-4">Last update</dt>
-          <dd class="col-sm-8">{{ assessment.updated_at or "N/A" }}</dd>
+          <dt class="col-sm-4">{{ _('csa.assessments.detail.metadata.started') }}</dt>
+          <dd class="col-sm-8">{{ assessment.started_at or _('csa.common.not_started') }}</dd>
+          <dt class="col-sm-4">{{ _('csa.assessments.detail.metadata.submitted') }}</dt>
+          <dd class="col-sm-8">{{ assessment.submitted_at or _('csa.common.not_submitted') }}</dd>
+          <dt class="col-sm-4">{{ _('csa.assessments.detail.metadata.updated') }}</dt>
+          <dd class="col-sm-8">{{ assessment.updated_at or _('csa.common.not_applicable') }}</dd>
         </dl>
       </div>
-    </div>
-
-    <h2 class="h4 mb-3">Questions</h2>
+          {{ form.save(class="btn btn-outline-light", disabled=not can_edit) }}
+          {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit) }}
+    <h2 class="h4 mb-3">{{ _('csa.assessments.detail.questions.title') }}</h2>
     {% if has_questions %}
       {% if not can_edit %}
-        <div class="alert alert-info">This assessment is locked because it has already been submitted.</div>
+        <div class="alert alert-info">{{ _('csa.assessments.detail.locked') }}</div>
       {% endif %}
       <form method="post">
         {{ form.hidden_tag() }}
@@ -58,39 +58,39 @@
                   </div>
                 {% endfor %}
               {% else %}
-                <p class="text-secondary mb-0">No questions configured for this section.</p>
+                <p class="text-secondary mb-0">{{ _('csa.assessments.detail.questions.empty_section') }}</p>
               {% endif %}
             </div>
           </div>
         {% endfor %}
         <div class="d-flex justify-content-end gap-2">
-          {{ form.save(class="btn btn-outline-light", disabled=not can_edit) }}
-          {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit) }}
+          {{ form.save(class="btn btn-outline-light", disabled=not can_edit, value=_('csa.assessments.detail.actions.save')) }}
+          {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit, value=_('csa.assessments.detail.actions.submit_for_review')) }}
         </div>
       </form>
     {% else %}
-      <p class="text-secondary">This template does not have any questions yet.</p>
+      <p class="text-secondary">{{ _('csa.assessments.detail.questions.none') }}</p>
     {% endif %}
 
     {% if review_form %}
       <hr class="my-4">
-      <h2 class="h4">Review</h2>
+      <h2 class="h4">{{ _('csa.assessments.detail.review.heading') }}</h2>
       <form method="post">
         {{ review_form.hidden_tag() }}
         <div class="mb-3">
-          {{ review_form.comment.label(class="form-label fw-semibold") }}
-          {{ review_form.comment(class="form-control", rows=4) }}
+          {{ review_form.comment.label(_('csa.assessments.detail.review.comment_label'), class="form-label fw-semibold") }}
+          {{ review_form.comment(class="form-control", rows=4, placeholder=_('csa.assessments.detail.review.comment_placeholder')) }}
         </div>
         <div class="d-flex justify-content-end gap-2">
-          <button type="submit" name="review_action" value="return" class="btn btn-outline-warning">{{ review_form.return_to_assignee.label.text }}</button>
-          <button type="submit" name="review_action" value="approve" class="btn btn-success">{{ review_form.approve.label.text }}</button>
+          <button type="submit" name="review_action" value="return" class="btn btn-outline-warning">{{ _('csa.assessments.detail.review.return_to_assignee') }}</button>
+          <button type="submit" name="review_action" value="approve" class="btn btn-success">{{ _('csa.assessments.detail.review.approve') }}</button>
         </div>
       </form>
     {% endif %}
 
     {% if assessment.review_comment %}
       <div class="alert alert-secondary border-secondary mt-4">
-        <strong>Latest review comment:</strong>
+        <strong>{{ _('csa.assessments.detail.review.latest_comment') }}</strong>
         <div class="mt-1">{{ assessment.review_comment }}</div>
       </div>
     {% endif %}

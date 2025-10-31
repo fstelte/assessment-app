@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: flask run --host=0.0.0.0 --port=5000
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///instance/scaffold.db}
+    env_file:
+      - ../.env
+    volumes:
+      - ..:/app
+      - ../instance:/app/instance
+    ports:
+      - "5000:5000"
+    restart: unless-stopped

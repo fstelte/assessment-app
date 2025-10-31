@@ -1,0 +1,9 @@
+---
+- name: Restart scaffold service
+  become: true
+  ansible.builtin.systemd:
+    name: scaffold
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  when: scaffold_service_managed | default(false)

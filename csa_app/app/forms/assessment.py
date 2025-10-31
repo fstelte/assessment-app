@@ -2,48 +2,58 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, cast
 
 from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Optional
 
+from ..i18n import gettext as _, lazy_gettext as _l
+
+
+def _label(key: str) -> str:
+    return cast(str, _l(key))
+
 
 class AssessmentStartForm(FlaskForm):
-    template_id = SelectField("Sjabloon", coerce=int, validators=[DataRequired(message="Kies een sjabloon.")])
-    submit = SubmitField("Start self-assessment")
+    template_id = SelectField(
+        _label("assessments.start.fields.template"),
+        coerce=int,
+        validators=[DataRequired(message=_("assessments.start.errors.template_required"))],
+    )
+    submit = SubmitField(_label("assessments.start.actions.submit"))
 
 
 class AssessmentAssignForm(FlaskForm):
     assignee_id = SelectField(
-        "Toewijzen aan",
+        _label("assessments.assign.fields.assignee"),
         coerce=int,
-        validators=[DataRequired(message="Selecteer een gebruiker.")],
+        validators=[DataRequired(message=_("assessments.assign.errors.assignee_required"))],
     )
     template_id = SelectField(
-        "Sjabloon",
+        _label("assessments.assign.fields.template"),
         coerce=int,
-        validators=[DataRequired(message="Kies een sjabloon.")],
+        validators=[DataRequired(message=_("assessments.assign.errors.template_required"))],
     )
-    due_date = DateField("Vervaldatum", validators=[Optional()], format="%Y-%m-%d")
-    submit = SubmitField("Toewijzen")
+    due_date = DateField(_label("assessments.assign.fields.due_date"), validators=[Optional()], format="%Y-%m-%d")
+    submit = SubmitField(_label("assessments.assign.actions.submit"))
 
 
 class AssessmentResponseForm(FlaskForm):
-    save = SubmitField("Antwoorden opslaan")
-    submit_for_review = SubmitField("Ter beoordeling indienen")
+    save = SubmitField(_label("assessments.response.actions.save"))
+    submit_for_review = SubmitField(_label("assessments.response.actions.submit_for_review"))
 
 
 class AssessmentReviewForm(FlaskForm):
     comment = TextAreaField(
-        "Reviewopmerking",
+        _label("assessments.review.fields.comment"),
         render_kw={
             "rows": 4,
-            "placeholder": "Geef toelichting bij afkeuren of aanvullende context bij goedkeuren.",
+            "placeholder": _("assessments.review.fields.comment_placeholder"),
         },
     )
-    approve = SubmitField("Goedkeuren")
-    return_to_assignee = SubmitField("Terug naar indiener")
+    approve = SubmitField(_label("assessments.review.actions.approve"))
+    return_to_assignee = SubmitField(_label("assessments.review.actions.return_to_assignee"))
 
 
 def build_assessment_response_form(question_set: Dict[str, Any]) -> Tuple[type[AssessmentResponseForm], List[Dict[str, Any]]]:
@@ -68,7 +78,7 @@ def build_assessment_response_form(question_set: Dict[str, Any]) -> Tuple[type[A
                 question_text,
                 render_kw={
                     "rows": 3,
-                    "placeholder": "Typ het antwoord hier.",
+                    "placeholder": _("assessments.response.fields.answer_placeholder"),
                 },
             )
             setattr(DynamicAssessmentResponseForm, field_name, field)

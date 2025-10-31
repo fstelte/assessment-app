@@ -1,34 +1,34 @@
 {% extends "base.html" %}
-{% block title %}CSA Dashboard{% endblock %}
+{% block title %}{{ _('csa.dashboard.title') }}{% endblock %}
 {% block content %}
 <div class="mb-4">
-	<h1 class="mb-1">Control Self Assessment</h1>
-	<p class="text-secondary mb-0">Monitor progress, review assignments, and maintain the control catalogue.</p>
+	<h1 class="mb-1">{{ _('csa.dashboard.heading') }}</h1>
+	<p class="text-secondary mb-0">{{ _('csa.dashboard.lead') }}</p>
 </div>
 
 <div class="row g-4">
 	<div class="col-md-4">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
-				<h5 class="card-title">Assessments</h5>
+				<h5 class="card-title">{{ _('csa.dashboard.cards.assessments.title') }}</h5>
 				<p class="display-6">{{ assessment_count }}</p>
-				<p class="text-secondary mb-0">Assessments captured across all templates.</p>
+				<p class="text-secondary mb-0">{{ _('csa.dashboard.cards.assessments.description') }}</p>
 			</div>
 		</div>
 	</div>
 	<div class="col-md-4">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
-				<h5 class="card-title">Controls</h5>
+				<h5 class="card-title">{{ _('csa.dashboard.cards.controls.title') }}</h5>
 				<p class="display-6">{{ control_count }}</p>
-				<p class="text-secondary mb-0">Unique controls available for assignment.</p>
+				<p class="text-secondary mb-0">{{ _('csa.dashboard.cards.controls.description') }}</p>
 			</div>
 		</div>
 	</div>
 	<div class="col-md-4">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
-				<h5 class="card-title">Workflow Status</h5>
+				<h5 class="card-title">{{ _('csa.dashboard.cards.workflow.title') }}</h5>
 				<ul class="list-unstyled mb-0">
 					{% for status, label in csa_status_labels.items() %}
 						<li class="d-flex justify-content-between align-items-center small mb-1">
@@ -43,29 +43,29 @@
 </div>
 
 <div class="mt-5">
-	<h2 class="h4 mb-3">Quick Actions</h2>
+	<h2 class="h4 mb-3">{{ _('csa.dashboard.quick_actions.title') }}</h2>
 	<div class="row g-3">
 		{% if current_user.has_role('admin') or current_user.has_role('manager') %}
 		<div class="col-sm-6 col-lg-3">
-			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.start_assessment') }}">Start Assessment</a>
+			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.start_assessment') }}">{{ _('csa.dashboard.quick_actions.start') }}</a>
 		</div>
 		<div class="col-sm-6 col-lg-3">
-			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.assign_assessment') }}">Assign Assessment</a>
+			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.assign_assessment') }}">{{ _('csa.dashboard.quick_actions.assign') }}</a>
 		</div>
 		<div class="col-sm-6 col-lg-3">
-			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.overview_assessments') }}">Assessment Overview</a>
+			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.overview_assessments') }}">{{ _('csa.dashboard.quick_actions.overview') }}</a>
 		</div>
 		{% endif %}
 		{% if current_user.has_role('admin') %}
 		<div class="col-sm-6 col-lg-3">
-			<a class="btn btn-warning w-100" href="{{ url_for('csa.import_controls') }}">Import Controls</a>
+			<a class="btn btn-warning w-100" href="{{ url_for('csa.import_controls') }}">{{ _('csa.dashboard.quick_actions.import_controls') }}</a>
 		</div>
 		{% endif %}
 	</div>
 </div>
 
 <div class="mt-5">
-	<h2 class="h4">Recently Updated Assessments</h2>
+	<h2 class="h4">{{ _('csa.dashboard.latest.title') }}</h2>
 	{% if latest_assessments %}
 		<div class="list-group list-group-flush">
 			{% for assessment in latest_assessments %}
@@ -73,18 +73,19 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<div>
 						<div class="fw-semibold">{{ assessment.template.control.section if assessment.template.control else '' }} {{ assessment.template.control.domain if assessment.template.control else assessment.template.name }}</div>
-						<div class="text-secondary small">Assessment #{{ assessment.id }}</div>
+						<div class="text-secondary small">{{ _('csa.dashboard.latest.assessment_number', id=assessment.id) }}</div>
 					</div>
 					<div class="text-end">
 						<span class="badge bg-{{ csa_status_badges.get(assessment.status, 'secondary') }} me-2">{{ csa_status_labels.get(assessment.status, assessment.status.value) }}</span>
-						<span class="text-secondary small">Updated {{ assessment.updated_at or assessment.created_at or "Unknown" }}</span>
+						{% set updated_at = assessment.updated_at or assessment.created_at or _('csa.common.unknown') %}
+						<span class="text-secondary small">{{ _('csa.dashboard.latest.updated', timestamp=updated_at) }}</span>
 					</div>
 				</div>
 			</a>
 			{% endfor %}
 		</div>
 	{% else %}
-		<div class="alert alert-info">No assessments have been recorded yet. Import control templates and start the CSA workflow to populate this list.</div>
+		<div class="alert alert-info">{{ _('csa.dashboard.latest.empty') }}</div>
 	{% endif %}
 </div>
 {% endblock %}

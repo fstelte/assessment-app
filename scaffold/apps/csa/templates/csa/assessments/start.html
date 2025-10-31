@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Start Assessment{% endblock %}
+{% block title %}{{ _('csa.assessments.start.title') }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-7 col-xl-6">
     <div class="mb-4">
-      <h1 class="h3 mb-1">Start a self-assessment</h1>
-      <p class="text-secondary mb-0">Choose an active template to begin completing control evidence.</p>
+      <h1 class="h3 mb-1">{{ _('csa.assessments.start.heading') }}</h1>
+      <p class="text-secondary mb-0">{{ _('csa.assessments.start.intro') }}</p>
     </div>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       <div class="mb-3">
-        {{ form.template_id.label(class="form-label") }}
+        {{ form.template_id.label(_('csa.assessments.start.fields.template.label'), class="form-label") }}
         {{ form.template_id(class="form-select" if not form.template_id.errors else "form-select is-invalid") }}
         {% for error in form.template_id.errors %}
           <div class="invalid-feedback d-block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">Templates are backed by the imported control catalogue.</div>
+        <div class="form-text">{{ _('csa.assessments.start.fields.template.help') }}</div>
       </div>
       <div class="text-end">
         {{ form.submit(class="btn btn-primary") }}
@@ -23,7 +23,7 @@
     </form>
 
     <div class="mt-5">
-      <h2 class="h5 mb-3">Available templates</h2>
+      <h2 class="h5 mb-3">{{ _('csa.assessments.start.available.title') }}</h2>
       <div class="list-group list-group-flush">
         {% for template in templates %}
           <div class="list-group-item bg-dark text-light border-secondary">
@@ -38,20 +38,20 @@
                   {% endif %}
                 </div>
                 {% if control and control.section %}
-                  <div class="text-secondary small">Code: {{ control.section }}</div>
+                  <div class="text-secondary small">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</div>
                 {% endif %}
                 {% if control and control.domain %}
-                  <div class="text-secondary small">Control: {{ control.domain }}</div>
+                  <div class="text-secondary small">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</div>
                 {% endif %}
                 {% if control and control.description %}
                   <div class="text-secondary small">{{ control.description }}</div>
                 {% endif %}
               </div>
-              <div class="text-secondary small ms-3">Version {{ template.version }}</div>
+              <div class="text-secondary small ms-3">{{ _('csa.assessments.common.version', version=template.version) }}</div>
             </div>
           </div>
         {% else %}
-          <div class="alert alert-info mb-0">No templates available yet. Import controls to populate this list.</div>
+          <div class="alert alert-info mb-0">{{ _('csa.assessments.start.available.empty') }}</div>
         {% endfor %}
       </div>
     </div>

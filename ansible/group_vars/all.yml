@@ -1,0 +1,56 @@
+---
+app_name: scaffold
+app_repo: https://github.com/fstelte/assessment-app.git
+app_path: /opt/{{ app_name }}
+virtualenv_path: {{ app_path }}/.venv
+app_user: scaffold
+app_group: scaffold
+python_version: "3.11"
+deployment_mode: default  # valid options: default, docker
+
+flask_env: production
+flask_port: 8000
+
+# database connection for migrations (overridden per environment)
+app_database_url: postgresql+psycopg://scaffold:scaffold@localhost:5432/scaffold
+
+app_env:
+  FLASK_ENV: "{{ flask_env }}"
+  SECRET_KEY: change-me
+  DATABASE_URL: "{{ app_database_url }}"
+  PORT: "{{ flask_port }}"
+  SCAFFOLD_APP_MODULES: scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.template
+
+docker_env_path: "{{ app_path }}/.env.production"
+docker_env:
+  FLASK_ENV: "{{ flask_env }}"
+  SECRET_KEY: change-me
+  DATABASE_URL: "postgresql+psycopg://scaffold:scaffold@postgres:5432/scaffold"
+  PORT: "{{ flask_port }}"
+  SCAFFOLD_APP_MODULES: scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.template
+
+scaffold_service_managed: true
+scaffold_service_path: /etc/systemd/system/scaffold.service
+gunicorn_bind: "0.0.0.0:{{ flask_port }}"
+gunicorn_workers: 4
+
+# docker specific
+compose_project_name: scaffold
+compose_src: {{ playbook_dir }}/../..
+compose_file: docker/compose.prod.yml
+compose_profile: postgres
+
+# system packages required for default install
+common_packages:
+  - git
+  - python3
+  - python3-venv
+  - python3-pip
+  - build-essential
+  - libpq-dev
+  - libmariadb-dev
+
+docker_packages:
+  - docker.io
+  - docker-compose-plugin
+

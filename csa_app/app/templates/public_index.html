@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Welkom{% endblock %}
+{% block title %}{{ _('public.index.title') }}{% endblock %}
 {% block content %}
   <div class="text-center">
-    <h1 class="mb-3">Control Self-Assessment</h1>
+    <h1 class="mb-3">{{ _('public.index.heading') }}</h1>
     {% if current_user.is_authenticated %}
-      <p class="lead">Welkom terug, {{ current_user.full_name }}.</p>
-      <p>Uw toegewezen self-assessments verschijnen hieronder. Start een nieuwe beoordeling wanneer u klaar bent.</p>
+      <p class="lead">{{ _('public.index.lead_authenticated', name=current_user.full_name) }}</p>
+      <p>{{ _('public.index.intro_authenticated') }}</p>
       <p>
-        <a class="btn btn-success" href="{{ url_for('assessments.start') }}">Nieuwe self-assessment starten</a>
+        <a class="btn btn-success" href="{{ url_for('assessments.start') }}">{{ _('public.index.cta_start') }}</a>
       </p>
       {% if pending_reviews and (current_user.has_role('admin') or current_user.has_role('manager')) %}
         {% set review_count = pending_reviews|length %}
         <div class="card mx-auto mb-4" style="max-width: 36rem;">
-          <div class="card-header bg-warning-subtle">Assessments in afwachting van review ({{ review_count }})</div>
+          <div class="card-header bg-warning-subtle">{{ _('public.index.pending_reviews.title', count=review_count) }}</div>
           <div class="table-responsive">
             <table class="table table-sm mb-0">
               <thead>
                 <tr>
-                  <th>Assessment</th>
-                  <th>Indiener</th>
-                  <th>Ingediend op</th>
+                  <th>{{ _('public.index.pending_reviews.headers.assessment') }}</th>
+                  <th>{{ _('public.index.pending_reviews.headers.submitter') }}</th>
+                  <th>{{ _('public.index.pending_reviews.headers.submitted_at') }}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -27,10 +27,10 @@
                 {% for assessment in pending_reviews %}
                   <tr>
                     <td>{{ assessment.template.name }}</td>
-                    <td>{{ assessment.created_by.full_name if assessment.created_by else 'Onbekend' }}</td>
-                    <td>{{ assessment.submitted_at or 'Onbekend' }}</td>
+                    <td>{{ assessment.created_by.full_name if assessment.created_by else _('public.index.pending_reviews.unknown_user') }}</td>
+                    <td>{{ assessment.submitted_at or _('public.index.pending_reviews.unknown_date') }}</td>
                     <td class="text-end">
-                      <a class="btn btn-outline-warning btn-sm" href="{{ url_for('assessments.detail', assessment_id=assessment.id) }}">Bekijken</a>
+                      <a class="btn btn-outline-warning btn-sm" href="{{ url_for('assessments.detail', assessment_id=assessment.id) }}">{{ _('public.index.pending_reviews.action_view') }}</a>
                     </td>
                   </tr>
                 {% endfor %}
@@ -41,30 +41,30 @@
       {% endif %}
       {% if current_user.has_role('admin') %}
         <p class="small text-muted">
-          Nog geen sjablonen beschikbaar? <a href="{{ url_for('admin.import_controls') }}">Importeer de standaard dataset</a> of upload een eigen JSON-bestand.
+          {{ _('public.index.templates_hint') }} <a href="{{ url_for('admin.import_controls') }}">{{ _('public.index.templates_hint_link') }}</a>
         </p>
       {% endif %}
       {% if open_assignments %}
         <div class="card mx-auto" style="max-width: 32rem;">
-          <div class="card-header">Uw lopende assessments</div>
+          <div class="card-header">{{ _('public.index.open_assignments.title') }}</div>
           <ul class="list-group list-group-flush">
             {% for assignment in open_assignments|sort(attribute='assigned_at', reverse=True) %}
               <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span>
                   {{ assignment.assessment.template.name }}
-                  <small class="text-muted d-block">Status: {{ assignment.assessment.status.value|replace('_', ' ')|title }}</small>
+                  <small class="text-muted d-block">{{ _('public.index.open_assignments.status', status=assignment.assessment.status.value|replace('_', ' ')|title) }}</small>
                 </span>
-                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('assessments.detail', assessment_id=assignment.assessment.id) }}">Open</a>
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('assessments.detail', assessment_id=assignment.assessment.id) }}">{{ _('public.index.open_assignments.action_open') }}</a>
               </li>
             {% endfor %}
           </ul>
         </div>
       {% else %}
-        <p class="text-muted">U heeft nog geen lopende assessments.</p>
+        <p class="text-muted">{{ _('public.index.open_assignments.empty') }}</p>
       {% endif %}
     {% else %}
-      <p class="lead">Meld u aan om uw self assessments te beheren.</p>
-      <p><a class="btn btn-primary" href="{{ url_for('auth.login') }}">Inloggen</a></p>
+      <p class="lead">{{ _('public.index.lead_guest') }}</p>
+      <p><a class="btn btn-primary" href="{{ url_for('auth.login') }}">{{ _('public.index.cta_login') }}</a></p>
     {% endif %}
   </div>
 {% endblock %}

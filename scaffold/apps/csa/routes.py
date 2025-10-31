@@ -25,6 +25,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from ...extensions import db
+from ...core.i18n import gettext as _
 from ..identity.models import (
     ROLE_ADMIN,
     ROLE_ASSESSMENT_MANAGER,
@@ -50,27 +51,27 @@ from .models import (
 from .services import import_controls_from_file, import_controls_from_mapping
 
 
-MONTH_LABELS = {
-    1: "January",
-    2: "February",
-    3: "March",
-    4: "April",
-    5: "May",
-    6: "June",
-    7: "July",
-    8: "August",
-    9: "September",
-    10: "October",
-    11: "November",
-    12: "December",
+MONTH_LABEL_KEYS = {
+    1: "csa.months.january",
+    2: "csa.months.february",
+    3: "csa.months.march",
+    4: "csa.months.april",
+    5: "csa.months.may",
+    6: "csa.months.june",
+    7: "csa.months.july",
+    8: "csa.months.august",
+    9: "csa.months.september",
+    10: "csa.months.october",
+    11: "csa.months.november",
+    12: "csa.months.december",
 }
 
 
-STATUS_LABELS = {
-    AssessmentStatus.ASSIGNED: "Assigned",
-    AssessmentStatus.IN_PROGRESS: "In progress",
-    AssessmentStatus.SUBMITTED: "In review",
-    AssessmentStatus.REVIEWED: "Reviewed",
+STATUS_LABEL_KEYS = {
+    AssessmentStatus.ASSIGNED: "csa.status.assigned",
+    AssessmentStatus.IN_PROGRESS: "csa.status.in_progress",
+    AssessmentStatus.SUBMITTED: "csa.status.submitted",
+    AssessmentStatus.REVIEWED: "csa.status.reviewed",
 }
 
 
@@ -82,13 +83,22 @@ STATUS_BADGE_CLASSES = {
 }
 
 
+def _status_labels() -> dict[AssessmentStatus, str]:
+    return {status: _(key) for status, key in STATUS_LABEL_KEYS.items()}
+
+
+def _month_label(month: int) -> str:
+    key = MONTH_LABEL_KEYS.get(month)
+    return _(key) if key else str(month)
+
+
 bp = Blueprint("csa", __name__, url_prefix="/csa", template_folder="templates")
 
 
 @bp.app_context_processor
 def inject_status_helpers() -> dict[str, object]:
     return {
-        "csa_status_labels": STATUS_LABELS,
+        "csa_status_labels": _status_labels(),
         "csa_status_badges": STATUS_BADGE_CLASSES,
     }
 
@@ -175,7 +185,7 @@ def _group_assessments_by_period(records: Iterable[Assessment]) -> list[dict[str
             month_entries.append(
                 {
                     "month": month,
-                    "label": MONTH_LABELS.get(month, str(month)),
+                    "label": _month_label(month),
                     "assessments": items,
                 }
             )
@@ -235,15 +245,15 @@ def start_assessment():
 
     if not templates:
         if current_user.has_role(ROLE_ADMIN):
-            flash("No templates available yet. Import controls first.", "warning")
+            flash(_("csa.flash.no_templates_import_first"), "warning")
             return redirect(url_for("csa.import_controls"))
-        flash("There are no active templates yet. Contact an administrator.", "warning")
+        flash(_("csa.flash.no_templates_contact_admin"), "warning")
         return redirect(url_for("template.index"))
 
     if form.validate_on_submit():
         template = next((item for item in templates if item.id == form.template_id.data), None)
         if template is None:
-            flash("Invalid template selected.", "danger")
+            flash(_("csa.flash.invalid_template"), "danger")
         else:
             assessment = Assessment()
             assessment.template = template
@@ -258,7 +268,7 @@ def start_assessment():
 
             db.session.add_all([assessment, assignment])
             db.session.commit()
-            flash("Self-assessment started.", "success")
+            flash(_("csa.flash.assessment_started"), "success")
             return redirect(url_for("csa.view_assessment", assessment_id=assessment.id))
 
     return render_template("csa/assessments/start.html", form=form, templates=templates)
@@ -289,16 +299,16 @@ def assign_assessment():
 
     if not templates:
         if current_user.has_role(ROLE_ADMIN):
-            flash("No templates available. Import controls first.", "warning")
+            flash(_("csa.flash.no_templates_import_first"), "warning")
             return redirect(url_for("csa.import_controls"))
-        flash("No templates available. Contact an administrator.", "warning")
+        flash(_("csa.flash.no_templates_contact_admin"), "warning")
         return redirect(url_for("template.index"))
 
     if not active_users:
         if current_user.has_role(ROLE_ADMIN):
-            flash("There are no active users to assign assessments to.", "warning")
+            flash(_("csa.flash.no_active_users"), "warning")
             return redirect(url_for("admin.list_users"))
-        flash("There are no active users to assign assessments to.", "warning")
+        flash(_("csa.flash.no_active_users"), "warning")
         return redirect(url_for("template.index"))
 
     if form.validate_on_submit():
@@ -306,7 +316,7 @@ def assign_assessment():
         assignee = next((item for item in active_users if item.id == form.assignee_id.data), None)
 
         if template is None or assignee is None:
-            flash("Invalid selection. Try again.", "danger")
+            flash(_("csa.flash.invalid_selection"), "danger")
         else:
             assessment = Assessment()
             assessment.template = template
@@ -322,7 +332,11 @@ def assign_assessment():
             db.session.add_all([assessment, assignment])
             db.session.commit()
             flash(
-                f"Assessment '{template.name}' assigned to {assignee.full_name}.",
+                _(
+                    "csa.flash.assessment_assigned",
+                    template=template.name,
+                    assignee=assignee.full_name,
+                ),
                 "success",
             )
             return redirect(url_for("csa.view_assessment", assessment_id=assessment.id))
@@ -355,7 +369,7 @@ def overview_assessments():
     return render_template(
         "csa/assessments/overview.html",
         year_groups=timeline,
-        status_labels=STATUS_LABELS,
+        status_labels=_status_labels(),
         badge_classes=STATUS_BADGE_CLASSES,
     )
 
@@ -388,7 +402,7 @@ def view_assessment(assessment_id: int):
 
     if response_form.validate_on_submit() and "review_action" not in request.form:
         if not can_edit:
-            flash("This assessment is already submitted and cannot be edited.", "info")
+            flash(_("csa.flash.assessment_locked"), "info")
             return redirect(url_for("csa.view_assessment", assessment_id=assessment.id))
 
         submit_action = "review" if response_form.submit_for_review.data else "save"
@@ -415,9 +429,9 @@ def view_assessment(assessment_id: int):
 
         if submit_action == "review":
             assessment.mark_submitted()
-            message = "Assessment submitted for review."
+            message = _("csa.flash.submitted_for_review")
         else:
-            message = "Responses saved."
+            message = _("csa.flash.responses_saved")
 
         db.session.commit()
         flash(message, "success")
@@ -431,18 +445,18 @@ def view_assessment(assessment_id: int):
             assessment.mark_reviewed()
             assessment.review_comment = review_comment
             db.session.commit()
-            flash("Assessment approved.", "success")
+            flash(_("csa.flash.review_approved"), "success")
         elif action == "return":
             if review_comment is None:
-                flash("Add a comment when returning an assessment.", "warning")
+                flash(_("csa.flash.review_comment_required"), "warning")
                 return redirect(url_for("csa.view_assessment", assessment_id=assessment.id))
             assessment.status = AssessmentStatus.IN_PROGRESS
             assessment.review_comment = review_comment
             assessment.reviewed_at = None
             db.session.commit()
-            flash("Assessment returned to assignee.", "info")
+            flash(_("csa.flash.review_returned"), "info")
         else:
-            flash("Unknown review action.", "danger")
+            flash(_("csa.flash.unknown_review_action"), "danger")
 
         return redirect(url_for("csa.view_assessment", assessment_id=assessment.id))
 
@@ -464,7 +478,8 @@ def view_assessment(assessment_id: int):
                     "disabled": True,
                 }
 
-    status_label = STATUS_LABELS.get(
+    status_labels = _status_labels()
+    status_label = status_labels.get(
         assessment.status, assessment.status.value.replace("_", " ").title()
     )
 
@@ -547,16 +562,19 @@ def export_assessment(assessment_id: int):
         control_name = control_domain
 
     if not control_name:
-        control_name = control_section or assessment.template.name or f"Assessment {assessment.id}"
+        fallback_name = _("csa.assessments.export.default_name", id=assessment.id)
+        control_name = control_section or assessment.template.name or fallback_name
 
     framework_code = control_code
     framework_reference = " ".join(part for part in (control_code, control_domain) if part).strip() or control_name
+
+    status_labels = _status_labels()
 
     html = render_template(
         "csa/assessments/export.html",
         assessment=assessment,
         sections=sections,
-        status_label=STATUS_LABELS.get(
+        status_label=status_labels.get(
             assessment.status, assessment.status.value.replace("_", " ").title()
         ),
         generated_at=generated_at,
@@ -573,7 +591,8 @@ def export_assessment(assessment_id: int):
     if framework_code and control_name:
         filename_base = f"{framework_code} {control_name}"
     else:
-        filename_base = control_name or assessment.template.name or f"Assessment {assessment.id}"
+        fallback_name = _("csa.assessments.export.default_name", id=assessment.id)
+        filename_base = control_name or assessment.template.name or fallback_name
 
     safe_name = _slugify_filename(filename_base)
     date_suffix = generated_at.strftime("%Y%m%d")
@@ -595,11 +614,15 @@ def import_controls():
     if request.method == "POST" and request.form.get("action") == "import_builtin":
         builtin_path = Path(current_app.root_path).parent / "csa_app" / "iso_27002_controls.json"
         if not builtin_path.exists():
-            flash("Built-in control catalogue not found on the server.", "danger")
+            flash(_("csa.flash.catalog_missing"), "danger")
         else:
             stats = import_controls_from_file(builtin_path)
             flash(
-                f"Import completed. Created: {stats.created}, updated: {stats.updated}.",
+                _(
+                    "csa.flash.import_result",
+                    created=stats.created,
+                    updated=stats.updated,
+                ),
                 "success" if not stats.errors else "warning",
             )
             for error in stats.errors:
@@ -611,13 +634,17 @@ def import_controls():
         try:
             payload = json.load(file_storage)
         except json.JSONDecodeError as exc:
-            flash(f"Unable to read JSON: {exc}", "danger")
+            flash(_("csa.flash.json_error", error=exc), "danger")
             file_storage.close()
             return redirect(url_for("csa.import_controls"))
 
         stats = import_controls_from_mapping(payload)
         flash(
-            f"Import completed. Created: {stats.created}, updated: {stats.updated}.",
+            _(
+                "csa.flash.import_result",
+                created=stats.created,
+                updated=stats.updated,
+            ),
             "success" if not stats.errors else "warning",
         )
         for error in stats.errors:

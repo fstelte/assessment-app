@@ -4,6 +4,7 @@ This log tracks major decisions and milestones as the scaffold application evolv
 
 | Date | Change | Notes |
 | --- | --- | --- |
+| 2025-10-30 | Translated all parts of the application, add docker support. | 
 | 2025-10-29 | Localization enhancements | Added per-user locale preference, login selector, and rebuilt translation catalogs. |
 | 2025-10-24 | Scaffold repository initialised | Created Poetry project, registry skeleton, documentation placeholders. |
 | 2025-10-24 | BIA/CSA models scaffolded | Namespaced models registered under unified metadata. |

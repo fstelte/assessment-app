@@ -1,0 +1,63 @@
+---
+- name: Include common preparation steps
+  ansible.builtin.import_role:
+    name: common
+
+- name: Checkout application source
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.git:
+    repo: "{{ app_repo }}"
+    dest: "{{ app_path }}"
+    version: "{{ app_version | default('main') }}"
+    accept_hostkey: true
+  notify: Restart scaffold service
+
+- name: Ensure virtual environment exists
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.command:
+    cmd: python3 -m venv "{{ virtualenv_path }}"
+    creates: "{{ virtualenv_path }}/bin/activate"
+
+- name: Upgrade pip in virtualenv
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.command:
+    cmd: "{{ virtualenv_path }}/bin/pip install --upgrade pip"
+
+- name: Install project dependencies
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.command:
+    cmd: "{{ virtualenv_path }}/bin/pip install ."
+    chdir: "{{ app_path }}"
+
+- name: Render runtime environment file
+  become: true
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_path }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0640"
+
+- name: Install systemd service unit
+  become: true
+  ansible.builtin.template:
+    src: scaffold.service.j2
+    dest: "{{ scaffold_service_path }}"
+    mode: "0644"
+  notify: Restart scaffold service
+
+- name: Apply database migrations
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.command:
+    cmd: "{{ virtualenv_path }}/bin/flask db upgrade"
+    chdir: "{{ app_path }}"
+  environment:
+    FLASK_APP: scaffold:create_app
+    FLASK_ENV: "{{ flask_env }}"
+    DATABASE_URL: "{{ app_database_url }}"
+

@@ -23,8 +23,10 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 3. **Initialise local database**
    - Run `poetry run flask --app scaffold:create_app db upgrade` to apply migrations.
 4. **Create an administrator account**
-   - Execute `poetry run flask --app scaffold:create_app create-admin` and provide the prompts.
-   - Re-run the command whenever you need to rotate credentials or activate an admin.
+   - Run the interactive helper: `poetry run flask --app scaffold:create_app create-admin`.
+   - Supply an email address and password when prompted; the command will either create the admin user or reset the credentials if the account already exists.
+   - Pass command-line flags (for example `--email foo@example.com`) to skip prompts when scripting the setup.
+   - Re-run the command whenever you need to rotate credentials, activate a suspended admin, or seed an additional administrator.
 5. **Start the development server**
    - Execute `poetry run run` to launch the Flask development server (debug mode on by default).
    - Visit `http://127.0.0.1:5000` and log in using seeded credentials.
@@ -61,6 +63,21 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - **Static assets**: Bootstrap is loaded from a CDN by default. If offline assets are required, build them and mount under `scaffold/static`.
 - **Migrations**: execute `poetry run flask --app scaffold:create_app db upgrade` during deployment. Integrate with release pipelines or infrastructure hooks so migrations run before the new code serves traffic.
 - **Observability**: configure logging handlers in `scaffold/config.py` or via `LOGGING_CONFIG`. Add health endpoints as lightweight blueprints registered through the module registry.
+
+### Docker
+
+- Build the production image via `docker build -t assessment-app -f docker/Dockerfile .`.
+- Development stack (SQLite): `docker compose -f docker/compose.dev.yml up --build` after copying `.env.example` to `.env`.
+- Production stack: copy `docker/.env.production.example` to `.env.production`, choose `--profile postgres` or `--profile mariadb`, and run `docker compose -f docker/compose.prod.yml --profile postgres up --build -d`.
+- The container entrypoint waits for the configured database, ensures it exists, applies `flask db upgrade`, then starts Gunicorn.
+- To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin` (adjust the profile or service name if you are using MariaDB).
+
+### Ansible Pipeline
+
+- The `ansible/` directory contains a CI-friendly playbook (`playbooks/deploy.yml`). Toggle `deployment_mode` between `default` and `docker` to switch strategies.
+- Global defaults live in `ansible/group_vars/all.yml`; override secrets and `app_database_url` per inventory.
+- Run `ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/deploy.yml --check` for a dry run.
+- Docker deployments rely on the `community.docker` collection and the provided Compose file; default deployments install the app into a Python virtualenv and configure a `systemd` unit.
 
 ## Database Configuration
 

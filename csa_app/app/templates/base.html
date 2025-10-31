@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Control Self-Assessment{% endblock %}</title>
+  <title>{% block title %}{{ _('app.title') }}{% endblock %}</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -27,52 +27,52 @@
         <div class="navbar-brand mb-0 me-3">
           <a class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-2" href="{{ url_for('public.index') }}">
             <i aria-hidden="true" class="bi bi-house-fill"></i>
-            <span>CSA</span>
+            <span>{{ _('app.navigation.brand') }}</span>
           </a>
         </div>
         <div class="flex-grow-1 d-flex align-items-center ps-3">
           {% if current_user.is_authenticated and (current_user.has_role('manager') or current_user.has_role('admin')) %}
             <a class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-2" href="{{ url_for('assessments.overview') }}">
               <i aria-hidden="true" class="bi bi-table"></i>
-              <span>Assessment overzicht</span>
+              <span>{{ _('app.navigation.assessments_overview') }}</span>
             </a>
           {% endif %}
         </div>
         <div class="d-flex align-items-center gap-2">
           {% if current_user.is_authenticated %}
             <a class="btn btn-outline-light btn-sm" href="{{ url_for('assessments.start') }}">
-              Start self-assessment
+              {{ _('app.navigation.start_assessment') }}
             </a>
             <div class="dropdown">
               <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Beheer &amp; MFA
+                {{ _('app.navigation.manage_dropdown') }}
               </button>
               <ul class="dropdown-menu dropdown-menu-end {% if theme == 'dark' %}dropdown-menu-dark{% endif %}">
-                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Mijn profiel</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">{{ _('app.navigation.profile') }}</a></li>
                 <li><hr class="dropdown-divider"></li>
                 {% if current_user.has_role('manager') or current_user.has_role('admin') %}
-                  <li><a class="dropdown-item" href="{{ url_for('assessments.assign') }}">Assessment toewijzen</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('assessments.assign') }}">{{ _('app.navigation.assign_assessment') }}</a></li>
                   <li><hr class="dropdown-divider"></li>
                 {% endif %}
                 <li>
                   <a class="dropdown-item" href="{{ url_for('auth.mfa_manage') }}">
-                    {% if current_user.mfa_is_enrolled %}MFA resetten{% else %}MFA instellen{% endif %}
+                    {% if current_user.mfa_is_enrolled %}{{ _('app.navigation.mfa_reset') }}{% else %}{{ _('app.navigation.mfa_setup') }}{% endif %}
                   </a>
                 </li>
                 {% if current_user.has_role('admin') %}
                   <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Gebruikersbeheer</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('admin.import_controls') }}">Controls importeren</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">{{ _('app.navigation.admin_users') }}</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin.import_controls') }}">{{ _('app.navigation.admin_import_controls') }}</a></li>
                 {% endif %}
               </ul>
             </div>
           {% endif %}
           {% if current_user.is_authenticated %}
-            <span class="navbar-text me-3">Hallo {{ current_user.full_name }}</span>
-            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('auth.logout') }}">Afmelden</a>
+            <span class="navbar-text me-3">{{ _('app.navigation.greeting', name=current_user.full_name) }}</span>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('auth.logout') }}">{{ _('app.navigation.logout') }}</a>
           {% else %}
-            <a class="btn btn-primary btn-sm me-2" href="{{ url_for('auth.login') }}">Inloggen</a>
-            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('auth.register') }}">Registreren</a>
+            <a class="btn btn-primary btn-sm me-2" href="{{ url_for('auth.login') }}">{{ _('app.navigation.login') }}</a>
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('auth.register') }}">{{ _('app.navigation.register') }}</a>
           {% endif %}
         </div>
       </div>
@@ -90,13 +90,13 @@
       {% block content %}{% endblock %}
     </main>
     <footer class="container py-3 text-center text-body-secondary small">
-      &copy; {{ current_year }} Ferry Stelte · Versie {{ app_version }} ·
+      &copy; {{ current_year }} Ferry Stelte · {{ _('app.footer.version', version=app_version) }} ·
       {% if app_license_url %}
-        Licentie <a class="text-body-secondary" href="{{ app_license_url }}" target="_blank" rel="noopener">{{ app_license }}</a>
+        {{ _('app.footer.license_prefix') }} <a class="text-body-secondary" href="{{ app_license_url }}" target="_blank" rel="noopener">{{ app_license }}</a>
       {% else %}
-        Licentie {{ app_license }}
+        {{ _('app.footer.license_prefix') }} {{ app_license }}
       {% endif %}
-      · <a class="text-body-secondary" href="https://github.com/fstelte/Control-Self-Assessment" target="_blank" rel="noopener">GitHub</a>
+      · <a class="text-body-secondary" href="https://github.com/fstelte/Control-Self-Assessment" target="_blank" rel="noopener">{{ _('app.footer.github') }}</a>
     </footer>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

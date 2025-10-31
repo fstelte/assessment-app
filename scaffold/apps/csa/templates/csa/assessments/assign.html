@@ -1,37 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Assign Assessment{% endblock %}
+{% block title %}{{ _('csa.assessments.assign.title') }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-7 col-xl-6">
     <div class="mb-4">
-      <h1 class="h3 mb-1">Assign a self-assessment</h1>
-      <p class="text-secondary mb-0">Select an assignee, template, and optional due date for the assessment.</p>
+      <h1 class="h3 mb-1">{{ _('csa.assessments.assign.heading') }}</h1>
+      <p class="text-secondary mb-0">{{ _('csa.assessments.assign.intro') }}</p>
     </div>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       <div class="mb-3">
-        {{ form.assignee_id.label(class="form-label") }}
+        {{ form.assignee_id.label(_('csa.assessments.assign.fields.assignee.label'), class="form-label") }}
         {{ form.assignee_id(class="form-select" if not form.assignee_id.errors else "form-select is-invalid") }}
         {% for error in form.assignee_id.errors %}
           <div class="invalid-feedback d-block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">Only active users appear in this list.</div>
+        <div class="form-text">{{ _('csa.assessments.assign.fields.assignee.help') }}</div>
       </div>
       <div class="mb-3">
-        {{ form.template_id.label(class="form-label") }}
+        {{ form.template_id.label(_('csa.assessments.assign.fields.template.label'), class="form-label") }}
         {{ form.template_id(class="form-select" if not form.template_id.errors else "form-select is-invalid") }}
         {% for error in form.template_id.errors %}
           <div class="invalid-feedback d-block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">Choose the template that aligns with the relevant control.</div>
+        <div class="form-text">{{ _('csa.assessments.assign.fields.template.help') }}</div>
       </div>
       <div class="mb-3">
-        {{ form.due_date.label(class="form-label") }}
-        {{ form.due_date(class="form-control" if not form.due_date.errors else "form-control is-invalid", placeholder="YYYY-MM-DD") }}
+        {{ form.due_date.label(_('csa.assessments.assign.fields.due_date.label'), class="form-label") }}
+        {{ form.due_date(class="form-control" if not form.due_date.errors else "form-control is-invalid", placeholder=_('csa.assessments.assign.fields.due_date.placeholder')) }}
         {% for error in form.due_date.errors %}
           <div class="invalid-feedback d-block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">Optional: assign a target completion date.</div>
+        <div class="form-text">{{ _('csa.assessments.assign.fields.due_date.help') }}</div>
       </div>
       <div class="text-end">
         {{ form.submit(class="btn btn-primary") }}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if item %}Edit BIA{% else %}New BIA{% endif %}{% endblock %}
+{% block title %}{% if item %}{{ _('bia.context_form.title_edit') }}{% else %}{{ _('bia.context_form.title_new') }}{% endif %}{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
 {% set border_class = 'border-secondary' if is_dark else 'border-secondary-subtle' %}
@@ -7,87 +7,87 @@
 {% set outline_inverse = 'btn-outline-light' if is_dark else 'btn-outline-dark' %}
 {% set text_muted = 'text-secondary' if is_dark else 'text-muted' %}
 <div class="mb-4">
-  <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; Back to dashboard</a>
+  <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; {{ _('bia.context_form.back') }}</a>
 </div>
 
 <div class="row justify-content-center">
   <div class="col-lg-9 col-xl-8">
     <div class="card {{ card_surface }} mb-4">
       <div class="card-body p-4">
-        <h1 class="h3 mb-4">{% if item %}Edit {{ item.name }}{% else %}Create a new BIA{% endif %}</h1>
+  <h1 class="h3 mb-4">{% if item %}{{ _('bia.context_form.heading_edit', name=item.name) }}{% else %}{{ _('bia.context_form.heading_new') }}{% endif %}</h1>
         <form method="post">
           {{ form.hidden_tag() }}
 
-          <h2 class="h5 text-uppercase {{ text_muted }} mb-3">General information</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mb-3">{{ _('bia.context_form.section.general') }}</h2>
           <div class="row g-3">
-            <div class="col-md-6">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.user_amount.label(class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.name.label(_('bia.context_form.fields.name.label'), class="form-label") }}{{ form.name(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.user_amount.label(_('bia.context_form.fields.user_amount.label'), class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
           </div>
           <div class="row g-3 mt-1">
-            <div class="col-md-6">{{ form.start_date.label(class="form-label") }}{{ form.start_date(class="form-control", type="date") }}</div>
-            <div class="col-md-6">{{ form.end_date.label(class="form-label") }}{{ form.end_date(class="form-control", type="date") }}</div>
+            <div class="col-md-6">{{ form.start_date.label(_('bia.context_form.fields.start_date.label'), class="form-label") }}{{ form.start_date(class="form-control", type="date") }}</div>
+            <div class="col-md-6">{{ form.end_date.label(_('bia.context_form.fields.end_date.label'), class="form-label") }}{{ form.end_date(class="form-control", type="date") }}</div>
           </div>
-          <div class="mt-3">{{ form.service_description.label(class="form-label") }}{{ form.service_description(class="form-control", rows=3) }}</div>
-          <div class="mt-3">{{ form.scope_description.label(class="form-label") }}{{ form.scope_description(class="form-control", rows=3) }}</div>
+          <div class="mt-3">{{ form.service_description.label(_('bia.context_form.fields.service_description.label'), class="form-label") }}{{ form.service_description(class="form-control", rows=3) }}</div>
+          <div class="mt-3">{{ form.scope_description.label(_('bia.context_form.fields.scope_description.label'), class="form-label") }}{{ form.scope_description(class="form-control", rows=3) }}</div>
 
-          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Contacts</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.contacts') }}</h2>
           <div class="row g-3">
             <div class="col-md-6">
-              {{ form.responsible.label(class="form-label") }}
+              {{ form.responsible.label(_('bia.context_form.fields.responsible.label'), class="form-label") }}
               {% if can_assign_owner|default(False) %}
                 {{ form.responsible(class="form-control") }}
               {% else %}
                 {{ form.responsible(class="form-control", readonly=True) }}
-                <div class="form-text {{ text_muted }}">Only assessment managers or administrators can assign the owner.</div>
+                <div class="form-text {{ text_muted }}">{{ _('bia.context_form.responsible_hint') }}</div>
               {% endif %}
             </div>
-            <div class="col-md-6">{{ form.coordinator.label(class="form-label") }}{{ form.coordinator(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.project_leader.label(class="form-label") }}{{ form.project_leader(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.product_owner.label(class="form-label") }}{{ form.product_owner(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.risk_owner.label(class="form-label") }}{{ form.risk_owner(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.technical_administrator.label(class="form-label") }}{{ form.technical_administrator(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.security_manager.label(class="form-label") }}{{ form.security_manager(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.incident_contact.label(class="form-label") }}{{ form.incident_contact(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.coordinator.label(_('bia.context_form.fields.coordinator.label'), class="form-label") }}{{ form.coordinator(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.project_leader.label(_('bia.context_form.fields.project_leader.label'), class="form-label") }}{{ form.project_leader(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.product_owner.label(_('bia.context_form.fields.product_owner.label'), class="form-label") }}{{ form.product_owner(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.risk_owner.label(_('bia.context_form.fields.risk_owner.label'), class="form-label") }}{{ form.risk_owner(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.technical_administrator.label(_('bia.context_form.fields.technical_administrator.label'), class="form-label") }}{{ form.technical_administrator(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.security_manager.label(_('bia.context_form.fields.security_manager.label'), class="form-label") }}{{ form.security_manager(class="form-control") }}</div>
+            <div class="col-md-6">{{ form.incident_contact.label(_('bia.context_form.fields.incident_contact.label'), class="form-label") }}{{ form.incident_contact(class="form-control") }}</div>
           </div>
 
-          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Dependencies & contracts</h2>
-          <div class="mt-3">{{ form.mission_critical.label(class="form-label") }}{{ form.mission_critical(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.knowledge.label(class="form-label") }}{{ form.knowledge(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.interfaces.label(class="form-label") }}{{ form.interfaces(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.support_contracts.label(class="form-label") }}{{ form.support_contracts(class="form-control") }}</div>
-          <div class="mt-3">{{ form.security_supplier.label(class="form-label") }}{{ form.security_supplier(class="form-control") }}</div>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.dependencies') }}</h2>
+          <div class="mt-3">{{ form.mission_critical.label(_('bia.context_form.fields.mission_critical.label'), class="form-label") }}{{ form.mission_critical(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.knowledge.label(_('bia.context_form.fields.knowledge.label'), class="form-label") }}{{ form.knowledge(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.interfaces.label(_('bia.context_form.fields.interfaces.label'), class="form-label") }}{{ form.interfaces(class="form-control", rows=2) }}</div>
+          <div class="mt-3">{{ form.support_contracts.label(_('bia.context_form.fields.support_contracts.label'), class="form-label") }}{{ form.support_contracts(class="form-control") }}</div>
+          <div class="mt-3">{{ form.security_supplier.label(_('bia.context_form.fields.security_supplier.label'), class="form-label") }}{{ form.security_supplier(class="form-control") }}</div>
 
-          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">Risk posture</h2>
+          <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.risk') }}</h2>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.risk_assessment_human(class="form-check-input", role="switch") }}
-                {{ form.risk_assessment_human.label(class="form-check-label") }}
+                {{ form.risk_assessment_human.label(_('bia.context_form.fields.risk_assessment_human.label'), class="form-check-label") }}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.risk_assessment_process(class="form-check-input", role="switch") }}
-                {{ form.risk_assessment_process.label(class="form-check-label") }}
+                {{ form.risk_assessment_process.label(_('bia.context_form.fields.risk_assessment_process.label'), class="form-check-label") }}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.risk_assessment_technological(class="form-check-input", role="switch") }}
-                {{ form.risk_assessment_technological.label(class="form-check-label") }}
+                {{ form.risk_assessment_technological.label(_('bia.context_form.fields.risk_assessment_technological.label'), class="form-check-label") }}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.ai_model(class="form-check-input", role="switch") }}
-                {{ form.ai_model.label(class="form-check-label") }}
+                {{ form.ai_model.label(_('bia.context_form.fields.ai_model.label'), class="form-check-label") }}
               </div>
             </div>
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4">
-            <a href="{{ url_for('bia.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
-            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('bia.dashboard') }}" class="btn btn-outline-secondary">{{ _('actions.cancel') }}</a>
+            {{ form.submit(class="btn btn-primary", value=_('bia.context_form.submit')) }}
           </div>
         </form>
       </div>
@@ -97,9 +97,9 @@
   <div class="card {{ card_surface }} mb-4">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="h5 mb-0">Related components</h2>
+          <h2 class="h5 mb-0">{{ _('bia.context_form.components.title') }}</h2>
           <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#biaAddComponentModal">
-            <i class="fas fa-plus me-1"></i>Add component
+            <i class="fas fa-plus me-1"></i>{{ _('bia.context_form.components.add') }}
           </button>
         </div>
         <div class="row g-3" id="bia-component-list">
@@ -108,13 +108,13 @@
             <div class="card {{ card_surface }} h-100">
               <div class="card-body">
                 <h3 class="h6 text-uppercase {{ text_muted }}">{{ component.name }}</h3>
-                <p class="{{ text_muted }} small mb-3">Linked to {{ item.name }}</p>
+                <p class="{{ text_muted }} small mb-3">{{ _('bia.context_form.components.linked_to', context=item.name) }}</p>
                 <div class="d-flex gap-2">
                   <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="{{ component.id }}">
-                              <i class="fas fa-eye me-1"></i>View
+                              <i class="fas fa-eye me-1"></i>{{ _('actions.view') }}
                   </button>
                   <button type="button" class="btn btn-outline-danger btn-sm w-50 bia-delete-component" data-component-id="{{ component.id }}">
-                    <i class="fas fa-trash me-1"></i>Delete
+                    <i class="fas fa-trash me-1"></i>{{ _('actions.delete') }}
                   </button>
                 </div>
               </div>
@@ -122,7 +122,7 @@
           </div>
           {% else %}
           <div class="col-12" id="bia-no-components">
-            <div class="alert alert-secondary mb-0">No components added yet.</div>
+            <div class="alert alert-secondary mb-0">{{ _('bia.context_form.components.empty') }}</div>
           </div>
           {% endfor %}
         </div>
@@ -131,13 +131,13 @@
 
     <div class="card {{ card_surface }}">
       <div class="card-body">
-        <h2 class="h5 mb-3">Next steps</h2>
-        <p class="{{ text_muted }} mb-3">Use these quick links to continue refining {{ item.name }}.</p>
+        <h2 class="h5 mb-3">{{ _('bia.context_form.next_steps.title') }}</h2>
+        <p class="{{ text_muted }} mb-3">{{ _('bia.context_form.next_steps.subtitle', context=item.name) }}</p>
         <div class="d-flex flex-wrap gap-2">
-          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">View BIA</a>
-          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage summary</a>
-          <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Export HTML</a>
-          <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Export CSV</a>
+          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.context_form.next_steps.view') }}</a>
+          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.context_form.next_steps.summary') }}</a>
+          <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.context_form.next_steps.export_html') }}</a>
+          <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.context_form.next_steps.export_csv') }}</a>
         </div>
       </div>
     </div>
@@ -147,34 +147,34 @@
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
-            <h2 class="modal-title h5" id="biaViewComponentModalLabel">Component details</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title h5" id="biaViewComponentModalLabel">{{ _('bia.context_form.modals.view.title') }}</h2>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <dl class="row mb-0">
-              <dt class="col-sm-4 {{ text_muted }}">Name</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.name') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-name"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">Information type</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.info_type') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-info-type"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">Owner</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.info_owner') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-info-owner"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">User type</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.user_type') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-user-type"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">Dependencies</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.dependencies') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-process"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">Description</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.description') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-description"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">Consequences</dt>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.consequences') }}</dt>
               <dd class="col-sm-8"><span id="bia-view-component-consequences"></span></dd>
             </dl>
           </div>
           <div class="modal-footer {{ border_class }}">
-            <a class="btn {{ outline_inverse }}" id="bia-view-consequences-link" target="_blank" rel="noopener">View consequences</a>
+            <a class="btn {{ outline_inverse }}" id="bia-view-consequences-link" target="_blank" rel="noopener">{{ _('bia.context_form.modals.view.consequence_link') }}</a>
             <button type="button" class="btn btn-primary" id="bia-edit-component-launch" data-component-id="">
-              <i class="fas fa-edit me-1"></i>Edit
+              <i class="fas fa-edit me-1"></i>{{ _('actions.edit') }}
             </button>
             <button type="button" class="btn btn-danger" id="bia-delete-component-launch" data-component-id="">
-              <i class="fas fa-trash me-1"></i>Delete
+              <i class="fas fa-trash me-1"></i>{{ _('actions.delete') }}
             </button>
           </div>
         </div>
@@ -186,41 +186,41 @@
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
-            <h2 class="modal-title h5" id="biaAddComponentModalLabel">Add new component</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title h5" id="biaAddComponentModalLabel">{{ _('bia.context_form.modals.add.title') }}</h2>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <form id="bia-component-form">
               {{ component_form.hidden_tag() }}
               <div class="mb-3">
-                {{ component_form.name.label(class="form-label") }}
+                {{ component_form.name.label(_('bia.context_form.component_fields.name.label'), class="form-label") }}
                 {{ component_form.name(class="form-control", id="bia-component-name") }}
               </div>
               <div class="mb-3">
-                {{ component_form.info_type.label(class="form-label") }}
+                {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
                 {{ component_form.info_type(class="form-control", id="bia-component-info-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.info_owner.label(class="form-label") }}
+                {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
                 {{ component_form.info_owner(class="form-control", id="bia-component-info-owner") }}
               </div>
               <div class="mb-3">
-                {{ component_form.user_type.label(class="form-label") }}
+                {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
                 {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.process_dependencies.label(class="form-label") }}
+                {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
                 {{ component_form.process_dependencies(class="form-control", id="bia-component-process-dependencies", rows=3) }}
               </div>
               <div class="mb-3">
-                {{ component_form.description.label(class="form-label") }}
+                {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
                 {{ component_form.description(class="form-control", id="bia-component-description", rows=3) }}
               </div>
             </form>
           </div>
           <div class="modal-footer {{ border_class }}">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="bia-save-component">Save component</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('actions.cancel') }}</button>
+            <button type="button" class="btn btn-primary" id="bia-save-component">{{ _('bia.context_form.modals.add.submit') }}</button>
           </div>
         </div>
       </div>
@@ -231,45 +231,52 @@
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
-            <h2 class="modal-title h5" id="biaEditComponentModalLabel">Edit component</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h2 class="modal-title h5" id="biaEditComponentModalLabel">{{ _('bia.context_form.modals.edit.title') }}</h2>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <form id="bia-edit-component-form">
               {{ component_form.hidden_tag() }}
               <input type="hidden" name="component_id" id="bia-edit-component-id">
               <div class="mb-3">
-                {{ component_form.name.label(class="form-label") }}
+                {{ component_form.name.label(_('bia.context_form.component_fields.name.label'), class="form-label") }}
                 {{ component_form.name(class="form-control", id="bia-edit-component-name") }}
               </div>
               <div class="mb-3">
-                {{ component_form.info_type.label(class="form-label") }}
+                {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
                 {{ component_form.info_type(class="form-control", id="bia-edit-component-info-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.info_owner.label(class="form-label") }}
+                {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
                 {{ component_form.info_owner(class="form-control", id="bia-edit-component-info-owner") }}
               </div>
               <div class="mb-3">
-                {{ component_form.user_type.label(class="form-label") }}
+                {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
                 {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.process_dependencies.label(class="form-label") }}
+                {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
                 {{ component_form.process_dependencies(class="form-control", id="bia-edit-component-process-dependencies", rows=3) }}
               </div>
               <div class="mb-3">
-                {{ component_form.description.label(class="form-label") }}
+                {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
                 {{ component_form.description(class="form-control", id="bia-edit-component-description", rows=3) }}
               </div>
             </form>
           </div>
           <div class="modal-footer {{ border_class }}">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="bia-save-edit-component">Save changes</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('actions.cancel') }}</button>
+            <button type="button" class="btn btn-primary" id="bia-save-edit-component">{{ _('bia.context_form.modals.edit.submit') }}</button>
           </div>
         </div>
       </div>
+    </div>
+
+    <div id="bia-component-translations"
+         data-empty="{{ _('bia.context_form.components.empty') }}"
+         data-linked="{{ _('bia.context_form.components.linked_to', context=item.name)|e }}"
+         data-view="{{ _('actions.view') }}"
+         data-delete="{{ _('actions.delete') }}">
     </div>
 
     <script>
@@ -278,6 +285,19 @@
       if (!componentList) {
         return;
       }
+
+      const translationNode = document.getElementById('bia-component-translations');
+      const translations = translationNode ? {
+        componentsEmpty: translationNode.dataset.empty || '',
+        componentsLinkedTo: translationNode.dataset.linked || '',
+        actionsView: translationNode.dataset.view || '',
+        actionsDelete: translationNode.dataset.delete || ''
+      } : {
+        componentsEmpty: "{{ _('bia.context_form.components.empty')|escapejs }}",
+        componentsLinkedTo: "{{ _('bia.context_form.components.linked_to', context=item.name)|escapejs }}",
+        actionsView: "{{ _('actions.view')|escapejs }}",
+        actionsDelete: "{{ _('actions.delete')|escapejs }}"
+      };
 
       const routes = {
         add: '{{ url_for("bia.add_component") }}',
@@ -334,7 +354,7 @@
           const placeholder = document.createElement('div');
           placeholder.className = 'col-12';
           placeholder.id = noComponentsId;
-          placeholder.innerHTML = '<div class="alert alert-secondary mb-0">No components added yet.</div>';
+          placeholder.innerHTML = `<div class="alert alert-secondary mb-0">${translations.componentsEmpty}</div>`;
           componentList.appendChild(placeholder);
         } else if (hasComponents && existingMessage) {
           existingMessage.remove();
@@ -351,13 +371,13 @@
               <h3 class="h6 text-uppercase {{ text_muted }}">
                 ${component.name}
               </h3>
-              <p class="{{ text_muted }} small mb-3">Linked to {{ item.name }}</p>
+              <p class="{{ text_muted }} small mb-3">${translations.componentsLinkedTo}</p>
               <div class="d-flex gap-2">
                 <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="${component.id}">
-                  <i class="fas fa-eye me-1"></i>View
+                  <i class="fas fa-eye me-1"></i>${translations.actionsView}
                 </button>
                 <button type="button" class="btn btn-outline-danger btn-sm w-50 bia-delete-component" data-component-id="${component.id}">
-                  <i class="fas fa-trash me-1"></i>Delete
+                  <i class="fas fa-trash me-1"></i>${translations.actionsDelete}
                 </button>
               </div>
             </div>

@@ -1,0 +1,23 @@
+---
+- name: Deploy scaffold application
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Validate deployment mode
+      ansible.builtin.assert:
+        that:
+          - deployment_mode in ['default', 'docker']
+        fail_msg: "deployment_mode must be 'default' or 'docker'"
+
+  tasks:
+    - name: Deploy using Docker
+      ansible.builtin.include_role:
+        name: docker
+      when: deployment_mode == 'docker'
+
+    - name: Deploy using default installation
+      ansible.builtin.include_role:
+        name: default_install
+      when: deployment_mode == 'default'

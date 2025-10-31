@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}BIA Dashboard{% endblock %}
+{% block title %}{{ _('bia.dashboard.title') }}{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
 {% set border_class = 'border-secondary' if is_dark else 'border-secondary-subtle' %}
@@ -12,38 +12,38 @@
 	<div class="col-lg-3 col-xl-2">
 		<nav class="{{ sidebar_card }} sticky-top" style="top: 6rem;">
 			<div class="card-body p-3">
-				<h2 class="h6 text-uppercase text-secondary">Navigate</h2>
+				<h2 class="h6 text-uppercase text-secondary">{{ _('bia.dashboard.sidebar.navigate') }}</h2>
 				<ul class="nav flex-column gap-2 mt-3">
 					<li class="nav-item">
 						<a class="nav-link px-0 {{ nav_link_color }} d-flex align-items-center" href="{{ url_for('bia.dashboard') }}">
 							<i class="fas fa-chart-line me-2 text-secondary"></i>
-							Dashboard overview
+							{{ _('bia.dashboard.sidebar.overview') }}
 						</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link px-0 {{ nav_link_color }} d-flex align-items-center" href="{{ url_for('bia.view_components') }}">
 							<i class="fas fa-boxes me-2 text-secondary"></i>
-							View components
+							{{ _('bia.dashboard.sidebar.components') }}
 						</a>
 					</li>
 				</ul>
 				<hr class="border-secondary my-3">
-				<h2 class="h6 text-uppercase text-secondary mb-2">Actions</h2>
+				<h2 class="h6 text-uppercase text-secondary mb-2">{{ _('bia.dashboard.sidebar.actions') }}</h2>
 				<div class="d-grid gap-2">
-					<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary btn-sm">New BIA</a>
-					<a href="{{ url_for('bia.import_csv_view') }}" class="btn {{ outline_inverse }} btn-sm">Import CSV</a>
-					<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary btn-sm">Import SQL</a>
-					<a href="{{ url_for('bia.export_data_inventory') }}" class="btn btn-outline-secondary btn-sm">Export data inventory (CSV)</a>
-					<a href="{{ url_for('bia.export_all_consequences') }}" class="btn btn-outline-secondary btn-sm">Export CIA consequences (detailed)</a>
-					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="btn btn-outline-secondary btn-sm">Export CIA consequences (summary)</a>
+					<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary btn-sm">{{ _('bia.dashboard.sidebar.new_bia') }}</a>
+					<a href="{{ url_for('bia.import_csv_view') }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.dashboard.sidebar.import_csv') }}</a>
+					<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.import_sql') }}</a>
+					<a href="{{ url_for('bia.export_data_inventory') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
+					<a href="{{ url_for('bia.export_all_consequences') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_cia_detailed') }}</a>
+					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_cia_summary') }}</a>
 				</div>
 			</div>
 		</nav>
 	</div>
 	<div class="col-lg-9 col-xl-10">
 		<div class="mb-4">
-			<h1 class="mb-1">Business Impact Analyses</h1>
-			<p class="text-secondary mb-0">Track, update and export your organisation's BIAs from a single workspace.</p>
+			<h1 class="mb-1">{{ _('bia.dashboard.header.title') }}</h1>
+			<p class="text-secondary mb-0">{{ _('bia.dashboard.header.subtitle') }}</p>
 		</div>
 
 		{% if contexts %}
@@ -56,7 +56,7 @@
 							<div>
 								<h5 class="card-title mb-1">{{ context.name }}</h5>
 								<p class="card-subtitle text-secondary small mb-0">
-									Risk owner: {{ context.risk_owner or (context.author.full_name if context.author else context.responsible) or 'Not assigned' }}
+									{{ _('bia.dashboard.card.risk_owner') }}: {{ context.risk_owner or (context.author.full_name if context.author else context.responsible) or _('bia.dashboard.card.not_assigned') }}
 								</p>
 								{% if can_manage_owner|default(False) %}
 								<form class="mt-2" method="post" action="{{ url_for('bia.update_owner', item_id=context.id) }}">
@@ -64,8 +64,8 @@
 									<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 									{% endif %}
 									<div class="input-group input-group-sm">
-										<select class="form-select" name="owner_id" aria-label="Select owner">
-											<option value="" {% if not context.author %}selected{% endif %}>Unassigned</option>
+										<select class="form-select" name="owner_id" aria-label="{{ _('bia.dashboard.card.owner_aria') }}">
+											<option value="" {% if not context.author %}selected{% endif %}>{{ _('bia.dashboard.card.owner_unassigned') }}</option>
 											{% if context.author and owner_choice_ids and context.author.id not in owner_choice_ids %}
 											<option value="{{ context.author.id }}" selected>{{ context.author.full_name }}</option>
 											{% endif %}
@@ -75,32 +75,32 @@
 											</option>
 											{% endfor %}
 										</select>
-										<button type="submit" class="btn btn-outline-primary">Save</button>
+										<button type="submit" class="btn btn-outline-primary">{{ _('bia.dashboard.card.owner_save') }}</button>
 									</div>
 								</form>
 								{% endif %}
 							</div>
-								<span class="badge {{ badge_muted }}">{{ context.components | length }} components</span>
+								<span class="badge {{ badge_muted }}">{{ _('bia.dashboard.card.components', count=context.components | length) }}</span>
 						</div>
 						<p class="text-secondary flex-grow-1">
 							{% if context.service_description %}
 								{{ context.service_description | truncate(120, True, '...') }}
 							{% else %}
-								No service description captured yet.
+								{{ _('bia.dashboard.card.no_description') }}
 							{% endif %}
 						</p>
 							<div class="d-flex flex-wrap gap-2 mt-3">
-								<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="btn {{ outline_inverse }} btn-sm">View</a>
-								<a href="{{ url_for('bia.export_item', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export HTML</a>
-								<a href="{{ url_for('bia.export_csv', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
-								<a href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
+								<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.dashboard.card.action_view') }}</a>
+								<a href="{{ url_for('bia.export_item', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_html') }}</a>
+								<a href="{{ url_for('bia.export_csv', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_csv') }}</a>
+								<a href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_sql') }}</a>
 							{% if editable_context_ids and context.id in editable_context_ids %}
-								<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+								<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="btn btn-outline-primary btn-sm">{{ _('bia.dashboard.card.action_edit') }}</a>
 							{% endif %}
 						</div>
 					</div>
 					<div class="card-footer text-secondary small">
-						Last updated {{ context.last_update or 'never' }}
+						{{ _('bia.dashboard.card.last_updated', date=context.last_update or _('bia.dashboard.card.never')) }}
 					</div>
 				</div>
 			</div>
@@ -108,7 +108,7 @@
 		</div>
 		{% else %}
 		<div class="alert alert-info">
-			<strong>No BIAs recorded yet.</strong> Create a new analysis or import an existing dataset to get started.
+			<strong>{{ _('bia.dashboard.empty.title') }}</strong> {{ _('bia.dashboard.empty.body') }}
 		</div>
 		{% endif %}
 	</div>
