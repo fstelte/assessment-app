@@ -1,0 +1,13 @@
+services:
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
+      ADMINER_DESIGN: flat
+    ports:
+      - "8080:8080"
+    profiles:
+      - postgres-tools
