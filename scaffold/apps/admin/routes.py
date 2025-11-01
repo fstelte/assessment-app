@@ -14,6 +14,7 @@ from flask import (
     request,
     url_for,
 )
+from ...core.i18n import gettext as _
 from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
@@ -55,7 +56,7 @@ def list_users():
             if role not in user.roles
         ]
         if role_choices:
-            assign_form.role.choices = [("", "Select a role…")] + role_choices  # type: ignore[assignment]
+            assign_form.role.choices = [("", _("admin.users.form.select_role"))] + role_choices  # type: ignore[assignment]
             assign_form.role.data = ""
         else:
             assign_form.role.choices = []  # type: ignore[assignment]
@@ -67,7 +68,7 @@ def list_users():
             disabled_reason = ""
             remove_form: UserRoleRemoveForm | None = None
             if role.name == "admin" and is_protected_admin:
-                disabled_reason = "At least one administrator must remain."
+                disabled_reason = _("admin.users.flash.admin_must_remain")
             else:
                 remove_form = UserRoleRemoveForm()
                 remove_form.role.data = role.name
@@ -102,9 +103,9 @@ def activate_user(user_id: int):
         user.activated_at = datetime.now(UTC)
         user.deactivated_at = None
         db.session.commit()
-        flash("User activated.", "success")
+        flash(_("admin.users.flash.user_activated"), "success")
     else:
-        flash("User was already active.", "info")
+        flash(_("admin.users.flash.user_already_active"), "info")
 
     return redirect(url_for("admin.list_users"))
 
@@ -122,16 +123,16 @@ def deactivate_user(user_id: int):
     if user.has_role("admin"):
         admin_count = User.query.filter(User.roles.any(Role.name == "admin")).count()
         if admin_count <= 1:
-            flash("The final administrator cannot be deactivated.", "danger")
+            flash(_("admin.users.flash.final_admin_cannot_be_deactivated"), "danger")
             return redirect(url_for("admin.list_users"))
 
     if user.status == UserStatus.DISABLED:
-        flash("User was already deactivated.", "info")
+        flash(_("admin.users.flash.user_already_deactivated"), "info")
     else:
         user.status = UserStatus.DISABLED
         user.deactivated_at = datetime.now(UTC)
         db.session.commit()
-        flash("User deactivated.", "success")
+        flash(_("admin.users.flash.user_deactivated"), "success")
 
     return redirect(url_for("admin.list_users"))
 
@@ -147,18 +148,18 @@ def delete_user(user_id: int):
         abort(404)
 
     if user.id == current_user.id:
-        flash("You cannot delete the account currently in use.", "danger")
+        flash(_("admin.users.flash.cannot_delete_current_account"), "danger")
         return redirect(url_for("admin.list_users"))
 
     if user.has_role("admin"):
         admin_count = User.query.filter(User.roles.any(Role.name == "admin")).count()
         if admin_count <= 1:
-            flash("The final administrator cannot be deleted.", "danger")
+            flash(_("admin.users.flash.final_admin_cannot_be_deleted"), "danger")
             return redirect(url_for("admin.list_users"))
 
     db.session.delete(user)
     db.session.commit()
-    flash("User deleted.", "success")
+    flash(_("admin.users.flash.user_deleted"), "success")
     return redirect(url_for("admin.list_users"))
 
 
@@ -175,23 +176,23 @@ def assign_user_role(user_id: int):
     form = UserRoleAssignForm()
     available_roles = Role.query.order_by(Role.name.asc()).all()
     role_choices = [(role.name, role.description or role.name.title()) for role in available_roles]
-    form.role.choices = ([("", "Select a role…")] + role_choices) if role_choices else []  # type: ignore[assignment]
+    form.role.choices = (([("", _("admin.users.form.select_role"))] + role_choices) if role_choices else [])  # type: ignore[assignment]
 
     if not available_roles:
-        flash("No roles are configured at this time.", "warning")
+        flash(_("admin.users.flash.no_roles_configured"), "warning")
         return redirect(url_for("admin.list_users"))
 
     if form.validate_on_submit():
         role_name = form.role.data
         role_obj = next((role for role in available_roles if role.name == role_name), None)
         if role_obj is None:
-            flash("Unknown role selected.", "danger")
+            flash(_("admin.users.flash.unknown_role_selected"), "danger")
         elif role_obj in user.roles:
-            flash("User already has this role.", "info")
+            flash(_("admin.users.flash.user_has_role"), "info")
         else:
             user.roles.append(role_obj)
             db.session.commit()
-            flash("Role assigned.", "success")
+            flash(_("admin.users.flash.role_assigned"), "success")
     else:
         for errors in form.errors.values():
             for error in errors:
@@ -216,9 +217,9 @@ def remove_user_role(user_id: int):
         role_name = form.role.data
         role_obj = Role.query.filter_by(name=role_name).first()
         if role_obj is None:
-            flash("Unknown role selected.", "danger")
+            flash(_("admin.users.flash.unknown_role_remove"), "danger")
         elif role_obj not in user.roles:
-            flash("User does not have this role.", "info")
+            flash(_("admin.users.flash.user_does_not_have_role"), "info")
         else:
             if role_obj.name == "admin":
                 admin_count = (
@@ -227,11 +228,11 @@ def remove_user_role(user_id: int):
                     .count()
                 )
                 if admin_count <= 1:
-                    flash("At least one administrator must remain.", "danger")
+                    flash(_("admin.users.flash.admin_must_remain"), "danger")
                     return redirect(url_for("admin.list_users"))
             user.roles.remove(role_obj)
             db.session.commit()
-            flash("Role removed.", "success")
+            flash(_("admin.users.flash.role_removed"), "success")
     else:
         for errors in form.errors.values():
             for error in errors:
@@ -256,16 +257,16 @@ def user_mfa(user_id: int):
         action = request.form.get("action", "").lower()
         if action == "enable":
             provisioning = ensure_mfa_provisioning(user, issuer)
-            flash("MFA enabled for this user. Share the secret securely.", "success")
+            flash(_("admin.users.flash.mfa_enabled"), "success")
             return redirect(url_for("admin.user_mfa", user_id=user.id))
         if action == "disable":
             if user.mfa_setting:
                 user.mfa_setting.enabled = False
                 user.mfa_setting.enrolled_at = None
                 db.session.commit()
-                flash("MFA disabled for this user.", "info")
+                flash(_("admin.users.flash.mfa_disabled"), "info")
             else:
-                flash("MFA is not enabled for this user.", "warning")
+                flash(_("admin.users.flash.mfa_not_enabled"), "warning")
             return redirect(url_for("admin.user_mfa", user_id=user.id))
         if action == "regenerate":
             provisioning = build_provisioning(user.email, issuer)
@@ -280,10 +281,10 @@ def user_mfa(user_id: int):
                 user.mfa_setting.enabled = True
                 user.mfa_setting.enrolled_at = None
             db.session.commit()
-            flash("MFA secret regenerated. Share the new secret securely.", "warning")
+            flash(_("admin.users.flash.mfa_regenerated"), "warning")
             return redirect(url_for("admin.user_mfa", user_id=user.id))
 
-        flash("Unknown action.", "danger")
+        flash(_("admin.users.flash.unknown_action"), "danger")
         return redirect(url_for("admin.user_mfa", user_id=user.id))
 
     if user.mfa_setting:

@@ -1,39 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Manage MFA{% endblock %}
+{% block title %}{{ _('admin.user_mfa.title') }}{% endblock %}
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Manage MFA for {{ target_user.full_name }}</h1>
-  <p class="text-secondary mb-0">Email: {{ target_user.email }}</p>
+  <h1 class="h3 mb-1">{{ _('admin.user_mfa.heading', name=target_user.full_name) }}</h1>
+  <p class="text-secondary mb-0">{{ _('admin.user_mfa.email') }}: {{ target_user.email }}</p>
 </div>
 
 {% if provisioning %}
   <div class="card bg-dark border-secondary mb-4">
     <div class="card-body">
-      <h2 class="h5">Provisioning details</h2>
-      <p class="mb-1"><span class="text-secondary">Secret:</span> <code>{{ provisioning.secret }}</code></p>
-      <p class="mb-0"><span class="text-secondary">URI:</span> <code>{{ provisioning.uri }}</code></p>
+  <h2 class="h5">{{ _('admin.user_mfa.provisioning.heading') }}</h2>
+  <p class="mb-1"><span class="text-secondary">{{ _('admin.user_mfa.provisioning.secret') }}:</span> <code>{{ provisioning.secret }}</code></p>
+  <p class="mb-0"><span class="text-secondary">{{ _('admin.user_mfa.provisioning.uri') }}:</span> <code>{{ provisioning.uri }}</code></p>
     </div>
   </div>
 {% else %}
-  <div class="alert alert-info">MFA is not currently provisioned for this user.</div>
+  <div class="alert alert-info">{{ _('admin.user_mfa.not_provisioned') }}</div>
 {% endif %}
 
 <div class="d-flex flex-wrap gap-2">
   <form method="post" class="d-inline">
     {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
     <input type="hidden" name="action" value="enable">
-    <button type="submit" class="btn btn-sm btn-outline-success">Enable / Refresh Secret</button>
+    <button type="submit" class="btn btn-sm btn-outline-success">{{ _('admin.user_mfa.actions.enable_refresh') }}</button>
   </form>
   <form method="post" class="d-inline">
     {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
     <input type="hidden" name="action" value="regenerate">
-    <button type="submit" class="btn btn-sm btn-outline-warning">Regenerate Secret</button>
+    <button type="submit" class="btn btn-sm btn-outline-warning">{{ _('admin.user_mfa.actions.regenerate') }}</button>
   </form>
   <form method="post" class="d-inline">
     {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
     <input type="hidden" name="action" value="disable">
-    <button type="submit" class="btn btn-sm btn-outline-danger">Disable MFA</button>
+    <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('admin.user_mfa.actions.disable') }}</button>
   </form>
-  <a class="btn btn-sm btn-outline-light" href="{{ url_for('admin.list_users') }}">Back to users</a>
+  <a class="btn btn-sm btn-outline-light" href="{{ url_for('admin.list_users') }}">{{ _('admin.user_mfa.actions.back_to_users') }}</a>
 </div>
 {% endblock %}

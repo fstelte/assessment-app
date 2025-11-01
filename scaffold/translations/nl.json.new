@@ -1,0 +1,848 @@
+{
+  "app": {
+    "title": "Assessment Platform",
+    "footer": {
+      "version": "Versie {version}",
+      "built_by": "Gemaakt door {author}",
+      "github": "GitHub",
+      "changelog": "Wijzigingslog",
+      "license_prefix": "License Prefix"
+    },
+    "navigation": {
+      "brand": "Assessment Platform",
+      "home": "Start",
+      "bia": "BIA",
+      "profile": "Profiel",
+      "admin": "Beheer",
+      "logout": "Afmelden",
+      "login": "Aanmelden",
+      "register": "Registreren",
+      "admin_import_controls": "Admin Import Controls",
+      "admin_users": "Admin Users",
+      "assessments_overview": "Assessments Overview",
+      "assign_assessment": "Assign Assessment",
+      "manage_dropdown": "Manage Dropdown",
+      "mfa_reset": "Mfa Reset",
+      "mfa_setup": "Mfa Setup",
+      "start_assessment": "Start Assessment"
+    },
+    "home": {
+      "subtitle": "Eén omgeving voor Business Impact Analysis en Control Self Assessment modules."
+    },
+    "language": {
+      "label": "Taal",
+      "option": {
+        "en": "Engels",
+        "nl": "Nederlands"
+      }
+    }
+  },
+  "bia": {
+    "flash": {
+      "created": "BIA succesvol aangemaakt.",
+      "updated": "BIA succesvol bijgewerkt.",
+      "deleted": "BIA verwijderd.",
+      "owner_forbidden": "Alleen de toegewezen eigenaar van de beoordeling mag deze BIA bewerken.",
+      "owner_delete_forbidden": "Alleen de toegewezen eigenaar van de beoordeling mag deze BIA verwijderen.",
+      "owner_permission_denied": "Je hebt geen rechten om de BIA-eigenaar toe te wijzen.",
+      "invalid_owner": "Ongeldige eigenaar geselecteerd.",
+      "unavailable_owner": "Geselecteerde eigenaar is niet beschikbaar.",
+      "owner_cleared": "Eigenaar verwijderd.",
+      "owner_set": "Eigenaar ingesteld op {name}.",
+      "summary_updated": "Samenvatting bijgewerkt.",
+      "summary_deleted": "Samenvatting verwijderd.",
+      "csv_export_created": "CSV-export aangemaakt.",
+      "file_not_found": "Het opgevraagde bestand is niet gevonden.",
+      "csv_required": "Het BIA-CSV-bestand is verplicht.",
+      "csv_import_success": "CSV-bestanden succesvol geïmporteerd.",
+      "csv_import_failed": "CSV-import mislukt: {details}",
+      "password_updated": "Wachtwoord bijgewerkt.",
+      "current_password_invalid": "Huidig wachtwoord ongeldig.",
+      "sql_export_failed": "SQL-export mislukt: {details}",
+      "sql_import_success": "SQL-bestand succesvol geïmporteerd.",
+      "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL."
+    },
+    "dashboard": {
+      "title": "BIA-dashboard",
+      "sidebar": {
+        "navigate": "Navigatie",
+        "overview": "Dashboardoverzicht",
+        "components": "Componenten bekijken",
+        "actions": "Acties",
+        "new_bia": "Nieuwe BIA",
+        "import_csv": "CSV importeren",
+        "import_sql": "SQL importeren",
+        "export_inventory": "Data-inventaris exporteren (CSV)",
+        "export_cia_detailed": "CIA-gevolgen exporteren (gedetailleerd)",
+        "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)"
+      },
+      "header": {
+        "title": "Business Impact Analyses",
+        "subtitle": "Beheer al je BIA's vanuit één omgeving door ze te volgen, bij te werken en te exporteren."
+      },
+      "card": {
+        "risk_owner": "Risico-eigenaar",
+        "not_assigned": "Niet toegewezen",
+        "owner_aria": "Selecteer eigenaar",
+        "owner_unassigned": "Niet toegewezen",
+        "owner_save": "Opslaan",
+        "components": "{count} componenten",
+        "no_description": "Nog geen servicebeschrijving vastgelegd.",
+        "action_view": "Bekijken",
+        "action_export_html": "Exporteren als HTML",
+        "action_export_csv": "Exporteren als CSV",
+        "action_export_sql": "Exporteren als SQL",
+        "action_edit": "Bewerken",
+        "last_updated": "Laatst bijgewerkt {date}",
+        "never": "nooit"
+      },
+      "empty": {
+        "title": "Nog geen BIA's vastgelegd.",
+        "body": "Maak een nieuwe analyse aan of importeer een bestaande dataset om te starten."
+      }
+    },
+    "context_form": {
+      "title_edit": "BIA bewerken",
+      "title_new": "Nieuwe BIA",
+      "back": "Terug naar dashboard",
+      "heading_edit": "Bewerk {name}",
+      "heading_new": "Maak een nieuwe BIA aan",
+      "section": {
+        "general": "Algemene informatie",
+        "contacts": "Contacten",
+        "dependencies": "Afhankelijkheden en contracten",
+        "risk": "Risicoprofiel"
+      },
+      "fields": {
+        "name": {
+          "label": "Naam van dienst of product"
+        },
+        "user_amount": {
+          "label": "Aantal gebruikers"
+        },
+        "start_date": {
+          "label": "Startdatum"
+        },
+        "end_date": {
+          "label": "Einddatum"
+        },
+        "service_description": {
+          "label": "Omschrijving van de dienst"
+        },
+        "scope_description": {
+          "label": "Scopebeschrijving"
+        },
+        "responsible": {
+          "label": "Eindverantwoordelijke"
+        },
+        "coordinator": {
+          "label": "Coördinator"
+        },
+        "project_leader": {
+          "label": "Projectleider"
+        },
+        "product_owner": {
+          "label": "Product owner"
+        },
+        "risk_owner": {
+          "label": "Risico-eigenaar"
+        },
+        "technical_administrator": {
+          "label": "Technisch beheerder"
+        },
+        "security_manager": {
+          "label": "Security manager"
+        },
+        "incident_contact": {
+          "label": "Incidentcontact"
+        },
+        "mission_critical": {
+          "label": "Missiekritieke afhankelijkheden"
+        },
+        "knowledge": {
+          "label": "Kennis binnen de organisatie"
+        },
+        "interfaces": {
+          "label": "Koppelingen met systemen"
+        },
+        "support_contracts": {
+          "label": "Ondersteuningscontracten"
+        },
+        "security_supplier": {
+          "label": "Beveiligingsleverancier"
+        },
+        "risk_assessment_human": {
+          "label": "Vereist risicoanalyse mens"
+        },
+        "risk_assessment_process": {
+          "label": "Vereist risicoanalyse proces"
+        },
+        "risk_assessment_technological": {
+          "label": "Vereist risicoanalyse technologie"
+        },
+        "ai_model": {
+          "label": "Maakt gebruik van AI-componenten"
+        }
+      },
+      "component_fields": {
+        "name": {
+          "label": "Naam van component"
+        },
+        "info_type": {
+          "label": "Informatietype"
+        },
+        "info_owner": {
+          "label": "Eigenaar van informatie"
+        },
+        "user_type": {
+          "label": "Gebruikerstype"
+        },
+        "process_dependencies": {
+          "label": "Procesafhankelijkheden"
+        },
+        "description": {
+          "label": "Omschrijving"
+        }
+      },
+      "responsible_hint": "Alleen beheerders of assessmentmanagers kunnen de eigenaar toewijzen.",
+      "submit": "Context opslaan",
+      "components": {
+        "title": "Gerelateerde componenten",
+        "add": "Component toevoegen",
+        "linked_to": "Gekoppeld aan {context}",
+        "empty": "Nog geen componenten toegevoegd."
+      },
+      "next_steps": {
+        "title": "Volgende stappen",
+        "subtitle": "Gebruik deze snelkoppelingen om {context} verder uit te werken.",
+        "view": "BIA bekijken",
+        "summary": "Samenvatting beheren",
+        "export_html": "Exporteren als HTML",
+        "export_csv": "Exporteren als CSV"
+      },
+      "modals": {
+        "view": {
+          "title": "Componentdetails",
+          "name": "Naam",
+          "info_type": "Informatietype",
+          "info_owner": "Eigenaar",
+          "user_type": "Gebruikerstype",
+          "dependencies": "Afhankelijkheden",
+          "description": "Omschrijving",
+          "consequences": "Gevolgen",
+          "consequence_link": "Gevolgen bekijken"
+        },
+        "add": {
+          "title": "Nieuwe component toevoegen",
+          "submit": "Component opslaan"
+        },
+        "edit": {
+          "title": "Component bewerken",
+          "submit": "Wijzigingen opslaan"
+        }
+      }
+    }
+  },
+  "csa": {
+    "months": {
+      "january": "Januari",
+      "february": "Februari",
+      "march": "Maart",
+      "april": "April",
+      "may": "Mei",
+      "june": "Juni",
+      "july": "Juli",
+      "august": "Augustus",
+      "september": "September",
+      "october": "Oktober",
+      "november": "November",
+      "december": "December"
+    },
+    "status": {
+      "assigned": "Toegewezen",
+      "in_progress": "In behandeling",
+      "submitted": "Ter beoordeling",
+      "reviewed": "Beoordeeld"
+    },
+    "common": {
+      "unknown": "Onbekend",
+      "not_started": "Niet gestart",
+      "not_submitted": "Niet ingediend",
+      "not_reviewed": "Niet beoordeeld",
+      "not_applicable": "N.v.t.",
+      "not_applicable_short": "n.v.t.",
+      "none": "Geen",
+      "yes": "Ja",
+      "no": "Nee"
+    },
+    "flash": {
+      "no_templates_import_first": "Nog geen templates beschikbaar. Importeer eerst controls.",
+      "no_templates_contact_admin": "Er zijn nog geen actieve templates. Neem contact op met een beheerder.",
+      "invalid_template": "Ongeldige template geselecteerd.",
+      "assessment_started": "Zelfassessment gestart.",
+      "no_active_users": "Er zijn geen actieve gebruikers om assessments aan toe te wijzen.",
+      "invalid_selection": "Ongeldige selectie. Probeer het opnieuw.",
+      "assessment_assigned": "Assessment '{template}' toegewezen aan {assignee}.",
+      "assessment_locked": "Deze assessment is vergrendeld omdat deze al is ingediend.",
+      "submitted_for_review": "Assessment ter beoordeling ingediend.",
+      "responses_saved": "Antwoorden opgeslagen.",
+      "review_approved": "Assessment goedgekeurd.",
+      "review_comment_required": "Voeg een opmerking toe bij het terugsturen van een assessment.",
+      "review_returned": "Assessment teruggestuurd naar de verantwoordelijke.",
+      "unknown_review_action": "Onbekende review-actie.",
+      "catalog_missing": "De ingebouwde controlcatalogus is niet op de server gevonden.",
+      "import_result": "Import voltooid. Aangemaakt: {created}, bijgewerkt: {updated}.",
+      "json_error": "JSON kon niet worden gelezen: {error}"
+    },
+    "dashboard": {
+      "title": "CSA-dashboard",
+      "heading": "Control Self Assessment",
+      "lead": "Volg voortgang, beheer toewijzingen en onderhoud de controlecatalogus.",
+      "cards": {
+        "assessments": {
+          "title": "Assessments",
+          "description": "Assessments vastgelegd voor alle templates."
+        },
+        "controls": {
+          "title": "Controls",
+          "description": "Unieke controls die beschikbaar zijn voor toewijzing."
+        },
+        "workflow": {
+          "title": "Workflowstatus"
+        }
+      },
+      "quick_actions": {
+        "title": "Snelle acties",
+        "start": "Assessment starten",
+        "assign": "Assessment toewijzen",
+        "overview": "Assessmentoverzicht",
+        "import_controls": "Controls importeren"
+      },
+      "latest": {
+        "title": "Recent bijgewerkte assessments",
+        "assessment_number": "Assessment nr. {id}",
+        "updated": "Bijgewerkt {timestamp}",
+        "empty": "Nog geen assessments vastgelegd. Importeer controltemplates en start de CSA-workflow om deze lijst te vullen."
+      }
+    },
+    "assessments": {
+      "common": {
+        "code_label": "Code:",
+        "control_label": "Control:",
+        "version": "Versie {version}"
+      },
+      "form": {
+        "answer_placeholder": "Voer je antwoord hier in."
+      },
+      "start": {
+        "title": "Assessment starten",
+        "heading": "Start een zelfassessment",
+        "intro": "Kies een actieve template om te beginnen met het verzamelen van bewijs.",
+        "fields": {
+          "template": {
+            "label": "Template",
+            "help": "Templates zijn gekoppeld aan de geïmporteerde controlecatalogus.",
+            "required": "Selecteer een template."
+          }
+        },
+        "submit": "Zelfassessment starten",
+        "available": {
+          "title": "Beschikbare templates",
+          "empty": "Nog geen templates beschikbaar. Importeer controls om deze lijst te vullen."
+        }
+      },
+      "assign": {
+        "title": "Assessment toewijzen",
+        "heading": "Wijs een zelfassessment toe",
+        "intro": "Selecteer een ontvanger, template en optionele einddatum voor de assessment.",
+        "fields": {
+          "assignee": {
+            "label": "Toewijzen aan",
+            "help": "Alleen actieve gebruikers worden hier getoond.",
+            "required": "Selecteer een gebruiker."
+          },
+          "template": {
+            "label": "Template",
+            "help": "Kies de template die past bij de relevante control.",
+            "required": "Selecteer een template."
+          },
+          "due_date": {
+            "label": "Uiterste datum",
+            "placeholder": "JJJJ-MM-DD",
+            "help": "Optioneel: wijs een streefdatum toe."
+          }
+        },
+        "submit": "Toewijzen"
+      },
+      "overview": {
+        "title": "Assessmentoverzicht",
+        "heading": "Assessmentoverzicht",
+        "intro": "Houd alle assessments, statussen en eigenaren bij vanuit één overzicht.",
+        "start_button": "Assessment starten",
+        "count_badge": "{count} assessments",
+        "table": {
+          "id": "ID",
+          "template": "Template",
+          "primary_owner": "Primaire eigenaar",
+          "status": "Status",
+          "last_update": "Laatste update",
+          "actions": "Acties"
+        },
+        "empty": "Nog geen assessments beschikbaar."
+      },
+      "detail": {
+        "title": "Assessment {id}",
+        "metadata": {
+          "started": "Gestart",
+          "submitted": "Ingediend",
+          "updated": "Laatste update"
+        },
+        "questions": {
+          "title": "Vragen",
+          "empty_section": "Geen vragen geconfigureerd voor deze sectie.",
+          "none": "Deze template bevat nog geen vragen."
+        },
+        "actions": {
+          "save": "Antwoorden opslaan",
+          "submit_for_review": "Indienen voor beoordeling"
+        },
+        "locked": "Deze assessment is vergrendeld omdat deze al is ingediend.",
+        "review": {
+          "heading": "Review",
+          "comment_label": "Reviewopmerking",
+          "comment_placeholder": "Voeg context toe bij goedkeuren of redenen bij terugsturen.",
+          "return_to_assignee": "Terugsturen naar verantwoordelijke",
+          "approve": "Goedkeuren",
+          "latest_comment": "Laatste reviewopmerking:"
+        }
+      },
+      "export": {
+        "page_title": "Assessment {id} export",
+        "default_name": "Assessment {id}",
+        "framework_code": "Frameworkcode",
+        "template_name": "Template",
+        "section": "Sectie",
+        "control_name": "Naam van de control",
+        "description": "Omschrijving",
+        "assessment_id": "Assessment-ID",
+        "template_version": "Templateversie",
+        "generated": "Gegenereerd",
+        "reviewed": "Beoordeeld",
+        "due_date": "Uiterste datum",
+        "review_comment": "Reviewopmerking",
+        "assignments": {
+          "title": "Toewijzingen",
+          "name": "Naam",
+          "email": "E-mail",
+          "primary": "Primair",
+          "assigned": "Toegewezen",
+          "empty": "Geen toewijzingen geregistreerd."
+        },
+        "qa": {
+          "title": "Vragen en antwoorden",
+          "no_answer": "Geen antwoord ingevuld.",
+          "comment_label": "Opmerking:",
+          "answer_by": "Door {responder}",
+          "answer_on": "op {timestamp}",
+          "no_questions_section": "Geen vragen in deze sectie.",
+          "no_sections": "Deze template bevat geen vragen."
+        },
+        "note": {
+          "label": "Let op:",
+          "body": "Dit document is een statische momentopname van het detailoverzicht van de assessment."
+        }
+      }
+    },
+    "admin": {
+      "import": {
+        "title": "Controls importeren",
+        "heading": "Controls importeren",
+        "intro": "Upload een JSON-catalogus of laad de meegeleverde ISO 27002-referentieset.",
+        "fields": {
+          "data_file": {
+            "label": "JSON-bestand",
+            "help": "Het bestand moet een <code>controls</code>-array op hoofdniveau bevatten.",
+            "required": "Selecteer een JSON-bestand.",
+            "allowed": "Alleen JSON-bestanden zijn toegestaan."
+          }
+        },
+        "submit": "Controls importeren",
+        "import_builtin": "Meegeleverde dataset ISO 27002 importeren"
+      }
+    },
+    "roles": {
+      "assign": {
+        "role": "Rol",
+        "required": "Selecteer een rol.",
+        "submit": "Rol toevoegen"
+      },
+      "remove": {
+        "required": "Ontbrekend rol-ID.",
+        "submit": "Verwijderen"
+      }
+    }
+  },
+  "admin": {
+    "users": {
+      "title": "Gebruikersbeheer",
+      "heading": "Gebruikersbeheer",
+      "subtitle": "Wijs rollen toe, beheer activatie en MFA.",
+      "link_csa_dashboard": "CSA-dashboard",
+      "link_bia_dashboard": "BIA-dashboard",
+      "table": {
+        "user": "Gebruiker",
+        "status": "Status",
+        "roles": "Rollen",
+        "assign_role": "Rollen toewijzen",
+        "mfa": "MFA",
+        "actions": "Acties"
+      },
+      "no_roles": "Geen rollen toegewezen.",
+      "all_roles_assigned": "Alle rollen al toegewezen.",
+      "mfa": {
+        "enabled": "Ingeschakeld",
+        "disabled": "Uitgeschakeld"
+      },
+      "actions": {
+        "manage_mfa": "MFA beheren",
+        "deactivate": "Deactiveren",
+        "activate": "Activeren",
+        "delete": "Verwijderen",
+        "confirm_delete": "Dit gebruikersaccount verwijderen? Deze actie kan niet ongedaan gemaakt worden."
+      },
+      "form": {
+        "select_role": "Selecteer een rol…",
+        "add_role": "Rol toevoegen",
+        "remove": "Verwijderen"
+      },
+      "flash": {
+        "user_activated": "Gebruiker geactiveerd.",
+        "user_already_active": "Gebruiker is al actief.",
+        "final_admin_cannot_be_deactivated": "De laatst overgebleven beheerder kan niet worden gedeactiveerd.",
+        "user_already_deactivated": "Gebruiker is al gedeactiveerd.",
+        "user_deactivated": "Gebruiker gedeactiveerd.",
+        "cannot_delete_current_account": "Je kunt het account dat je momenteel gebruikt niet verwijderen.",
+        "final_admin_cannot_be_deleted": "De laatst overgebleven beheerder kan niet worden verwijderd.",
+        "user_deleted": "Gebruiker verwijderd.",
+        "no_roles_configured": "Er zijn momenteel geen rollen geconfigureerd.",
+        "unknown_role_selected": "Onbekende rol geselecteerd.",
+        "user_has_role": "Gebruiker heeft deze rol al.",
+        "role_assigned": "Rol toegewezen.",
+        "unknown_role_remove": "Onbekende rol geselecteerd.",
+        "user_does_not_have_role": "Gebruiker heeft deze rol niet.",
+        "admin_must_remain": "Er moet ten minste één beheerder blijven.",
+        "role_removed": "Rol verwijderd.",
+        "mfa_enabled": "MFA ingeschakeld voor deze gebruiker. Deel het geheim veilig.",
+        "mfa_disabled": "MFA uitgeschakeld voor deze gebruiker.",
+        "mfa_not_enabled": "MFA is niet ingeschakeld voor deze gebruiker.",
+        "mfa_regenerated": "MFA-secret opnieuw gegenereerd. Deel het nieuwe geheim veilig.",
+        "unknown_action": "Onbekende actie."
+      },
+      "user_mfa": {
+        "title": "MFA beheren",
+        "heading": "MFA beheren voor {name}",
+        "email": "E-mail",
+        "provisioning": {
+          "heading": "Provisioning-gegevens",
+          "secret": "Geheim",
+          "uri": "URI"
+        },
+        "not_provisioned": "MFA is momenteel niet geconfigureerd voor deze gebruiker.",
+        "actions": {
+          "enable_refresh": "Inschakelen / Geheim vernieuwen",
+          "regenerate": "Geheim regenereren",
+          "disable": "MFA uitschakelen",
+          "back_to_users": "Terug naar gebruikers"
+        }
+      }
+    },
+    "actions": {
+      "view": "Bekijken",
+      "delete": "Verwijderen",
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "export": "Exporteren"
+    },
+    "auth": {
+      "profile": {
+        "title": "Profiel",
+        "manage_mfa": "MFA beheren"
+      },
+      "login": {
+        "title": "Aanmelden",
+        "heading": "Aanmelden",
+        "page_title": "Aanmelden",
+        "page_heading": "Aanmelden",
+        "email": "E-mail",
+        "password": "Wachtwoord",
+        "remember_me": "Onthoud mij",
+        "submit": "Aanmelden",
+        "actions": {
+          "submit": "Aanmelden"
+        },
+        "fields": {
+          "email": "E-mail",
+          "password": "Wachtwoord",
+          "remember_me": "Onthoud mij"
+        },
+        "register_prompt": "Nog geen account?",
+        "register_link": "Registreren"
+      }
+    },
+    "messages": {
+      "generic_error": "Er is iets misgegaan."
+    },
+    "pages": {
+      "changelog": {
+        "title": "Wijzigingslog",
+        "intro": "Volg de nieuwste functies en fixes voor het assessmentplatform.",
+        "updated": "Laatst bijgewerkt {date}",
+        "archive_note": "Voor eerdere mijlpalen zie docs/history.md in de repository.",
+        "entries": {
+          "20251029": {
+            "title": "Lokalisatieverbeteringen",
+            "items": {
+              "locale_preference": "Per-gebruiker taalvoorkeur toegevoegd en beheerbaar gemaakt via de profielpagina.",
+              "login_selector": "Taalselector op de inlogpagina toegevoegd met sessieopslag voor gasten.",
+              "catalog_repair": "Vertaalbestanden opnieuw opgebouwd zodat Engelse labels terugkeren en Nederlandse varianten aansluiten."
+            }
+          },
+          "20251024": {
+            "title": "Initiele scaffold",
+            "items": {
+              "foundation": "Modulaire Flask-scaffold opgezet met gedeelde configuratie en navigatie.",
+              "documentation": "Architectuur-, deploy- en migratiedocumentatie opgesteld."
+            }
+          }
+        }
+      }
+    },
+    "import": {
+      "actions": {
+        "submit": "Submit"
+      },
+      "errors": {
+        "file_allowed": "File Allowed",
+        "file_required": "File Required"
+      },
+      "fields": {
+        "data_file": "Data File"
+      }
+    },
+    "roles": {
+      "actions": {
+        "assign": "Assign",
+        "remove": "Remove"
+      },
+      "errors": {
+        "role_missing": "Role Missing",
+        "role_required": "Role Required"
+      },
+      "fields": {
+        "role": "Role"
+      }
+    },
+    "user_mfa": {
+      "actions": {
+        "back_to_users": "Back To Users",
+        "disable": "Disable",
+        "enable_refresh": "Enable Refresh",
+        "regenerate": "Regenerate"
+      },
+      "email": "Email",
+      "not_provisioned": "Not Provisioned",
+      "provisioning": {
+        "heading": "Heading",
+        "secret": "Secret",
+        "uri": "Uri"
+      },
+      "title": "Title"
+    }
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "export": "Export",
+    "view": "View"
+  },
+  "assessments": {
+    "assign": {
+      "actions": {
+        "submit": "Submit"
+      },
+      "errors": {
+        "assignee_required": "Assignee Required",
+        "template_required": "Template Required"
+      },
+      "fields": {
+        "assignee": "Assignee",
+        "due_date": "Due Date",
+        "template": "Template"
+      }
+    },
+    "response": {
+      "actions": {
+        "save": "Save",
+        "submit_for_review": "Submit For Review"
+      },
+      "fields": {
+        "answer_placeholder": "Answer Placeholder"
+      }
+    },
+    "review": {
+      "actions": {
+        "approve": "Approve",
+        "return_to_assignee": "Return To Assignee"
+      },
+      "fields": {
+        "comment": "Comment",
+        "comment_placeholder": "Comment Placeholder"
+      }
+    },
+    "start": {
+      "actions": {
+        "submit": "Submit"
+      },
+      "errors": {
+        "template_required": "Template Required"
+      },
+      "fields": {
+        "template": "Template"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "actions": {
+        "submit": "Submit"
+      },
+      "email": "Email",
+      "fields": {
+        "email": "Email",
+        "password": "Password",
+        "remember_me": "Remember Me"
+      },
+      "heading": "Heading",
+      "page_heading": "Page Heading",
+      "page_title": "Page Title",
+      "password": "Password",
+      "register_link": "Register Link",
+      "register_prompt": "Register Prompt",
+      "remember_me": "Remember Me",
+      "submit": "Submit",
+      "title": "Title"
+    },
+    "mfa": {
+      "enroll": {
+        "instructions": "Instructions",
+        "page_heading": "Page Heading",
+        "page_title": "Page Title",
+        "secret_label": "Secret Label",
+        "submit": "Submit",
+        "uri_label": "Uri Label"
+      },
+      "errors": {
+        "otp_length": "Otp Length"
+      },
+      "fields": {
+        "otp": "Otp"
+      },
+      "verify": {
+        "remember_device": "Remember Device",
+        "submit": "Submit"
+      }
+    },
+    "profile": {
+      "manage_mfa": "Manage Mfa",
+      "title": "Title"
+    },
+    "register": {
+      "actions": {
+        "submit": "Submit"
+      },
+      "errors": {
+        "confirm_required": "Confirm Required",
+        "password_length": "Password Length",
+        "password_mismatch": "Password Mismatch",
+        "password_required": "Password Required"
+      },
+      "fields": {
+        "confirm_password": "Confirm Password",
+        "email": "Email",
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "password": "Password",
+        "username": "Username"
+      },
+      "login_link": "Login Link",
+      "login_prompt": "Login Prompt",
+      "page_heading": "Page Heading",
+      "page_title": "Page Title"
+    }
+  },
+  "form": {
+    "errors": {
+      "email": "Email",
+      "required": "Required"
+    }
+  },
+  "pages": {
+    "changelog": {
+      "archive_note": "Archive Note",
+      "intro": "Intro",
+      "title": "Title"
+    }
+  },
+  "profile": {
+    "actions": {
+      "submit": "Submit"
+    },
+    "errors": {
+      "password_length": "Password Length",
+      "password_mismatch": "Password Mismatch"
+    },
+    "fields": {
+      "confirm_password": "Confirm Password",
+      "current_password": "Current Password",
+      "first_name": "First Name",
+      "language": "Language",
+      "last_name": "Last Name",
+      "new_password": "New Password",
+      "theme": "Theme"
+    },
+    "theme": {
+      "dark": "Dark",
+      "light": "Light"
+    }
+  },
+  "public": {
+    "index": {
+      "cta_login": "Cta Login",
+      "cta_start": "Cta Start",
+      "heading": "Heading",
+      "intro_authenticated": "Intro Authenticated",
+      "lead_guest": "Lead Guest",
+      "open_assignments": {
+        "action_open": "Action Open",
+        "empty": "Empty",
+        "title": "Title"
+      },
+      "pending_reviews": {
+        "action_view": "Action View",
+        "headers": {
+          "assessment": "Assessment",
+          "submitted_at": "Submitted At",
+          "submitter": "Submitter"
+        },
+        "unknown_date": "Unknown Date",
+        "unknown_user": "Unknown User"
+      },
+      "templates_hint": "Templates Hint",
+      "templates_hint_link": "Templates Hint Link",
+      "title": "Title"
+    }
+  }
+}

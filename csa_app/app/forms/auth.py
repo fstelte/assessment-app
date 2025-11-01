@@ -14,7 +14,7 @@ from ..i18n import gettext as _, lazy_gettext as _l
 def _label(key: str) -> str:
     """Return a typed string label for WTForms from a lazy translation."""
 
-    return cast(str, _l(key))
+    return _l(key)
 
 
 class RegistrationForm(FlaskForm):

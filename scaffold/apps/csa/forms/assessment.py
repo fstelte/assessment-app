@@ -14,13 +14,14 @@ from scaffold.core.i18n import lazy_gettext as _l
 def _label(key: str) -> str:
     """Return a lazy translation coerced to str for WTForms labels."""
 
-    return cast(str, _l(key))
+    # Return lazy translation so the label is resolved at render time (per-request)
+    return _l(key)
 
 
 def _message(key: str) -> str:
     """Return a lazy translation coerced to str for validation messages."""
 
-    return cast(str, _l(key))
+    return _l(key)
 
 
 class AssessmentStartForm(FlaskForm):
@@ -69,7 +70,7 @@ class AssessmentReviewForm(FlaskForm):
         _label("csa.assessments.detail.review.comment_label"),
         render_kw={
             "rows": 4,
-            "placeholder": cast(str, _l("csa.assessments.detail.review.comment_placeholder")),
+            "placeholder": _l("csa.assessments.detail.review.comment_placeholder"),
         },
     )
     approve = SubmitField(_label("csa.assessments.detail.review.approve"))
@@ -94,7 +95,7 @@ def build_assessment_response_form(question_set: Dict[str, Any]) -> Tuple[type[A
                 question_text,
                 render_kw={
                     "rows": 3,
-                    "placeholder": cast(str, _l("csa.assessments.form.answer_placeholder")),
+                        "placeholder": _l("csa.assessments.form.answer_placeholder"),
                 },
             )
             setattr(DynamicAssessmentResponseForm, field_name, field)

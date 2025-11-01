@@ -12,7 +12,7 @@ from ..i18n import gettext as _, lazy_gettext as _l
 
 
 def _label(key: str) -> str:
-    return cast(str, _l(key))
+    return _l(key)
 
 
 class ProfileForm(FlaskForm):
