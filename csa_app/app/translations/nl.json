@@ -50,6 +50,14 @@
       }
     },
     "login": {
+      "page_title": "Aanmelden",
+      "page_heading": "Aanmelden",
+      "title": "Aanmelden",
+      "heading": "Aanmelden",
+      "email": "E-mailadres",
+      "password": "Wachtwoord",
+      "remember_me": "Onthoud mij",
+      "submit": "Inloggen",
       "fields": {
         "email": "E-mailadres",
         "password": "Wachtwoord",
@@ -57,7 +65,9 @@
       },
       "actions": {
         "submit": "Inloggen"
-      }
+      },
+      "register_prompt": "Nog geen account?",
+      "register_link": "Registreren"
     },
     "mfa": {
       "fields": {

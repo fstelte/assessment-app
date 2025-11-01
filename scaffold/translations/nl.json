@@ -716,24 +716,24 @@
         },
         "auth": {
           "login": {
+            "title": "Aanmelden",
+            "heading": "Aanmelden",
+            "page_title": "Aanmelden",
+            "page_heading": "Aanmelden",
+            "email": "E-mail",
+            "password": "Wachtwoord",
+            "remember_me": "Onthoud mij",
+            "submit": "Aanmelden",
             "actions": {
-              "submit": "Submit"
+              "submit": "Aanmelden"
             },
-            "email": "Email",
             "fields": {
-              "email": "Email",
-              "password": "Password",
-              "remember_me": "Remember Me"
+              "email": "E-mail",
+              "password": "Wachtwoord",
+              "remember_me": "Onthoud mij"
             },
-            "heading": "Heading",
-            "page_heading": "Page Heading",
-            "page_title": "Page Title",
-            "password": "Password",
-            "register_link": "Register Link",
-            "register_prompt": "Register Prompt",
-            "remember_me": "Remember Me",
-            "submit": "Submit",
-            "title": "Title"
+            "register_prompt": "Nog geen account?",
+            "register_link": "Registreren"
           },
           "mfa": {
             "enroll": {
@@ -751,13 +751,13 @@
               "otp": "Otp"
             },
             "verify": {
-              "remember_device": "Remember Device",
-              "submit": "Submit"
+              "remember_device": "Vertrouw dit apparaat",
+              "submit": "Verifiëren"
             }
           },
           "profile": {
-            "manage_mfa": "Manage Mfa",
-            "title": "Title"
+            "manage_mfa": "MFA beheren",
+            "title": "Profiel"
           },
           "register": {
             "actions": {
@@ -798,24 +798,24 @@
         },
         "profile": {
           "actions": {
-            "submit": "Submit"
+            "submit": "Wijzigingen opslaan"
           },
           "errors": {
-            "password_length": "Password Length",
-            "password_mismatch": "Password Mismatch"
+            "password_length": "Minimaal 8 tekens.",
+            "password_mismatch": "Wachtwoorden komen niet overeen."
           },
           "fields": {
-            "confirm_password": "Confirm Password",
-            "current_password": "Current Password",
-            "first_name": "First Name",
-            "language": "Language",
-            "last_name": "Last Name",
-            "new_password": "New Password",
-            "theme": "Theme"
+            "confirm_password": "Bevestig nieuw wachtwoord",
+            "current_password": "Huidig wachtwoord",
+            "first_name": "Voornaam",
+            "language": "Taal",
+            "last_name": "Achternaam",
+            "new_password": "Nieuw wachtwoord",
+            "theme": "Thema"
           },
           "theme": {
-            "dark": "Dark",
-            "light": "Light"
+            "dark": "Donker",
+            "light": "Licht"
           }
         },
         "public": {

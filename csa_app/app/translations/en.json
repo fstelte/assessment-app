@@ -50,6 +50,14 @@
       }
     },
     "login": {
+      "page_title": "Sign in",
+      "page_heading": "Sign in",
+      "title": "Sign in",
+      "heading": "Sign in",
+      "email": "Email address",
+      "password": "Password",
+      "remember_me": "Remember me",
+      "submit": "Sign in",
       "fields": {
         "email": "Email address",
         "password": "Password",
@@ -57,7 +65,9 @@
       },
       "actions": {
         "submit": "Sign in"
-      }
+      },
+      "register_prompt": "Don't have an account?",
+      "register_link": "Register"
     },
     "mfa": {
       "fields": {
