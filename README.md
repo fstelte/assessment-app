@@ -183,3 +183,46 @@ Notes:
 - For consistent SQLite backups consider briefly stopping the app or scheduling backups during low traffic.
 - S3 upload requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (or an attached IAM role in your platform).
 
+## Restore Procedures
+
+When you need to roll back to a backup created by `backup-db.sh`, make a fresh snapshot of the current state first, then follow the workflow for your database engine.
+
+### PostgreSQL
+
+1. Stop the web container or place the app in maintenance mode to prevent writes during the restore.
+2. Choose the backup file (default naming: `pg_dump-YYYYMMDDTHHMMSSZ.sql.gz`).
+3. Run the restore command from the project root, adjusting credentials if you changed the defaults:
+
+    ```powershell
+    gunzip -c docker/backups/pg_dump-20250101T020000Z.sql.gz |
+       docker compose -f docker/compose.prod.yml exec -T postgres \
+       psql -U scaffold -d scaffold
+    ```
+
+    If you want a clean schema, drop and recreate it before piping the dump:
+
+    ```powershell
+    docker compose -f docker/compose.prod.yml exec postgres \
+       psql -U scaffold -d scaffold -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+    ```
+
+4. Restart the web container and confirm the application works. Re-run migrations (`flask db upgrade`) when restoring an older dump that predates your current schema version.
+
+### SQLite
+
+1. Stop the application container.
+2. If the file is compressed (suffix `.gz`), unzip it: `gunzip sqlite-20250101T020000Z.db.gz`.
+3. Replace the live database file:
+
+    ```powershell
+    Copy-Item docker/backups/sqlite-20250101T020000Z.db instance/scaffold.db -Force
+    ```
+
+4. Restart the web container and run migrations if the restored file is behind the current schema.
+
+### Restoring From S3
+
+Backups synced to S3 follow the same naming scheme. Download the target object to `docker/backups/` (or any directory) and apply the PostgreSQL or SQLite steps above.
+
+Always verify the restored environment by logging in and exercising critical flows before returning the system to normal operation.
+
