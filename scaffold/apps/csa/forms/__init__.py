@@ -9,6 +9,7 @@ from .assessment import (
     AssessmentResponseForm,
     AssessmentStartForm,
     build_assessment_response_form,
+    localise_question_set,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "AssessmentResponseForm",
     "AssessmentStartForm",
     "build_assessment_response_form",
+    "localise_question_set",
 ]

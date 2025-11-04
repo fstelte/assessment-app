@@ -11,27 +11,27 @@ from ...identity.models import TimestampMixin
 
 DEFAULT_QUESTION_SET: Dict[str, Any] = {
     "design": {
-        "label": "Control design",
+        "label_key": "csa.assessments.questions.design.label",
         "questions": [
-            "Is the control clearly and unambiguously documented in an approved policy or procedure?",
-            "Is a clear control owner assigned who has ultimate accountability for this control?",
-            "Are the roles and responsibilities for executing the control clearly described and assigned?",
+            {"text_key": "csa.assessments.questions.design.q1"},
+            {"text_key": "csa.assessments.questions.design.q2"},
+            {"text_key": "csa.assessments.questions.design.q3"},
         ],
     },
     "operation": {
-        "label": "Control operation",
+        "label_key": "csa.assessments.questions.operation.label",
         "questions": [
-            "Has the control been executed consistently according to the procedure during the recent period?",
-            "Can you provide evidence demonstrating consistent execution of the control (e.g. logs, reports, screenshots)?",
-            "Are any deviations or exceptions from the procedure documented and approved?",
+            {"text_key": "csa.assessments.questions.operation.q1"},
+            {"text_key": "csa.assessments.questions.operation.q2"},
+            {"text_key": "csa.assessments.questions.operation.q3"},
         ],
     },
     "monitoring_improvement": {
-        "label": "Monitoring and improvement",
+        "label_key": "csa.assessments.questions.monitoring.label",
         "questions": [
-            "Is the effectiveness of this control monitored and reported to the control owner on a periodic basis?",
-            "Has the control been evaluated within the past year to confirm that it remains effective and efficient?",
-            "Have improvement actions been identified and implemented based on evaluations or detected deviations?",
+            {"text_key": "csa.assessments.questions.monitoring.q1"},
+            {"text_key": "csa.assessments.questions.monitoring.q2"},
+            {"text_key": "csa.assessments.questions.monitoring.q3"},
         ],
     },
 }

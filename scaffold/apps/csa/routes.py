@@ -38,6 +38,7 @@ from .forms import (
     AssessmentStartForm,
     ControlImportForm,
     build_assessment_response_form,
+    localise_question_set,
 )
 from .models import (
     Assessment,
@@ -519,23 +520,27 @@ def export_assessment(assessment_id: int):
 
     sections: list[dict[str, object]] = []
     question_set = assessment.template.question_set or {}
-    for dimension_key, section in question_set.items():
+    localised_sections = localise_question_set(question_set)
+
+    for section in localised_sections:
         questions = []
-        for question_text in section.get("questions", []) or []:
-            response = responses_lookup.get((dimension_key, question_text))
+        for question in section["questions"]:
+            canonical = question["question"]
+            response = responses_lookup.get((section["dimension"], canonical))
             questions.append(
                 {
-                    "question": question_text,
+                    "question": question["label"],
                     "answer": (response.answer_text if response else None) or "",
                     "comment": (response.comment if response else None) or "",
                     "responder": response.responder.full_name if response and response.responder else None,
                     "responded_at": response.responded_at if response else None,
                 }
             )
+
         sections.append(
             {
-                "dimension": dimension_key,
-                "label": section.get("label") or dimension_key.replace("_", " ").title(),
+                "dimension": section["dimension"],
+                "label": section["label"],
                 "questions": questions,
             }
         )

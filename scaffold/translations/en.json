@@ -390,6 +390,26 @@
         },
         "empty": "No assessments available yet."
       },
+      "questions": {
+        "design": {
+          "label": "Control design",
+          "q1": "Is the control clearly and unambiguously documented in an approved policy or procedure?",
+          "q2": "Is a clear control owner assigned who has ultimate accountability for this control?",
+          "q3": "Are the roles and responsibilities for executing the control clearly described and assigned?"
+        },
+        "operation": {
+          "label": "Control operation",
+          "q1": "Has the control been executed consistently according to the procedure during the recent period?",
+          "q2": "Can you provide evidence demonstrating consistent execution of the control (e.g. logs, reports, screenshots)?",
+          "q3": "Are any deviations or exceptions from the procedure documented and approved?"
+        },
+        "monitoring": {
+          "label": "Monitoring and improvement",
+          "q1": "Is the effectiveness of this control monitored and reported to the control owner on a periodic basis?",
+          "q2": "Has the control been evaluated within the past year to confirm that it remains effective and efficient?",
+          "q3": "Have improvement actions been identified and implemented based on evaluations or detected deviations?"
+        }
+      },
       "detail": {
         "title": "Assessment {id}",
         "metadata": {

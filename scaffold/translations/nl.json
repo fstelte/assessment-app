@@ -390,6 +390,26 @@
               },
               "empty": "Nog geen assessments beschikbaar."
             },
+            "questions": {
+              "design": {
+                "label": "Ontwerp van de beheersmaatregel",
+                "q1": "Is de beheersmaatregel duidelijk en ondubbelzinnig gedocumenteerd in een vastgesteld beleidsdocument of procedure?",
+                "q2": "Is er een duidelijke 'control owner' toegewezen die eindverantwoordelijk is voor deze maatregel?",
+                "q3": "Zijn de rollen en verantwoordelijkheden voor de uitvoering van de maatregel duidelijk beschreven en toegewezen?"
+              },
+              "operation": {
+                "label": "Werking van de beheersmaatregel (bestaan)",
+                "q1": "Is de beheersmaatregel in de afgelopen periode consequent uitgevoerd zoals beschreven?",
+                "q2": "Kunt u bewijs overleggen waaruit de consistente uitvoering van de maatregel blijkt (bijvoorbeeld logs, rapportages, screenshots)?",
+                "q3": "Zijn eventuele afwijkingen of uitzonderingen op de procedure gedocumenteerd en geautoriseerd?"
+              },
+              "monitoring": {
+                "label": "Monitoring en verbetering",
+                "q1": "Wordt de effectiviteit van deze maatregel periodiek gemonitord en gerapporteerd aan de 'control owner'?",
+                "q2": "Is de maatregel in het afgelopen jaar geëvalueerd om te bepalen of deze nog steeds effectief en efficiënt is?",
+                "q3": "Zijn er verbeteracties geïdentificeerd en geïmplementeerd op basis van de evaluatie of geconstateerde afwijkingen?"
+              }
+            },
             "detail": {
               "title": "Assessment {id}",
               "metadata": {
