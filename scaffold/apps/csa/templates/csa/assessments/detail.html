@@ -36,8 +36,7 @@
           <dd class="col-sm-8">{{ assessment.updated_at or _('csa.common.not_applicable') }}</dd>
         </dl>
       </div>
-          {{ form.save(class="btn btn-outline-light", disabled=not can_edit) }}
-          {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit) }}
+    </div>
     <h2 class="h4 mb-3">{{ _('csa.assessments.detail.questions.title') }}</h2>
     {% if has_questions %}
       {% if not can_edit %}
@@ -63,7 +62,7 @@
             </div>
           </div>
         {% endfor %}
-        <div class="d-flex justify-content-end gap-2">
+        <div class="d-flex flex-wrap justify-content-end gap-3 mt-4">
           {{ form.save(class="btn btn-outline-light", disabled=not can_edit, value=_('csa.assessments.detail.actions.save')) }}
           {{ form.submit_for_review(class="btn btn-primary", disabled=not can_edit, value=_('csa.assessments.detail.actions.submit_for_review')) }}
         </div>

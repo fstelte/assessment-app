@@ -86,6 +86,12 @@
                       <div class="d-inline-flex flex-wrap justify-content-end gap-2">
                         <a class="btn btn-sm btn-outline-light" href="{{ url_for('csa.view_assessment', assessment_id=assessment.id) }}">{{ _('actions.view') }}</a>
                         <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('csa.export_assessment', assessment_id=assessment.id) }}">{{ _('actions.export') }}</a>
+                        {% if current_user.has_role('admin') or current_user.has_role('manager') %}
+                          <form method="post" action="{{ url_for('csa.delete_assessment', assessment_id=assessment.id) }}" class="d-inline">
+                            {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('actions.delete') }}</button>
+                          </form>
+                        {% endif %}
                       </div>
                     </td>
                   </tr>

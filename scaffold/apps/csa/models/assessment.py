@@ -5,8 +5,60 @@ from __future__ import annotations
 import enum
 from datetime import UTC, datetime
 
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
 from ....extensions import db
 from ...identity.models import TimestampMixin, User, utc_now
+
+
+class EnumValueType(sa.types.TypeDecorator):
+    """Persist enum values while returning enum instances."""
+
+    impl = sa.String()
+    cache_ok = True
+
+    def __init__(self, enum_cls: type[enum.Enum], *, name: str) -> None:
+        self.enum_cls = enum_cls
+        self.name = name
+        self._values = tuple(member.value for member in enum_cls)
+        super().__init__()
+
+    def load_dialect_impl(self, dialect: sa.engine.Dialect) -> sa.types.TypeEngine:
+        if dialect.name == "postgresql":
+            return postgresql.ENUM(*self._values, name=self.name, create_type=False)
+        return sa.Enum(
+            self.enum_cls,
+            name=self.name,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        )
+
+    def process_bind_param(
+        self,
+        value: enum.Enum | str | None,
+        dialect: sa.engine.Dialect,
+    ) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, self.enum_cls):
+            return value.value
+        if isinstance(value, str):
+            lowered = value.lower()
+            if lowered not in self._values:
+                raise ValueError(f"Invalid value '{value}' for enum {self.name}")
+            return lowered
+        raise TypeError(f"Unsupported value {value!r} for enum {self.name}")
+
+    def process_result_value(
+        self,
+        value: str | enum.Enum | None,
+        dialect: sa.engine.Dialect,
+    ) -> enum.Enum | None:
+        if value is None:
+            return None
+        if isinstance(value, self.enum_cls):
+            return value
+        return self.enum_cls(value)
 
 
 class AssessmentStatus(enum.Enum):
@@ -46,18 +98,14 @@ class Assessment(TimestampMixin, db.Model):
         nullable=False,
     )
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
-    status = db.Column(
-        db.Enum(AssessmentStatus, name="csa_assessment_status"),
-        default=AssessmentStatus.ASSIGNED,
-        nullable=False,
-    )
+    status = db.Column(EnumValueType(AssessmentStatus, name="csa_assessment_status"), default=AssessmentStatus.ASSIGNED, nullable=False)
     due_date = db.Column(db.Date)
     started_at = db.Column(db.DateTime(timezone=True))
     submitted_at = db.Column(db.DateTime(timezone=True))
     reviewed_at = db.Column(db.DateTime(timezone=True))
-    design_rating = db.Column(db.Enum(AssessmentResult, name="csa_assessment_result"))
-    operation_rating = db.Column(db.Enum(AssessmentResult, name="csa_assessment_result"))
-    monitoring_rating = db.Column(db.Enum(AssessmentResult, name="csa_assessment_result"))
+    design_rating = db.Column(EnumValueType(AssessmentResult, name="csa_assessment_result"))
+    operation_rating = db.Column(EnumValueType(AssessmentResult, name="csa_assessment_result"))
+    monitoring_rating = db.Column(EnumValueType(AssessmentResult, name="csa_assessment_result"))
     overall_comment = db.Column(db.Text)
     review_comment = db.Column(db.Text)
 
@@ -140,12 +188,12 @@ class AssessmentResponse(TimestampMixin, db.Model):
         nullable=False,
     )
     dimension = db.Column(
-        db.Enum(AssessmentDimension, name="csa_assessment_dimension"),
+        EnumValueType(AssessmentDimension, name="csa_assessment_dimension"),
         nullable=False,
     )
     question_text = db.Column(db.Text, nullable=False)
     answer_text = db.Column(db.Text)
-    rating = db.Column(db.Enum(AssessmentResult, name="csa_assessment_result"))
+    rating = db.Column(EnumValueType(AssessmentResult, name="csa_assessment_result"))
     evidence_uri = db.Column(db.String(255))
     comment = db.Column(db.Text)
     responder_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))

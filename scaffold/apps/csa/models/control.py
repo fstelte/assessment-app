@@ -11,27 +11,27 @@ from ...identity.models import TimestampMixin
 
 DEFAULT_QUESTION_SET: Dict[str, Any] = {
     "design": {
-        "label": "Ontwerp van de Beheersmaatregel",
+        "label": "Control design",
         "questions": [
-            "Is de beheersmaatregel duidelijk en ondubbelzinnig gedocumenteerd in een vastgesteld beleidsdocument of procedure?",
-            "Is er een duidelijke 'control owner' toegewezen die eindverantwoordelijk is voor deze maatregel?",
-            "Zijn de rollen en verantwoordelijkheden voor de uitvoering van de maatregel duidelijk beschreven en toegewezen?",
+            "Is the control clearly and unambiguously documented in an approved policy or procedure?",
+            "Is a clear control owner assigned who has ultimate accountability for this control?",
+            "Are the roles and responsibilities for executing the control clearly described and assigned?",
         ],
     },
     "operation": {
-        "label": "Werking van de Beheersmaatregel (bestaan)",
+        "label": "Control operation",
         "questions": [
-            "Is de beheersmaatregel in de afgelopen periode consequent uitgevoerd zoals beschreven?",
-            "Kunt u bewijs overleggen waaruit de consistente uitvoering van de maatregel blijkt (bv. logs, rapportages, screenshots)?",
-            "Zijn eventuele afwijkingen of uitzonderingen op de procedure gedocumenteerd en geautoriseerd?",
+            "Has the control been executed consistently according to the procedure during the recent period?",
+            "Can you provide evidence demonstrating consistent execution of the control (e.g. logs, reports, screenshots)?",
+            "Are any deviations or exceptions from the procedure documented and approved?",
         ],
     },
     "monitoring_improvement": {
-        "label": "Monitoring en Verbetering",
+        "label": "Monitoring and improvement",
         "questions": [
-            "Wordt de effectiviteit van deze maatregel periodiek gemonitord en gerapporteerd aan de 'control owner'?",
-            "Is de maatregel in het afgelopen jaar geëvalueerd om te bepalen of deze nog steeds effectief en efficiënt is?",
-            "Zijn er verbeteracties geïdentificeerd en geïmplementeerd op basis van de evaluatie of geïdentificeerde afwijkingen?",
+            "Is the effectiveness of this control monitored and reported to the control owner on a periodic basis?",
+            "Has the control been evaluated within the past year to confirm that it remains effective and efficient?",
+            "Have improvement actions been identified and implemented based on evaluations or detected deviations?",
         ],
     },
 }

@@ -603,6 +603,20 @@ def export_assessment(assessment_id: int):
     return response
 
 
+@bp.post("/assessments/<int:assessment_id>/delete")
+@login_required
+def delete_assessment(assessment_id: int):
+    if not _has_assessment_management_role():
+        abort(403)
+
+    assessment = Assessment.query.get_or_404(assessment_id)
+    db.session.delete(assessment)
+    db.session.commit()
+    flash(_("Assessment deleted."), "success")
+
+    return redirect(url_for("csa.overview_assessments"))
+
+
 @bp.route("/controls/import", methods=["GET", "POST"])
 @login_required
 def import_controls():

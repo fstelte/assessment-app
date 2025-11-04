@@ -33,13 +33,13 @@
             <td>{{ consequence.consequence_category }}</td>
             <td class="text-uppercase">{{ consequence.security_property }}</td>
             <td>
-              <span class="badge text-bg-secondary text-capitalize">{{ consequence.consequence_worstcase or 'N/A' }}</span>
+              <span class="badge {{ bia_get_impact_color(consequence.consequence_worstcase) if consequence.consequence_worstcase else 'text-bg-secondary' }} text-capitalize">{{ consequence.consequence_worstcase or 'N/A' }}</span>
               {% if consequence.justification_worstcase %}
                 <div class="small text-secondary">{{ consequence.justification_worstcase }}</div>
               {% endif %}
             </td>
             <td>
-              <span class="badge text-bg-secondary text-capitalize">{{ consequence.consequence_realisticcase or 'N/A' }}</span>
+              <span class="badge {{ bia_get_impact_color(consequence.consequence_realisticcase) if consequence.consequence_realisticcase else 'text-bg-secondary' }} text-capitalize">{{ consequence.consequence_realisticcase or 'N/A' }}</span>
               {% if consequence.justification_realisticcase %}
                 <div class="small text-secondary">{{ consequence.justification_realisticcase }}</div>
               {% endif %}
