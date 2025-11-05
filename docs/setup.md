@@ -28,13 +28,12 @@ Follow these steps to provision a local development environment for the scaffold
 ### Database URLs
 
 - PostgreSQL: `postgresql+psycopg://user:password@localhost:5432/scaffold`
-- MariaDB: `mariadb+pymysql://user:password@localhost:3306/scaffold`
 - SQLite (dev only): `sqlite:///instance/scaffold.db`
 
-Install optional drivers using Poetry extras:
+Install optional drivers using Poetry extras if you prefer managing the Postgres driver separately:
 
 ```bash
-poetry install --with dev --extras "postgresql mariadb"
+poetry install --with dev --extras "postgresql"
 ```
 
 ## Running the App

@@ -44,5 +44,5 @@ This guide explains how to add new domain applications to the scaffold platform.
 
 - [ ] Routes appear in navigation and respect authorisation.
 - [ ] MFA and session security flows work for the new module.
-- [ ] Database migrations succeed on PostgreSQL and MariaDB.
+- [ ] Database migrations succeed on PostgreSQL.
 - [ ] Documentation updated and linked from the main README.

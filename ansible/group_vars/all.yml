@@ -48,7 +48,6 @@ common_packages:
   - python3-pip
   - build-essential
   - libpq-dev
-  - libmariadb-dev
 
 docker_packages:
   - docker.io

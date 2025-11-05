@@ -1,6 +1,6 @@
 # Control Self-Assessment Web App
 
-This project scaffolds a Flask-based self-assessment platform that can start on SQLite and migrate to PostgreSQL or MariaDB. The structure is modular, separating blueprints, forms, models, services, and auxiliary authentication utilities. Bootstrap 5 is assumed for styling and the code base is prepared for minimal JavaScript usage.
+This project scaffolds a Flask-based self-assessment platform that can start on SQLite and migrate to PostgreSQL. The structure is modular, separating blueprints, forms, models, services, and auxiliary authentication utilities. Bootstrap 5 is assumed for styling and the code base is prepared for minimal JavaScript usage.
 
 ## Setup
 
@@ -57,7 +57,7 @@ Configuration classes live in `app/config.py` and extensions are centralised in 
 
 ## Environment Configuration
 
-The application defaults to SQLite for quick local setup. Override `DATABASE_URL` for PostgreSQL or MariaDB deployments. The `.env.example` file lists the expected variables.
+The application defaults to SQLite for quick local setup. Override `DATABASE_URL` for PostgreSQL deployments. The `.env.example` file lists the expected variables.
 
 ## Database Migrations
 

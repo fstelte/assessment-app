@@ -10,7 +10,7 @@ Deze applicatie gebruikt `pytest` als primaire testrunner. De strategie is opges
 
 ## Integratietests
 - Maken gebruik van `FlaskClient` om routes, forms en database-interacties in samenhang te testen.
-- De fixture `postgres_app` ondersteunt optioneel een Postgres/MariaDB-instance via `TEST_DATABASE_URL`; als de variabele ontbreekt worden de tests automatisch overgeslagen.
+- De fixture `postgres_app` ondersteunt optioneel een Postgres-instance via `TEST_DATABASE_URL`; als de variabele ontbreekt worden de tests automatisch overgeslagen.
 - Uitvoeren met `poetry run pytest tests/` of via `tox -e py311`.
 
 ## End-to-End (E2E)

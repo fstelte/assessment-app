@@ -3,50 +3,6 @@ set -e
 
 echo "Starting BIA Tool Docker Container..."
 
-# Wait for database if using MariaDB
-if [ "$DATABASE_TYPE" = "mariadb" ]; then
-    echo "Waiting for MariaDB to be ready..."
-    
-    max_retries=30
-    retry_count=0
-    
-    while [ $retry_count -lt $max_retries ]; do
-        if python -c "
-import os
-import sys
-import time
-import pymysql
-
-try:
-    connection = pymysql.connect(
-        host=os.environ.get('DB_HOST', 'mariadb'),
-        port=int(os.environ.get('DB_PORT', 3306)),
-        user=os.environ.get('DB_USER', 'bia_user'),
-        password=os.environ.get('DB_PASSWORD'),
-        database=os.environ.get('DB_NAME', 'bia_tool')
-    )
-    connection.close()
-    print('Database connection successful')
-    sys.exit(0)
-except Exception as e:
-    print(f'Database connection failed: {e}')
-    sys.exit(1)
-"; then
-            echo "Database is ready!"
-            break
-        else
-            retry_count=$((retry_count + 1))
-            echo "Database not ready (attempt $retry_count/$max_retries)"
-            sleep 2
-        fi
-    done
-    
-    if [ $retry_count -eq $max_retries ]; then
-        echo "Database failed to become ready"
-        exit 1
-    fi
-fi
-
 # Initialize database
 echo "Initializing database..."
 python -c "

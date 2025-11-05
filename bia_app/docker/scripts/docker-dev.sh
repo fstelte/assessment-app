@@ -12,9 +12,5 @@ case "$1" in
         echo "Starting BIA Tool in development mode (background)..."
         docker-compose up -d --build
         ;;
-    "start-with-db")
-        echo "Starting BIA Tool with MariaDB..."
-        docker-compose --profile mariadb up --build
-        ;;
     "stop")
         echo "Stopping BIA"

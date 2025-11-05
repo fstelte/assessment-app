@@ -1,7 +1,7 @@
 # Business Impact Assessment Application!
 
 This application is designed to facilitate Business Impact Assessments (BIAs) within organizations. It's built using Python and Flask. 
-**Update 19-06-2025** : The application can now also be deployed with a "real" SQL backend, so it can be run for an entire organisation.
+**Update 19-06-2025** : The application can now also be deployed with a "real" SQL backend, so it can be run for an entire organisation using a `DATABASE_URL` (for example PostgreSQL).
 
 ## Setup Instructions
 
@@ -44,30 +44,18 @@ pip install -r requirements.txt
 Create a .env file in the root directory of the project and add the following:
 
 ```bash
-DATABASE_TYPE=sqlite
-#DATABASE_TYPE=mariadb
+DATABASE_URL=sqlite:////absolute/path/to/instance/bia_tool.db
+#DATABASE_URL=postgresql+psycopg://user:password@host:5432/bia_tool
 
 # Enter your admin credentials here
 ADMIN_EMAIL="example@example.com"
 ADMIN_PASSWORD="aVerySecurePasswordSh0uldBeUsedH3r3!"
 
-# .env - MariaDB Database Credentials
-# Be aware: do no use quotes around the values
-
-DB_USER=<db_username>
-DB_PASSWORD=<db_password>
-DB_HOST=<db_host>
-DB_PORT=<db_port>
-DB_NAME=<db_name>
-
 # Keep secret key here
 SECRET_KEY=een_andere_geheime_sleutel_voor_flask
 ```
 
-Replace your_secret_key_here, admin@example.com, and secure_password_here with your actual secret key, admin email, and admin password.
-Also choose the database type, you can choose between sqlite or mariadb/mysql
-
-If you choose to use mariadb/mysql you should also fill you the variables DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME the application assumes you have setup the server and empty database already.
+Replace the placeholders with your actual secret key, admin email, and admin password. The application defaults to SQLite when `DATABASE_URL` is omitted; set it explicitly to target another database engine.
 
 ### 5. Initialize the database
 

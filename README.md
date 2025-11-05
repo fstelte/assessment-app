@@ -68,9 +68,9 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 
 - Build the production image via `docker build -t assessment-app -f docker/Dockerfile .`.
 - Development stack (SQLite): `docker compose -f docker/compose.dev.yml up --build` after copying `.env.example` to `.env`.
-- Production stack: copy `docker/.env.production.example` to `.env.production`, choose `--profile postgres` or `--profile mariadb`, and run `docker compose --env-file .env.production -f docker/compose.prod.yml --profile postgres up --build -d`.
+- Production stack: copy `docker/.env.production.example` to `.env.production` and run `docker compose --env-file .env.production -f docker/compose.prod.yml --profile postgres up --build -d`.
 - The container entrypoint waits for the configured database, ensures it exists, applies `flask db upgrade`, then starts Gunicorn.
-- To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin` (adjust the profile or service name if you are using MariaDB).
+- To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin`.
 
 ### Ansible Pipeline
 
@@ -83,17 +83,10 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 
 ### PostgreSQL Restore
 
-- Install the optional dependency: `poetry install --extras postgresql`.
+- `psycopg[binary]` is installed by default via Poetry and provides the required driver.
 - Connection string example: `postgresql+psycopg://user:password@host:5432/scaffold`.
 - Append `?sslmode=require` for managed services that enforce TLS.
 - Grant `CREATE`, `ALTER`, and `DROP` privileges if Alembic migrations will manage schema changes.
-
-### MariaDB
-
-- Install the optional dependency: `poetry install --extras mariadb`.
-- Connection string example: `mariadb+pymysql://user:password@host:3306/scaffold`.
-- Include `charset=utf8mb4` (`.../scaffold?charset=utf8mb4`) to enable full Unicode support.
-- Ensure the database user has `ALTER`, `INDEX`, and `REFERENCES` permissions for migrations.
 
 ### Migration Workflow
 

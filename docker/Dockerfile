@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/poetry/bin:$PATH"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev libmariadb-dev ca-certificates curl postgresql-client \
+    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - \
     && poetry config virtualenvs.create false

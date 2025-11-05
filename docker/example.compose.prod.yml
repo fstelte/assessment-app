@@ -33,26 +33,6 @@ services:
       retries: 20
     restart: unless-stopped
 
-  mariadb:
-    image: mariadb:11
-    profiles:
-      - mariadb
-    environment:
-      MARIADB_DATABASE: ${MARIADB_DATABASE:-scaffold}
-      MARIADB_USER: ${MARIADB_USER:-scaffold}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-scaffold}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root}
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    volumes:
-      - mariadb-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -u${MARIADB_USER:-scaffold} -p${MARIADB_PASSWORD:-scaffold}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    restart: unless-stopped
-
 
 volumes:
   postgres-data:
-  mariadb-data:

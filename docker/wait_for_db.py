@@ -29,12 +29,6 @@ def _ensure_database(url: URL, deadline: float) -> None:
     if backend in {"postgresql", "postgres"}:
         admin_url = url.set(database="postgres")
         create_statement = f'CREATE DATABASE "{database_name}"'
-    elif backend in {"mysql", "mariadb"}:
-        admin_url = url.set(database=None)
-        create_statement = (
-            f"CREATE DATABASE IF NOT EXISTS `{database_name}` "
-            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-        )
     else:
         return
 
@@ -43,11 +37,8 @@ def _ensure_database(url: URL, deadline: float) -> None:
         while True:
             try:
                 with engine.connect() as conn:
-                    if backend in {"postgresql", "postgres"}:
-                        conn.execution_options(isolation_level="AUTOCOMMIT")
-                        conn.execute(text(create_statement))
-                    else:
-                        conn.execute(text(create_statement))
+                    conn.execution_options(isolation_level="AUTOCOMMIT")
+                    conn.execute(text(create_statement))
                 _log(f"database '{database_name}' ensured on {backend}")
                 break
             except OperationalError as exc:
@@ -62,9 +53,6 @@ def _ensure_database(url: URL, deadline: float) -> None:
                     _log(f"database '{database_name}' already exists")
                     break
                 if backend in {"postgresql", "postgres"} and str(exc).lower().startswith("(psycopg.errors.duplicatedatabase)"):
-                    _log(f"database '{database_name}' already exists")
-                    break
-                if backend in {"mysql", "mariadb"} and getattr(orig, "args", [None])[0] == 1007:
                     _log(f"database '{database_name}' already exists")
                     break
                 raise

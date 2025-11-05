@@ -43,8 +43,8 @@ Each module exposes a `register(app)` function or a `blueprints` collection so t
 ## Database Strategy
 
 - Unified SQLAlchemy metadata backed by Flask-Migrate.
-- Environment variable `DATABASE_URL` selects the engine (PostgreSQL or MariaDB recommended, SQLite allowed for development).
-- Include Poetry extras for database-specific drivers: `postgresql` installs `psycopg[binary]`, `mariadb` installs `pymysql`.
+- Environment variable `DATABASE_URL` selects the engine (PostgreSQL recommended, SQLite allowed for development).
+- Provide a Poetry extra (`postgresql`) for environments that prefer optional driver management.
 - Maintain migration scripts in `migrations/` with domain-aware naming.
 - Document engine-specific considerations (character sets, JSON support, backup) in `docs/deployment.md`.
 
@@ -60,4 +60,4 @@ Each module exposes a `register(app)` function or a `blueprints` collection so t
 2. Merge authentication flows and session security primitives.
 3. Harmonise templates and static assets under the Bootstrap dark-mode theme.
 4. Deliver smoke tests covering cross-domain navigation and MFA flows.
-5. Publish migration and deployment guidance for PostgreSQL and MariaDB.
+5. Publish migration and deployment guidance for PostgreSQL.

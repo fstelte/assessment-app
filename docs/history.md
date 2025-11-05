@@ -22,4 +22,4 @@ This log tracks major decisions and milestones as the scaffold application evolv
 | TBD | CSA models migrated | Pending integration work. |
 | TBD | Unified auth released | Merge MFA flows, role mapping, and session security. |
 | TBD | Bootstrap dark theme complete | Template consolidation and design review. |
-| TBD | Database guides published | Hands-on docs for PostgreSQL and MariaDB deployments. |
+| TBD | Database guides published | Hands-on docs for PostgreSQL deployments. |

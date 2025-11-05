@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide outlines deployment options for the scaffold application, focusing on PostgreSQL and MariaDB backends.
+This guide outlines deployment options for the scaffold application, focusing on the PostgreSQL backend.
 
 ## Containerised Deployment (Docker Compose)
 
@@ -9,7 +9,7 @@ This guide outlines deployment options for the scaffold application, focusing on
 3. Start services: `docker compose up -d`.
 4. Run migrations: `docker compose exec web poetry run flask --app scaffold:create_app db upgrade`.
 
-The reference Compose file defines separate services for PostgreSQL or MariaDB. Enable the database you need and disable the other.
+The reference Compose file runs the web application alongside PostgreSQL.
 
 ## Kubernetes (Optional)
 
@@ -20,21 +20,11 @@ The reference Compose file defines separate services for PostgreSQL or MariaDB. 
 
 ## PostgreSQL Notes
 
-- Install dependencies with `poetry install --extras postgresql`.
-- Recommended driver: `psycopg[binary]`. For production, consider `psycopg[c]`.
+- `psycopg[binary]` ships with the project dependencies; install `psycopg[c]` if your environment allows compiled wheels and you require additional performance.
 - Connection string format: `postgresql+psycopg://user:password@host:port/database`.
 - Run migrations through `flask db upgrade` as usual.
 - Backup strategy: `pg_dump -Fc scaffold > scaffold.dump`.
 - Tune `pool_size` and `max_overflow` via `SQLALCHEMY_ENGINE_OPTIONS` if needed.
-
-## MariaDB Notes
-
-- Install dependencies with `poetry install --extras mariadb`.
-- Driver: `pymysql`. For better performance, you can add `mysqlclient` if your environment supports compilation.
-- Connection string format: `mariadb+pymysql://user:password@host:port/database`.
-- Ensure the database uses `utf8mb4` character set for full Unicode support.
-- When using JSON columns, prefer `LONGTEXT` with application-level serialisation if strict JSON types are not required.
-- Backup strategy: `mariadb-dump scaffold > scaffold.sql`.
 
 ### Database Backups via Docker Compose
 

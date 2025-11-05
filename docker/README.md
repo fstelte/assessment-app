@@ -24,20 +24,12 @@ docker compose -f docker/compose.dev.yml up --build
 
 The service exposes <http://localhost:5000> and uses the SQLite database defined in `.env`.
 
-### Production (PostgreSQL or MariaDB)
+### Production (PostgreSQL)
 
 ```bash
 cp docker/.env.production.example .env.production
-# adjust secrets and database selection inside the file
+# adjust secrets inside the file
 docker compose -f docker/compose.prod.yml --profile postgres up --build -d
-```
-
-- Use the `postgres` profile with PostgreSQL (default connection string).
-- Switch to MariaDB by updating `DATABASE_URL` in `.env.production` to
-  `mysql+pymysql://scaffold:scaffold@mariadb:3306/scaffold` and running:
-
-```bash
-docker compose -f docker/compose.prod.yml --profile mariadb up --build -d
 ```
 
 The entrypoint script waits for the database container, ensures the database exists, performs `flask db upgrade`, and then launches Gunicorn.
