@@ -16,6 +16,7 @@ services:
     volumes:
       - ../instance:/app/instance
       - ../migrations:/app/migrations
+      - maintenance-page:/maintenance
     restart: unless-stopped
 
   gateway:
@@ -24,7 +25,7 @@ services:
       - web
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../scaffold/static/maintenance.html:/usr/share/nginx/html/maintenance.html:ro
+      - maintenance-page:/usr/share/nginx/html/maintenance
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -50,3 +51,4 @@ services:
 
 volumes:
   postgres-data:
+  maintenance-page:

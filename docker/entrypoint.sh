@@ -94,6 +94,8 @@ for env_file in /app/.env.production /app/.env; do
   fi
 done
 
+python /app/docker/render_maintenance.py
+
 python /app/docker/wait_for_db.py
 
 flask db upgrade

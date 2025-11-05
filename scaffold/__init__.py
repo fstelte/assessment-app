@@ -6,6 +6,7 @@ bia_app and csa_app domains while remaining extensible for future modules.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ from typing import Any
 import tomllib
 
 import click
-from flask import Flask, request, session, url_for
+from flask import Flask, request, send_file, session, url_for
 from werkzeug.routing import BuildError
 from flask_login import current_user
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -89,6 +90,12 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.errorhandler(OperationalError)
     def maintenance_mode(exc: OperationalError):  # type: ignore[misc]
         app.logger.warning("database unavailable; serving maintenance page", exc_info=app.debug)
+        shared_path = Path(os.getenv("MAINTENANCE_SHARED_OUTPUT", "/maintenance/maintenance.html"))
+        if shared_path.exists():
+            response = send_file(shared_path)
+            response.status_code = 503
+            response.headers.setdefault("Cache-Control", "no-store")
+            return response
         response = app.send_static_file("maintenance.html")
         response.status_code = 503
         return response

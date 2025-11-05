@@ -13,9 +13,10 @@ The reference Compose file runs the web application alongside PostgreSQL.
 
 ### Maintenance Gateway & Fallback Page
 
-- The production compose file now includes an Nginx `gateway` service listening on port 8000. It proxies requests to the Flask `web` container and serves `scaffold/static/maintenance.html` whenever the upstream is unavailable (container starting, restarting, or database temporarily offline).
-- Customise the message/branding by editing `scaffold/static/maintenance.html`; the same file is shared by Flask (for 503 responses) and Nginx (for upstream failures).
+- The production compose file now includes an Nginx `gateway` service listening on port 8000. It proxies requests to the Flask `web` container and serves the generated maintenance page whenever the upstream is unavailable (container starting, restarting, or database temporarily offline).
+- Customise the message/branding by editing `docker/templates/maintenance.html.tmpl`; the rendered output is shared by Flask (for 503 responses) and Nginx (for upstream failures).
 - Because the `web` container no longer exposes a host port, target `http://localhost:8000` via the `gateway` service. Continue using `docker compose exec web ...` for CLI tasks.
+- Configure contact information via `.env.production` using `MAINTENANCE_CONTACT_EMAIL` (with optional `MAINTENANCE_CONTACT_LABEL` and `MAINTENANCE_CONTACT_LINK`). The entrypoint renders the HTML before database checks, keeping the page available even if the app fails to boot.
 
 ## Kubernetes (Optional)
 
