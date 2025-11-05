@@ -86,6 +86,13 @@ def create_app(settings: Settings | None = None) -> Flask:
             "available_locales": i18n_manager.available_locales(),
         }
 
+    @app.errorhandler(OperationalError)
+    def maintenance_mode(exc: OperationalError):  # type: ignore[misc]
+        app.logger.warning("database unavailable; serving maintenance page", exc_info=app.debug)
+        response = app.send_static_file("maintenance.html")
+        response.status_code = 503
+        return response
+
     with app.app_context():
         try:
             ensure_default_roles()

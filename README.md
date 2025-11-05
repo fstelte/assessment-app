@@ -7,7 +7,6 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Consolidated SQLAlchemy metadata spanning BIA and CSA domains.
 - Unified authentication with MFA, role management, and session security hardening.
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
- - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
 
@@ -34,27 +33,27 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
    - Run `poetry run lint` for Ruff and Black in check mode.
    - Run `poetry run test` for the pytest suite.
 
-   ## Internationalisation
+## Internationalisation
 
-   The platform offers lightweight JSON-driven localisation that allows text to be translated without duplicating templates.
+The platform offers lightweight JSON-driven localisation that allows text to be translated without duplicating templates.
 
-   - **Translation files** live under `scaffold/translations/<locale>.json`. The default locale is `en`; add additional locales by dropping a new JSON file beside it. Nested keys mirror their usage in code, for example:
+- **Translation files** live under `scaffold/translations/<locale>.json`. The default locale is `en`; add additional locales by dropping a new JSON file beside it. Nested keys mirror their usage in code, for example:
 
-      ```json
-      {
-         "app": {
-            "title": "Assessment Platform"
-         }
-      }
-      ```
+  ```json
+  {
+    "app": {
+      "title": "Assessment Platform"
+    }
+  }
+  ```
 
-   - **Lookup helper**: use the `_()` function in templates (`{{ _('app.title') }}`) and the `gettext` helper in Python modules (`from scaffold.core.i18n import gettext as _`). Placeholders follow Python `str.format` semantics (`"Welcome {name}"`).
+- **Lookup helper**: use the `_()` function in templates (`{{ _('app.title') }}`) and the `gettext` helper in Python modules (`from scaffold.core.i18n import gettext as _`). Placeholders follow Python `str.format` semantics (`"Welcome {name}"`).
 
-   - **Active locale detection** happens per request: a `lang=<locale>` query parameter overrides the session preference which is stored under the key reported by `session_storage_key()`. The selected locale is exposed to templates via the `current_locale` variable along with `available_locales` for building selectors.
+- **Active locale detection** happens per request: a `lang=<locale>` query parameter overrides the session preference which is stored under the key reported by `session_storage_key()`. The selected locale is exposed to templates via the `current_locale` variable along with `available_locales` for building selectors.
 
-   - **Extending translations**: when adding new UI copy, prefer wrapping strings with `_()` and creating matching entries in each locale JSON file. Missing keys gracefully fall back to the default locale, and unresolved keys render the original identifier to aid debugging.
+- **Extending translations**: when adding new UI copy, prefer wrapping strings with `_()` and creating matching entries in each locale JSON file. Missing keys gracefully fall back to the default locale, and unresolved keys render the original identifier to aid debugging.
 
-   - **Reloading**: translation files are read when the app starts. Reload the server after editing JSON files or call `TranslationManager.reload()` if hot-swapping translations programmatically.
+- **Reloading**: translation files are read when the app starts. Reload the server after editing JSON files or call `TranslationManager.reload()` if hot-swapping translations programmatically.
 
 ## Deployment
 
@@ -71,6 +70,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Production stack: copy `docker/.env.production.example` to `.env.production` and run `docker compose --env-file .env.production -f docker/compose.prod.yml --profile postgres up --build -d`.
 - The container entrypoint waits for the configured database, ensures it exists, applies `flask db upgrade`, then starts Gunicorn.
 - To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin`.
+- A lightweight `gateway` service (Nginx) now terminates client traffic on port 8000, proxies to the `web` container, and serves a dedicated maintenance page whenever the app is starting or the database is unreachable. Customise the markup via `scaffold/static/maintenance.html`.
 
 ### Ansible Pipeline
 
@@ -183,6 +183,27 @@ Notes:
 - For Postgres backups the container must be able to reach the database host and credentials must be valid.
 - For consistent SQLite backups consider briefly stopping the app or scheduling backups during low traffic.
 - S3 upload requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (or an attached IAM role in your platform).
+
+### Automated Restore Service
+
+- The same compose overlay also ships a `db-restore` service. It polls a configurable directory (default `/restore/incoming`) for new files with extensions `.sql[.gz]`, `.dump[.gz]`, or `.db[.gz]`.
+- When a file appears, the service stops the containers listed in `RESTORE_STOP_CONTAINERS`, restores the database from the dump, and restarts the containers (plus any entries in `RESTORE_START_CONTAINERS`).
+- Provide the same `.env.production` file it uses for backups so the service can read `DATABASE_URL`. Configure extra behaviour via:
+  - `RESTORE_STOP_CONTAINERS` — comma-separated container names (for example `assessment-app-web-1`).
+  - `RESTORE_START_CONTAINERS` — optional extra containers to start after the restore.
+  - `RESTORE_WATCH_DIR`, `RESTORE_STATE_FILE`, `RESTORE_POLL_INTERVAL`, `RESTORE_STOP_TIMEOUT`, `RESTORE_STOP_WAIT_SECONDS`, `RESTORE_START_WAIT_SECONDS`, and `RESTORE_SQLITE_PATH` for advanced tuning.
+- Mount host directories when running the compose overlay so backups and queued restore files persist:
+  - `./backups:/backups`
+  - `./restore:/restore`
+- The container needs to control the Docker engine; mount `/var/run/docker.sock` and ensure the container names in `RESTORE_STOP_CONTAINERS` match `docker compose ps` output.
+Start both helpers alongside production once configured:
+
+```bash
+docker compose --env-file .env.production \
+   -f docker/compose.prod.yml \
+   -f docker/compose.backup.yml \
+   up -d db-backup db-restore
+```
 
 ## Restore Procedures
 

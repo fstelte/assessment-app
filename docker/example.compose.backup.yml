@@ -7,7 +7,13 @@ services:
     env_file:
       - ../.env.production
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_USER=${POSTGRES_USER:-scaffold}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-scaffold}
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT= ${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-scaffold}
+      - DATABASE_URL="postgresql+psycopg://${POSTGRES_USER:-scaffold}:${POSTGRES_PASSWORD:-scaffold}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-scaffold}"
+      #- DATABASE_URL=${DATABASE_URL}
       - BACKUP_RETENTION_DAYS=2
       - BACKUP_INTERVAL_SECONDS=14400 # 4 hours
       - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
@@ -20,3 +26,24 @@ services:
     restart: unless-stopped
     ports:
       - "9090:9090" # status endpoint
+
+  db-restore:
+    build:
+      context: ..
+      dockerfile: docker/restore/Dockerfile
+    image: assessment-app-db-restore:latest
+    env_file:
+      - ../.env.production
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RESTORE_WATCH_DIR=${RESTORE_WATCH_DIR:-/restore/incoming}
+      - RESTORE_STATE_FILE=${RESTORE_STATE_FILE:-/restore/state/restore-state.json}
+      - RESTORE_POLL_INTERVAL=${RESTORE_POLL_INTERVAL:-30}
+      - RESTORE_STOP_CONTAINERS=${RESTORE_STOP_CONTAINERS:-}
+      - RESTORE_START_CONTAINERS=${RESTORE_START_CONTAINERS:-}
+      - RESTORE_STOP_TIMEOUT=${RESTORE_STOP_TIMEOUT:-30}
+      - RESTORE_STOP_WAIT_SECONDS=${RESTORE_STOP_WAIT_SECONDS:-5}
+    volumes:
+      - ./restore:/restore
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

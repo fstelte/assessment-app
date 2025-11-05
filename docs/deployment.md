@@ -11,6 +11,12 @@ This guide outlines deployment options for the scaffold application, focusing on
 
 The reference Compose file runs the web application alongside PostgreSQL.
 
+### Maintenance Gateway & Fallback Page
+
+- The production compose file now includes an Nginx `gateway` service listening on port 8000. It proxies requests to the Flask `web` container and serves `scaffold/static/maintenance.html` whenever the upstream is unavailable (container starting, restarting, or database temporarily offline).
+- Customise the message/branding by editing `scaffold/static/maintenance.html`; the same file is shared by Flask (for 503 responses) and Nginx (for upstream failures).
+- Because the `web` container no longer exposes a host port, target `http://localhost:8000` via the `gateway` service. Continue using `docker compose exec web ...` for CLI tasks.
+
 ## Kubernetes (Optional)
 
 - Package the application with a Deployment + Service.
@@ -36,6 +42,24 @@ docker compose --env-file .env.production -f docker/compose.backup.yml up -d db-
 ```
 
 Without the `--env-file` flag, `${DATABASE_URL}` remains empty during compose parsing and the backup loop fails with “No database URI found”. Alternatively, export `DATABASE_URL` in your shell before invoking `docker compose` or hard-code the DSN in the compose file.
+
+### Automated Restore Companion
+
+- `docker/compose.backup.yml` also defines a `db-restore` service that watches a queue directory (default `/restore/incoming`).
+- When a dump file appears (`.sql`/`.sql.gz`, `.dump`/`.dump.gz`, `.db`/`.db.gz`), the service stops the containers listed in `RESTORE_STOP_CONTAINERS`, restores the configured database, and restarts those containers (plus any names in `RESTORE_START_CONTAINERS`).
+- Mount both `./backups:/backups` and `./restore:/restore` when running the overlay so backups and queued restores persist.
+- Provide Docker API access (`/var/run/docker.sock`) and populate the relevant environment variables in `.env.production`:
+  - `RESTORE_STOP_CONTAINERS` — comma-separated container names to stop before the restore (for example `assessment-app-web-1`).
+  - `RESTORE_START_CONTAINERS` — optional additional containers to start afterwards.
+  - `RESTORE_WATCH_DIR`, `RESTORE_STATE_FILE`, `RESTORE_POLL_INTERVAL`, `RESTORE_STOP_TIMEOUT`, `RESTORE_STOP_WAIT_SECONDS`, `RESTORE_START_WAIT_SECONDS`, and `RESTORE_SQLITE_PATH` for advanced configuration.
+- Bring the helper services online with:
+
+  ```bash
+  docker compose --env-file .env.production \
+    -f docker/compose.prod.yml \
+    -f docker/compose.backup.yml \
+    up -d db-backup db-restore
+  ```
 
 ## Secrets and Configuration
 
