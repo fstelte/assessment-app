@@ -78,7 +78,23 @@ def inject_helpers():
         "bia_get_cia_impact": get_cia_impact,
         "bia_get_impact_color": get_impact_color,
         "bia_get_max_cia_impact": get_max_cia_impact,
+        "bia_ai_badge_tokens": _ai_badge_tokens,
     }
+
+
+def _ai_badge_tokens(category: str | None) -> dict[str, str]:
+    normalized = (category or "").strip().lower()
+    if normalized == "unacceptable risk":
+        return {"class": "bg-danger text-white"}
+    if normalized == "high risk":
+        return {"class": "text-dark", "style": "background-color: #fd7e14;"}
+    if normalized == "limited risk":
+        return {"class": "bg-warning text-dark"}
+    if normalized == "minimal risk":
+        return {"class": "bg-success"}
+    if normalized == "no ai":
+        return {"class": "bg-success"}
+    return {"class": "bg-secondary"}
 
 def _can_manage_bia_owner() -> bool:
     return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
@@ -214,7 +230,7 @@ def update_owner(item_id: int):
     if not owner_raw:
         context.author = None
         context.responsible = None
-        context.risk_owner = None
+        context.security_manager = None
         message = _("bia.flash.owner_cleared")
     else:
         try:
@@ -228,9 +244,9 @@ def update_owner(item_id: int):
             return redirect(url_for("bia.dashboard"))
         context.author = owner
         context.responsible = owner.full_name
-        context.risk_owner = owner.full_name
+        context.security_manager = owner.full_name
         message = _("bia.flash.owner_set", name=owner.full_name)
-    context.last_update = date.today()
+    context._suppress_last_update = True
     db.session.commit()
     flash(message, "success")
     return redirect(url_for("bia.dashboard"))

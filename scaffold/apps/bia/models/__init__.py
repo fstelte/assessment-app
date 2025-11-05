@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import Enum, Text, event
+from sqlalchemy import Enum, Text, event, inspect
 
 from ....extensions import db
 from ...identity.models import User
@@ -21,7 +21,7 @@ class ContextScope(db.Model):
     coordinator = db.Column(Text)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    last_update = db.Column(db.Date, default=date.today, onupdate=date.today)
+    last_update = db.Column(db.Date, default=date.today)
     service_description = db.Column(Text)
     knowledge = db.Column(Text)
     interfaces = db.Column(Text)
@@ -182,6 +182,16 @@ def _update_last_modified(mapper, connection, target) -> None:
     context_scope: ContextScope | None = None
 
     if isinstance(target, ContextScope):
+        if getattr(target, "_suppress_last_update", False):
+            target.__dict__.pop("_suppress_last_update", None)
+            return
+        state = inspect(target)
+        changed_attrs = {attr.key for attr in state.attrs if attr.history.has_changes()}
+        ignored_attrs = {"author_id", "author", "last_update"}
+
+        if not (changed_attrs - ignored_attrs):
+            return
+
         context_scope = target
     elif isinstance(target, Component):
         context_scope = target.context_scope

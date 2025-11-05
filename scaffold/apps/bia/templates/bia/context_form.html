@@ -287,16 +287,15 @@
       }
 
       const translationNode = document.getElementById('bia-component-translations');
-      const translations = translationNode ? {
+      if (!translationNode) {
+        console.error('Translation node missing for component form.');
+        return;
+      }
+      const translations = {
         componentsEmpty: translationNode.dataset.empty || '',
         componentsLinkedTo: translationNode.dataset.linked || '',
         actionsView: translationNode.dataset.view || '',
         actionsDelete: translationNode.dataset.delete || ''
-      } : {
-        componentsEmpty: "{{ _('bia.context_form.components.empty')|escapejs }}",
-        componentsLinkedTo: "{{ _('bia.context_form.components.linked_to', context=item.name)|escapejs }}",
-        actionsView: "{{ _('actions.view')|escapejs }}",
-        actionsDelete: "{{ _('actions.delete')|escapejs }}"
       };
 
       const routes = {

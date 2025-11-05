@@ -71,9 +71,10 @@ class UserStatusType(sa.types.TypeDecorator):
                 create_type=False,
             )
         return sa.Enum(
-            UserStatus,
+            *_USER_STATUS_VALUES,
             name="user_status",
-            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            native_enum=False,
+            validate_strings=False,
         )
 
     def process_bind_param(self, value: UserStatus | str | None, dialect: sa.engine.Dialect) -> str | None:
@@ -93,7 +94,12 @@ class UserStatusType(sa.types.TypeDecorator):
             return None
         if isinstance(value, UserStatus):
             return value
-        return UserStatus(value)
+        normalized = value.lower()
+        if normalized not in _USER_STATUS_VALUES:
+            raise LookupError(
+                f"'{value}' is not among the defined enum values. Enum name: user_status. Possible values: {', '.join(_USER_STATUS_VALUES)}"
+            )
+        return UserStatus(normalized)
 
 
 class Role(TimestampMixin, db.Model):

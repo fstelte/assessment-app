@@ -241,6 +241,16 @@
           "submit": "Save changes"
         }
       }
+    },
+    "context_detail": {
+      "ai_risks": {
+        "title": "AI Risks",
+        "component": "Component",
+        "category": "AI Category",
+        "motivation": "Motivation",
+        "motivation_missing": "Not provided",
+        "empty": "No AI risks identified for the linked components."
+      }
     }
   },
   "csa": {

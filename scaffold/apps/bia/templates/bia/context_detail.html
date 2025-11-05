@@ -70,9 +70,9 @@
                 <th scope="col">Users</th>
                 <th scope="col">Consequences</th>
                 <th scope="col">AI</th>
+              <tr>
+                <td colspan="3" class="text-center {{ text_muted }} py-4">No AI risks identified for the linked components.</td>
               </tr>
-            </thead>
-            <tbody>
               {% for component in item.components %}
               <tr>
                 <td>{{ component.name }}</td>
@@ -82,7 +82,10 @@
                 <td>
                   {% set ai_record = ai_identifications.get(component.id) %}
                   {% if ai_record %}
-                    <span class="badge bg-info text-dark">{{ ai_record.category }}</span>
+                    {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
+                    {% set badge_class = badge_tokens['class'] %}
+                    {% set badge_style = badge_tokens.get('style') %}
+                    <span class="badge {{ badge_class }}" {% if badge_style %}style="{{ badge_style }}"{% endif %}>{{ ai_record.category }}</span>
                   {% else %}
                     <span class="text-secondary">None</span>
                   {% endif %}
@@ -99,6 +102,35 @@
     </div>
   </div>
   <div class="col-lg-5">
+    <div class="card {{ card_surface }} mb-4">
+      <div class="card-header {{ border_class }}">Risk Assessment</div>
+      <div class="card-body d-flex flex-column gap-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Process</span>
+          <span class="badge {{ 'bg-success' if item.risk_assessment_process else 'bg-secondary' }}">
+            {{ 'Yes' if item.risk_assessment_process else 'No' }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>People</span>
+          <span class="badge {{ 'bg-success' if item.risk_assessment_human else 'bg-secondary' }}">
+            {{ 'Yes' if item.risk_assessment_human else 'No' }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Technical</span>
+          <span class="badge {{ 'bg-success' if item.risk_assessment_technological else 'bg-secondary' }}">
+            {{ 'Yes' if item.risk_assessment_technological else 'No' }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>AI Model Risk</span>
+          <span class="badge {{ 'bg-warning text-dark' if item.ai_model else 'bg-secondary' }}">
+            {{ 'Yes' if item.ai_model else 'No' }}
+          </span>
+        </div>
+      </div>
+    </div>
     <div class="card {{ card_surface }} mb-4">
       <div class="card-header {{ border_class }}">Overview</div>
       <div class="card-body">
@@ -165,6 +197,49 @@
     </div>
     {% else %}
       <div class="p-4 {{ text_muted }}">No consequences captured yet. Add consequences via the component manager.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card {{ card_surface }} mt-4">
+  <div class="card-header {{ border_class }}">{{ _('bia.context_detail.ai_risks.title') }}</div>
+  <div class="card-body p-0">
+    {% if ai_identifications %}
+    <div class="table-responsive">
+      <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">{{ _('bia.context_detail.ai_risks.component') }}</th>
+            <th scope="col">{{ _('bia.context_detail.ai_risks.category') }}</th>
+            <th scope="col">{{ _('bia.context_detail.ai_risks.motivation') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set ns = namespace(has_rows=false) %}
+          {% for component in item.components %}
+            {% set ai_record = ai_identifications.get(component.id) %}
+            {% if ai_record %}
+              {% set ns.has_rows = true %}
+              <tr>
+                <td>{{ component.name }}</td>
+                {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
+                {% set badge_class = badge_tokens['class'] %}
+                {% set badge_style = badge_tokens.get('style') %}
+                <td><span class="badge {{ badge_class }}" {% if badge_style %}style="{{ badge_style }}"{% endif %}>{{ ai_record.category }}</span></td>
+                <td>{{ ai_record.motivatie or _('bia.context_detail.ai_risks.motivation_missing') }}</td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+          {% if not ns.has_rows %}
+            <tr>
+              <td colspan="3" class="text-center {{ text_muted }} py-4">{{ _('bia.context_detail.ai_risks.empty') }}</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="p-4 {{ text_muted }}">{{ _('bia.context_detail.ai_risks.empty') }}</div>
     {% endif %}
   </div>
 </div>

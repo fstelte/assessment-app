@@ -36,6 +36,17 @@ The reference Compose file defines separate services for PostgreSQL or MariaDB. 
 - When using JSON columns, prefer `LONGTEXT` with application-level serialisation if strict JSON types are not required.
 - Backup strategy: `mariadb-dump scaffold > scaffold.sql`.
 
+### Database Backups via Docker Compose
+
+The backup helper in `docker/compose.backup.yml` expects a fully qualified `DATABASE_URL` (or `SQLALCHEMY_DATABASE_URI`). When you start the compose file, make sure Docker Compose reads the same `.env.production` that the container uses:
+
+```bash
+cd /Users/ferry/Documents/assessment-app
+docker compose --env-file .env.production -f docker/compose.backup.yml up -d db-backup
+```
+
+Without the `--env-file` flag, `${DATABASE_URL}` remains empty during compose parsing and the backup loop fails with “No database URI found”. Alternatively, export `DATABASE_URL` in your shell before invoking `docker compose` or hard-code the DSN in the compose file.
+
 ## Secrets and Configuration
 
 - Store secrets in environment variables or a secret manager (Vault, AWS Secrets Manager, etc.).

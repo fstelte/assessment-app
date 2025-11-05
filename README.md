@@ -68,7 +68,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 
 - Build the production image via `docker build -t assessment-app -f docker/Dockerfile .`.
 - Development stack (SQLite): `docker compose -f docker/compose.dev.yml up --build` after copying `.env.example` to `.env`.
-- Production stack: copy `docker/.env.production.example` to `.env.production`, choose `--profile postgres` or `--profile mariadb`, and run `docker compose -f docker/compose.prod.yml --profile postgres up --build -d`.
+- Production stack: copy `docker/.env.production.example` to `.env.production`, choose `--profile postgres` or `--profile mariadb`, and run `docker compose --env-file .env.production -f docker/compose.prod.yml --profile postgres up --build -d`.
 - The container entrypoint waits for the configured database, ensures it exists, applies `flask db upgrade`, then starts Gunicorn.
 - To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin` (adjust the profile or service name if you are using MariaDB).
 
@@ -81,7 +81,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 
 ## Database Configuration
 
-### PostgreSQL
+### PostgreSQL Restore
 
 - Install the optional dependency: `poetry install --extras postgresql`.
 - Connection string example: `postgresql+psycopg://user:password@host:5432/scaffold`.
@@ -177,6 +177,14 @@ Start the application and the backup service together using the following comman
 docker compose -f docker/compose.prod.yml -f docker/compose.backup.yml --profile postgres up --build --force-recreate
 ```
 
+If you use `${DATABASE_URL}` placeholders in `compose.backup.yml`, make sure Docker Compose reads your production environment file during startup:
+
+```bash
+docker compose --env-file .env.production -f docker/compose.backup.yml up -d db-backup
+```
+
+Without the `--env-file` flag (or exporting `DATABASE_URL` in your shell), the backup container starts but fails with “No database URI found”. You can also hard-code the DSN in the compose file if you prefer.
+
 Notes:
 
 - For Postgres backups the container must be able to reach the database host and credentials must be valid.
@@ -208,7 +216,7 @@ When you need to roll back to a backup created by `backup-db.sh`, make a fresh s
 
 4. Restart the web container and confirm the application works. Re-run migrations (`flask db upgrade`) when restoring an older dump that predates your current schema version.
 
-### SQLite
+### SQLite Restore
 
 1. Stop the application container.
 2. If the file is compressed (suffix `.gz`), unzip it: `gunzip sqlite-20250101T020000Z.db.gz`.

@@ -241,6 +241,16 @@
           "submit": "Wijzigingen opslaan"
         }
       }
+    },
+    "context_detail": {
+      "ai_risks": {
+        "title": "AI-risico's",
+        "component": "Component",
+        "category": "AI-categorie",
+        "motivation": "Motivatie",
+        "motivation_missing": "Niet opgegeven",
+        "empty": "Geen AI-risico's vastgesteld voor de gekoppelde componenten."
+      }
     }
   },
   "csa": {
