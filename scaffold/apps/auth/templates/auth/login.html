@@ -59,11 +59,21 @@
 {% if saml_login_enabled %}
     <div class="text-center mt-4">
         <div class="alert alert-info" role="status">
-            {{ _('auth.login.saml_hint') }}
+            {% if show_password %}
+                {{ _('auth.login.saml_hint') }}
+            {% else %}
+                {{ _('auth.login.saml_only_notice') }}
+            {% endif %}
         </div>
-        <a class="btn btn-outline-primary w-100" href="{{ url_for('auth.login_saml') }}">
-            {{ _('auth.login.saml_enterprise_button') }}
+        <a class="btn btn-outline-primary w-100 d-inline-flex align-items-center justify-content-center gap-2" href="{{ url_for('auth.login_saml') }}">
+            <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                <path d="M4 3h9.5l6.5 9-6.5 9H4l4.5-9L4 3zm5.3 2-3.1 7 3.1 7h3.8l5-7-5-7H9.3z" fill="currentColor" />
+            </svg>
+            <span>{{ _('auth.login.saml_enterprise_button') }}</span>
         </a>
+        <p class="text-muted small mt-2 mb-0">
+            {{ _('auth.login.saml_mfa_notice') }}
+        </p>
     </div>
 {% endif %}
 {% endblock %}

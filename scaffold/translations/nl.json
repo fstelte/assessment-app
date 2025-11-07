@@ -775,6 +775,11 @@
             "password": "Wachtwoord",
             "remember_me": "Onthoud mij",
             "submit": "Aanmelden",
+            "password_heading": "Aanmelden met lokaal account",
+            "saml_hint": "Gebruik het account van je organisatie om verder te gaan.",
+            "saml_only_notice": "Lokale accounts zijn uitgeschakeld. Meld je aan via Microsoft Entra ID.",
+            "saml_enterprise_button": "Aanmelden met Microsoft Entra ID",
+            "saml_mfa_notice": "Multi-factor-authenticatie wordt afgedwongen door de Microsoft Entra-beleid van je organisatie.",
             "actions": {
               "submit": "Aanmelden"
             },

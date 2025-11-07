@@ -38,6 +38,10 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
    - Run `poetry run lint` for Ruff and Black in check mode.
    - Run `poetry run test` for the pytest suite.
 
+Detailed SSO setup steps, troubleshooting tips, and operational runbooks live in
+`docs/authentication.md`. Deployment-specific guidance (including release
+checklists) is captured in `docs/deployment.md`.
+
 ## Internationalisation
 
 The platform offers lightweight JSON-driven localisation that allows text to be translated without duplicating templates.
@@ -67,6 +71,14 @@ The platform offers lightweight JSON-driven localisation that allows text to be 
 - **Static assets**: Bootstrap is loaded from a CDN by default. If offline assets are required, build them and mount under `scaffold/static`.
 - **Migrations**: execute `poetry run flask --app scaffold:create_app db upgrade` during deployment. Integrate with release pipelines or infrastructure hooks so migrations run before the new code serves traffic.
 - **Observability**: configure logging handlers in `scaffold/config.py` or via `LOGGING_CONFIG`. Add health endpoints as lightweight blueprints registered through the module registry.
+
+## Operations & SSO
+
+- `docs/authentication.md` walks through Microsoft Entra configuration, maps
+   environment variables, and documents runbooks for certificate rotation, new
+   group enablement, and break-glass access.
+- `docs/deployment.md` covers infrastructure touchpoints, backup helpers, and a
+   release management checklist with SSO smoke-test reminders.
 
 ### Docker
 

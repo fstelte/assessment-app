@@ -27,6 +27,8 @@ class Settings:
     session_cookie_samesite: str = "Lax"
     app_modules: List[str] = field(default_factory=lambda: list(_DEFAULT_MODULES))
     password_login_enabled: bool = False
+    bia_components_per_page: int = 25
+    saml_logout_return_url: str = ""
     saml_sp_entity_id: str = ""
     saml_sp_acs_url: str = ""
     saml_sp_sls_url: str = ""
@@ -76,6 +78,8 @@ class Settings:
             session_cookie_samesite=os.getenv("SESSION_COOKIE_SAMESITE", defaults.session_cookie_samesite),
             app_modules=module_list,
             password_login_enabled=_resolve_password_login_enabled(defaults.password_login_enabled),
+            bia_components_per_page=_int_env("BIA_COMPONENTS_PER_PAGE", defaults.bia_components_per_page),
+            saml_logout_return_url=os.getenv("SAML_LOGOUT_RETURN_URL", defaults.saml_logout_return_url),
             saml_sp_entity_id=os.getenv("SAML_SP_ENTITY_ID", defaults.saml_sp_entity_id),
             saml_sp_acs_url=os.getenv("SAML_SP_ACS_URL", defaults.saml_sp_acs_url),
             saml_sp_sls_url=os.getenv("SAML_SP_SLS_URL", defaults.saml_sp_sls_url),
@@ -127,6 +131,8 @@ class Settings:
             "SESSION_COOKIE_HTTPONLY": self.session_cookie_httponly,
             "SESSION_COOKIE_SAMESITE": self.session_cookie_samesite,
             "PASSWORD_LOGIN_ENABLED": self.password_login_enabled,
+            "BIA_COMPONENTS_PER_PAGE": self.bia_components_per_page,
+            "SAML_LOGOUT_RETURN_URL": self.saml_logout_return_url,
             "SAML_SP_ENTITY_ID": self.saml_sp_entity_id,
             "SAML_SP_ACS_URL": self.saml_sp_acs_url,
             "SAML_SP_SLS_URL": self.saml_sp_sls_url,

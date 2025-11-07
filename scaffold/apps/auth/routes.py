@@ -319,8 +319,11 @@ def login_saml_sls():
         flash("Unable to complete SAML logout.", "danger")
         return redirect(url_for("auth.login", saml_error=1))
 
-    flash("You have been signed out.", "info")
-    return redirect(url or url_for("auth.login"))
+    relay_state = request.values.get("RelayState")
+    target = relay_state or url or current_app.config.get("SAML_LOGOUT_RETURN_URL") or url_for("auth.login")
+    if not relay_state:
+        flash("You have been signed out.", "info")
+    return redirect(target)
 
 
 @bp.get("/logout")
@@ -335,6 +338,7 @@ def logout():
 
     slo_url = None
     logout_request_id = None
+    return_to = current_app.config.get("SAML_LOGOUT_RETURN_URL") or url_for("auth.login", _external=True)
     if settings:
         idp_slo = settings.config.get("idp", {}).get("singleLogoutService", {}).get("url")
         sp_slo = settings.config.get("sp", {}).get("singleLogoutService", {}).get("url")
@@ -343,7 +347,7 @@ def logout():
             slo_url = auth.logout(
                 name_id=name_id or None,
                 session_index=session_index or None,
-                return_to=url_for("auth.login", _external=True),
+                return_to=return_to,
             )
             logout_request_id = auth.get_last_request_id()
 
@@ -354,7 +358,7 @@ def logout():
         return redirect(slo_url)
 
     flash("You have been signed out.", "info")
-    return redirect(url_for("auth.login"))
+    return redirect(return_to)
 
 
 @bp.route("/mfa/enroll", methods=["GET", "POST"])

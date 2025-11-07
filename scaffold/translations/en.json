@@ -775,6 +775,11 @@
       "password": "Password",
       "remember_me": "Remember me",
       "submit": "Sign in",
+      "password_heading": "Sign in with a local account",
+      "saml_hint": "Use your organisation's identity provider account to continue.",
+      "saml_only_notice": "Local accounts are disabled. Continue with Microsoft Entra ID to sign in.",
+      "saml_enterprise_button": "Sign in with Microsoft Entra ID",
+      "saml_mfa_notice": "Multi-factor authentication is enforced by your organisation's Microsoft Entra policies.",
       "actions": {
         "submit": "Sign in"
       },
