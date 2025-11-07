@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 from datetime import UTC, datetime
-from typing import List
+from typing import Iterable, List, Set
 
 import sqlalchemy as sa
 from flask import current_app
@@ -14,6 +14,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from ...extensions import db
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import joinedload, validates
 
 
 ROLE_ADMIN = "admin"
@@ -112,6 +113,11 @@ class Role(TimestampMixin, db.Model):
     description = db.Column(db.String(255))
 
     users = db.relationship("User", secondary=user_roles, back_populates="roles")
+    aad_group_mappings = db.relationship(
+        "AADGroupMapping",
+        back_populates="role",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostic helper
         return f"<Role {self.name!r}>"
@@ -138,6 +144,27 @@ def ensure_default_roles() -> None:
             logger.debug("Default role provisioning skipped; tables not ready yet.")
 
 
+class AADGroupMapping(TimestampMixin, db.Model):
+    """Maps Microsoft Entra ID security groups to platform roles."""
+
+    __tablename__ = "aad_group_mappings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_object_id = db.Column(db.String(255), unique=True, nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
+
+    role = db.relationship("Role", back_populates="aad_group_mappings")
+
+    @validates("group_object_id")
+    def _normalize_group(self, key: str, value: str | None) -> str:
+        if not value or not value.strip():
+            raise ValueError("group_object_id cannot be empty")
+        return value.strip().lower()
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostic helper
+        return f"<AADGroupMapping group={self.group_object_id!r} role_id={self.role_id}>"
+
+
 class User(TimestampMixin, UserMixin, db.Model):
     """Application user with status-driven lifecycle."""
 
@@ -156,6 +183,8 @@ class User(TimestampMixin, UserMixin, db.Model):
     deactivated_at = db.Column(db.DateTime(timezone=True))
     theme_preference = db.Column(db.String(20), default="dark", nullable=False)
     locale_preference = db.Column(db.String(10), default="en", nullable=False)
+    azure_oid = db.Column(db.String(255), unique=True, index=True)
+    aad_upn = db.Column(db.String(255), unique=True)
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
     mfa_setting = db.relationship(
@@ -199,6 +228,54 @@ class User(TimestampMixin, UserMixin, db.Model):
             if target:
                 self.roles.append(target)
 
+    def set_entra_identity(self, object_id: str | None, upn: str | None = None) -> None:
+        """Persist the external Entra identity attributes for the user."""
+
+        self.azure_oid = object_id.strip().lower() if object_id else None
+        if upn is not None:
+            upn_value = upn.strip().lower()
+            self.aad_upn = upn_value or None
+
+    def clear_entra_roles(self) -> None:
+        """Remove all roles that are managed via Entra group mappings."""
+
+        mapping_role_ids = set(db.session.execute(sa.select(AADGroupMapping.role_id)).scalars())
+        if not mapping_role_ids:
+            return
+        for role in list(self.roles):
+            if role.id in mapping_role_ids:
+                self.roles.remove(role)
+
+    def sync_roles_from_entra_groups(self, group_ids: Iterable[str], remove_missing: bool = True) -> None:
+        """Align user roles with the configured Entra security group mappings."""
+
+        normalized_groups = {gid.strip().lower() for gid in group_ids if gid and gid.strip()}
+        mappings = (
+            AADGroupMapping.query.options(joinedload(AADGroupMapping.role)).all()
+        )
+        if not mappings:
+            if remove_missing:
+                self.clear_entra_roles()
+            return
+
+        target_role_ids: Set[int] = {
+            mapping.role_id
+            for mapping in mappings
+            if mapping.group_object_id in normalized_groups
+        }
+        mapping_role_ids: Set[int] = {mapping.role_id for mapping in mappings}
+        roles_by_id = {mapping.role_id: mapping.role for mapping in mappings if mapping.role is not None}
+
+        for role_id in target_role_ids:
+            role = roles_by_id.get(role_id)
+            if role and role not in self.roles:
+                self.roles.append(role)
+
+        if remove_missing and mapping_role_ids:
+            for role in list(self.roles):
+                if role.id in mapping_role_ids and role.id not in target_role_ids:
+                    self.roles.remove(role)
+
     @property
     def full_name(self) -> str:
         names: List[str] = [name for name in (self.first_name, self.last_name) if name]
@@ -219,6 +296,14 @@ class User(TimestampMixin, UserMixin, db.Model):
     @classmethod
     def find_by_email(cls, email: str) -> "User | None":
         return cls.query.filter(db.func.lower(cls.email) == email.lower()).one_or_none()
+
+    @classmethod
+    def find_by_azure_oid(cls, object_id: str) -> "User | None":
+        return cls.query.filter(db.func.lower(cls.azure_oid) == object_id.lower()).one_or_none()
+
+    @classmethod
+    def find_by_aad_upn(cls, upn: str) -> "User | None":
+        return cls.query.filter(db.func.lower(cls.aad_upn) == upn.lower()).one_or_none()
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostic helper
         return f"<User {self.email!r} status={self.status.value}>"

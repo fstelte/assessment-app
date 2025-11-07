@@ -35,11 +35,11 @@
           </td>
           <td>
             {% if user.status == UserStatus.ACTIVE %}
-              <span class="badge bg-success">Active</span>
+              <span class="badge bg-success">{{ _('admin.users.status.active') }}</span>
             {% elif user.status == UserStatus.PENDING %}
-              <span class="badge bg-warning text-dark">Pending</span>
+              <span class="badge bg-warning text-dark">{{ _('admin.users.status.pending') }}</span>
             {% else %}
-              <span class="badge bg-secondary">Disabled</span>
+              <span class="badge bg-secondary">{{ _('admin.users.status.disabled') }}</span>
             {% endif %}
           </td>
           <td>

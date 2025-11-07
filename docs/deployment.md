@@ -66,6 +66,9 @@ Without the `--env-file` flag, `${DATABASE_URL}` remains empty during compose pa
 
 - Store secrets in environment variables or a secret manager (Vault, AWS Secrets Manager, etc.).
 - Use `SECRET_KEY` rotation policies and update sessions carefully when rotating.
+- Provision Microsoft Entra SAML metadata via the shared secret store so Ansible and Docker builds stay aligned. Populate the `SAML_SP_*` keys (entity ID, ACS, SLS, certificates) together with the IdP values (`SAML_IDP_*`), attribute mappings, and toggles such as `SAML_SIGN_AUTHN_REQUESTS` or `SAML_WANT_ASSERTION_SIGNED`.
+- When enabling SSO, either import the generated metadata from `https://<host>/auth/login/saml/metadata` or copy the ACS/SLO URLs into the Entra enterprise application configuration.
+- Leave `PASSWORD_LOGIN_ENABLED` set to `false` in production. Switch it on temporarily only for break-glass operations or automated tests that rely on the legacy email/password form.
 - Configure TLS termination at the load balancer or reverse proxy layer.
 
 ## Observability

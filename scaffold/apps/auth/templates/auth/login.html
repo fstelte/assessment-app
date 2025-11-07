@@ -19,20 +19,51 @@
     </div>
 {% endif %}
 <h1 class="mb-4">{{ _('auth.login.heading') }}</h1>
-<form method="post">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.email.label(class="form-label") }}
-        {{ form.email(class="form-control") }}
+{% set show_password = password_login_enabled and form is not none %}
+{% if not saml_login_enabled and not show_password %}
+    <div class="alert alert-danger" role="status">
+        {{ _('auth.login.saml_unavailable') }}
     </div>
-    <div class="mb-3">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control") }}
+{% endif %}
+
+{% if show_password %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2 class="card-title h5 mb-3">{{ _('auth.login.password_heading') }}</h2>
+            <form method="post" novalidate>
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", autocomplete="username") }}
+                    {% for error in form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control", autocomplete="current-password") }}
+                    {% for error in form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="form-check mb-3">
+                    {{ form.remember_me(class="form-check-input", id="remember-me") }}
+                    {{ form.remember_me.label(class="form-check-label", for="remember-me") }}
+                </div>
+                {{ form.submit(class="btn btn-primary w-100") }}
+            </form>
+        </div>
     </div>
-    <div class="mb-3 form-check">
-        {{ form.remember_me(class="form-check-input") }}
-        {{ form.remember_me.label(class="form-check-label") }}
+{% endif %}
+
+{% if saml_login_enabled %}
+    <div class="text-center mt-4">
+        <div class="alert alert-info" role="status">
+            {{ _('auth.login.saml_hint') }}
+        </div>
+        <a class="btn btn-outline-primary w-100" href="{{ url_for('auth.login_saml') }}">
+            {{ _('auth.login.saml_enterprise_button') }}
+        </a>
     </div>
-    {{ form.submit(class="btn btn-primary") }}
-</form>
+{% endif %}
 {% endblock %}

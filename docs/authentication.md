@@ -1,78 +1,124 @@
 # Authentication & Authorisation
 
-The scaffold combines the hardening rules from both `bia_app` and `csa_app`:
-password-based sign-in, mandatory multi-factor authentication (MFA), anchored
-session metadata, and strict response headers.
+The scaffold now relies exclusively on SAML 2.0 single sign-on provided by
+Microsoft Entra ID (Azure AD). The Python application acts as the service
+provider, provisions users on the fly, synchronises role membership, and still
+reuses the hardened session helpers inherited from the legacy BIA/CSA apps.
 
-## Flow Overview
+## SAML Single Sign-On Flow
 
-1. **Password validation** – Accounts must be `ACTIVE`, mirroring CSA's status
-   enum. Dormant accounts are blocked prior to issuing any session state.
-2. **MFA challenge** – `queue_mfa_enrolment` and `queue_mfa_verification`
-   (from `scaffold.apps.auth.flow`) store the user ID plus remember-me flag in
-   the session, deferring completion until a TOTP token is confirmed.
-3. **Session issuance** – `finalise_login` applies the same fingerprinting and
-   idle timeouts that BIA enforced, reusing helpers from
-   `scaffold.core.security`.
-4. **Response hardening** – `scaffold.core.security_headers` attaches CSP,
-   HSTS, and other secure headers after each response, matching the legacy BIA
-   deployment profile.
+1. **Initiation** – Visiting `/auth/login` immediately redirects to
+   `/auth/login/saml`, issuing an AuthN request built from the configured
+   `SAML_SP_*` values. Request IDs are stored in the session to defend against
+   replay attacks.
+2. **Assertion Consumer Service** – The identity provider posts the SAML
+   response to `/auth/login/saml/acs`. The handler validates the signature,
+   NameID, and attributes before provisioning or updating the local user record.
+3. **Role synchronisation** – Group claims are compared with
+   `SAML_ALLOWED_GROUP_IDS` and translated via `SAML_ROLE_MAP` plus database
+   mappings. Users outside the allowed set are rejected before a session is
+   issued.
+4. **Session issuance** – `finalise_login` applies the established MFA/session
+   fingerprinting rules and the response header hardening provided by
+   `scaffold.core.security_headers`.
+
+Additional endpoints include `GET /auth/login/saml/metadata` to publish service
+provider metadata and `/auth/login/saml/sls` for single logout. When IdP logout
+metadata is supplied the logout route will cascade through Entra and clear local
+session state once the SAML logout response is confirmed.
+
+## Attribute Mapping & Provisioning
+
+- Email, first name, last name, display name, directory object ID, and UPN are
+  read from the attributes configured via the `SAML_ATTRIBUTE_*` environment
+  variables. Missing email addresses cause the login to fail.
+- Group claims default to
+  `http://schemas.microsoft.com/identity/claims/groups`. Supply additional
+  attributes when you need different identifiers (for example, roles or
+  department codes) and make sure they are issued in the IdP claim set.
+- New users are activated automatically and receive a random break-glass
+  password so CLI tasks such as `create-admin` keep functioning. Updating
+  profile information is idempotent: the handler only overwrites fields when the
+  assertion delivers new values.
+- `SAML_ROLE_MAP` accepts a JSON object mapping group IDs to internal role
+  slugs. The `RoleSyncService` also honours records in the `aad_group_mappings`
+  table so administrators can maintain additional relationships through the UI.
 
 ## Reusable Utilities
 
 | Location | Responsibility |
 | --- | --- |
-| `scaffold.apps.auth.flow` | Queues MFA states, finalises logins, and exposes `ensure_mfa_provisioning` + `clear_mfa_state`. |
-| `scaffold.apps.auth.mfa` | Generates PyOTP secrets and validates tokens. |
+| `scaffold.apps.auth.flow` | Queues MFA prompts, finalises logins, and exposes `ensure_mfa_provisioning`/`clear_mfa_state`. |
+| `scaffold.apps.auth.mfa` | Generates PyOTP secrets and validates tokens for the break-glass password flow. |
 | `scaffold.core.security` | Provides session fingerprint validation and the `require_fresh_login` decorator. |
 | `scaffold.core.security_headers` | Injects frame/XSS protections, CSP, and conditional HSTS. |
-| `scaffold.apps.admin` | Uses the shared helpers for user MFA management and enforces fresh-login policies. |
+| `scaffold.apps.admin` | Surfaces MFA management tooling and enforces fresh-login policies. |
 
-These modules are import-safe for CLI scripts or API blueprints that need to
-reuse the same guarantees without touching the UI routes directly.
+These modules are safe to import from scripts or APIs that need to bootstrap
+users, manage MFA, or apply the same security posture outside the web routes.
 
-## User Model & Roles
+## Session Security & MFA
 
-- Based on CSA's `User` entity with status enum (`pending`, `active`, `disabled`).
-- Carries BIA fields (first/last name, theme preference) and links to MFA and
-  assessment relationships.
-- Roles live in `roles` with a many-to-many association to users; migrate BIA's
-  string role column by seeding `Role` rows and linking via `user_roles`.
-- Prefer role checks (e.g. `current_user.has_role("admin")`) over bespoke
-  booleans.
+- `finalise_login` continues to anchor the session to the user-agent and idle
+  timeout. Defaults mirror the historic 12-hour inactivity limit.
+- MFA enrolment (`/auth/mfa/enroll`) and verification (`/auth/mfa/verify`) still
+  operate for local accounts. SAML sign-ins bypass local MFA because Entra is
+  expected to enforce tenant-level MFA policies.
+- `require_fresh_login` remains available for sensitive actions. It forces
+  callers to reauthenticate (via SAML) before destructive operations continue.
+- Cookies stay locked down (`Secure`, `HttpOnly`, `SameSite=Lax`). Override them
+  through `Settings` only when absolutely necessary.
 
-## MFA Lifecycle
+## Secret Management
 
-- `ensure_mfa_provisioning` creates or resets `MFASetting` entries and returns
-  the provisioning URI for QR code display.
-- `mfa_enroll` and `mfa_verify` both end by calling `finalise_login`, so all
-  session guards (fingerprint, timestamps) apply uniformly.
-- Remember-device behaviour mirrors CSA: the remember flag survives the MFA
-  challenge and is consumed on successful verification.
+- Generate `SECRET_KEY` with `openssl rand -hex 32` (or a managed secret store)
+  so Flask sessions and CSRF tokens remain unpredictable.
+- Store SAML credentials in secrets management tooling. The Ansible playbooks
+  expect values to arrive via `vault_saml_*` variables (see
+  `ansible/group_vars/all.yml` for the complete list). Mirror the same keys in
+  `.env.production` for container deployments.
+- Keep PEM-encoded certificates private. Access to `SAML_SP_PRIVATE_KEY` grants
+  the ability to impersonate your service provider.
 
-## Session Security
+### Certificate Rotation
 
-- `init_session_security` enforces a 12-hour idle timeout (configurable) and
-  compares the stored fingerprint with the current request's user-agent.
-- `require_fresh_login` decorates destructive actions (BIA used it for delete
-  flows) to demand a recent password entry.
-- Cookies default to `Secure`, `HttpOnly`, and `SameSite=Lax`; override via
-  `Settings` if a different profile is needed.
+1. Issue new signing and encryption certificates for the service provider.
+2. Update the secret store entries (`vault_saml_sp_cert`,
+   `vault_saml_sp_private_key`, container secrets, CI variables, etc.) with the
+   new PEM material while keeping the old values in place.
+3. Redeploy the application so the refreshed certificates are loaded into
+   memory. You can overlap the rollout with the previous metadata to avoid
+   downtime.
+4. Regenerate the metadata via `GET /auth/login/saml/metadata` and upload it to
+   Entra or any other identity provider tracking the integration.
+5. Decommission the previous certificates once federated sign-in succeeds with
+   the rotated keys.
 
-## Backward Compatibility
+## Microsoft Entra SAML Configuration
 
-- Password hashes remain Werkzeug-compatible; migrating users does not require
-  re-hashing.
-- Existing MFA secrets map directly to `MFASetting.secret`; mark
-  `enabled/enrolled_at` during migration to skip forced re-enrolment.
-- External integrations that referenced unprefixed BIA tables should now target
-  the `users`, `mfa_settings`, and `bia_*/csa_*` tables or consume compatibility
-  views.
+- Register an **Enterprise Application** in Microsoft Entra ID and configure it
+  for SAML-based single sign-on. Use the service provider metadata endpoint to
+  populate the Entity ID, ACS, and SLO URLs.
+- Issue the following claim set: email address, given name, surname, display
+  name, object identifier, user principal name, and group membership (or an
+  equivalent attribute that matches `SAML_ATTRIBUTE_GROUPS`).
+- Assign users or groups to the enterprise application and, if needed, scope the
+  integration further by listing allowed group IDs in `SAML_ALLOWED_GROUP_IDS`.
+- Provide the IdP certificate, SSO URL, and SLO URL via `SAML_IDP_CERT`,
+  `SAML_IDP_SSO_URL`, and `SAML_IDP_SLO_URL`. Enable request signing or response
+  validation flags (`SAML_SIGN_*`, `SAML_WANT_*`) to satisfy your security
+  posture.
+- Publish the application to end users. They will be redirected through Entra
+  when visiting `/auth/login`, and successful assertions will provision/update
+  their local accounts automatically.
 
-## Future Enhancements
+## Break-Glass Local Login
 
-- Add WebAuthn or FIDO2 routes that still delegate to `finalise_login` once the
-  assertion passes.
-- Persist remember-device approvals server-side rather than in the session for
-  better auditability.
-- Surface an admin console for role assignment and MFA enforcement policies.
+- The unified scaffold keeps a guarded password form for emergency access and
+  automated tests. Toggle it with the `PASSWORD_LOGIN_ENABLED` environment
+  variable (legacy aliases `SAML_PASSWORD_LOGIN_ENABLED` /
+  `ENTRA_PASSWORD_LOGIN_ENABLED` / `AZURE_PASSWORD_LOGIN_ENABLED` still work).
+- When disabled (default), `/auth/login` immediately redirects to the SAML
+  handshake. When enabled, the page renders both the password form and the SAML
+  button; successful password sign-ins still call the shared helpers so MFA can
+  be enforced per user.

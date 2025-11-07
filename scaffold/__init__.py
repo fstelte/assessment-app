@@ -15,6 +15,7 @@ import tomllib
 
 import click
 from flask import Flask, request, send_file, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BuildError
 from flask_login import current_user
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -40,6 +41,15 @@ def create_app(settings: Settings | None = None) -> Flask:
     app = Flask(__name__.split(".")[0])
     app_settings = settings or Settings.from_env()
     app.config.update(app_settings.flask_config())
+    if app_settings.proxy_fix_enabled:
+        app.wsgi_app = ProxyFix(  # type: ignore[assignment]
+            app.wsgi_app,
+            x_for=app_settings.proxy_fix_x_for,
+            x_proto=app_settings.proxy_fix_x_proto,
+            x_host=app_settings.proxy_fix_x_host,
+            x_port=app_settings.proxy_fix_x_port,
+            x_prefix=app_settings.proxy_fix_x_prefix,
+        )
     _ensure_instance_folder(app)
     _ensure_sqlite_uri(app)
 

@@ -32,6 +32,11 @@ def create_app(config_class=None):
     if config_class is None:
         from .config import DefaultConfig
         config_class = DefaultConfig
+    elif isinstance(config_class, str):
+        from .config import CONFIG_BY_NAME, DefaultConfig
+
+        config_key = config_class.lower()
+        config_class = CONFIG_BY_NAME.get(config_key, DefaultConfig)
 
     # Laad de configuratie
     app.config.from_object(config_class)

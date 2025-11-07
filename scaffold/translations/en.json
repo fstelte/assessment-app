@@ -613,6 +613,22 @@
         "password": "Password",
         "remember_me": "Remember me",
         "submit": "Sign in",
+        "saml": "Sign in with SAML",
+  "saml_hint": "Use your organisation's identity provider account to continue.",
+  "saml_enterprise_button": "Sign in with Microsoft Entra ID",
+        "saml_unavailable": "SAML login is not configured. Contact an administrator.",
+        "password_heading": "Sign in with a local account",
+        "errors": {
+          "password_disabled": "Password login is disabled.",
+          "invalid_credentials": "Invalid email address or password.",
+          "account_disabled": "Your account is disabled. Contact an administrator.",
+          "account_pending": "Your account is pending activation.",
+          "invalid_submission": "Please correct the highlighted errors and try again."
+        },
+        "notices": {
+          "mfa_required": "Complete multi-factor authentication to finish signing in.",
+          "mfa_enrol": "Enroll in multi-factor authentication to continue."
+        },
         "actions": {
           "submit": "Sign in"
         },

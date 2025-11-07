@@ -24,6 +24,7 @@ Follow these steps to provision a local development environment for the scaffold
 | `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///instance/scaffold.db` |
 | `SCAFFOLD_APP_MODULES` | Comma-separated list of app modules to load | `scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.template` |
 | `SESSION_COOKIE_SECURE` | Marks cookies as secure (HTTPS only) | `true` |
+| `PASSWORD_LOGIN_ENABLED` | Enable the legacy email/password login form for break-glass access | `false` |
 
 ### Database URLs
 

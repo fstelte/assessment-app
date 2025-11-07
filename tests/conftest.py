@@ -21,6 +21,7 @@ def app():
             "scaffold.apps.csa",
             "scaffold.apps.template",
         ],
+        password_login_enabled=True,
     )
     app = create_app(settings)
     app.config.update(

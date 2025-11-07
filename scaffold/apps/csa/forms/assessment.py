@@ -57,17 +57,16 @@ LEGACY_QUESTION_KEY_BY_TEXT: Dict[str, Dict[str, str]] = {
 }
 
 
-def _label(key: str) -> str:
-    """Return a lazy translation coerced to str for WTForms labels."""
+def _label(key: str) -> Any:
+    """Return a lazy translation for WTForms labels."""
 
-    # Return lazy translation so the label is resolved at render time (per-request)
-    return cast(str, _l(key))
+    return cast(Any, _l(key))
 
 
-def _message(key: str) -> str:
-    """Return a lazy translation coerced to str for validation messages."""
+def _message(key: str) -> Any:
+    """Return a lazy translation for validation messages."""
 
-    return cast(str, _l(key))
+    return cast(Any, _l(key))
 
 
 def _resolve_label_key(dimension_key: str, section: Dict[str, Any]) -> str | None:
