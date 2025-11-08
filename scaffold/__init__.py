@@ -14,7 +14,7 @@ from typing import Any
 import tomllib
 
 import click
-from flask import Flask, request, send_file, session, url_for
+from flask import Flask, g, request, send_file, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BuildError
 from flask_login import current_user
@@ -95,6 +95,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             "app_meta": metadata,
             "current_locale": get_locale(),
             "available_locales": i18n_manager.available_locales(),
+            "csp_nonce": getattr(g, "csp_nonce", ""),
         }
 
     @app.errorhandler(OperationalError)

@@ -1,0 +1,53 @@
+[data-bs-theme="light"] .bg-dark {
+  background-color: #ffffff !important;
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="light"] .text-light {
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="light"] .btn-outline-light {
+  color: #212529;
+  border-color: #212529;
+}
+
+[data-bs-theme="light"] .btn-outline-light:hover,
+[data-bs-theme="light"] .btn-outline-light:focus {
+  background-color: #212529;
+  color: #ffffff;
+}
+
+[data-bs-theme="light"] .table-dark {
+  --bs-table-color: #212529;
+  --bs-table-bg: #f8f9fa;
+  --bs-table-striped-bg: #eef0f2;
+  --bs-table-striped-color: #212529;
+  --bs-table-hover-bg: #e6e8ea;
+  --bs-table-hover-color: #212529;
+}
+
+[data-bs-theme="light"] .border-secondary {
+  border-color: var(--bs-border-color) !important;
+}
+
+.min-w-7rem {
+  min-width: 7rem;
+}
+
+.max-w-24rem {
+  max-width: 24rem;
+}
+
+.max-w-30rem {
+  max-width: 30rem;
+}
+
+.offset-top-6rem {
+  top: 6rem !important;
+}
+
+.badge-ai-high-risk {
+  background-color: #fd7e14;
+  color: #212529 !important;
+}

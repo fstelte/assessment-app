@@ -10,7 +10,7 @@
                 {% endif %}
             {% endfor %}
             <label class="form-label mb-0 small text-uppercase" for="login-language-select">{{ _('app.language.label') }}</label>
-            <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto {{ 'bg-dark text-light border-secondary' if theme != 'light' else '' }}" onchange="this.form.submit()" aria-label="{{ _('app.language.label') }}" style="min-width: 7rem;">
+            <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto min-w-7rem {{ 'bg-dark text-light border-secondary' if theme != 'light' else '' }}" onchange="this.form.submit()" aria-label="{{ _('app.language.label') }}">
                 {% for locale in available_locales %}
                     <option value="{{ locale }}" {% if locale == current_locale %}selected{% endif %}>{{ _('app.language.option.' ~ locale) }}</option>
                 {% endfor %}
@@ -27,7 +27,7 @@
 {% endif %}
 
 {% if show_password %}
-    <div class="mt-4 mx-auto" style="max-width: 24rem;">
+    <div class="mt-4 mx-auto max-w-24rem">
         <div class="card">
             <div class="card-body">
                 <h2 class="card-title h5 mb-3">{{ _('auth.login.password_heading') }}</h2>
@@ -59,7 +59,7 @@
 {% endif %}
 
 {% if saml_login_enabled %}
-    <div class="text-center mt-4 mx-auto" style="max-width: 24rem;">
+    <div class="text-center mt-4 mx-auto max-w-24rem">
         <div class="alert alert-info" role="status">
             {% if show_password %}
                 {{ _('auth.login.saml_hint') }}

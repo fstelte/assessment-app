@@ -88,7 +88,7 @@ def _ai_badge_tokens(category: str | None) -> dict[str, str]:
     if normalized == "unacceptable risk":
         return {"class": "bg-danger text-white"}
     if normalized == "high risk":
-        return {"class": "text-dark", "style": "background-color: #fd7e14;"}
+        return {"class": "badge-ai-high-risk"}
     if normalized == "limited risk":
         return {"class": "bg-warning text-dark"}
     if normalized == "minimal risk":

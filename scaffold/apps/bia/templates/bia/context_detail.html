@@ -84,8 +84,7 @@
                   {% if ai_record %}
                     {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
                     {% set badge_class = badge_tokens['class'] %}
-                    {% set badge_style = badge_tokens.get('style') %}
-                    <span class="badge {{ badge_class }}" {% if badge_style %}style="{{ badge_style }}"{% endif %}>{{ ai_record.category }}</span>
+                    <span class="badge {{ badge_class }}">{{ ai_record.category }}</span>
                   {% else %}
                     <span class="text-secondary">None</span>
                   {% endif %}
@@ -224,8 +223,7 @@
                 <td>{{ component.name }}</td>
                 {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
                 {% set badge_class = badge_tokens['class'] %}
-                {% set badge_style = badge_tokens.get('style') %}
-                <td><span class="badge {{ badge_class }}" {% if badge_style %}style="{{ badge_style }}"{% endif %}>{{ ai_record.category }}</span></td>
+                <td><span class="badge {{ badge_class }}">{{ ai_record.category }}</span></td>
                 <td>{{ ai_record.motivatie or _('bia.context_detail.ai_risks.motivation_missing') }}</td>
               </tr>
             {% endif %}
