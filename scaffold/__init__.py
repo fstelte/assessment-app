@@ -14,11 +14,12 @@ from typing import Any
 import tomllib
 
 import click
-from flask import Flask, g, request, send_file, session, url_for
+from flask import Flask, g, render_template, request, send_file, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BuildError
 from flask_login import current_user
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from werkzeug.exceptions import Forbidden
 
 from .config import Settings
 from .core.registry import AppRegistry
@@ -109,6 +110,26 @@ def create_app(settings: Settings | None = None) -> Flask:
             return response
         response = app.send_static_file("maintenance.html")
         response.status_code = 503
+        return response
+
+    @app.errorhandler(Forbidden)
+    def forbidden(exc: Forbidden):  # type: ignore[misc]
+        app.logger.info("forbidden access attempt", extra={"path": request.path})
+        contact_email = os.getenv("MAINTENANCE_CONTACT_EMAIL", "support@example.com")
+        contact_label = os.getenv("MAINTENANCE_CONTACT_LABEL", contact_email)
+        raw_contact_link = os.getenv("MAINTENANCE_CONTACT_LINK")
+        contact_link = raw_contact_link or f"mailto:{contact_email}"
+
+        response = app.make_response(
+            render_template(
+                "errors/forbidden.html",
+                contact_email=contact_email,
+                contact_label=contact_label,
+                contact_link=contact_link,
+            )
+        )
+        response.status_code = 403
+        response.headers.setdefault("Cache-Control", "no-store")
         return response
 
     with app.app_context():
