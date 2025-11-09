@@ -20,6 +20,7 @@ from werkzeug.routing import BuildError
 from flask_login import current_user
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.exceptions import Forbidden
+from jinja2 import TemplateError
 
 from .config import Settings
 from .core.registry import AppRegistry
@@ -99,6 +100,16 @@ def create_app(settings: Settings | None = None) -> Flask:
             "csp_nonce": getattr(g, "csp_nonce", ""),
         }
 
+    def _contact_details() -> dict[str, str]:
+        email = os.getenv("MAINTENANCE_CONTACT_EMAIL", "support@example.com")
+        label = os.getenv("MAINTENANCE_CONTACT_LABEL", email)
+        link = os.getenv("MAINTENANCE_CONTACT_LINK") or f"mailto:{email}"
+        return {
+            "contact_email": email,
+            "contact_label": label,
+            "contact_link": link,
+        }
+
     @app.errorhandler(OperationalError)
     def maintenance_mode(exc: OperationalError):  # type: ignore[misc]
         app.logger.warning("database unavailable; serving maintenance page", exc_info=app.debug)
@@ -115,20 +126,20 @@ def create_app(settings: Settings | None = None) -> Flask:
     @app.errorhandler(Forbidden)
     def forbidden(exc: Forbidden):  # type: ignore[misc]
         app.logger.info("forbidden access attempt", extra={"path": request.path})
-        contact_email = os.getenv("MAINTENANCE_CONTACT_EMAIL", "support@example.com")
-        contact_label = os.getenv("MAINTENANCE_CONTACT_LABEL", contact_email)
-        raw_contact_link = os.getenv("MAINTENANCE_CONTACT_LINK")
-        contact_link = raw_contact_link or f"mailto:{contact_email}"
-
         response = app.make_response(
-            render_template(
-                "errors/forbidden.html",
-                contact_email=contact_email,
-                contact_label=contact_label,
-                contact_link=contact_link,
-            )
+            render_template("errors/forbidden.html", **_contact_details())
         )
         response.status_code = 403
+        response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+    @app.errorhandler(TemplateError)
+    def template_failure(exc: TemplateError):  # type: ignore[misc]
+        if app.debug:
+            raise exc
+        app.logger.exception("template rendering failed", exc_info=True)
+        response = app.make_response(render_template("errors/server_error.html", **_contact_details()))
+        response.status_code = 500
         response.headers.setdefault("Cache-Control", "no-store")
         return response
 
