@@ -4,7 +4,7 @@ version = "2025.11.3"
 description = "Unified scaffold for bia_app and csa_app domains"
 authors = ["Ferry Stelte"]
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 packages = [{ include = "scaffold" }]
 include = ["migrations/**", "alembic.ini"]
 

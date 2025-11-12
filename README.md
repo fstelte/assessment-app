@@ -80,6 +80,11 @@ The platform offers lightweight JSON-driven localisation that allows text to be 
 - `docs/deployment.md` covers infrastructure touchpoints, backup helpers, and a
    release management checklist with SSO smoke-test reminders.
 
+## License
+
+Licensed under the Apache License, Version 2.0. Include the copyright notice
+for Ferry Stelte in redistributions; see the `LICENSE` file for details.
+
 ### Docker
 
 - Build the production image via `docker build -t assessment-app -f docker/Dockerfile .`.
