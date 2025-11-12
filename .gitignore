@@ -56,3 +56,120 @@ poetry.lock
 scaffold/exports/Data_Inventory_20251026_100052.csv
 scaffold/exports/CIA_Consequences_Summary_20251026_100116.html
 scaffold/exports/All_CIA_Consequences_20251026_100057.html
+bia_app/app/exports/All_CIA_Consequences_20250716_231421.html
+bia_app/app/exports/All_CIA_Consequences_20250716_231909.html
+bia_app/app/exports/All_CIA_Consequences_20250717_070643.html
+bia_app/app/exports/All_CIA_Consequences_20250717_071045.html
+bia_app/app/exports/All_CIA_Consequences_20250717_071420.html
+bia_app/app/exports/All_CIA_Consequences_20250717_071620.html
+bia_app/app/exports/All_CIA_Consequences_20250717_072243.html
+bia_app/app/exports/All_CIA_Consequences_20250717_072829.html
+bia_app/app/exports/All_CIA_Consequences_20250717_075735.html
+bia_app/app/exports/All_CIA_Consequences_20250721_083650.html
+bia_app/app/exports/All_CIA_Consequences_20250721_084657.html
+bia_app/app/exports/BIA_Communicatie.html
+bia_app/app/exports/BIA_Export_Finance_20251015.sql
+bia_app/app/exports/BIA_Export_Secure Domains_20251015.sql
+bia_app/app/exports/BIA_Finance.html
+bia_app/app/exports/BIA_Secure Domains.html
+bia_app/app/exports/BIA_SIDN Labs onderzoekinfrastructuur bij Nikhef.html
+bia_app/app/exports/CIA_Consequences_Summary_20250716_231841.html
+bia_app/app/exports/CIA_Consequences_Summary_20250716_232148.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_070648.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_071049.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_071625.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_072901.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_073209.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_073352.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_073550.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_073823.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_074150.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_074553.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_074741.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_075552.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_075716.html
+bia_app/app/exports/CIA_Consequences_Summary_20250717_075834.html
+bia_app/app/exports/CIA_Consequences_Summary_20250721_083547.html
+bia_app/app/exports/CIA_Consequences_Summary_20250721_084909.html
+bia_app/app/exports/CIA_Consequences_Summary_20250721_085009.html
+bia_app/app/exports/Data_Inventory_20250707_103718.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_ai_identification.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_availability_requirements.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_bia.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_components.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_consequences.csv
+bia_app/app/exports/AWS Landing Zone/AWS Landing Zone_summary.csv
+bia_app/app/exports/Communicatie/Communicatie_ai_identification.csv
+bia_app/app/exports/Communicatie/Communicatie_availability_requirements.csv
+bia_app/app/exports/Communicatie/Communicatie_bia.csv
+bia_app/app/exports/Communicatie/Communicatie_components.csv
+bia_app/app/exports/Communicatie/Communicatie_consequences.csv
+bia_app/app/exports/Communicatie/Communicatie_summary.csv
+bia_app/app/exports/DNS/DNS_ai_identification.csv
+bia_app/app/exports/DNS/DNS_availability_requirements.csv
+bia_app/app/exports/DNS/DNS_bia.csv
+bia_app/app/exports/DNS/DNS_components.csv
+bia_app/app/exports/DNS/DNS_consequences.csv
+bia_app/app/exports/DNS/DNS_summary.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_ai_identification.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_availability_requirements.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_bia.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_components.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_consequences.csv
+bia_app/app/exports/Domein Registratie/Domein Registratie_summary.csv
+bia_app/app/exports/Finance/Finance_ai_identification.csv
+bia_app/app/exports/Finance/Finance_availability_requirements.csv
+bia_app/app/exports/Finance/Finance_bia.csv
+bia_app/app/exports/Finance/Finance_components.csv
+bia_app/app/exports/Finance/Finance_consequences.csv
+bia_app/app/exports/Finance/Finance_summary.csv
+bia_app/app/exports/HRM/HRM_ai_identification.csv
+bia_app/app/exports/HRM/HRM_availability_requirements.csv
+bia_app/app/exports/HRM/HRM_bia.csv
+bia_app/app/exports/HRM/HRM_components.csv
+bia_app/app/exports/HRM/HRM_consequences.csv
+bia_app/app/exports/HRM/HRM_summary.csv
+bia_app/app/exports/Labs/Labs_ai_identification.csv
+bia_app/app/exports/Labs/Labs_availability_requirements.csv
+bia_app/app/exports/Labs/Labs_bia.csv
+bia_app/app/exports/Labs/Labs_components.csv
+bia_app/app/exports/Labs/Labs_consequences.csv
+bia_app/app/exports/Labs/Labs_summary.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_ai_identification.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_availability_requirements.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_bia.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_components.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_consequences.csv
+bia_app/app/exports/Legal  Policy/Legal & Policy_summary.csv
+bia_app/app/exports/Registry Services/Registry Services_ai_identification.csv
+bia_app/app/exports/Registry Services/Registry Services_availability_requirements.csv
+bia_app/app/exports/Registry Services/Registry Services_bia.csv
+bia_app/app/exports/Registry Services/Registry Services_components.csv
+bia_app/app/exports/Registry Services/Registry Services_consequences.csv
+bia_app/app/exports/Registry Services/Registry Services_summary.csv
+bia_app/app/exports/Secure Domains/Secure Domains_ai_identification.csv
+bia_app/app/exports/Secure Domains/Secure Domains_availability_requirements.csv
+bia_app/app/exports/Secure Domains/Secure Domains_bia.csv
+bia_app/app/exports/Secure Domains/Secure Domains_components.csv
+bia_app/app/exports/Secure Domains/Secure Domains_consequences.csv
+bia_app/app/exports/Secure Domains/Secure Domains_summary.csv
+bia_app/app/exports/Security Services/Security Services_ai_identification.csv
+bia_app/app/exports/Security Services/Security Services_availability_requirements.csv
+bia_app/app/exports/Security Services/Security Services_bia.csv
+bia_app/app/exports/Security Services/Security Services_components.csv
+bia_app/app/exports/Security Services/Security Services_consequences.csv
+bia_app/app/exports/Security Services/Security Services_summary.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_ai_identification.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_availability_requirements.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_bia.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_components.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_consequences.csv
+bia_app/app/exports/SIDN Data Platform/SIDN Data Platform_summary.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_ai_identification.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_availability_requirements.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_bia.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_components.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_consequences.csv
+bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onderzoekinfrastructuur bij Nikhef_summary.csv
+bia_app/instance/bia_tool copy.db
+bia_app/instance/bia_tool.db
