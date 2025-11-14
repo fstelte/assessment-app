@@ -44,11 +44,12 @@
 
 <div class="mt-5">
 	<h2 class="h4 mb-3">{{ _('csa.dashboard.quick_actions.title') }}</h2>
+	{% set can_manage_assignments = current_user.has_role('admin') or current_user.has_role('manager') %}
 	<div class="row g-3">
-		{% if current_user.has_role('admin') or current_user.has_role('manager') %}
 		<div class="col-sm-6 col-lg-3">
 			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.start_assessment') }}">{{ _('csa.dashboard.quick_actions.start') }}</a>
 		</div>
+		{% if can_manage_assignments %}
 		<div class="col-sm-6 col-lg-3">
 			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.assign_assessment') }}">{{ _('csa.dashboard.quick_actions.assign') }}</a>
 		</div>
