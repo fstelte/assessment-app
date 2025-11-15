@@ -69,16 +69,18 @@
                 <th scope="col">Owner</th>
                 <th scope="col">Users</th>
                 <th scope="col">Consequences</th>
+                <th scope="col">Authentication</th>
                 <th scope="col">AI</th>
-              <tr>
-                <td colspan="3" class="text-center {{ text_muted }} py-4">No AI risks identified for the linked components.</td>
               </tr>
+            </thead>
+            <tbody>
               {% for component in item.components %}
               <tr>
                 <td>{{ component.name }}</td>
                 <td>{{ component.info_owner or 'Not set' }}</td>
                 <td>{{ component.user_type or 'Not set' }}</td>
                 <td>{{ component.consequences | length }}</td>
+                <td>{{ bia_component_authentication(component) or 'Not set' }}</td>
                 <td>
                   {% set ai_record = ai_identifications.get(component.id) %}
                   {% if ai_record %}
