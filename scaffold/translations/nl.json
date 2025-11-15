@@ -11,7 +11,7 @@
     "navigation": {
       "brand": "Assessment Platform",
       "home": "Start",
-      "bia": "BIA",
+        "created": "Authenticatiemethode {name} aangemaakt.",
       "profile": "Profiel",
       "admin": "Beheer",
       "logout": "Afmelden",
@@ -74,7 +74,8 @@
         "import_sql": "SQL importeren",
         "export_inventory": "Data-inventaris exporteren (CSV)",
         "export_cia_detailed": "CIA-gevolgen exporteren (gedetailleerd)",
-        "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)"
+        "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)",
+        "export_authentication": "Authenticatieoverzicht exporteren"
       },
       "header": {
         "title": "Business Impact Analyses",
@@ -184,6 +185,9 @@
           "label": "Maakt gebruik van AI-componenten"
         }
       },
+      "tooltips": {
+        "name": "Vul de officiële naam van de dienst of het product in, zoals die binnen de organisatie bekend is."
+      },
       "component_fields": {
         "name": {
           "label": "Naam van component"
@@ -196,6 +200,9 @@
         },
         "user_type": {
           "label": "Gebruikerstype"
+        },
+        "authentication": {
+          "label": "Authenticatietype"
         },
         "process_dependencies": {
           "label": "Procesafhankelijkheden"
@@ -227,6 +234,7 @@
           "info_type": "Informatietype",
           "info_owner": "Eigenaar",
           "user_type": "Gebruikerstype",
+          "authentication": "Authenticatie",
           "dependencies": "Afhankelijkheden",
           "description": "Omschrijving",
           "consequences": "Gevolgen",
@@ -250,6 +258,124 @@
         "motivation": "Motivatie",
         "motivation_missing": "Niet opgegeven",
         "empty": "Geen AI-risico's vastgesteld voor de gekoppelde componenten."
+      }
+    },
+    "components": {
+      "page_title": "Componenten | BIA",
+      "back": "Terug naar dashboard",
+      "heading": "Componentbibliotheek",
+      "filters": {
+        "all": "Alle BIA's",
+        "button": "Filter"
+      },
+      "add": {
+        "title": "Component toevoegen",
+        "bia_label": "BIA",
+        "bia_placeholder": "Selecteer een BIA",
+        "submit": "Component toevoegen"
+      },
+      "table": {
+        "title": "Bestaande componenten",
+        "headers": {
+          "component": "Component",
+          "bia": "BIA",
+          "owner": "Eigenaar",
+          "users": "Gebruikers",
+          "authentication": "Authenticatie",
+          "consequences": "Gevolgen",
+      "tooltips": {
+        "scope": "Kies de BIA waarbij deze component hoort voordat je de andere velden invult.",
+        "name": "Geef een korte, duidelijke naam zodat collega's de component direct herkennen."
+      },
+          "actions": "Acties"
+        },
+        "not_linked": "Niet gekoppeld",
+        "not_set": "Niet ingesteld",
+        "pagination": "Weergave {start}\u2013{end} van {total}",
+        "pagination_with_pages": "Weergave {start}\u2013{end} van {total} (pagina {page} van {pages})",
+        "empty": "Geen componenten gevonden voor deze selectie.",
+        "confirm_delete": "Deze component verwijderen?"
+      },
+      "buttons": {
+        "edit": "Bewerken",
+        "consequences": "Gevolgen",
+        "delete": "Verwijderen",
+        "save_changes": "Wijzigingen opslaan"
+      },
+      "labels": {
+        "name": "Naam",
+        "owner": "Eigenaar",
+        "information_type": "Informatietype",
+        "user_type": "Gebruikerstype",
+        "authentication": "Authenticatie",
+        "process_dependencies": "Procesafhankelijkheden",
+        "description": "Omschrijving"
+      },
+      "modal": {
+        "title": "AI-identificatie",
+        "category": "Risicocategorie",
+        "motivation": "Motivatie",
+        "placeholder": "Beschrijf de onderbouwing voor deze classificatie",
+        "buttons": {
+          "cancel": "Annuleren",
+          "save": "Opslaan"
+        }
+      },
+      "messages": {
+        "error_unexpected": "Er is een onverwachte fout opgetreden.",
+        "validation_failed": "Validatie mislukt:",
+        "component_reference_missing": "Componentreferentie ontbreekt.",
+        "save_failed": "AI-identificatie kon niet worden opgeslagen.",
+        "add_failed": "Component kon niet worden toegevoegd.",
+        "update_failed": "Component kon niet worden bijgewerkt.",
+        "delete_failed": "Component kon niet worden verwijderd."
+      },
+      "ai": {
+        "identify": "AI identificeren",
+        "options": {
+          "no_ai": "Geen AI",
+          "unacceptable": "Onacceptabel risico",
+          "high": "Hoog risico",
+          "limited": "Beperkt risico",
+          "minimal": "Minimaal risico"
+        }
+      },
+      "authentication": {
+        "placeholder": "Selecteer authenticatie",
+        "unset_badge": "Niet ingesteld"
+      }
+    },
+    "authentication_methods": {
+      "options": {
+        "application-integrated": "Applicatie-geïntegreerd",
+        "centrally-managed": "Centraal beheerd (IdP)"
+      }
+    },
+    "export": {
+      "authentication_overview": {
+        "title": "Overzicht authenticatie",
+        "heading": "Overzicht authenticatie",
+        "generated_at": "Gegenereerd op {timestamp}",
+        "intro": "Overzicht van applicatiecomponenten gegroepeerd per authenticatiemethode.",
+        "summary": {
+          "method": "Authenticatiemethode",
+          "slug": "Slug",
+          "components": "Componenten",
+          "unassigned": "Niet toegewezen",
+          "unassigned_slug": "—"
+        },
+        "columns": {
+          "bia": "BIA",
+          "component": "Component",
+          "owner": "Informatie-eigenaar",
+          "users": "Gebruikerstypes",
+          "unknown_bia": "Onbekende BIA",
+          "not_set": "Niet ingesteld"
+        },
+        "unassigned": {
+          "title": "Componenten zonder authenticatietype",
+          "empty": "Alle componenten hebben een authenticatietype."
+        }
       }
     }
   },
@@ -519,6 +645,7 @@
             "subtitle": "Wijs rollen toe, beheer activatie en MFA.",
             "link_csa_dashboard": "CSA-dashboard",
             "link_bia_dashboard": "BIA-dashboard",
+            "link_authentication_methods": "Authenticatiemethoden",
             "table": {
               "user": "Gebruiker",
               "status": "Status",
@@ -589,6 +716,64 @@
                 "disable": "MFA uitschakelen",
                 "back_to_users": "Terug naar gebruikers"
               }
+            }
+          },
+          "authentication_methods": {
+            "title": "Authenticatiemethoden",
+            "back_to_admin": "Terug naar gebruikersbeheer",
+            "create": {
+              "title": "Nieuwe authenticatiemethode toevoegen",
+              "fields": {
+                "slug": "Slug"
+              },
+              "translation_hint": "Labels beheer je via de vertaalbestanden (JSON).",
+              "submit": "Methode toevoegen"
+            },
+            "list": {
+              "title": "Geconfigureerde methoden",
+              "subtitle": "Beheer de authenticatietypen die beschikbaar zijn voor BIA-componenten.",
+              "columns": {
+                "slug": "Slug",
+                "label_locale": "Label ({locale_name})",
+                "status": "Status",
+                "usage": "Gebruik",
+                "actions": "Acties"
+              },
+              "in_use": "In gebruik ({count})",
+              "not_in_use": "Niet in gebruik",
+              "missing_label": "Vertaling ontbreekt",
+              "actions": {
+                "edit": "Bewerken",
+                "delete_confirm": "Deze authenticatiemethode verwijderen?"
+              },
+              "empty": "Nog geen authenticatiemethoden geconfigureerd."
+            },
+            "state": {
+              "active": "Actief",
+              "inactive": "Inactief"
+            },
+            "form": {
+              "update_submit": "Methode bijwerken",
+              "deactivate": "Deactiveren",
+              "activate": "Activeren",
+              "delete": "Verwijderen"
+            },
+            "edit": {
+              "title": "{name} bewerken",
+              "submit": "Wijzigingen opslaan",
+              "translation_hint": "Werk vertalingen bij in de JSON-vertaalbestanden."
+            },
+            "errors": {
+              "slug_exists": "Er bestaat al een methode met deze slug.",
+              "toggle_failed": "De status van de methode kon niet worden bijgewerkt.",
+              "delete_failed": "De authenticatiemethode kon niet worden verwijderd."
+            },
+            "flash": {
+              "created": "Authenticatiemethode {name} aangemaakt.",
+              "updated": "Authenticatiemethode {name} bijgewerkt.",
+              "toggled": "Authenticatiemethode {name} is nu {state}.",
+              "deactivated_instead_of_deleted": "Authenticatiemethode {name} wordt nog gebruikt door {count} componenten en is gedeactiveerd in plaats van verwijderd.",
+              "deleted": "Authenticatiemethode {name} verwijderd."
             }
           },
           "actions": {

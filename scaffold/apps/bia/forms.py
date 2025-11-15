@@ -8,6 +8,15 @@ from wtforms import BooleanField, DateField, IntegerField, PasswordField, Select
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
 
 
+def _optional_int(value: object) -> int | None:
+    if value in (None, "", "None"):
+        return None
+    try:
+        return int(str(value))
+    except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
+        raise ValueError("Not a valid integer value") from exc
+
+
 class ContextScopeForm(FlaskForm):
     """Capture or update the core attributes of a BIA context."""
 
@@ -46,6 +55,12 @@ class ComponentForm(FlaskForm):
     user_type = StringField("User type", validators=[Optional(), Length(max=255)])
     process_dependencies = TextAreaField("Process dependencies", validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
+    authentication_method = SelectField(
+        "Authentication type",
+        validators=[Optional()],
+        choices=[],
+        coerce=_optional_int,
+    )
     submit = SubmitField("Save component")
 
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import sqlalchemy as sa
+
 from flask import (
     Blueprint,
     abort,
@@ -14,7 +16,7 @@ from flask import (
     request,
     url_for,
 )
-from ...core.i18n import gettext as _
+from ...core.i18n import gettext as _, get_locale
 from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
@@ -23,6 +25,10 @@ from ..auth.flow import ensure_mfa_provisioning
 from ..auth.mfa import build_provisioning
 from ..csa.forms import UserRoleAssignForm, UserRoleRemoveForm
 from ..identity.models import MFASetting, Role, User, UserStatus
+from ..bia.localization import translate_authentication_label
+from ..bia.models import AuthenticationMethod, Component
+from ..bia.services.authentication import clear_authentication_cache
+from .forms import AuthenticationMethodDeleteForm, AuthenticationMethodForm, AuthenticationMethodToggleForm
 
 bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="templates")
 
@@ -30,6 +36,243 @@ bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="template
 def _require_admin() -> None:
     if not current_user.is_authenticated or not current_user.has_role("admin"):
         abort(403)
+
+
+def _get_authentication_method(method_id: int) -> AuthenticationMethod:
+    method = db.session.get(AuthenticationMethod, method_id)
+    if method is None:
+        abort(404)
+    return method
+
+
+def _fallback_map(method: AuthenticationMethod) -> dict[str, str]:
+    return {
+        "en": method.label_en or "",
+        "nl": method.label_nl or "",
+    }
+
+
+def _refresh_method_labels(method: AuthenticationMethod) -> None:
+    previous = _fallback_map(method)
+    method.label_en = translate_authentication_label(method.slug, "en", previous)
+    method.label_nl = translate_authentication_label(method.slug, "nl", previous)
+
+
+def _method_display_name(method: AuthenticationMethod, locale: str | None = None) -> str:
+    return translate_authentication_label(method.slug, locale or get_locale(), _fallback_map(method))
+
+
+@bp.route("/authentication-methods", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def list_authentication_methods():
+    _require_admin()
+
+    create_form = AuthenticationMethodForm()
+    if create_form.validate_on_submit():
+        slug = (create_form.slug.data or "").strip().lower()
+        existing = (
+            AuthenticationMethod.query.filter(sa.func.lower(AuthenticationMethod.slug) == slug).first()
+            if slug
+            else None
+        )
+        if existing:
+            create_form.slug.errors.append(_("admin.authentication_methods.errors.slug_exists"))
+            flash(_("admin.authentication_methods.errors.slug_exists"), "danger")
+        else:
+            method = AuthenticationMethod(slug=slug, is_active=True)
+            _refresh_method_labels(method)
+            db.session.add(method)
+            db.session.commit()
+            clear_authentication_cache()
+            flash(
+                _(
+                    "admin.authentication_methods.flash.created",
+                    name=_method_display_name(method),
+                ),
+                "success",
+            )
+            return redirect(url_for("admin.list_authentication_methods"))
+    else:
+        for errors in create_form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    methods = (
+        AuthenticationMethod.query.order_by(AuthenticationMethod.slug.asc(), AuthenticationMethod.id.asc()).all()
+    )
+    i18n_manager = current_app.extensions.get("i18n") if current_app else None
+    available_locales = list(i18n_manager.available_locales()) if i18n_manager else []
+    if not available_locales:
+        available_locales = ["en", "nl"]
+    display_locales = sorted(set(available_locales))
+    locale_names = {locale: locale.upper() for locale in display_locales}
+
+    method_labels: dict[int, dict[str, str]] = {}
+    method_display_names: dict[int, str] = {}
+    edit_forms: dict[int, AuthenticationMethodForm] = {}
+    toggle_forms: dict[int, AuthenticationMethodToggleForm] = {}
+    delete_forms: dict[int, AuthenticationMethodDeleteForm] = {}
+    component_usage: dict[int, int] = {}
+    active_locale = get_locale()
+
+    for method in methods:
+        edit_form = AuthenticationMethodForm(obj=method)
+        edit_form.slug.data = method.slug
+        edit_form.submit.label.text = _("admin.authentication_methods.form.update_submit")
+        edit_forms[method.id] = edit_form
+
+        method_labels[method.id] = {locale: method.get_label(locale) for locale in display_locales}
+        method_display_names[method.id] = method.get_label(active_locale)
+
+        toggle_form = AuthenticationMethodToggleForm()
+        toggle_form.method_id.data = str(method.id)
+        toggle_form.submit.label.text = (
+            _("admin.authentication_methods.form.deactivate")
+            if method.is_active
+            else _("admin.authentication_methods.form.activate")
+        )
+        toggle_forms[method.id] = toggle_form
+
+        delete_form = AuthenticationMethodDeleteForm()
+        delete_form.method_id.data = str(method.id)
+        delete_form.submit.label.text = _("admin.authentication_methods.form.delete")
+        delete_forms[method.id] = delete_form
+
+        component_usage[method.id] = Component.query.filter(
+            Component.authentication_method_id == method.id
+        ).count()
+
+    return render_template(
+        "admin/authentication_methods.html",
+        methods=methods,
+        create_form=create_form,
+        edit_forms=edit_forms,
+        toggle_forms=toggle_forms,
+        delete_forms=delete_forms,
+        component_usage=component_usage,
+        display_locales=display_locales,
+        locale_names=locale_names,
+        method_labels=method_labels,
+        method_display_names=method_display_names,
+        active_locale=active_locale,
+    )
+
+
+@bp.post("/authentication-methods/<int:method_id>")
+@login_required
+@require_fresh_login()
+def update_authentication_method(method_id: int):
+    _require_admin()
+    method = _get_authentication_method(method_id)
+
+    form = AuthenticationMethodForm()
+    if form.validate_on_submit():
+        slug = (form.slug.data or "").strip().lower()
+        existing = (
+            AuthenticationMethod.query.filter(
+                sa.func.lower(AuthenticationMethod.slug) == slug,
+                AuthenticationMethod.id != method.id,
+            ).first()
+            if slug
+            else None
+        )
+        if existing:
+            flash(_("admin.authentication_methods.errors.slug_exists"), "danger")
+        else:
+            method.slug = slug
+            _refresh_method_labels(method)
+            db.session.commit()
+            clear_authentication_cache()
+            flash(
+                _(
+                    "admin.authentication_methods.flash.updated",
+                    name=_method_display_name(method),
+                ),
+                "success",
+            )
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    return redirect(url_for("admin.list_authentication_methods"))
+
+
+@bp.post("/authentication-methods/<int:method_id>/toggle")
+@login_required
+@require_fresh_login()
+def toggle_authentication_method(method_id: int):
+    _require_admin()
+    method = _get_authentication_method(method_id)
+
+    form = AuthenticationMethodToggleForm()
+    submitted_id: int | None = None
+    if form.validate_on_submit():
+        try:
+            submitted_id = int(form.method_id.data)
+        except (TypeError, ValueError):
+            submitted_id = None
+    if submitted_id == method_id:
+        method.is_active = not method.is_active
+        db.session.commit()
+        clear_authentication_cache()
+        flash(
+            _(
+                "admin.authentication_methods.flash.toggled",
+                name=_method_display_name(method),
+                state=_("admin.authentication_methods.state.active")
+                if method.is_active
+                else _("admin.authentication_methods.state.inactive"),
+            ),
+            "info",
+        )
+    else:
+        flash(_("admin.authentication_methods.errors.toggle_failed"), "danger")
+
+    return redirect(url_for("admin.list_authentication_methods"))
+
+
+@bp.post("/authentication-methods/<int:method_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_authentication_method(method_id: int):
+    _require_admin()
+    method = _get_authentication_method(method_id)
+    form = AuthenticationMethodDeleteForm()
+    submitted_id: int | None = None
+    if form.validate_on_submit():
+        try:
+            submitted_id = int(form.method_id.data)
+        except (TypeError, ValueError):
+            submitted_id = None
+    if submitted_id != method_id:
+        flash(_("admin.authentication_methods.errors.delete_failed"), "danger")
+        return redirect(url_for("admin.list_authentication_methods"))
+
+    usage_count = Component.query.filter(Component.authentication_method_id == method.id).count()
+    if usage_count:
+        method.is_active = False
+        db.session.commit()
+        clear_authentication_cache()
+        flash(
+            _(
+                "admin.authentication_methods.flash.deactivated_instead_of_deleted",
+                name=_method_display_name(method),
+                count=usage_count,
+            ),
+            "warning",
+        )
+        return redirect(url_for("admin.list_authentication_methods"))
+
+    db.session.delete(method)
+    db.session.commit()
+    clear_authentication_cache()
+    flash(
+        _("admin.authentication_methods.flash.deleted", name=_method_display_name(method)),
+        "success",
+    )
+    return redirect(url_for("admin.list_authentication_methods"))
 
 
 @bp.get("/users")

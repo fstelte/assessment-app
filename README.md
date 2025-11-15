@@ -8,6 +8,8 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Unified authentication with MFA, role management, and session security hardening.
 - SAML single sign-on via Microsoft Entra ID (Azure AD) with automatic user provisioning and group gates.
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
+- Accessible, CSS-only form tooltips via a shared macro and `tooltip-wrapper` utility classes.
+- BIA component workflows capture authentication methods and provide an exportable overview for audit teams.
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
 

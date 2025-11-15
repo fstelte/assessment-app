@@ -64,6 +64,9 @@ class Settings:
     proxy_fix_x_port: int = 0
     proxy_fix_x_prefix: int = 0
     preferred_url_scheme: str = "http"
+    export_cleanup_enabled: bool = False
+    export_cleanup_max_age_days: int = 7
+    export_cleanup_interval_minutes: int = 60
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -118,6 +121,9 @@ class Settings:
             proxy_fix_x_port=_int_env("PROXY_FIX_X_PORT", defaults.proxy_fix_x_port),
             proxy_fix_x_prefix=_int_env("PROXY_FIX_X_PREFIX", defaults.proxy_fix_x_prefix),
             preferred_url_scheme=os.getenv("PREFERRED_URL_SCHEME", defaults.preferred_url_scheme),
+            export_cleanup_enabled=_as_bool(os.getenv("EXPORT_CLEANUP_ENABLED")) or defaults.export_cleanup_enabled,
+            export_cleanup_max_age_days=_int_env("EXPORT_CLEANUP_MAX_AGE_DAYS", defaults.export_cleanup_max_age_days),
+            export_cleanup_interval_minutes=_int_env("EXPORT_CLEANUP_INTERVAL_MINUTES", defaults.export_cleanup_interval_minutes),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -169,6 +175,9 @@ class Settings:
             "PROXY_FIX_X_PORT": self.proxy_fix_x_port,
             "PROXY_FIX_X_PREFIX": self.proxy_fix_x_prefix,
             "PREFERRED_URL_SCHEME": self.preferred_url_scheme,
+            "EXPORT_CLEANUP_ENABLED": self.export_cleanup_enabled,
+            "EXPORT_CLEANUP_MAX_AGE_DAYS": self.export_cleanup_max_age_days,
+            "EXPORT_CLEANUP_INTERVAL_MINUTES": self.export_cleanup_interval_minutes,
         }
 
     def saml_allowed_groups(self) -> List[str]:

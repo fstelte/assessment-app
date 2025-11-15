@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_tooltip %}
 {% block title %}{% if item %}{{ _('bia.context_form.title_edit') }}{% else %}{{ _('bia.context_form.title_new') }}{% endif %}{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
@@ -20,7 +21,7 @@
 
           <h2 class="h5 text-uppercase {{ text_muted }} mb-3">{{ _('bia.context_form.section.general') }}</h2>
           <div class="row g-3">
-            <div class="col-md-6">{{ form.name.label(_('bia.context_form.fields.name.label'), class="form-label") }}{{ form.name(class="form-control") }}</div>
+            {{ render_field_with_tooltip(form.name, _('bia.context_form.fields.name.label'), _('bia.context_form.tooltips.name'), container_class='col-md-6', input_class='form-control') }}
             <div class="col-md-6">{{ form.user_amount.label(_('bia.context_form.fields.user_amount.label'), class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
           </div>
           <div class="row g-3 mt-1">
@@ -109,6 +110,14 @@
               <div class="card-body">
                 <h3 class="h6 text-uppercase {{ text_muted }}">{{ component.name }}</h3>
                 <p class="{{ text_muted }} small mb-3">{{ _('bia.context_form.components.linked_to', context=item.name) }}</p>
+                {% set auth_label = bia_component_authentication(component) %}
+                <div class="mb-3">
+                  {% if auth_label %}
+                  <span class="badge bg-info text-dark">{{ auth_label }}</span>
+                  {% else %}
+                  <span class="badge bg-secondary">{{ _('bia.components.authentication.unset_badge') }}</span>
+                  {% endif %}
+                </div>
                 <div class="d-flex gap-2">
                   <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="{{ component.id }}">
                               <i class="fas fa-eye me-1"></i>{{ _('actions.view') }}
@@ -160,6 +169,8 @@
               <dd class="col-sm-8" id="bia-view-component-info-owner"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.user_type') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-user-type"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.authentication') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-authentication"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.dependencies') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-process"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.description') }}</dt>
@@ -192,10 +203,7 @@
           <div class="modal-body">
             <form id="bia-component-form">
               {{ component_form.hidden_tag() }}
-              <div class="mb-3">
-                {{ component_form.name.label(_('bia.context_form.component_fields.name.label'), class="form-label") }}
-                {{ component_form.name(class="form-control", id="bia-component-name") }}
-              </div>
+              {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='mb-3', input_class='form-control', id='bia-component-name') }}
               <div class="mb-3">
                 {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
                 {{ component_form.info_type(class="form-control", id="bia-component-info-type") }}
@@ -207,6 +215,10 @@
               <div class="mb-3">
                 {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
                 {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.authentication_method.label(_('bia.context_form.component_fields.authentication.label'), class="form-label") }}
+                {{ component_form.authentication_method(class="form-select", id="bia-component-authentication") }}
               </div>
               <div class="mb-3">
                 {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
@@ -238,10 +250,7 @@
             <form id="bia-edit-component-form">
               {{ component_form.hidden_tag() }}
               <input type="hidden" name="component_id" id="bia-edit-component-id">
-              <div class="mb-3">
-                {{ component_form.name.label(_('bia.context_form.component_fields.name.label'), class="form-label") }}
-                {{ component_form.name(class="form-control", id="bia-edit-component-name") }}
-              </div>
+              {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='mb-3', input_class='form-control', id='bia-edit-component-name') }}
               <div class="mb-3">
                 {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
                 {{ component_form.info_type(class="form-control", id="bia-edit-component-info-type") }}
@@ -253,6 +262,10 @@
               <div class="mb-3">
                 {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
                 {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.authentication_method.label(_('bia.context_form.component_fields.authentication.label'), class="form-label") }}
+                {{ component_form.authentication_method(class="form-select", id="bia-edit-component-authentication") }}
               </div>
               <div class="mb-3">
                 {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
@@ -273,10 +286,11 @@
     </div>
 
     <div id="bia-component-translations"
-         data-empty="{{ _('bia.context_form.components.empty') }}"
-         data-linked="{{ _('bia.context_form.components.linked_to', context=item.name)|e }}"
-         data-view="{{ _('actions.view') }}"
-         data-delete="{{ _('actions.delete') }}">
+      data-empty="{{ _('bia.context_form.components.empty') }}"
+      data-linked="{{ _('bia.context_form.components.linked_to', context=item.name)|e }}"
+      data-view="{{ _('actions.view') }}"
+      data-delete="{{ _('actions.delete') }}"
+      data-auth-unset="{{ _('bia.components.authentication.unset_badge') }}">
     </div>
 
   <script nonce="{{ csp_nonce }}">
@@ -295,7 +309,8 @@
         componentsEmpty: translationNode.dataset.empty || '',
         componentsLinkedTo: translationNode.dataset.linked || '',
         actionsView: translationNode.dataset.view || '',
-        actionsDelete: translationNode.dataset.delete || ''
+        actionsDelete: translationNode.dataset.delete || '',
+        authenticationUnset: translationNode.dataset.authUnset || ''
       };
 
       const routes = {
@@ -321,7 +336,8 @@
         consequences: document.getElementById('bia-view-component-consequences'),
         consequencesLink: document.getElementById('bia-view-consequences-link'),
         editTrigger: document.getElementById('bia-edit-component-launch'),
-        deleteTrigger: document.getElementById('bia-delete-component-launch')
+        deleteTrigger: document.getElementById('bia-delete-component-launch'),
+        authentication: document.getElementById('bia-view-component-authentication')
       };
 
       const addForm = document.getElementById('bia-component-form');
@@ -364,6 +380,8 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'col-md-6 col-xl-4';
         wrapper.dataset.componentId = component.id;
+        const badgeLabel = component.authentication_method_label || translations.authenticationUnset;
+        const badgeClass = component.authentication_method_label ? 'badge bg-info text-dark' : 'badge bg-secondary';
         wrapper.innerHTML = `
           <div class="card {{ card_surface }} h-100">
             <div class="card-body">
@@ -371,6 +389,9 @@
                 ${component.name}
               </h3>
               <p class="{{ text_muted }} small mb-3">${translations.componentsLinkedTo}</p>
+              <div class="mb-3">
+                <span class="${badgeClass}">${badgeLabel}</span>
+              </div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="${component.id}">
                   <i class="fas fa-eye me-1"></i>${translations.actionsView}
@@ -390,6 +411,7 @@
         detailFields.info_type.textContent = fallback(data.info_type || '');
         detailFields.info_owner.textContent = fallback(data.info_owner || '');
         detailFields.user_type.textContent = fallback(data.user_type || '');
+  detailFields.authentication.textContent = fallback(data.authentication_method_label || '');
         detailFields.process_dependencies.textContent = fallback(data.process_dependencies || '');
         detailFields.description.textContent = fallback(data.description || '');
         detailFields.consequences.textContent = data.consequences_count ?? 0;
@@ -404,6 +426,10 @@
         editForm.querySelector('#bia-edit-component-info-type').value = data.info_type || '';
         editForm.querySelector('#bia-edit-component-info-owner').value = data.info_owner || '';
         editForm.querySelector('#bia-edit-component-user-type').value = data.user_type || '';
+        const editAuthentication = editForm.querySelector('#bia-edit-component-authentication');
+        if (editAuthentication) {
+          editAuthentication.value = data.authentication_method_id ? String(data.authentication_method_id) : '';
+        }
         editForm.querySelector('#bia-edit-component-process-dependencies').value = data.process_dependencies || '';
         editForm.querySelector('#bia-edit-component-description').value = data.description || '';
         if (editCsrfField) {
@@ -472,7 +498,7 @@
             if (!data.success) {
               throw data;
             }
-            const card = renderComponentCard({ id: data.id, name: data.name });
+            const card = renderComponentCard(data);
             const placeholder = document.getElementById(noComponentsId);
             if (placeholder) {
               placeholder.remove();
@@ -520,9 +546,19 @@
               if (title) {
                 title.textContent = data.name;
               }
+              const badge = card.querySelector('.card-body .badge');
+              if (badge) {
+                badge.textContent = data.authentication_method_label || translations.authenticationUnset;
+                badge.className = data.authentication_method_label ? 'badge bg-info text-dark' : 'badge bg-secondary';
+              }
             }
             if (activeComponent && String(activeComponent.id) === String(componentId)) {
-              activeComponent = { ...activeComponent, name: data.name };
+              activeComponent = {
+                ...activeComponent,
+                name: data.name,
+                authentication_method_id: data.authentication_method_id,
+                authentication_method_label: data.authentication_method_label
+              };
               populateDetail(activeComponent);
             }
             editModal.hide();

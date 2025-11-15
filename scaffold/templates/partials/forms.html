@@ -1,0 +1,26 @@
+{% macro render_field_with_tooltip(field, label_text=None, tooltip_text='', container_class='', input_class='', tooltip_id=None, label_class='form-label tooltip-trigger', sr_only_class='visually-hidden', id=None, input_attrs=None) -%}
+  {%- set attr_dict = (input_attrs.copy() if input_attrs is not none else {}) -%}
+  {%- if id is not none -%}
+    {%- set _ = attr_dict.update({'id': id}) -%}
+  {%- endif -%}
+  {%- set input_id = attr_dict.get('id', field.id) -%}
+  {%- set tooltip_id = tooltip_id or input_id ~ '-tooltip' -%}
+  {%- set container_classes = (container_class ~ ' tooltip-wrapper').strip() -%}
+  {%- set resolved_label = label_text if label_text is not none else field.label.text -%}
+  {%- set original_class = attr_dict.get('class') -%}
+  {%- set field_class = input_class -%}
+  {%- if field_class and original_class -%}
+    {%- set field_class = field_class ~ ' ' ~ original_class -%}
+  {%- elif not field_class -%}
+    {%- set field_class = original_class -%}
+  {%- endif -%}
+  {%- if field_class -%}
+    {%- set _ = attr_dict.update({'class': field_class}) -%}
+  {%- endif -%}
+  {%- set _ = attr_dict.update({'aria_describedby': tooltip_id}) -%}
+  <div class="{{ container_classes }}" data-tooltip="{{ tooltip_text }}">
+    <label for="{{ input_id }}" class="{{ label_class }}">{{ resolved_label }}</label>
+    <span id="{{ tooltip_id }}" class="{{ sr_only_class }}">{{ tooltip_text }}</span>
+    {{ field(**attr_dict) }}
+  </div>
+{%- endmacro %}
