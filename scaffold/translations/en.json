@@ -74,7 +74,8 @@
         "import_sql": "Import SQL",
         "export_inventory": "Export data inventory (CSV)",
         "export_cia_detailed": "Export CIA consequences (detailed)",
-        "export_cia_summary": "Export CIA consequences (summary)"
+        "export_cia_summary": "Export CIA consequences (summary)",
+        "export_authentication": "Export authentication overview"
       },
       "header": {
         "title": "Business Impact Analyses",
@@ -184,6 +185,9 @@
           "label": "Uses AI components"
         }
       },
+      "tooltips": {
+        "name": "Enter the official service or product name that stakeholders recognise."
+      },
       "component_fields": {
         "name": {
           "label": "Component name"
@@ -196,6 +200,9 @@
         },
         "user_type": {
           "label": "User type"
+        },
+        "authentication": {
+          "label": "Authentication type"
         },
         "process_dependencies": {
           "label": "Process dependencies"
@@ -227,6 +234,7 @@
           "info_type": "Information type",
           "info_owner": "Owner",
           "user_type": "User type",
+          "authentication": "Authentication",
           "dependencies": "Dependencies",
           "description": "Description",
           "consequences": "Consequences",
@@ -250,6 +258,124 @@
         "motivation": "Motivation",
         "motivation_missing": "Not provided",
         "empty": "No AI risks identified for the linked components."
+      }
+    },
+    "components": {
+      "page_title": "Components | BIA",
+      "back": "Back to dashboard",
+      "heading": "Component library",
+      "filters": {
+        "all": "All BIAs",
+        "button": "Filter"
+      },
+      "add": {
+        "title": "Add a component",
+        "bia_label": "BIA",
+        "bia_placeholder": "Select a BIA",
+        "submit": "Add component"
+      },
+      "table": {
+        "title": "Existing components",
+        "headers": {
+          "component": "Component",
+          "bia": "BIA",
+          "owner": "Owner",
+          "users": "Users",
+          "authentication": "Authentication",
+          "consequences": "Consequences",
+          "actions": "Actions"
+        },
+        "not_linked": "Not linked",
+        "not_set": "Not set",
+        "pagination": "Showing {start}\u2013{end} of {total}",
+        "pagination_with_pages": "Showing {start}\u2013{end} of {total} (page {page} of {pages})",
+        "empty": "No components found for this selection.",
+        "confirm_delete": "Delete this component?"
+      },
+      "buttons": {
+        "edit": "Edit",
+        "consequences": "Consequences",
+        "delete": "Delete",
+        "save_changes": "Save changes"
+      },
+      "labels": {
+        "name": "Name",
+        "owner": "Owner",
+        "information_type": "Information type",
+        "user_type": "User type",
+        "authentication": "Authentication",
+        "process_dependencies": "Process dependencies",
+        "description": "Description"
+      },
+      "tooltips": {
+        "scope": "Select the BIA this component belongs to before entering other details.",
+        "name": "Provide a concise, descriptive component name so teammates can recognise it quickly."
+      },
+      "modal": {
+        "title": "AI identification",
+        "category": "Risk category",
+        "motivation": "Motivation",
+        "placeholder": "Describe the reasoning for this classification",
+        "buttons": {
+          "cancel": "Cancel",
+          "save": "Save"
+        }
+      },
+      "messages": {
+        "error_unexpected": "An unexpected error occurred.",
+        "validation_failed": "Validation failed:",
+        "component_reference_missing": "Component reference missing.",
+        "save_failed": "Unable to store AI identification.",
+        "add_failed": "Could not add the component.",
+        "update_failed": "Could not update the component.",
+        "delete_failed": "Could not delete the component."
+      },
+      "ai": {
+        "identify": "Identify AI",
+        "options": {
+          "no_ai": "No AI",
+          "unacceptable": "Unacceptable risk",
+          "high": "High risk",
+          "limited": "Limited risk",
+          "minimal": "Minimal risk"
+        }
+      },
+      "authentication": {
+        "placeholder": "Select authentication",
+        "unset_badge": "Not set"
+      }
+    },
+    "authentication_methods": {
+      "options": {
+        "application-integrated": "Application integrated",
+        "centrally-managed": "Centrally managed (IdP)"
+      }
+    },
+    "export": {
+      "authentication_overview": {
+        "title": "Authentication overview",
+        "heading": "Authentication overview",
+        "generated_at": "Generated {timestamp}",
+        "intro": "Overview of application components grouped by their authentication method.",
+        "summary": {
+          "method": "Authentication method",
+          "slug": "Slug",
+          "components": "Components",
+          "unassigned": "Not assigned",
+          "unassigned_slug": "—"
+        },
+        "columns": {
+          "bia": "BIA",
+          "component": "Component",
+          "owner": "Information owner",
+          "users": "User types",
+          "unknown_bia": "Unknown BIA",
+          "not_set": "Not set"
+        },
+        "unassigned": {
+          "title": "Components without authentication type",
+          "empty": "All components have an authentication type assigned."
+        }
       }
     }
   },
@@ -519,6 +645,7 @@
       "subtitle": "Assign roles, manage activation, and administer MFA.",
       "link_csa_dashboard": "CSA dashboard",
       "link_bia_dashboard": "BIA dashboard",
+  "link_authentication_methods": "Authentication methods",
       "table": {
         "user": "User",
         "status": "Status",
@@ -589,6 +716,64 @@
           "disable": "Disable MFA",
           "back_to_users": "Back to users"
         }
+      }
+    },
+    "authentication_methods": {
+      "title": "Authentication methods",
+      "back_to_admin": "Back to user administration",
+      "create": {
+        "title": "Add a new authentication method",
+        "fields": {
+          "slug": "Slug"
+        },
+        "translation_hint": "Labels are managed in the translation JSON files.",
+        "submit": "Add method"
+      },
+      "list": {
+        "title": "Configured methods",
+        "subtitle": "Manage the authentication types available for BIA components.",
+        "columns": {
+          "slug": "Slug",
+          "label_locale": "{locale_name} label",
+          "status": "Status",
+          "usage": "Usage",
+          "actions": "Actions"
+        },
+        "in_use": "In use ({count})",
+        "not_in_use": "Not in use",
+        "missing_label": "Translation missing",
+        "actions": {
+          "edit": "Edit",
+          "delete_confirm": "Delete this authentication method?"
+        },
+        "empty": "No authentication methods configured yet."
+      },
+      "state": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "form": {
+        "update_submit": "Update method",
+        "deactivate": "Deactivate",
+        "activate": "Activate",
+        "delete": "Delete"
+      },
+      "edit": {
+        "title": "Edit {name}",
+        "submit": "Save changes",
+        "translation_hint": "Update translated labels in the translation JSON files."
+      },
+      "errors": {
+        "slug_exists": "A method with this slug already exists.",
+        "toggle_failed": "Unable to update the method state.",
+        "delete_failed": "Unable to delete the authentication method."
+      },
+      "flash": {
+        "created": "Authentication method {name} created.",
+        "updated": "Authentication method {name} updated.",
+        "toggled": "Authentication method {name} is now {state}.",
+        "deactivated_instead_of_deleted": "Authentication method {name} is still used by {count} components and was deactivated instead of deleted.",
+        "deleted": "Authentication method {name} deleted."
       }
     },
     "actions": {

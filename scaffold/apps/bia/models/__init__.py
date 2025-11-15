@@ -8,6 +8,7 @@ from sqlalchemy import Enum, Text, event, inspect
 
 from ....extensions import db
 from ...identity.models import User
+from ..localization import translate_authentication_label
 
 
 class ContextScope(db.Model):
@@ -74,9 +75,15 @@ class Component(db.Model):
     user_type = db.Column(Text)
     process_dependencies = db.Column(Text)
     description = db.Column(Text)
+    authentication_method_id = db.Column(
+        db.Integer,
+        db.ForeignKey("bia_authentication_methods.id"),
+        nullable=True,
+    )
     context_scope_id = db.Column(db.Integer, db.ForeignKey("bia_context_scope.id"), nullable=False)
 
     context_scope = db.relationship("ContextScope", back_populates="components")
+    authentication_method = db.relationship("AuthenticationMethod", back_populates="components")
     consequences = db.relationship(
         "Consequences",
         back_populates="component",
@@ -171,6 +178,29 @@ class Summary(db.Model):
     context_scope_id = db.Column(db.Integer, db.ForeignKey("bia_context_scope.id"), unique=True)
 
     context_scope = db.relationship("ContextScope", back_populates="summary")
+
+
+class AuthenticationMethod(db.Model):
+    """Lookup table describing available authentication options for components."""
+
+    __tablename__ = "bia_authentication_methods"
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(64), unique=True, nullable=False)
+    label_en = db.Column(db.String(255), nullable=False)
+    label_nl = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    components = db.relationship("Component", back_populates="authentication_method")
+
+    def get_label(self, locale: str | None = None) -> str:
+        """Return the display label for the configured locale."""
+
+        fallbacks: dict[str, str] = {
+            "en": self.label_en or "",
+            "nl": self.label_nl or "",
+        }
+        return translate_authentication_label(self.slug, locale, fallbacks)
 
 
 _TRACKED_MODELS = [ContextScope, Component, Consequences, AvailabilityRequirements, AIIdentificatie, Summary]

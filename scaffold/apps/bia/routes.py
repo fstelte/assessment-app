@@ -21,9 +21,10 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
 
 from ...core.security import require_fresh_login
-from ...core.i18n import gettext as _
+from ...core.i18n import gettext as _, get_locale
 from ...extensions import db
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, User, UserStatus
 from .forms import (
@@ -42,6 +43,10 @@ from .models import (
     Consequences,
     ContextScope,
     Summary,
+)
+from .services.authentication import (
+    list_authentication_options,
+    lookup_by_id as lookup_authentication_option,
 )
 from .utils import (
     ensure_export_folder,
@@ -80,6 +85,7 @@ def inject_helpers():
         "bia_get_impact_color": get_impact_color,
         "bia_get_max_cia_impact": get_max_cia_impact,
         "bia_ai_badge_tokens": _ai_badge_tokens,
+        "bia_component_authentication": _describe_authentication,
     }
 
 
@@ -96,6 +102,30 @@ def _ai_badge_tokens(category: str | None) -> dict[str, str]:
     if normalized == "no ai":
         return {"class": "bg-success"}
     return {"class": "bg-secondary"}
+
+
+def _configure_component_form(form: ComponentForm, *, selected_method_id: int | None = None) -> None:
+    locale = get_locale()
+    choices: list[tuple[str, str]] = [("", _("bia.components.authentication.placeholder"))]
+    for option in list_authentication_options(active_only=False):
+        if not option.is_active and option.id != selected_method_id:
+            continue
+        choices.append((str(option.id), option.label(locale)))
+    form.authentication_method.choices = choices
+    if selected_method_id is not None:
+        form.authentication_method.data = selected_method_id
+
+
+def _describe_authentication(component: Component) -> str | None:
+    method = component.authentication_method
+    if method is not None:
+        return method.get_label(get_locale())
+    if component.authentication_method_id is None:
+        return None
+    snapshot = lookup_authentication_option(component.authentication_method_id)
+    if snapshot is None:
+        return None
+    return snapshot.label(get_locale())
 
 def _can_manage_bia_owner() -> bool:
     return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
@@ -137,6 +167,7 @@ def dashboard():
 def new_item():
     form = ContextScopeForm()
     component_form = ComponentForm()
+    _configure_component_form(component_form)
     can_assign_owner = _can_manage_bia_owner()
     if form.validate_on_submit():
         context = ContextScope(author=_resolve_user())
@@ -186,6 +217,7 @@ def edit_item(item_id: int):
 
     form = ContextScopeForm(obj=item)
     component_form = ComponentForm()
+    _configure_component_form(component_form)
     can_assign_owner = _can_manage_bia_owner()
     if form.validate_on_submit():
         _apply_context_form(form, item, allow_owner_assignment=can_assign_owner)
@@ -257,6 +289,7 @@ def update_owner(item_id: int):
 @login_required
 def add_component():
     form = ComponentForm()
+    _configure_component_form(form)
     if form.validate_on_submit():
         context_id = request.form.get("bia_id")
         context = ContextScope.query.get(context_id) if context_id else None
@@ -274,11 +307,21 @@ def add_component():
             user_type=form.user_type.data,
             process_dependencies=form.process_dependencies.data,
             description=form.description.data,
+            authentication_method_id=form.authentication_method.data,
             context_scope=context,
         )
         db.session.add(component)
         db.session.commit()
-        return jsonify({"success": True, "id": component.id, "name": component.name})
+        return jsonify(
+            {
+                "success": True,
+                "id": component.id,
+                "name": component.name,
+                "authentication_method_id": component.authentication_method_id,
+                "authentication_method_label": _describe_authentication(component),
+                "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
+            }
+        )
     return jsonify({"success": False, "errors": form.errors}), 400
 
 
@@ -292,6 +335,7 @@ def update_component(component_id: int):
             403,
         )
     form = ComponentForm()
+    _configure_component_form(form, selected_method_id=component.authentication_method_id)
     if form.validate_on_submit():
         component.name = form.name.data
         component.info_type = form.info_type.data
@@ -299,8 +343,17 @@ def update_component(component_id: int):
         component.user_type = form.user_type.data
         component.process_dependencies = form.process_dependencies.data
         component.description = form.description.data
+        component.authentication_method_id = form.authentication_method.data
         db.session.commit()
-        return jsonify({"success": True, "name": component.name})
+        return jsonify(
+            {
+                "success": True,
+                "name": component.name,
+                "authentication_method_id": component.authentication_method_id,
+                "authentication_method_label": _describe_authentication(component),
+                "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
+            }
+        )
     return jsonify({"success": False, "errors": form.errors}), 400
 
 
@@ -335,6 +388,7 @@ def view_components():
     components = pagination.items
     contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()
+    _configure_component_form(component_form)
     consequence_form = ConsequenceForm()
     if pagination.total:
         page_start = (pagination.page - 1) * pagination.per_page + 1
@@ -371,6 +425,9 @@ def get_component(component_id: int):
             "process_dependencies": component.process_dependencies,
             "bia_name": component.context_scope.name if component.context_scope else None,
             "consequences_count": len(component.consequences),
+            "authentication_method_id": component.authentication_method_id,
+            "authentication_method_label": _describe_authentication(component),
+            "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
         }
     )
 
@@ -726,18 +783,27 @@ def export_data_inventory():
     information type, owner and administrator and return the generated file.
     """
 
-    components = Component.query.join(ContextScope).all()
+    components = (
+        Component.query.options(
+            joinedload(Component.context_scope),
+            joinedload(Component.authentication_method),
+        )
+        .join(ContextScope)
+        .all()
+    )
     csv_buffer = io.StringIO()
     writer = csv.writer(csv_buffer)
     # Use friendly headers similar to the legacy exporter
-    writer.writerow(["BIA", "Systeem", "Informatie", "Eigenaar", "Beheer"])
+    writer.writerow(["BIA", "Systeem", "Informatie", "Eigenaar", "Authenticatie", "Beheer"])
     for component in components:
+        authentication_label = _describe_authentication(component) or "N/A"
         writer.writerow(
             [
                 component.context_scope.name if component.context_scope else "",
                 component.name,
                 component.info_type or "N/A",
                 component.info_owner or "N/A",
+                authentication_label,
                 component.context_scope.technical_administrator if component.context_scope else "N/A",
             ]
         )
@@ -745,6 +811,60 @@ def export_data_inventory():
     export_folder = ensure_export_folder()
     file_path = export_folder / filename
     file_path.write_text(csv_buffer.getvalue(), encoding="utf-8")
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+
+@bp.route("/export_authentication_overview")
+@login_required
+def export_authentication_overview():
+    components = (
+        Component.query.options(
+            joinedload(Component.context_scope),
+            joinedload(Component.authentication_method),
+        )
+        .order_by(Component.name.asc())
+        .all()
+    )
+
+    options = list_authentication_options(active_only=False)
+    option_map = {option.id: option for option in options}
+    grouped: defaultdict[int, list[Component]] = defaultdict(list)
+    unassigned: list[Component] = []
+
+    for component in components:
+        option = option_map.get(component.authentication_method_id or 0)
+        if option is None:
+            unassigned.append(component)
+            continue
+        grouped[option.id].append(component)
+
+    def _sort_key(component: Component) -> tuple[str, str]:
+        context_name = component.context_scope.name if component.context_scope else ""
+        return (context_name.lower(), component.name.lower())
+
+    groups = [
+        {
+            "option": option_map[method_id],
+            "components": sorted(components_list, key=_sort_key),
+        }
+        for method_id, components_list in grouped.items()
+        if components_list
+    ]
+
+    groups.sort(key=lambda entry: entry["option"].label(get_locale()).lower())
+    unassigned.sort(key=_sort_key)
+
+    html_content = render_template(
+        "bia/export_authentication.html",
+        groups=groups,
+        unassigned=unassigned,
+        generated_at=datetime.now(),
+    )
+
+    filename = f"Authentication_Overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+    export_folder = ensure_export_folder()
+    file_path = export_folder / filename
+    file_path.write_text(html_content, encoding="utf-8")
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 

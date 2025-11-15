@@ -5,13 +5,15 @@ from __future__ import annotations
 import csv
 import io
 import re
+import shutil
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from flask import current_app
 from flask_login import current_user
+from sqlalchemy import text
 
 from ...extensions import db
 from .models import (
@@ -22,6 +24,7 @@ from .models import (
     ContextScope,
     Summary,
 )
+from .services.authentication import AuthenticationOption, list_authentication_options, lookup_by_slug
 
 
 MAX_SQL_FILE_SIZE = 2 * 1024 * 1024  # 2 MB guardrail matches legacy exporter
@@ -234,6 +237,8 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
     # Components
     components_buffer = io.StringIO()
     components_writer = csv.writer(components_buffer)
+    authentication_options = {option.id: option for option in list_authentication_options(active_only=False)}
+
     components_writer.writerow(
         [
             "Component Name",
@@ -241,11 +246,18 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
             "Process Dependencies",
             "Information Owner",
             "Types of Users",
+            "Authentication Slug",
+            "Authentication Label (EN)",
+            "Authentication Label (NL)",
             "Description of the Component",
             "Gerelateerd aan BIA",
         ]
     )
     for component in context.components:
+        option = authentication_options.get(component.authentication_method_id)
+        auth_slug = option.slug if option else ""
+        auth_label_en = option.label_for_locale("en") if option else ""
+        auth_label_nl = option.label_for_locale("nl") if option else ""
         components_writer.writerow(
             [
                 stringify(component.name),
@@ -253,6 +265,9 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
                 stringify(component.process_dependencies),
                 stringify(component.info_owner),
                 stringify(component.user_type),
+                stringify(auth_slug),
+                stringify(auth_label_en),
+                stringify(auth_label_nl),
                 stringify(component.description),
                 stringify(context.name),
             ]
@@ -386,6 +401,16 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
 
         context_map: dict[str, ContextScope] = {}
         component_map: dict[tuple[str, str], Component] = {}
+        authentication_options = list_authentication_options(active_only=False)
+        option_by_slug = {option.slug.lower(): option for option in authentication_options}
+        option_by_label: dict[str, AuthenticationOption] = {}
+        for option in authentication_options:
+            label_en = option.label_for_locale("en").strip()
+            label_nl = option.label_for_locale("nl").strip()
+            if label_en:
+                option_by_label[label_en.lower()] = option
+            if label_nl:
+                option_by_label[label_nl.lower()] = option
 
         for row in context_reader:
             name = (row.get("BIA Name") or "").strip()
@@ -432,6 +457,12 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                 context = context_map.get(_normalise(context_name))
                 if not context:
                     continue
+                raw_slug = (row.get("Authentication Slug") or row.get("Authentication Method Slug") or "").strip().lower()
+                auth_option = option_by_slug.get(raw_slug)
+                if auth_option is None:
+                    raw_label = (row.get("Authentication Label (EN)") or row.get("Authentication Label (NL)") or "").strip().lower()
+                    if raw_label:
+                        auth_option = option_by_label.get(raw_label)
                 component = Component(
                     name=component_name,
                     info_type=row.get("Type of Information") or None,
@@ -439,6 +470,7 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                     info_owner=row.get("Information Owner") or None,
                     user_type=row.get("Types of Users") or None,
                     description=row.get("Description of the Component") or None,
+                    authentication_method_id=auth_option.id if auth_option else None,
                     context_scope_id=context.id,
                 )
                 db.session.add(component)
@@ -537,6 +569,7 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                 else:
                     db.session.add(Summary(context_scope_id=context.id, content=content))
 
+    _sync_identity_sequences()
     db.session.commit()
 
 
@@ -610,6 +643,7 @@ def export_to_sql(context: ContextScope) -> str:
                     "user_type": component.user_type,
                     "process_dependencies": component.process_dependencies,
                     "description": component.description,
+                    "authentication_method_id": component.authentication_method_id,
                     "context_scope_id": component.context_scope_id,
                 },
             )
@@ -670,6 +704,23 @@ def export_to_sql(context: ContextScope) -> str:
             )
         )
 
+    def sequence_reset_statement(table_name: str, column: str = "id") -> str:
+        sequence_name = f"{table_name}_{column}_seq"
+        value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"
+        called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"
+        return f"SELECT setval('{sequence_name}', {value_sql}, {called_sql});"
+
+    statements.extend(
+        [
+            sequence_reset_statement(context_table),
+            sequence_reset_statement(component_table),
+            sequence_reset_statement(consequence_table),
+            sequence_reset_statement(availability_table),
+            sequence_reset_statement(ai_table),
+            sequence_reset_statement(summary_table),
+        ]
+    )
+
     return "\n".join(statements)
 
 
@@ -685,7 +736,12 @@ def import_from_sql(sql_content: str) -> None:
 
     parsed: defaultdict[str, list[dict[str, object | None]]] = defaultdict(list)
     for statement in statements:
-        table, columns, values = _parse_insert_statement(statement)
+        stripped = statement.strip()
+        if not stripped:
+            continue
+        if stripped.lower().startswith("select setval"):
+            continue
+        table, columns, values = _parse_insert_statement(stripped)
         row = dict(zip(columns, values))
         parsed[table].append(_filter_columns(table, row))
 
@@ -749,18 +805,21 @@ def import_from_sql(sql_content: str) -> None:
                 component_id_map[original_id] = component.id
 
         for row in parsed[consequence_table]:
+            row.pop("id", None)
             component_fk = row.get("component_id")
             if isinstance(component_fk, int) and component_fk in component_id_map:
                 row["component_id"] = component_id_map[component_fk]
             db.session.add(Consequences(**row))
 
         for row in parsed[availability_table]:
+            row.pop("id", None)
             component_fk = row.get("component_id")
             if isinstance(component_fk, int) and component_fk in component_id_map:
                 row["component_id"] = component_id_map[component_fk]
             db.session.add(AvailabilityRequirements(**row))
 
         for row in parsed[ai_table]:
+            row.pop("id", None)
             component_fk = row.get("component_id")
             if isinstance(component_fk, int) and component_fk in component_id_map:
                 row["component_id"] = component_id_map[component_fk]
@@ -769,11 +828,13 @@ def import_from_sql(sql_content: str) -> None:
             db.session.add(AIIdentificatie(**row))
 
         for row in parsed[summary_table]:
+            row.pop("id", None)
             context_fk = row.get("context_scope_id")
             if isinstance(context_fk, int) and context_fk in context_id_map:
                 row["context_scope_id"] = context_id_map[context_fk]
             db.session.add(Summary(**row))
 
+    _sync_identity_sequences()
     db.session.commit()
 
 
@@ -811,6 +872,46 @@ def ensure_export_folder() -> Path:
     return export_root
 
 
+def cleanup_export_folder(max_age_days: int) -> tuple[int, int]:
+    """Remove export artefacts older than the configured age.
+
+    Returns a tuple with (removed_count, failed_count).
+    """
+
+    max_age_days = max(1, int(max_age_days))
+    export_root = ensure_export_folder()
+    try:
+        entries = list(export_root.iterdir())
+    except FileNotFoundError:  # pragma: no cover - directory was removed externally
+        return (0, 0)
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    removed = 0
+    failed = 0
+
+    for node in entries:
+        if node.name.startswith("."):
+            continue
+        try:
+            metadata = node.stat()
+        except FileNotFoundError:  # pragma: no cover - race condition with concurrent deletion
+            continue
+        modified = datetime.fromtimestamp(metadata.st_mtime, timezone.utc)
+        if modified >= cutoff:
+            continue
+        try:
+            if node.is_dir():
+                shutil.rmtree(node)
+            else:
+                node.unlink(missing_ok=True)
+            removed += 1
+        except Exception:  # pragma: no cover - defensive logging for filesystem issues
+            failed += 1
+            current_app.logger.warning("Failed to remove export artefact %s", node, exc_info=current_app.debug)
+
+    return removed, failed
+
+
 def _safe_slug(value: str | None) -> str:
     if not value:
         return "bia"
@@ -846,6 +947,25 @@ def _parse_date(value: object | None):
     if isinstance(value, datetime):
         return value.date()
     return datetime.strptime(str(value), "%Y-%m-%d").date()
+
+
+def _reset_identity_sequence(table_name: str, column: str = "id") -> None:
+    sequence_name = f"{table_name}_{column}_seq"
+    value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"
+    called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"
+    db.session.execute(text(f"SELECT setval('{sequence_name}', {value_sql}, {called_sql})"))
+
+
+def _sync_identity_sequences() -> None:
+    for table_name in (
+        ContextScope.__table__.name,
+        Component.__table__.name,
+        Consequences.__table__.name,
+        AvailabilityRequirements.__table__.name,
+        AIIdentificatie.__table__.name,
+        Summary.__table__.name,
+    ):
+        _reset_identity_sequence(table_name)
 
 
 def _sql_value(value: object) -> str:

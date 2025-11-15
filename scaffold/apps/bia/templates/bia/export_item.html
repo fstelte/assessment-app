@@ -228,6 +228,7 @@
                   <tr>
                     <th scope="col">Component</th>
                     <th scope="col">Information type</th>
+                    <th scope="col">Authentication</th>
                     <th scope="col">Owner</th>
                     <th scope="col">Description</th>
                   </tr>
@@ -237,6 +238,17 @@
                   <tr>
                     <td>{{ component.name }}</td>
                     <td>{{ component.info_type or 'N/A' }}</td>
+                    <td>
+                      {% set auth_label = bia_component_authentication(component) %}
+                      {% if auth_label %}
+                      <div>{{ auth_label }}</div>
+                      {% if component.authentication_method %}
+                      <div class="text-secondary small">{{ component.authentication_method.slug }}</div>
+                      {% endif %}
+                      {% else %}
+                      N/A
+                      {% endif %}
+                    </td>
                     <td>{{ component.info_owner or 'N/A' }}</td>
                     <td>{{ component.description or 'N/A' }}</td>
                   </tr>

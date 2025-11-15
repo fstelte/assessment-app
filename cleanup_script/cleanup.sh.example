@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Pad naar logbestand
+LOGFILE="/var/log/docker-cleanup.log"
+
+# Datum en tijd toevoegen aan log
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Start cleanup" >> "$LOGFILE"
+
+# Controleer of Docker draait
+if ! systemctl is-active --quiet docker; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Docker is niet actief, cleanup overgeslagen" >> "$LOGFILE"
+    exit 0
+fi
+
+# Voer veilige prune uit (alleen dangling images)
+/usr/bin/docker image prune -f >> "$LOGFILE" 2>&1
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleanup voltooid" >> "$LOGFILE"

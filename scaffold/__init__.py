@@ -7,9 +7,12 @@ bia_app and csa_app domains while remaining extensible for future modules.
 from __future__ import annotations
 
 import os
+import atexit
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+import threading
 
 import tomllib
 
@@ -149,6 +152,8 @@ def create_app(settings: Settings | None = None) -> Flask:
         except (OperationalError, ProgrammingError):  # pragma: no cover - happens before migrations
             app.logger.debug("Default role provisioning skipped; tables not ready yet.", exc_info=True)
 
+    _start_export_cleanup_worker(app)
+
     return app
 
 
@@ -264,3 +269,57 @@ def _load_app_metadata() -> dict[str, str]:
         "repository": repo_url,
         "changelog": changelog_url,
     }
+
+
+def _start_export_cleanup_worker(app: Flask) -> None:
+    if not app.config.get("EXPORT_CLEANUP_ENABLED"):
+        return
+
+    try:
+        from .apps.bia.utils import cleanup_export_folder
+    except Exception:  # pragma: no cover - BIA module unavailable
+        app.logger.warning(
+            "EXPORT_CLEANUP_ENABLED is true but the BIA module could not be loaded; skipping export cleanup worker."
+        )
+        return
+
+    storage = app.extensions.setdefault("export_cleanup", {})
+    if storage.get("thread"):
+        return
+
+    interval_minutes = max(1, int(app.config.get("EXPORT_CLEANUP_INTERVAL_MINUTES", 60)))
+    max_age_days = max(1, int(app.config.get("EXPORT_CLEANUP_MAX_AGE_DAYS", 7)))
+
+    if app.logger.getEffectiveLevel() > logging.INFO:
+        app.logger.setLevel(logging.INFO)
+
+    stop_event = threading.Event()
+    storage["stop_event"] = stop_event
+
+    def _run_cycle() -> None:
+        removed, failed = cleanup_export_folder(max_age_days)
+        if removed or failed:
+            app.logger.info("Export cleanup removed %s artefacts (failed: %s)", removed, failed)
+        else:
+            app.logger.info("Export cleanup completed; no stale artefacts detected.")
+
+    def _worker() -> None:
+        with app.app_context():
+            try:
+                _run_cycle()
+            except Exception:  # pragma: no cover - defensive logging
+                app.logger.exception("Initial export cleanup run failed")
+
+        interval_seconds = max(60, int(interval_minutes * 60))
+        while not stop_event.wait(interval_seconds):
+            with app.app_context():
+                try:
+                    _run_cycle()
+                except Exception:  # pragma: no cover - defensive logging
+                    app.logger.exception("Scheduled export cleanup run failed")
+
+    worker = threading.Thread(target=_worker, name="export-cleanup", daemon=True)
+    worker.start()
+    storage["thread"] = worker
+
+    atexit.register(stop_event.set)
