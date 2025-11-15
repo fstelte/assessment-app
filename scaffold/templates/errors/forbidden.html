@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{ current_locale or 'en' }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Access Restricted</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/maintenance.css') }}" />
+</head>
+<body>
+  <article class="card" role="alert" aria-live="assertive">
+    <span class="badge"><span class="pulse" aria-hidden="true"></span> Access Restricted</span>
+    <h1>Administrator access required</h1>
+    <p>
+      This part of the assessment platform is reserved for authorised administrators.
+      Your account does not have the required permissions to continue here.
+    </p>
+    <div class="status">
+      <strong>What you can do</strong>
+      <span>Return to the start page and continue with the areas you are allowed to use.</span>
+      <span>If you believe you should have access, please reach out to your platform owner.</span>
+    </div>
+    <footer>
+      Need assistance? Contact <a href="{{ contact_link }}">{{ contact_label }}</a> or
+      <a href="/">go back to the start page</a>.
+    </footer>
+  </article>
+</body>
+</html>

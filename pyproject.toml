@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2025.11.2"
+version = "2025.11.3"
 description = "Unified scaffold for bia_app and csa_app domains"
 authors = ["Ferry Stelte"]
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 packages = [{ include = "scaffold" }]
 include = ["migrations/**", "alembic.ini"]
 
@@ -28,6 +28,7 @@ pandas = "^2.2.0"
 psycopg = { extras = ["binary"], version = "^3.1.18" }
 pyotp = "^2.9.0"
 python-dotenv = "^1.0.1"
+python3-saml = "^1.16.0"
 sqlalchemy = "^2.0.32"
 werkzeug = ">=3.0.6"
 zipp = ">=3.19.1"

@@ -279,7 +279,7 @@
          data-delete="{{ _('actions.delete') }}">
     </div>
 
-    <script>
+  <script nonce="{{ csp_nonce }}">
     document.addEventListener('DOMContentLoaded', () => {
       const componentList = document.getElementById('bia-component-list');
       if (!componentList) {

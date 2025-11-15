@@ -527,6 +527,11 @@
               "mfa": "MFA",
               "actions": "Acties"
             },
+            "status": {
+              "active": "Actief",
+              "pending": "In afwachting",
+              "disabled": "Uitgeschakeld"
+            },
             "no_roles": "Geen rollen toegewezen.",
             "all_roles_assigned": "Alle rollen al toegewezen.",
             "mfa": {
@@ -608,6 +613,22 @@
               "password": "Wachtwoord",
               "remember_me": "Onthoud mij",
               "submit": "Aanmelden",
+              "saml": "Aanmelden met SAML",
+              "saml_hint": "Gebruik het account van je organisatie om verder te gaan.",
+              "saml_enterprise_button": "Aanmelden met Microsoft Entra ID",
+              "saml_unavailable": "SAML-aanmelding is niet geconfigureerd. Neem contact op met een beheerder.",
+              "password_heading": "Inloggen met lokaal account",
+              "errors": {
+                "password_disabled": "Inloggen met wachtwoord is uitgeschakeld.",
+                "invalid_credentials": "Ongeldig e-mailadres of wachtwoord.",
+                "account_disabled": "Je account is gedeactiveerd. Neem contact op met een beheerder.",
+                "account_pending": "Je account wacht nog op activatie.",
+                "invalid_submission": "Corrigeer de gemarkeerde fouten en probeer het opnieuw."
+              },
+              "notices": {
+                "mfa_required": "Voltooi multi-factor-authenticatie om het inloggen af te ronden.",
+                "mfa_enrol": "Schakel multi-factor-authenticatie in om verder te gaan."
+              },
               "actions": {
                 "submit": "Aanmelden"
               },
@@ -754,6 +775,11 @@
             "password": "Wachtwoord",
             "remember_me": "Onthoud mij",
             "submit": "Aanmelden",
+            "password_heading": "Aanmelden met lokaal account",
+            "saml_hint": "Gebruik het account van je organisatie om verder te gaan.",
+            "saml_only_notice": "Lokale accounts zijn uitgeschakeld. Meld je aan via Microsoft Entra ID.",
+            "saml_enterprise_button": "Aanmelden met Microsoft Entra ID",
+            "saml_mfa_notice": "Multi-factor-authenticatie wordt afgedwongen door de Microsoft Entra-beleid van je organisatie.",
             "actions": {
               "submit": "Aanmelden"
             },

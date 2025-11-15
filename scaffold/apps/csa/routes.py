@@ -231,8 +231,6 @@ def dashboard():
 @bp.route("/assessments/start", methods=["GET", "POST"])
 @login_required
 def start_assessment():
-    _require_assignment_permission()
-
     form = AssessmentStartForm()
     templates = _ordered_templates()
     form.template_id.choices = [

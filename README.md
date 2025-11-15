@@ -6,6 +6,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 
 - Consolidated SQLAlchemy metadata spanning BIA and CSA domains.
 - Unified authentication with MFA, role management, and session security hardening.
+- SAML single sign-on via Microsoft Entra ID (Azure AD) with automatic user provisioning and group gates.
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
@@ -19,6 +20,10 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
    - Copy `.env.example` to `.env` and adjust values as needed.
    - Default database points to `sqlite:///instance/scaffold.db`; override for production deployments.
    - Update `SCAFFOLD_APP_MODULES` when enabling additional domains.
+   - Capture Microsoft Entra ID SAML metadata once the enterprise application is created. Populate `SAML_SP_ENTITY_ID`, `SAML_SP_ACS_URL`, and `SAML_SP_SLS_URL` for the service provider; store signing material in `SAML_SP_CERT` and `SAML_SP_PRIVATE_KEY` when requests or responses must be signed.
+   - Configure the identity provider section with `SAML_IDP_ENTITY_ID`, `SAML_IDP_SSO_URL`, `SAML_IDP_SLO_URL`, and `SAML_IDP_CERT`. Optional toggles include `SAML_SIGN_AUTHN_REQUESTS`, `SAML_SIGN_LOGOUT_REQUESTS`, `SAML_SIGN_LOGOUT_RESPONSES`, `SAML_WANT_MESSAGE_SIGNED`, and `SAML_WANT_ASSERTION_SIGNED`.
+   - Map directory attributes via `SAML_ATTRIBUTE_EMAIL`, `SAML_ATTRIBUTE_FIRST_NAME`, `SAML_ATTRIBUTE_LAST_NAME`, `SAML_ATTRIBUTE_DISPLAY_NAME`, `SAML_ATTRIBUTE_OBJECT_ID`, `SAML_ATTRIBUTE_UPN`, and `SAML_ATTRIBUTE_GROUPS`. Restrict access with `SAML_ALLOWED_GROUP_IDS` (comma-separated) and align application roles with `SAML_ROLE_MAP` (JSON mapping of group IDs to role names).
+   - For break-glass access or automated tests you can expose the legacy password form by setting `PASSWORD_LOGIN_ENABLED=true` (aliases `SAML_PASSWORD_LOGIN_ENABLED`, `ENTRA_PASSWORD_LOGIN_ENABLED`, and `AZURE_PASSWORD_LOGIN_ENABLED` remain recognised).
 3. **Initialise local database**
    - Run `poetry run flask --app scaffold:create_app db upgrade` to apply migrations.
 4. **Create an administrator account**
@@ -32,6 +37,10 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 6. **Quality checks**
    - Run `poetry run lint` for Ruff and Black in check mode.
    - Run `poetry run test` for the pytest suite.
+
+Detailed SSO setup steps, troubleshooting tips, and operational runbooks live in
+`docs/authentication.md`. Deployment-specific guidance (including release
+checklists) is captured in `docs/deployment.md`.
 
 ## Internationalisation
 
@@ -62,6 +71,19 @@ The platform offers lightweight JSON-driven localisation that allows text to be 
 - **Static assets**: Bootstrap is loaded from a CDN by default. If offline assets are required, build them and mount under `scaffold/static`.
 - **Migrations**: execute `poetry run flask --app scaffold:create_app db upgrade` during deployment. Integrate with release pipelines or infrastructure hooks so migrations run before the new code serves traffic.
 - **Observability**: configure logging handlers in `scaffold/config.py` or via `LOGGING_CONFIG`. Add health endpoints as lightweight blueprints registered through the module registry.
+
+## Operations & SSO
+
+- `docs/authentication.md` walks through Microsoft Entra configuration, maps
+   environment variables, and documents runbooks for certificate rotation, new
+   group enablement, and break-glass access.
+- `docs/deployment.md` covers infrastructure touchpoints, backup helpers, and a
+   release management checklist with SSO smoke-test reminders.
+
+## License
+
+Licensed under the Apache License, Version 2.0. Include the copyright notice
+for Ferry Stelte in redistributions; see the `LICENSE` file for details.
 
 ### Docker
 

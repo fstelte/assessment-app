@@ -177,37 +177,43 @@
   </div>
 </div>
 
-<script>
-(function () {
-  const csrfToken = document.getElementById('csrf-token').value;
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', () => {
+  const bootstrapLib = window.bootstrap;
+  if (!bootstrapLib) {
+    console.error('Bootstrap library not available; consequence modals inactive.');
+    return;
+  }
+
+  const csrfTokenInput = document.getElementById('csrf-token');
+  const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
   const addEndpoint = "{{ url_for('bia.add_consequence', component_id=component.id) }}";
   const addModalElement = document.getElementById('addConsequenceModal');
   const editModalElement = document.getElementById('editConsequenceModal');
-  const addModal = addModalElement ? new bootstrap.Modal(addModalElement) : null;
-  const editModal = editModalElement ? new bootstrap.Modal(editModalElement) : null;
+  const addModal = addModalElement ? new bootstrapLib.Modal(addModalElement) : null;
+  const editModal = editModalElement ? new bootstrapLib.Modal(editModalElement) : null;
   const addForm = document.getElementById('add-consequence-form');
   const editForm = document.getElementById('edit-consequence-form');
 
   const resetForm = (form) => {
-    if (!form) return;
+    if (!form) {
+      return;
+    }
     form.reset();
   };
 
   addModalElement?.addEventListener('hidden.bs.modal', () => resetForm(addForm));
   editModalElement?.addEventListener('hidden.bs.modal', () => resetForm(editForm));
 
-  const collectFormValues = (form) => {
-    const data = Object.fromEntries(new FormData(form));
-    return data;
-  };
+  const collectFormValues = (form) => Object.fromEntries(new FormData(form));
 
-  document.querySelector('[data-submit-add]')?.addEventListener('click', () => {
+  const handleAdd = () => {
     if (!addForm) {
       return;
     }
     const data = collectFormValues(addForm);
     const categorySelect = addForm.querySelector('select[name="consequence_category"]');
-    const categories = Array.from(categorySelect.selectedOptions).map((option) => option.value);
+    const categories = categorySelect ? Array.from(categorySelect.selectedOptions).map((option) => option.value) : [];
     if (!categories.length) {
       window.alert('Select at least one consequence category.');
       return;
@@ -220,7 +226,8 @@
         'X-CSRFToken': csrfToken,
       },
       body: JSON.stringify(data),
-    }).then((response) => response.json())
+    })
+      .then((response) => response.json())
       .then((result) => {
         if (result.success) {
           addModal?.hide();
@@ -230,37 +237,9 @@
         }
       })
       .catch(() => window.alert('Failed to add consequence.'));
-  });
+  };
 
-  document.querySelectorAll('[data-edit-consequence]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const getUrl = button.getAttribute('data-edit-url');
-      const updateUrl = button.getAttribute('data-update-url');
-      if (!getUrl || !updateUrl || !editForm) {
-        return;
-      }
-      fetch(getUrl)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Lookup failed');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          editForm.querySelector('input[name="update_url"]').value = updateUrl;
-          editForm.querySelector('#edit-consequence-category').value = data.consequence_category;
-          editForm.querySelector('#edit-security-property').value = (data.security_property || '').toLowerCase();
-          editForm.querySelector('#edit-consequence-worstcase').value = data.consequence_worstcase;
-          editForm.querySelector('#edit-justification-worstcase').value = data.justification_worstcase || '';
-          editForm.querySelector('#edit-consequence-realisticcase').value = data.consequence_realisticcase;
-          editForm.querySelector('#edit-justification-realisticcase').value = data.justification_realisticcase || '';
-          editModal?.show();
-        })
-        .catch(() => window.alert('Failed to load the selected consequence.'));
-    });
-  });
-
-  document.querySelector('[data-submit-edit]')?.addEventListener('click', () => {
+  const handleEditSave = () => {
     if (!editForm) {
       return;
     }
@@ -278,7 +257,8 @@
         'X-CSRFToken': csrfToken,
       },
       body: JSON.stringify(payload),
-    }).then((response) => response.json())
+    })
+      .then((response) => response.json())
       .then((result) => {
         if (result.success) {
           editModal?.hide();
@@ -288,33 +268,76 @@
         }
       })
       .catch(() => window.alert('Failed to update consequence.'));
-  });
+  };
 
-  document.querySelectorAll('[data-delete-consequence]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (!window.confirm('Delete this consequence?')) {
-        return;
-      }
-      const deleteUrl = button.getAttribute('data-delete-url');
-      if (!deleteUrl) {
-        return;
-      }
-      const formData = new FormData();
-      formData.append('csrf_token', csrfToken);
-      fetch(deleteUrl, {
-        method: 'POST',
-        body: formData,
-      }).then((response) => response.json())
-        .then((result) => {
-          if (result.success) {
-            window.location.reload();
-          } else {
-            window.alert('Could not delete the consequence.');
-          }
-        })
-        .catch(() => window.alert('Failed to delete consequence.'));
-    });
+  const hydrateEditForm = (data, updateUrl) => {
+    if (!editForm) {
+      return;
+    }
+    editForm.querySelector('input[name="update_url"]').value = updateUrl;
+    editForm.querySelector('#edit-consequence-category').value = data.consequence_category;
+    editForm.querySelector('#edit-security-property').value = (data.security_property || '').toLowerCase();
+    editForm.querySelector('#edit-consequence-worstcase').value = data.consequence_worstcase;
+    editForm.querySelector('#edit-justification-worstcase').value = data.justification_worstcase || '';
+    editForm.querySelector('#edit-consequence-realisticcase').value = data.consequence_realisticcase;
+    editForm.querySelector('#edit-justification-realisticcase').value = data.justification_realisticcase || '';
+  };
+
+  const handleEditClick = (event) => {
+    const button = event.currentTarget;
+    const getUrl = button.getAttribute('data-edit-url');
+    const updateUrl = button.getAttribute('data-update-url');
+    if (!getUrl || !updateUrl || !editForm) {
+      return;
+    }
+    fetch(getUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Lookup failed');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        hydrateEditForm(data, updateUrl);
+        editModal?.show();
+      })
+      .catch(() => window.alert('Failed to load the selected consequence.'));
+  };
+
+  const handleDeleteClick = (event) => {
+    if (!window.confirm('Delete this consequence?')) {
+      return;
+    }
+    const button = event.currentTarget;
+    const deleteUrl = button.getAttribute('data-delete-url');
+    if (!deleteUrl) {
+      return;
+    }
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    fetch(deleteUrl, {
+      method: 'POST',
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.success) {
+          window.location.reload();
+        } else {
+          window.alert('Could not delete the consequence.');
+        }
+      })
+      .catch(() => window.alert('Failed to delete consequence.'));
+  };
+
+  document.querySelector('[data-submit-add]')?.addEventListener('click', handleAdd);
+  document.querySelector('[data-submit-edit]')?.addEventListener('click', handleEditSave);
+  document.querySelectorAll('[data-edit-consequence]').forEach((button) => {
+    button.addEventListener('click', handleEditClick);
   });
-})();
+  document.querySelectorAll('[data-delete-consequence]').forEach((button) => {
+    button.addEventListener('click', handleDeleteClick);
+  });
+});
 </script>
 {% endblock %}

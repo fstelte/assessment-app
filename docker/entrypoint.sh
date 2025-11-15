@@ -18,7 +18,13 @@ def parse_env(path: Path) -> None:
   context = dict(os.environ)
   entries: list[tuple[str, str]] = []
 
-  for raw in path.read_text(encoding="utf-8").splitlines():
+  try:
+    contents = path.read_text(encoding="utf-8")
+  except UnicodeDecodeError:
+    raw_bytes = path.read_bytes()
+    contents = raw_bytes.decode("utf-8", errors="surrogateescape")
+
+  for raw in contents.splitlines():
     stripped = raw.strip()
     if not stripped or stripped.startswith("#"):
       continue

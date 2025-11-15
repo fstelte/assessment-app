@@ -11,6 +11,7 @@ from datetime import date, datetime
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     jsonify,
     redirect,
@@ -87,7 +88,7 @@ def _ai_badge_tokens(category: str | None) -> dict[str, str]:
     if normalized == "unacceptable risk":
         return {"class": "bg-danger text-white"}
     if normalized == "high risk":
-        return {"class": "text-dark", "style": "background-color: #fd7e14;"}
+        return {"class": "badge-ai-high-risk"}
     if normalized == "limited risk":
         return {"class": "bg-warning text-dark"}
     if normalized == "minimal risk":
@@ -321,20 +322,37 @@ def delete_component(component_id: int):
 @login_required
 def view_components():
     scope_filter = request.args.get("scope", "all").strip()
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        page = 1
+    per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
     query = Component.query.join(ContextScope)
     if scope_filter and scope_filter.lower() != "all":
         query = query.filter(ContextScope.name.ilike(f"%{scope_filter}%"))
-    components = query.order_by(Component.name.asc()).all()
+    pagination = query.order_by(Component.name.asc()).paginate(page=page, per_page=per_page, error_out=False)
+    if pagination.total and page > pagination.pages:
+        return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter))
+    components = pagination.items
     contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()
     consequence_form = ConsequenceForm()
+    if pagination.total:
+        page_start = (pagination.page - 1) * pagination.per_page + 1
+        page_end = min(pagination.total, pagination.page * pagination.per_page)
+    else:
+        page_start = 0
+        page_end = 0
     return render_template(
         "bia/components.html",
         components=components,
         contexts=contexts,
         selected_scope=scope_filter,
+        pagination=pagination,
+        page_start=page_start,
+        page_end=page_end,
         component_form=component_form,
         consequence_form=consequence_form,
+        per_page=per_page,
     )
 
 

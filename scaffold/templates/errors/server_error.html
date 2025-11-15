@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{ current_locale or 'en' }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Something went wrong</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/maintenance.css') }}" />
+</head>
+<body>
+  <article class="card" role="alert" aria-live="assertive">
+    <span class="badge"><span class="pulse" aria-hidden="true"></span> Unexpected Error</span>
+    <h1>We hit a snag</h1>
+    <p>
+      The platform ran into an unexpected error while preparing this page. Our team has been notified,
+      and the issue will be investigated.
+    </p>
+    <div class="status">
+      <strong>What you can do</strong>
+      <span>Try returning to the previous page or refresh after a moment.</span>
+      <span>If the problem persists, please let your platform owner know.</span>
+    </div>
+    <footer>
+      Need assistance? Contact <a href="{{ contact_link }}">{{ contact_label }}</a> or
+      <a href="/">go back to the start page</a>.
+    </footer>
+  </article>
+</body>
+</html>

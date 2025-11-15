@@ -10,7 +10,7 @@
                 {% endif %}
             {% endfor %}
             <label class="form-label mb-0 small text-uppercase" for="login-language-select">{{ _('app.language.label') }}</label>
-            <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto {{ 'bg-dark text-light border-secondary' if theme != 'light' else '' }}" onchange="this.form.submit()" aria-label="{{ _('app.language.label') }}" style="min-width: 7rem;">
+            <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto min-w-7rem {{ 'bg-dark text-light border-secondary' if theme != 'light' else '' }}" onchange="this.form.submit()" aria-label="{{ _('app.language.label') }}">
                 {% for locale in available_locales %}
                     <option value="{{ locale }}" {% if locale == current_locale %}selected{% endif %}>{{ _('app.language.option.' ~ locale) }}</option>
                 {% endfor %}
@@ -19,20 +19,63 @@
     </div>
 {% endif %}
 <h1 class="mb-4">{{ _('auth.login.heading') }}</h1>
-<form method="post">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.email.label(class="form-label") }}
-        {{ form.email(class="form-control") }}
+{% set show_password = password_login_enabled and form is not none %}
+{% if not saml_login_enabled and not show_password %}
+    <div class="alert alert-danger" role="status">
+        {{ _('auth.login.saml_unavailable') }}
     </div>
-    <div class="mb-3">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control") }}
+{% endif %}
+
+{% if show_password %}
+    <div class="mt-4 mx-auto max-w-24rem">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title h5 mb-3">{{ _('auth.login.password_heading') }}</h2>
+                <form method="post" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control", autocomplete="username") }}
+                        {% for error in form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control", autocomplete="current-password") }}
+                        {% for error in form.password.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.remember_me(class="form-check-input", id="remember-me") }}
+                        {{ form.remember_me.label(class="form-check-label", for="remember-me") }}
+                    </div>
+                    {{ form.submit(class="btn btn-primary w-100") }}
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="mb-3 form-check">
-        {{ form.remember_me(class="form-check-input") }}
-        {{ form.remember_me.label(class="form-check-label") }}
+{% endif %}
+
+{% if saml_login_enabled %}
+    <div class="text-center mt-4 mx-auto max-w-24rem">
+        <div class="alert alert-info" role="status">
+            {% if show_password %}
+                {{ _('auth.login.saml_hint') }}
+            {% else %}
+                {{ _('auth.login.saml_only_notice') }}
+            {% endif %}
+        </div>
+        <a class="btn btn-outline-primary px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2" href="{{ url_for('auth.login_saml') }}">
+            <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                <path d="M4 3h9.5l6.5 9-6.5 9H4l4.5-9L4 3zm5.3 2-3.1 7 3.1 7h3.8l5-7-5-7H9.3z" fill="currentColor" />
+            </svg>
+            <span>{{ _('auth.login.saml_enterprise_button') }}</span>
+        </a>
+        <p class="text-muted small mt-2 mb-0">
+            {{ _('auth.login.saml_mfa_notice') }}
+        </p>
     </div>
-    {{ form.submit(class="btn btn-primary") }}
-</form>
+{% endif %}
 {% endblock %}

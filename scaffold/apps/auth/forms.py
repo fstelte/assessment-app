@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, ValidationError
 from scaffold.core.i18n import lazy_gettext as _l, gettext as _
-from typing import cast
 
 
-def _label(key: str) -> str:
+def _label(key: str):
     """Return a lazy translation for WTForms labels."""
-    return cast(str, _l(key))
+    return cast(Any, _l(key))
 
 from ...extensions import db
 from ..identity.models import User

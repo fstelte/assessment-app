@@ -2,35 +2,54 @@
 
 from __future__ import annotations
 
-from flask import Flask
+from base64 import b64encode
+from os import urandom
+
+from flask import Flask, g
+
+
+def _ensure_csp_nonce() -> str:
+    nonce = getattr(g, "csp_nonce", None)
+    if nonce is None:
+        nonce = b64encode(urandom(16)).decode("ascii")
+        g.csp_nonce = nonce
+    return nonce
 
 
 def init_security_headers(app: Flask) -> None:
-    """Attach secure HTTP headers after every response.
+    """Attach secure HTTP headers after every response."""
 
-    The configuration mirrors the original `bia_app` behaviour: clickjacking
-    protection, MIME sniffing prevention, basic CSP, and conditional HSTS when
-    secure cookies are enabled. The function is side-effect free and intended
-    to be called once during application initialisation.
-    """
+    @app.before_request
+    def _prepare_nonce() -> None:
+        _ensure_csp_nonce()
 
     @app.after_request
     def _apply_headers(response):  # type: ignore[override]
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-XSS-Protection", "1; mode=block")
+        nonce = _ensure_csp_nonce()
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
 
         if app.config.get("SESSION_COOKIE_SECURE"):
-            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-        response.headers.setdefault(
-            "Content-Security-Policy",
+        script_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
+        style_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
+        policy = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none'; "
+            "object-src 'none'; "
+            f"script-src {script_sources}; "
+            f"style-src {style_sources}; "
+            f"style-src-elem {style_sources}; "
+            "style-src-attr 'unsafe-inline'; "
             "font-src 'self' https://cdn.jsdelivr.net; "
             "img-src 'self' data:; "
-            "connect-src 'self'",
+            "connect-src 'self'"
         )
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+
+        response.headers["Content-Security-Policy"] = policy
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return response

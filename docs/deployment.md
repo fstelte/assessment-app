@@ -66,16 +66,55 @@ Without the `--env-file` flag, `${DATABASE_URL}` remains empty during compose pa
 
 - Store secrets in environment variables or a secret manager (Vault, AWS Secrets Manager, etc.).
 - Use `SECRET_KEY` rotation policies and update sessions carefully when rotating.
+- Provision Microsoft Entra SAML metadata via the shared secret store so Ansible and Docker builds stay aligned. Populate the `SAML_SP_*` keys (entity ID, ACS, SLS, certificates) together with the IdP values (`SAML_IDP_*`), attribute mappings, and toggles such as `SAML_SIGN_AUTHN_REQUESTS` or `SAML_WANT_ASSERTION_SIGNED`.
+- When enabling SSO, either import the generated metadata from `https://<host>/auth/login/saml/metadata` or copy the ACS/SLO URLs into the Entra enterprise application configuration.
+- Leave `PASSWORD_LOGIN_ENABLED` set to `false` in production. Switch it on temporarily only for break-glass operations or automated tests that rely on the legacy email/password form.
 - Configure TLS termination at the load balancer or reverse proxy layer.
+
+## Microsoft Entra SSO Preparation
+
+- **Enterprise application** – Create a non-gallery Entra enterprise application, switch it to SAML, and import the service provider metadata from `/auth/login/saml/metadata`.
+- **Claim set** – Issue email, given name, surname, display name, object ID, UPN, and the groups claim. For large tenants enable *Groups assigned to the application* or the Microsoft Graph callout so the claim populates reliably.
+- **Attribute mapping** – Align Entra claim names with the environment variables (`SAML_ATTRIBUTE_*`), choose a NameID format, and decide whether to request specific AuthN contexts (control via `SAML_REQUESTED_AUTHN_CONTEXT`).
+- **Group and role gating** – Capture the object IDs for the Entra groups allowed to access the app. Add them to `SAML_ALLOWED_GROUP_IDS` and mirror role mappings in `SAML_ROLE_MAP` and the database (`Role` table).
+- **Certificates and logout** – Export the IdP signing certificate and upload it via `SAML_IDP_CERT`. Provide SSO/SLO URLs and configure `SAML_LOGOUT_RETURN_URL` so the application redirects users to a friendly page once Entra completes SLO.
+- **Proxy awareness** – If the app sits behind a load balancer, set `FORWARDED_ALLOW_IPS` (or the equivalent `WERKZEUG_RUNSERVER_WITH_RELOADER=0` for local testing) so `ProxyFix` trusts forwarded headers.
+
+Refer to `docs/authentication.md` for the full end-to-end setup guide, troubleshooting matrix, and operational runbooks.
 
 ## Observability
 
 - Consider integrating Sentry or OpenTelemetry for error/trace capture.
 - Expose structured logs (JSON) to support centralised logging pipelines.
 
-## Zero-Downtime Deployment Checklist
+## Deployment Troubleshooting
 
-- Run database migrations before routing traffic to the new release.
-- Warm up application instances by preloading caches or performing health checks.
-- Monitor login and MFA flows closely after release.
-- Keep rollback plan ready: revert to previous container image and re-run migrations if needed.
+- **SSO failures on first request** – Confirm all `SAML_*` environment variables
+  are present in the runtime. Missing values surface as 500 errors when the app
+  builds SAML settings.
+- **Users see 403 after login** – Review the authentication logs for `Access
+  denied` messages. The user either falls outside `SAML_ALLOWED_GROUP_IDS` or
+  the group is not mapped in `SAML_ROLE_MAP` / the `aad_group_mappings` table.
+- **`assertion consumer service not found`** – Check the externally visible URL
+  matches `SAML_SP_ACS_URL`. Behind a proxy, verify `FORWARDED_ALLOW_IPS` and
+  related header settings are correct so Flask reconstructs the original URL.
+- **Logout loops to maintenance page** – Ensure `SAML_LOGOUT_RETURN_URL` points
+  to a reachable URL and that the maintenance gateway is healthy.
+- **Unexpected password login form** – Set `PASSWORD_LOGIN_ENABLED=false` after
+  break-glass tests to return to SSO-only mode.
+
+## Release Management Checklist
+
+- Validate new migrations locally or in staging, then run `flask db upgrade`
+  (or the equivalent task) before exposing the new release to users.
+- Confirm environment variable changes (including `SAML_ALLOWED_GROUP_IDS`,
+  `SAML_ROLE_MAP`, `SAML_REQUESTED_AUTHN_CONTEXT`, and `SAML_LOGOUT_RETURN_URL`)
+  are committed to infrastructure configuration and secrets stores.
+- Build and deploy the application containers or packages. For container flows,
+  ensure the image tag is unique per release.
+- Execute an SSO smoke test: navigate to `/auth/login`, complete the Entra
+  handshake, verify role synchronisation, and perform logout to validate RelayState.
+- Exercise a core business path (for example viewing `/bia/components`) to
+  confirm pagination, permissions, and static assets still function.
+- Monitor logs and metrics for at least one full login/logout cycle. Keep the
+  previous release artefact available for quick rollback if regressions appear.
