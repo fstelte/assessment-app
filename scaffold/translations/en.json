@@ -965,6 +965,10 @@
       "saml_only_notice": "Local accounts are disabled. Continue with Microsoft Entra ID to sign in.",
       "saml_enterprise_button": "Sign in with Microsoft Entra ID",
       "saml_mfa_notice": "Multi-factor authentication is enforced by your organisation's Microsoft Entra policies.",
+      "notices": {
+        "mfa_required": "Complete multi-factor authentication to finish signing in.",
+        "mfa_enrol": "Enroll in multi-factor authentication to continue."
+      },
       "actions": {
         "submit": "Sign in"
       },

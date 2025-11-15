@@ -851,7 +851,85 @@
                     "documentation": "Architectuur-, deploy- en migratiedocumentatie opgesteld."
                   }
                 }
+              },
+          "auth": {
+            "login": {
+              "title": "Aanmelden",
+              "heading": "Aanmelden",
+              "page_title": "Aanmelden",
+              "page_heading": "Aanmelden",
+              "email": "E-mail",
+              "password": "Wachtwoord",
+              "remember_me": "Onthoud mij",
+              "submit": "Aanmelden",
+              "password_heading": "Aanmelden met lokaal account",
+              "saml_hint": "Gebruik het account van je organisatie om verder te gaan.",
+              "saml_only_notice": "Lokale accounts zijn uitgeschakeld. Meld je aan via Microsoft Entra ID.",
+              "saml_enterprise_button": "Aanmelden met Microsoft Entra ID",
+              "saml_mfa_notice": "Multi-factor-authenticatie wordt afgedwongen door de Microsoft Entra-beleid van je organisatie.",
+              "notices": {
+                "mfa_required": "Voltooi multi-factor-authenticatie om het inloggen af te ronden.",
+                "mfa_enrol": "Schakel multi-factor-authenticatie in om verder te gaan."
+              },
+              "actions": {
+                "submit": "Aanmelden"
+              },
+              "fields": {
+                "email": "E-mail",
+                "password": "Wachtwoord",
+                "remember_me": "Onthoud mij"
+              },
+              "register_prompt": "Nog geen account?",
+              "register_link": "Registreren"
+            },
+            "mfa": {
+              "enroll": {
+                "instructions": "Instructions",
+                "page_heading": "Page Heading",
+                "page_title": "Page Title",
+                "secret_label": "Secret Label",
+                "submit": "Submit",
+                "uri_label": "Uri Label"
+              },
+              "errors": {
+                "otp_length": "Otp Length"
+              },
+              "fields": {
+                "otp": "Otp"
+              },
+              "verify": {
+                "remember_device": "Vertrouw dit apparaat",
+                "submit": "Verifiëren"
               }
+            },
+            "profile": {
+              "manage_mfa": "MFA beheren",
+              "title": "Profiel"
+            },
+            "register": {
+              "actions": {
+                "submit": "Submit"
+              },
+              "errors": {
+                "confirm_required": "Confirm Required",
+                "password_length": "Password Length",
+                "password_mismatch": "Password Mismatch",
+                "password_required": "Password Required"
+              },
+              "fields": {
+                "confirm_password": "Confirm Password",
+                "email": "Email",
+                "first_name": "First Name",
+                "last_name": "Last Name",
+                "password": "Password",
+                "username": "Username"
+              },
+              "login_link": "Login Link",
+              "login_prompt": "Login Prompt",
+              "page_heading": "Page Heading",
+              "page_title": "Page Title"
+            }
+          }
             }
           },
           "import": {

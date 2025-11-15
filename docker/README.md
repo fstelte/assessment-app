@@ -34,6 +34,8 @@ docker compose -f docker/compose.prod.yml --profile postgres up --build -d
 
 The entrypoint script waits for the database container, ensures the database exists, performs `flask db upgrade`, and then launches Gunicorn.
 
+- PostgreSQL 18+ images changed their data directory layout. The compose files now mount the volume at `/var/lib/postgresql` and explicitly set `PGDATA=/var/lib/postgresql/data`. If you are upgrading an existing named volume from PostgreSQL ≤17, move the contents of the volume into a `data` subdirectory (for example with `docker run --rm -v postgres-data:/var/lib/postgresql alpine sh -c "set -eu; mkdir -p /var/lib/postgresql/data; for entry in /var/lib/postgresql/*; do [ \"$entry\" = /var/lib/postgresql/data ] && continue; mv \"$entry\" /var/lib/postgresql/data/; done"`).
+
 - Maintenance mode: the `gateway` service (Nginx) proxies traffic to the Flask container and serves a generated maintenance page if the backend or database is unavailable. Adjust the template in `docker/templates/maintenance.html.tmpl` and control the contact details via `MAINTENANCE_CONTACT_EMAIL`, `MAINTENANCE_CONTACT_LABEL`, and `MAINTENANCE_CONTACT_LINK` in `.env.production`.
 
 ### Operational Helpers (Backup & Restore)

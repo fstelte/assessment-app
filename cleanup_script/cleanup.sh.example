@@ -1,18 +1,161 @@
-#!/bin/bash
+#!/bin/sh
 
-# Pad naar logbestand
-LOGFILE="/var/log/docker-cleanup.log"
+set -eu
 
-# Datum en tijd toevoegen aan log
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Start cleanup" >> "$LOGFILE"
+LOGFILE="${LOGFILE:-/var/log/docker-cleanup.log}"
+DOCKER_ROOT="${DOCKER_ROOT:-/var/lib/docker}"
+DOCKER_BIN="${DOCKER_BIN:-$(command -v docker 2>/dev/null || printf '%s' '/usr/bin/docker')}"
 
-# Controleer of Docker draait
-if ! systemctl is-active --quiet docker; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Docker is niet actief, cleanup overgeslagen" >> "$LOGFILE"
-    exit 0
+LOG_TO_STDOUT=0
+if [ "$LOGFILE" = "-" ]; then
+    LOG_TO_STDOUT=1
+else
+    log_dir=$(dirname "$LOGFILE")
+    if [ ! -d "$log_dir" ]; then
+        mkdir -p "$log_dir" 2>/dev/null || true
+    fi
+    if ! touch "$LOGFILE" 2>/dev/null; then
+        LOG_TO_STDOUT=1
+    fi
 fi
 
-# Voer veilige prune uit (alleen dangling images)
-/usr/bin/docker image prune -f >> "$LOGFILE" 2>&1
+SIZE_CACHE=""
+cleanup_temp() {
+    if [ -n "$SIZE_CACHE" ] && [ -f "$SIZE_CACHE" ]; then
+        rm -f "$SIZE_CACHE"
+    fi
+}
 
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleanup voltooid" >> "$LOGFILE"
+if command -v mktemp >/dev/null 2>&1; then
+    SIZE_CACHE=$(mktemp)
+else
+    SIZE_CACHE="/tmp/docker-cleanup.$$.cache"
+    : > "$SIZE_CACHE"
+fi
+
+trap cleanup_temp EXIT INT TERM
+
+timestamp() {
+    date '+%Y-%m-%d %H:%M:%S'
+}
+
+log() {
+    ts=$(timestamp)
+    message=$1
+    if [ "$LOG_TO_STDOUT" -eq 1 ]; then
+        printf '[%s] %s\n' "$ts" "$message"
+    else
+        printf '[%s] %s\n' "$ts" "$message" >> "$LOGFILE" 2>>/dev/null || printf '[%s] %s\n' "$ts" "$message" >&2
+    fi
+}
+
+bytes_to_human() {
+    bytes="$1"
+    if command -v numfmt >/dev/null 2>&1; then
+        numfmt --to=iec --suffix=B "$bytes"
+    else
+        printf '%sB\n' "$bytes"
+    fi
+}
+
+disk_usage_bytes() {
+    if [ ! -d "$DOCKER_ROOT" ] || ! command -v du >/dev/null 2>&1; then
+        printf ''
+        return
+    fi
+
+    if du -sb "$DOCKER_ROOT" >/dev/null 2>&1; then
+        du -sb "$DOCKER_ROOT" 2>/dev/null | awk '{print $1}'
+    elif du -sk "$DOCKER_ROOT" >/dev/null 2>&1; then
+        du -sk "$DOCKER_ROOT" 2>/dev/null | awk '{printf "%d", $1 * 1024}'
+    else
+        printf ''
+    fi
+}
+
+log "Start cleanup"
+
+if [ ! -x "$DOCKER_BIN" ]; then
+    log "Docker-binary niet gevonden (${DOCKER_BIN}); cleanup overgeslagen"
+    exit 1
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    if ! systemctl is-active --quiet docker; then
+        log "Docker is niet actief, cleanup overgeslagen"
+        exit 0
+    fi
+else
+    if ! "$DOCKER_BIN" info >/dev/null 2>&1; then
+        log "Docker is niet bereikbaar, cleanup overgeslagen"
+        exit 0
+    fi
+fi
+
+before_size="$(disk_usage_bytes)"
+
+dangling_before=$("$DOCKER_BIN" images --filter dangling=true --quiet 2>>"$LOGFILE" || true)
+if [ -n "$dangling_before" ]; then
+    for img_id in $dangling_before; do
+        img_size=$("$DOCKER_BIN" image inspect --format '{{.Size}}' "$img_id" 2>>"$LOGFILE" || printf '0')
+        printf '%s %s\n' "$img_id" "$img_size" >> "$SIZE_CACHE"
+    done
+fi
+
+PRUNE_SUPPORTS_QUIET=0
+if "$DOCKER_BIN" image prune --help 2>/dev/null | grep -F -- '--quiet' >/dev/null; then
+    PRUNE_SUPPORTS_QUIET=1
+fi
+
+deleted_ids=""
+if [ "$PRUNE_SUPPORTS_QUIET" -eq 1 ]; then
+    deleted_ids=$("$DOCKER_BIN" image prune --force --quiet 2>>"$LOGFILE" || true)
+else
+    prune_output=$("$DOCKER_BIN" image prune --force 2>>"$LOGFILE" || true)
+    if [ -n "$prune_output" ]; then
+        reclaim_line=$(printf '%s\n' "$prune_output" | awk '/^Total reclaimed space:/ {print $0; exit}')
+        if [ -n "$reclaim_line" ]; then
+            log "$reclaim_line"
+        fi
+        deleted_ids=$(printf '%s\n' "$prune_output" | awk '/^deleted: / {print $2}')
+    fi
+fi
+
+if [ -n "$deleted_ids" ]; then
+    log "Deleted Images:"
+    for image_id in $deleted_ids; do
+        [ -z "$image_id" ] && continue
+        log "deleted: $image_id"
+    done
+else
+    log "Geen dangling images gevonden"
+fi
+
+after_size="$(disk_usage_bytes)"
+reclaimed_from_disk=0
+if [ -n "$before_size" ] && [ -n "$after_size" ]; then
+    reclaimed=$(( before_size - after_size ))
+    if [ "$reclaimed" -lt 0 ]; then
+        reclaimed=0
+    fi
+    reclaimed_from_disk=$reclaimed
+    human_reclaimed=$(bytes_to_human "$reclaimed")
+    log "Werkelijk vrijgemaakte ruimte: $human_reclaimed"
+fi
+
+estimated_reclaimed=0
+if [ -n "$deleted_ids" ] && [ -f "$SIZE_CACHE" ]; then
+    for image_id in $deleted_ids; do
+        size_match=$(awk -v target="$image_id" '$1==target {print $2; exit}' "$SIZE_CACHE")
+        if [ -n "$size_match" ]; then
+            estimated_reclaimed=$(( estimated_reclaimed + size_match ))
+        fi
+    done
+fi
+
+if [ "$estimated_reclaimed" -gt 0 ] && [ "$reclaimed_from_disk" -lt "$estimated_reclaimed" ]; then
+    human_estimated=$(bytes_to_human "$estimated_reclaimed")
+    log "Geschatte vrijgemaakte ruimte op basis van imagelagen: $human_estimated"
+fi
+
+log "Cleanup voltooid"
