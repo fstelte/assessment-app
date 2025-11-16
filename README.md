@@ -10,8 +10,15 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Accessible, CSS-only form tooltips via a shared macro and `tooltip-wrapper` utility classes.
 - BIA component workflows capture authentication methods and provide an exportable overview for audit teams.
+- DPIA / FRIA module linked to BIA components with editable risk registers, mitigating measures, colored risk severity badges, and a four-state workflow (in progress, in review, finished, abandoned).
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
+
+## Recent DPIA Enhancements
+
+- Risk register rows now include likelihood/impact badges that reuse the BIA color palette.
+- Users can edit or delete risks and mitigating measures inline via modal forms.
+- Assessment details include a status selector with colored badges (blue, amber, green, black) that track progress through "In progress", "In review", "Finished", and "Abandoned" states.
 
 ## Setup Guide
 
