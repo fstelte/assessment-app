@@ -51,9 +51,6 @@
         <div class="table-responsive">
           <table class="table table-dark table-striped align-middle mb-0">
             <thead>
-              <tr>
-                <th scope="col">{{ _('dpia.dashboard.table.headers.component') }}</th>
-                <th scope="col">{{ _('dpia.dashboard.table.headers.bia') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.owner') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.authentication') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.dpia_status') }}</th>
@@ -76,28 +73,34 @@
                   </td>
                   <td>
                     {% if assessment_count %}
-                      <div class="d-flex flex-column gap-3">
+                      <div class="d-flex flex-column gap-2">
                         {% for assessment in component.dpia_assessments|sort(attribute='updated_at', reverse=True) %}
-                          <div class="border border-secondary rounded-3 p-2">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                              <div>
-                                <div class="fw-semibold">{{ assessment.title }}</div>
-                                <small class="text-secondary">
-                                  {% if assessment.updated_at %}
-                                    {{ _('dpia.dashboard.table.assessment_updated', timestamp=assessment.updated_at.strftime('%Y-%m-%d %H:%M')) }}
-                                  {% else %}
-                                    {{ _('dpia.dashboard.table.assessment_updated', timestamp=_('dpia.dashboard.table.unknown')) }}
-                                  {% endif %}
-                                </small>
-                              </div>
-                              {% set badge_class = dpia_status_badges.get(assessment.status.value, 'bg-secondary') %}
-                              <span class="badge {{ badge_class }}">{{ _('dpia.status.' ~ assessment.status.value) }}</span>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 mt-2">
+                          {% set badge_class = dpia_status_badges.get(assessment.status.value, 'bg-secondary') %}
+                          {% if assessment.updated_at %}
+                            {% set updated_display = _('dpia.dashboard.table.assessment_updated', timestamp=assessment.updated_at.strftime('%Y-%m-%d %H:%M')) %}
+                          {% else %}
+                            {% set updated_display = _('dpia.dashboard.table.assessment_updated', timestamp=_('dpia.dashboard.table.unknown')) %}
+                          {% endif %}
+                          <div class="d-flex justify-content-between align-items-center gap-3 border border-secondary rounded-3 px-3 py-2">
+                            <span class="badge {{ badge_class }}">{{ _('dpia.status.' ~ assessment.status.value) }}</span>
+                            <small class="text-secondary mb-0">{{ updated_display }}</small>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <span class="text-secondary">{{ _('dpia.dashboard.table.dpia_none') }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if component.context_scope %}
+                      {% if assessment_count %}
+                        <div class="d-flex flex-column align-items-end gap-2">
+                          {% for assessment in component.dpia_assessments|sort(attribute='updated_at', reverse=True) %}
+                            <div class="d-flex flex-wrap justify-content-end gap-2">
                               <a href="{{ url_for('dpia.view_assessment', assessment_id=assessment.id) }}" class="btn btn-outline-light btn-sm">
                                 {{ _('dpia.dashboard.table.edit_existing_action') }}
                               </a>
-                              <form method="post" action="{{ url_for('dpia.delete_assessment', assessment_id=assessment.id) }}">
+                              <form method="post" action="{{ url_for('dpia.delete_assessment', assessment_id=assessment.id) }}" class="d-inline">
                                 {% if csrf_token is defined %}
                                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 {% endif %}
@@ -106,26 +109,17 @@
                                 </button>
                               </form>
                             </div>
-                          </div>
-                        {% endfor %}
-                        <small class="text-secondary">{{ _('dpia.dashboard.table.single_assessment_hint') }}</small>
-                      </div>
-                    {% else %}
-                      <span class="text-secondary">{{ _('dpia.dashboard.table.dpia_none') }}</span>
-                    {% endif %}
-                  </td>
-                    <td class="text-end">
-                      {% if component.context_scope %}
-                        {% if assessment_count %}
-                          <span class="text-secondary small">{{ _('dpia.dashboard.table.start_blocked') }}</span>
-                        {% else %}
-                          <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}" class="btn btn-primary btn-sm">
-                            {{ _('dpia.dashboard.table.start_action') }}
-                          </a>
-                        {% endif %}
+                          {% endfor %}
+                          <small class="text-secondary text-end">{{ _('dpia.dashboard.table.start_blocked') }}</small>
+                        </div>
                       {% else %}
-                        <span class="text-secondary small">{{ _('dpia.dashboard.table.start_disabled') }}</span>
+                        <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}" class="btn btn-primary btn-sm">
+                          {{ _('dpia.dashboard.table.start_action') }}
+                        </a>
                       {% endif %}
+                    {% else %}
+                      <span class="text-secondary small">{{ _('dpia.dashboard.table.start_disabled') }}</span>
+                    {% endif %}
                   </td>
                 </tr>
               {% endfor %}
