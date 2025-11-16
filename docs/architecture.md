@@ -28,6 +28,7 @@ scaffold/
     apps/
         bia/             # BIA domain integration
         csa/             # CSA domain integration
+        dpia/            # DPIA / FRIA assessments integrated with BIA components
         template/        # Starter template for future domains
 ```
 

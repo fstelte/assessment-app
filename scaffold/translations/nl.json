@@ -123,7 +123,8 @@
         },
         "start_date": {
           "label": "Startdatum"
-        },
+            "consequences": "Gevolgen",
+            "dpia": "DPIA / FRIA",
         "end_date": {
           "label": "Einddatum"
         },
@@ -283,12 +284,13 @@
           "users": "Gebruikers",
           "authentication": "Authenticatie",
           "consequences": "Gevolgen",
+          "dpia": "DPIA / FRIA",
+          "actions": "Acties"
+        },
       "tooltips": {
         "scope": "Kies de BIA waarbij deze component hoort voordat je de andere velden invult.",
         "name": "Geef een korte, duidelijke naam zodat collega's de component direct herkennen."
       },
-          "actions": "Acties"
-        },
         "not_linked": "Niet gekoppeld",
         "not_set": "Niet ingesteld",
         "pagination": "Weergave {start}\u2013{end} van {total}",
@@ -301,6 +303,12 @@
         "consequences": "Gevolgen",
         "delete": "Verwijderen",
         "save_changes": "Wijzigingen opslaan"
+      },
+      "dpia": {
+        "active_badge": "{count} actief",
+        "view_all": "Open DPIA-overzicht",
+        "start_button": "Start DPIA",
+        "unavailable": "DPIA-module niet ingeschakeld"
       },
       "labels": {
         "name": "Naam",
@@ -1162,6 +1170,299 @@
             "templates_hint": "Templates Hint",
             "templates_hint_link": "Templates Hint Link",
             "title": "Title"
+          }
+        },
+        "dpia": {
+          "navigation": {
+            "dashboard": "DPIA / FRIA"
+          },
+          "dashboard": {
+            "title": "DPIA & FRIA",
+            "heading": "Data Protection Impact Assessments",
+            "supporting_copy": "Selecteer een bestaande component om een DPIA te starten met vooraf ingevulde gegevens.",
+            "manage_components": "Componenten beheren",
+            "filters": {
+              "search_label": "Zoek componenten",
+              "search_placeholder": "Zoek op componentnaam",
+              "scope_label": "Filter op BIA",
+              "scope_all": "Alle BIA's",
+              "apply": "Filters toepassen"
+            },
+            "table": {
+              "title": "Beschikbare componenten",
+              "headers": {
+                "component": "Component",
+                "bia": "BIA",
+                "owner": "Eigenaar",
+                "authentication": "Authenticatie",
+                "dpia_status": "DPIA-status",
+                "actions": "Acties"
+              },
+              "not_linked": "Niet gekoppeld",
+              "not_set": "Niet ingesteld",
+              "authentication_unset": "Niet ingesteld",
+              "dpia_active": "{count} actief",
+              "dpia_none": "Nog geen DPIA",
+              "start_action": "Start DPIA",
+              "start_again_action": "Start nog een DPIA",
+              "edit_action": "Laatste bewerken",
+              "edit_existing_action": "Assessment bewerken",
+              "delete_action": "Verwijderen",
+              "delete_confirm": "Deze DPIA verwijderen? Dit kan niet ongedaan worden gemaakt.",
+              "assessment_updated": "Bijgewerkt op {timestamp}",
+              "unknown": "Onbekend",
+              "single_assessment_hint": "Per component is slechts één DPIA toegestaan. Verwijder de huidige assessment om opnieuw te beginnen.",
+              "start_blocked": "Verwijder de bestaande DPIA om een nieuwe te kunnen starten.",
+              "start_disabled": "Koppel deze component eerst aan een BIA",
+              "empty": "Geen componenten voldoen aan de filters.",
+              "pagination": "Weergave {start}\u2013{end} van {total} componenten"
+            },
+            "help": {
+              "title": "Componentgegevens aanpassen?",
+              "description": "Ga terug naar het BIA-componentoverzicht om eigenaar, authenticatie of context te wijzigen.",
+              "manage_link": "Open BIA-componenten"
+            }
+          },
+          "flash": {
+            "assessment_created": "DPIA gestart vanuit het geselecteerde component.",
+            "details_saved": "Assessmentgegevens bijgewerkt.",
+            "answer_saved": "Antwoord opgeslagen.",
+            "risk_added": "Risico toegevoegd aan het register.",
+            "risk_updated": "Risico bijgewerkt.",
+            "risk_deleted": "Risico verwijderd.",
+            "risk_not_found": "Het geselecteerde risico bestaat niet meer.",
+            "risk_update_failed": "Risico kon niet worden bijgewerkt. Controleer de velden en probeer opnieuw.",
+            "measure_added": "Maatregel geregistreerd.",
+            "measure_updated": "Maatregel bijgewerkt.",
+            "measure_deleted": "Maatregel verwijderd.",
+            "measure_not_found": "De geselecteerde maatregel bestaat niet meer.",
+            "measure_update_failed": "Maatregel kon niet worden bijgewerkt. Controleer de velden en probeer opnieuw.",
+            "assessment_deleted": "DPIA verwijderd.",
+            "assessment_exists": "Dit component heeft al een DPIA. De bestaande assessment wordt geopend."
+          },
+          "status": {
+            "in_progress": "In behandeling",
+            "in_review": "In beoordeling",
+            "finished": "Afgerond",
+            "abandoned": "Afgebroken"
+          },
+          "questions": {
+            "processing_goal": {
+              "text": "Beschrijf kort het doel van de verwerking.",
+              "help": "Welk probleem los je op? Wat is het beoogde resultaat?"
+            },
+            "personal_data": {
+              "text": "Worden er persoonsgegevens verwerkt?",
+              "help": "Alle informatie over een geïdentificeerde of identificeerbare natuurlijke persoon."
+            },
+            "ai_usage": {
+              "text": "Maakt de verwerking gebruik van een vorm van Artificiële Intelligentie (AI)?",
+              "help": "Denk aan machine learning, neurale netwerken, enz."
+            },
+            "special_categories": {
+              "text": "Worden bijzondere categorieën persoonsgegevens verwerkt?",
+              "help": "Bijvoorbeeld gezondheid, ras, politieke opvattingen, etc."
+            },
+            "large_scale": {
+              "text": "Is er sprake van grootschalige verwerking?",
+              "help": "Richt de verwerking zich op veel betrokkenen of grote hoeveelheden gegevens?"
+            },
+            "automated_decisions": {
+              "text": "Neemt het systeem zelfstandig beslissingen met aanzienlijke gevolgen voor een persoon?",
+              "help": "Bijvoorbeeld automatische afwijzing van een sollicitatie, lening of verzekering."
+            }
+          },
+          "start": {
+            "title": "Start DPIA",
+            "back": "Terug naar componenten",
+            "heading": "Start een DPIA voor {component}",
+            "subheading": "We vulden gegevens uit de BIA in; controleer en pas aan waar nodig.",
+            "placeholders": {
+              "title": "Naam van dienst of systeem"
+            },
+            "submit": "Assessment aanmaken"
+          },
+          "assessment": {
+            "back_link": "Terug naar DPIA-overzicht",
+            "details": {
+              "title": "Assessmentdetails",
+              "help": "Houd gegevens gelijk met de BIA"
+            },
+            "questions": {
+              "title": "Beantwoord de DPIA-vragen",
+              "progress": "{answered}/{total} beantwoord",
+              "headers": {
+                "question": "Vraag",
+                "status": "Status",
+                "answer": "Antwoord"
+              },
+              "status_answered": "Beantwoord",
+              "status_pending": "Openstaand",
+              "pending_hint": "Nog geen antwoord vastgelegd.",
+              "last_updated": "Bijgewerkt op {timestamp}",
+              "empty": "Er zijn nog geen DPIA-vragen geconfigureerd."
+            },
+            "risks": {
+              "title": "Risicoregister",
+              "subtitle": "Leg de risico's vast die tijdens de DPIA naar voren komen",
+              "headers": {
+                "description": "Omschrijving",
+                "type": "Type",
+                "initial": "Initieel (K/I)",
+                "residual": "Residueel (K/I)",
+                "actions": "Acties"
+              },
+              "measures_count": "{count} maatregelen",
+              "delete_confirm": "Dit risico verwijderen? Gekoppelde maatregelen worden ook verwijderd.",
+              "empty": "Nog geen risico's geregistreerd.",
+              "level": {
+                "very_low": "Zeer laag",
+                "low": "Laag",
+                "medium": "Midden",
+                "high": "Hoog",
+                "very_high": "Zeer hoog"
+              }
+            },
+              "actions": {
+                "edit": "Bewerken",
+                "delete": "Verwijderen",
+                "cancel": "Annuleren",
+                "close": "Sluiten"
+              },
+            "measures": {
+              "title": "Mitigerende maatregelen",
+              "subtitle": "Beschrijf acties die kans of impact verlagen",
+              "headers": {
+                "description": "Omschrijving",
+                  "effects": "Effecten (K/I)",
+                  "related": "Gekoppeld risico",
+                  "actions": "Acties"
+              },
+              "empty": "Nog geen maatregelen geregistreerd.",
+                "no_risk_option": "Niet gekoppeld aan risico",
+                "delete_confirm": "Deze maatregel verwijderen?"
+            },
+            "summary": {
+              "title": "Samenvatting",
+              "component": "Component",
+              "bia": "BIA",
+              "owner": "Verantwoordelijke",
+              "status": "Status",
+              "started": "Gestart",
+              "updated": "Bijgewerkt",
+              "unlinked": "Niet gekoppeld",
+              "not_set": "Niet ingesteld",
+              "unknown": "Onbekend"
+            },
+            "help": {
+              "title": "BIA-gegevens aanpassen?",
+              "copy": "Beheer eigenaarschap, authenticatie of scope in het BIA-componentoverzicht.",
+              "manage_components": "Open BIA-componenten"
+            },
+            "delete": {
+              "title": "Gevarenzone",
+              "badge": "Onomkeerbaar",
+              "copy": "Het verwijderen van deze DPIA verwijdert alle antwoorden, risico's en maatregelen.",
+              "submit": "Verwijder DPIA",
+              "confirm": "Deze DPIA verwijderen? Dit kan niet ongedaan worden gemaakt."
+            },
+            "forms": {
+              "details": {
+                "title_label": "Titel van assessment",
+                "project_lead_label": "Projectleider",
+                "responsible_label": "Eindverantwoordelijke",
+                "status_label": "Status",
+                "status_help": "Gebruik dit veld om aan te geven of de DPIA loopt, beoordeeld wordt, klaar is of is afgebroken.",
+                "submit": "Details opslaan"
+              },
+              "answer": {
+                "question_label": "Kies een vraag",
+                "answer_label": "Antwoord",
+                "submit": "Antwoord opslaan"
+              },
+              "risk": {
+                "type_label": "Risicotype",
+                "likelihood_label": "Kans",
+                "impact_label": "Impact",
+                "description_label": "Omschrijving",
+                "submit": "Risico toevoegen",
+                "edit_title": "Risico bewerken",
+                "update_submit": "Wijzigingen opslaan"
+              },
+              "measure": {
+                "risk_label": "Koppel aan risico",
+                "effect_likelihood_label": "Effect op kans",
+                "effect_impact_label": "Effect op impact",
+                "description_label": "Omschrijving",
+                "submit": "Maatregel toevoegen",
+                "edit_title": "Maatregel bewerken",
+                "update_submit": "Wijzigingen opslaan"
+              }
+            }
+          },
+          "legacy": {
+            "msg_logged_in": "Je moet ingelogd zijn om deze pagina te bekijken.",
+            "tag_username": "Gebruikersnaam",
+            "tag_password": "Wachtwoord",
+            "tag_login": "Login",
+            "tag_repeat_password": "Herhaal wachtwoord",
+            "tag_register": "Registreren",
+            "user_already_exists.": "Deze gebruikersnaam bestaat al.",
+            "name_system_project_process": "Geef de naam van het systeem, project of proces.",
+            "project_responsible": "Verantwoordelijke voor het project",
+            "start_assessment": "Start assessment",
+            "risk_description": "Risico omschrijving",
+            "risk_type": "Risico type",
+            "initial_change": "Initiële kans",
+            "initial_impact": "Initiële impact",
+            "save_risk": "Risico opslaan",
+            "optional_relate_to_risk": "Gerelateerd aan risico (Optioneel)",
+            "measure_description": "Maatregel omschrijving",
+            "effect_on_change": "Effect op kans",
+            "effect_on_impact": "Effect op impact",
+            "save_measure": "Maatregel opslaan",
+            "invalid_combination_or_bad_password.": "Deze combinatie gebruikersnaam/wachtwoord of wachtwoord is onjuist.",
+            "account_created_needs_to_be_activated": "Het account is aangemaakt, maar moet nog geactiveerd worden door een beheerder.",
+            "progress_saved": "Voortgang opgeslagen",
+            "not_related_to_risk": "Niet gerelateerd aan risico",
+            "assessment_removed_succesfull.": "Assessment succesvol verwijderd",
+            "new_risk_added_succesfull.": "Nieuw risico succesvol toegevoegd",
+            "something_went_wrong_when_adding_risk.": "Iets ging verkeeerd tijdens het toevoegen van een risico.",
+            "DPIA/FRIA Tool": "",
+            "welcome_message": "Welkom",
+            "usr_mgmt": "Gebruikersbeheer",
+            "tag_logout": "Uitloggen",
+            "lng_switch": "Taal",
+            "it is een test": "it is een test",
+            "answer_questions_identify_risks_and_measures": "Geef antwoorden op de vragen om risico's en maatregels te identificeren",
+            "back_overview": "Terug naar overzicht",
+            "save_progress": "Voortgang opslaan",
+            "risk_analysis_dpia_fria": "Risico analysis (DPIA/FRIA)",
+            "new_risk_btn": "Nieuw risico",
+            "initial_risk": "Initieel risico",
+            "residual_risk": "Rest risico",
+            "risk_actions": "Risico acties",
+            "no_risk_identified": "Geen risico geidentificeerd",
+            "risk_reducing_measures": "Risico reducerende maatregelen",
+            "new_measure_btn": "Nieuwe maatregel",
+            "describe_measure": "Beschrijf maatregel",
+            "effect_change_impact": "Effect op kans en impact",
+            "related_to_risk": "Gerelateerd aan risico",
+            "Actie": "Actie",
+            "general": "Algemeen",
+            "notify_no_measures_added.": "Geen maatregelen toegevoegd",
+            "to_report": "Naar rapport",
+            "button_cancel": "Annuleren",
+            "effectivness_measure": "Maatregel effectiviteit",
+            "my_assessments": "Mijn assessments",
+            "start_new_assessment": "Start nieuwe assessment",
+            "Vresponsible": "Verantwoordelijke: ",
+            "last_update: ": "Laatste aanpgeast: ",
+            "edit": "Bewerken",
+            "report": "Rapport",
+            "notification_no_assessments": "Geen assessments gevonden. Start een nieuwe assessment!",
+            "new_assessment": "Nieuwe assessment",
+            "basic_information_to_start": "Geef basis informatie om een assessment te starten"
           }
         }
       }

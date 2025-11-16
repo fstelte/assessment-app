@@ -390,6 +390,8 @@ def view_components():
     component_form = ComponentForm()
     _configure_component_form(component_form)
     consequence_form = ConsequenceForm()
+    view_functions = current_app.view_functions
+    dpia_enabled = "dpia.start_from_component" in view_functions and "dpia.dashboard" in view_functions
     if pagination.total:
         page_start = (pagination.page - 1) * pagination.per_page + 1
         page_end = min(pagination.total, pagination.page * pagination.per_page)
@@ -407,6 +409,7 @@ def view_components():
         component_form=component_form,
         consequence_form=consequence_form,
         per_page=per_page,
+        dpia_enabled=dpia_enabled,
     )
 
 

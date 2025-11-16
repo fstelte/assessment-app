@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ _('dpia.dashboard.title') }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-secondary small fw-semibold mb-1">{{ _('dpia.dashboard.title') }}</p>
+      <h1 class="mb-1">{{ _('dpia.dashboard.heading') }}</h1>
+      <p class="text-secondary mb-0">{{ _('dpia.dashboard.supporting_copy') }}</p>
+    </div>
+    <a class="btn btn-outline-light" href="{{ url_for('bia.view_components') }}">
+      {{ _('dpia.dashboard.manage_components') }}
+    </a>
+  </div>
+
+  <form class="row g-3 align-items-end mb-4" method="get" action="{{ url_for('dpia.dashboard') }}">
+    <div class="col-md-6">
+      <label for="dpia-component-search" class="form-label">{{ _('dpia.dashboard.filters.search_label') }}</label>
+      <input
+        type="search"
+        name="q"
+        id="dpia-component-search"
+        class="form-control"
+        value="{{ search_query }}"
+        placeholder="{{ _('dpia.dashboard.filters.search_placeholder') }}"
+      >
+    </div>
+    <div class="col-md-4">
+      <label for="dpia-scope-filter" class="form-label">{{ _('dpia.dashboard.filters.scope_label') }}</label>
+      <select class="form-select" name="scope" id="dpia-scope-filter">
+        <option value="all" {% if selected_scope|lower == 'all' %}selected{% endif %}>{{ _('dpia.dashboard.filters.scope_all') }}</option>
+        {% for context in contexts %}
+          <option value="{{ context.name }}" {% if context.name == selected_scope %}selected{% endif %}>{{ context.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary">{{ _('dpia.dashboard.filters.apply') }}</button>
+    </div>
+  </form>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+      <span>{{ _('dpia.dashboard.table.title') }}</span>
+      {% if pagination.pages > 1 %}
+        <small class="text-secondary">{{ _('dpia.dashboard.table.pagination', start=page_start, end=page_end, total=pagination.total) }}</small>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if components %}
+        <div class="table-responsive">
+          <table class="table table-dark table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.component') }}</th>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.bia') }}</th>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.owner') }}</th>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.authentication') }}</th>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.dpia_status') }}</th>
+                <th scope="col" class="text-end">{{ _('dpia.dashboard.table.headers.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for component in components %}
+                {% set assessment_count = component.dpia_assessments | length %}
+                <tr>
+                  <td class="fw-semibold">{{ component.name }}</td>
+                  <td>{{ component.context_scope.name if component.context_scope else _('dpia.dashboard.table.not_linked') }}</td>
+                  <td>{{ component.info_owner or _('dpia.dashboard.table.not_set') }}</td>
+                  <td>
+                    {% if component.authentication_method and component.authentication_method.name %}
+                      <span class="badge bg-info text-dark">{{ component.authentication_method.name }}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ _('dpia.dashboard.table.authentication_unset') }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if assessment_count %}
+                      <div class="d-flex flex-column gap-3">
+                        {% for assessment in component.dpia_assessments|sort(attribute='updated_at', reverse=True) %}
+                          <div class="border border-secondary rounded-3 p-2">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                              <div>
+                                <div class="fw-semibold">{{ assessment.title }}</div>
+                                <small class="text-secondary">
+                                  {% if assessment.updated_at %}
+                                    {{ _('dpia.dashboard.table.assessment_updated', timestamp=assessment.updated_at.strftime('%Y-%m-%d %H:%M')) }}
+                                  {% else %}
+                                    {{ _('dpia.dashboard.table.assessment_updated', timestamp=_('dpia.dashboard.table.unknown')) }}
+                                  {% endif %}
+                                </small>
+                              </div>
+                              {% set badge_class = dpia_status_badges.get(assessment.status.value, 'bg-secondary') %}
+                              <span class="badge {{ badge_class }}">{{ _('dpia.status.' ~ assessment.status.value) }}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                              <a href="{{ url_for('dpia.view_assessment', assessment_id=assessment.id) }}" class="btn btn-outline-light btn-sm">
+                                {{ _('dpia.dashboard.table.edit_existing_action') }}
+                              </a>
+                              <form method="post" action="{{ url_for('dpia.delete_assessment', assessment_id=assessment.id) }}">
+                                {% if csrf_token is defined %}
+                                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm" data-confirm-message="{{ _('dpia.dashboard.table.delete_confirm') }}" onclick="return confirm(this.dataset.confirmMessage);">
+                                  {{ _('dpia.dashboard.table.delete_action') }}
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        <small class="text-secondary">{{ _('dpia.dashboard.table.single_assessment_hint') }}</small>
+                      </div>
+                    {% else %}
+                      <span class="text-secondary">{{ _('dpia.dashboard.table.dpia_none') }}</span>
+                    {% endif %}
+                  </td>
+                    <td class="text-end">
+                      {% if component.context_scope %}
+                        {% if assessment_count %}
+                          <span class="text-secondary small">{{ _('dpia.dashboard.table.start_blocked') }}</span>
+                        {% else %}
+                          <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}" class="btn btn-primary btn-sm">
+                            {{ _('dpia.dashboard.table.start_action') }}
+                          </a>
+                        {% endif %}
+                      {% else %}
+                        <span class="text-secondary small">{{ _('dpia.dashboard.table.start_disabled') }}</span>
+                      {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if pagination.pages > 1 %}
+          <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 px-3 py-2 border-top border-secondary">
+            <small class="text-secondary mb-0">{{ _('dpia.dashboard.table.pagination', start=page_start, end=page_end, total=pagination.total) }}</small>
+            <nav aria-label="Component pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                  <a class="page-link" href="{{ url_for('dpia.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) }}" aria-label="Previous">&laquo;</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                  {% if p %}
+                    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                      <a class="page-link" href="{{ url_for('dpia.dashboard', page=p, q=search_query, scope=selected_scope) }}">{{ p }}</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                  {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                  <a class="page-link" href="{{ url_for('dpia.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) }}" aria-label="Next">&raquo;</a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="p-4 text-center text-secondary">
+          {{ _('dpia.dashboard.table.empty') }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="alert alert-secondary mt-4 mb-0" role="alert">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+      <div>
+        <strong>{{ _('dpia.dashboard.help.title') }}</strong>
+        <p class="mb-0 small">{{ _('dpia.dashboard.help.description') }}</p>
+      </div>
+      <a href="{{ url_for('bia.view_components') }}" class="btn btn-outline-secondary btn-sm">
+        {{ _('dpia.dashboard.help.manage_link') }}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

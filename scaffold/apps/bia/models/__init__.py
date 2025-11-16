@@ -10,6 +10,9 @@ from ....extensions import db
 from ...identity.models import User
 from ..localization import translate_authentication_label
 
+# Ensure DPIA models are registered before Component relationships resolve
+from ...dpia import models as dpia_models  # noqa: F401  pylint: disable=unused-import
+
 
 class ContextScope(db.Model):
     """Represents the scope of a BIA context."""
@@ -97,6 +100,11 @@ class Component(db.Model):
     )
     ai_identificaties = db.relationship(
         "AIIdentificatie",
+        back_populates="component",
+        cascade="all, delete-orphan",
+    )
+    dpia_assessments = db.relationship(
+        "DPIAAssessment",
         back_populates="component",
         cascade="all, delete-orphan",
     )
