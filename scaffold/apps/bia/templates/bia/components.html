@@ -62,6 +62,7 @@
             <th scope="col">{{ _('bia.components.table.headers.users') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.authentication') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.consequences') }}</th>
+            <th scope="col">{{ _('bia.components.table.headers.dpia') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.actions') }}</th>
           </tr>
         </thead>
@@ -81,6 +82,23 @@
               {% endif %}
             </td>
             <td>{{ component.consequences | length }}</td>
+            <td>
+              {% if dpia_enabled %}
+                {% set dpia_count = component.dpia_assessments | length %}
+                {% if dpia_count %}
+                  <div class="d-flex flex-column gap-1">
+                    <span class="badge bg-success">{{ _('bia.components.dpia.active_badge', count=dpia_count) }}</span>
+                    <a href="{{ url_for('dpia.dashboard') }}" class="btn btn-outline-light btn-sm">{{ _('bia.components.dpia.view_all') }}</a>
+                  </div>
+                {% else %}
+                  <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}" class="btn btn-primary btn-sm">
+                    {{ _('bia.components.dpia.start_button') }}
+                  </a>
+                {% endif %}
+              {% else %}
+                <span class="text-secondary small">{{ _('bia.components.dpia.unavailable') }}</span>
+              {% endif %}
+            </td>
             <td>
               <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#edit-component-{{ component.id }}" aria-expanded="false" aria-controls="edit-component-{{ component.id }}">{{ _('bia.components.buttons.edit') }}</button>

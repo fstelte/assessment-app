@@ -283,6 +283,7 @@
           "users": "Users",
           "authentication": "Authentication",
           "consequences": "Consequences",
+          "dpia": "DPIA / FRIA",
           "actions": "Actions"
         },
         "not_linked": "Not linked",
@@ -297,6 +298,12 @@
         "consequences": "Consequences",
         "delete": "Delete",
         "save_changes": "Save changes"
+      },
+      "dpia": {
+        "active_badge": "{count} active",
+        "view_all": "Open DPIA overview",
+        "start_button": "Start DPIA",
+        "unavailable": "DPIA module not enabled"
       },
       "labels": {
         "name": "Name",
@@ -1088,6 +1095,299 @@
       "templates_hint": "Templates Hint",
       "templates_hint_link": "Templates Hint Link",
       "title": "Title"
+    }
+  },
+  "dpia": {
+    "navigation": {
+      "dashboard": "DPIA / FRIA"
+    },
+    "dashboard": {
+      "title": "DPIA & FRIA",
+      "heading": "Data Protection Impact Assessments",
+      "supporting_copy": "Select a component to start a DPIA with pre-filled details from its BIA context.",
+      "manage_components": "Manage components",
+      "filters": {
+        "search_label": "Search components",
+        "search_placeholder": "Search by component name",
+        "scope_label": "Filter by BIA",
+        "scope_all": "All BIAs",
+        "apply": "Apply filters"
+      },
+      "table": {
+        "title": "Available components",
+        "headers": {
+          "component": "Component",
+          "bia": "BIA",
+          "owner": "Owner",
+          "authentication": "Authentication",
+          "dpia_status": "DPIA status",
+          "actions": "Actions"
+        },
+        "not_linked": "Not linked",
+        "not_set": "Not set",
+        "authentication_unset": "Not set",
+        "dpia_active": "{count} active",
+        "dpia_none": "No DPIA started",
+        "start_action": "Start DPIA",
+        "start_again_action": "Start another DPIA",
+        "edit_action": "Edit latest",
+        "edit_existing_action": "Edit assessment",
+        "delete_action": "Delete",
+        "delete_confirm": "Delete this DPIA? This action cannot be undone.",
+        "assessment_updated": "Updated {timestamp}",
+        "unknown": "Unknown",
+        "single_assessment_hint": "Only one DPIA is allowed per component. Delete the current assessment to start over.",
+        "start_blocked": "Delete the existing DPIA to create a new one.",
+        "start_disabled": "Link this component to a BIA first",
+        "empty": "No components match your filters.",
+        "pagination": "Showing {start}\u2013{end} of {total} components"
+      },
+      "help": {
+        "title": "Need to update component data?",
+        "description": "Head back to the BIA components area to edit ownership, authentication, or context information.",
+        "manage_link": "Open BIA components"
+      }
+    },
+    "flash": {
+      "assessment_created": "DPIA started from the selected component.",
+      "details_saved": "Assessment details updated.",
+      "answer_saved": "Answer stored successfully.",
+      "risk_added": "Risk added to the register.",
+      "risk_updated": "Risk updated.",
+      "risk_deleted": "Risk deleted.",
+      "risk_not_found": "The selected risk was not found.",
+      "risk_update_failed": "Could not update the risk. Check the fields and try again.",
+      "measure_added": "Measure recorded.",
+      "measure_updated": "Measure updated.",
+      "measure_deleted": "Measure deleted.",
+      "measure_not_found": "The selected measure was not found.",
+      "measure_update_failed": "Could not update the measure. Check the fields and try again.",
+      "assessment_deleted": "DPIA deleted.",
+      "assessment_exists": "This component already has a DPIA. Opening the existing assessment instead."
+    },
+    "status": {
+      "in_progress": "In progress",
+      "in_review": "In review",
+      "finished": "Finished",
+      "abandoned": "Abandoned"
+    },
+    "questions": {
+      "processing_goal": {
+        "text": "Briefly describe the purpose of the processing.",
+        "help": "What problem does this solve? What is the intended outcome?"
+      },
+      "personal_data": {
+        "text": "Are personal data processed?",
+        "help": "Any information relating to an identified or identifiable natural person."
+      },
+      "ai_usage": {
+        "text": "Does the processing rely on any form of Artificial Intelligence (AI)?",
+        "help": "Think of machine learning, neural networks, etc."
+      },
+      "special_categories": {
+        "text": "Are special categories of personal data processed?",
+        "help": "For example health, race, political opinions, etc."
+      },
+      "large_scale": {
+        "text": "Is large-scale processing involved?",
+        "help": "Is the processing aimed at many data subjects or very large datasets?"
+      },
+      "automated_decisions": {
+        "text": "Does the system autonomously make decisions with significant consequences for a person?",
+        "help": "For example automatically rejecting an application, loan, or insurance."
+      }
+    },
+    "start": {
+      "title": "Start DPIA",
+      "back": "Back to components",
+      "heading": "Start a DPIA for {component}",
+      "subheading": "We pre-filled details from the BIA; adjust if needed before continuing.",
+      "placeholders": {
+        "title": "Service or system name"
+      },
+      "submit": "Create assessment"
+    },
+    "assessment": {
+      "back_link": "Back to DPIA overview",
+      "details": {
+        "title": "Assessment details",
+        "help": "Sync with the latest BIA data"
+      },
+      "questions": {
+        "title": "Answer the DPIA questionnaire",
+        "progress": "{answered}/{total} answered",
+        "headers": {
+          "question": "Question",
+          "status": "Status",
+          "answer": "Answer"
+        },
+        "status_answered": "Answered",
+        "status_pending": "Pending",
+        "pending_hint": "No answer captured yet.",
+        "last_updated": "Updated {timestamp}",
+        "empty": "No DPIA questions have been configured yet."
+      },
+      "risks": {
+        "title": "Risk register",
+        "subtitle": "Map the risks uncovered while answering the DPIA",
+        "headers": {
+          "description": "Description",
+          "type": "Type",
+          "initial": "Initial (L/I)",
+          "residual": "Residual (L/I)",
+          "actions": "Actions"
+        },
+        "measures_count": "{count} measures",
+        "delete_confirm": "Delete this risk? Linked measures will also be removed.",
+        "empty": "No risks recorded yet.",
+        "level": {
+          "very_low": "Very low",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "very_high": "Very high"
+        }
+      },
+        "actions": {
+          "edit": "Edit",
+          "delete": "Delete",
+          "cancel": "Cancel",
+          "close": "Close"
+        },
+      "measures": {
+        "title": "Mitigating measures",
+        "subtitle": "Document the actions that reduce likelihood or impact",
+        "headers": {
+          "description": "Description",
+            "effects": "Effects (L/I)",
+            "related": "Related risk",
+            "actions": "Actions"
+        },
+        "empty": "No measures recorded yet.",
+          "no_risk_option": "Not linked to a risk",
+          "delete_confirm": "Delete this measure?"
+      },
+      "summary": {
+        "title": "Summary",
+        "component": "Component",
+        "bia": "BIA",
+        "owner": "Responsible",
+        "status": "Status",
+        "started": "Started",
+        "updated": "Updated",
+        "unlinked": "Unlinked",
+        "not_set": "Not set",
+        "unknown": "Unknown"
+      },
+      "help": {
+        "title": "Need to adjust BIA data?",
+        "copy": "Manage component ownership, authentication, or scope in the BIA module.",
+        "manage_components": "Open BIA components"
+      },
+      "delete": {
+        "title": "Danger zone",
+        "badge": "Irreversible",
+        "copy": "Deleting this DPIA removes all answers, risks, and measures.",
+        "submit": "Delete DPIA",
+        "confirm": "Delete this DPIA? This action cannot be undone."
+      },
+      "forms": {
+        "details": {
+          "title_label": "Assessment title",
+          "project_lead_label": "Project lead",
+          "responsible_label": "Responsible",
+          "status_label": "Status",
+          "status_help": "Use this to signal whether the DPIA is still in progress, under review, finished, or abandoned.",
+          "submit": "Save details"
+        },
+        "answer": {
+          "question_label": "Choose a question",
+          "answer_label": "Answer",
+          "submit": "Save answer"
+        },
+        "risk": {
+          "type_label": "Risk type",
+          "likelihood_label": "Likelihood",
+          "impact_label": "Impact",
+          "description_label": "Description",
+          "submit": "Add risk",
+          "edit_title": "Edit risk",
+          "update_submit": "Save changes"
+        },
+        "measure": {
+          "risk_label": "Link to risk",
+          "effect_likelihood_label": "Effect on likelihood",
+          "effect_impact_label": "Effect on impact",
+          "description_label": "Description",
+          "submit": "Add measure",
+          "edit_title": "Edit measure",
+          "update_submit": "Save changes"
+        }
+      }
+    },
+    "legacy": {
+      "msg_logged_in": "You need to be logged in to access this page.",
+      "tag_username": "Username",
+      "tag_password": "Password",
+      "tag_login": "Login",
+      "tag_repeat_password": "Repeat password",
+      "tag_register": "Register",
+      "user_already_exists.": "This username already exists.",
+      "name_system_project_process": "Give the name of the system, project or process.",
+      "project_responsible": "Project responsible",
+      "start_assessment": "Start assessment",
+      "risk_description": "Risk description",
+      "risk_type": "Risk type",
+      "initial_change": "Initial change",
+      "initial_impact": "Initial impact",
+      "save_risk": "Save risk",
+      "optional_relate_to_risk": "Relate to risk (optional)",
+      "measure_description": "Measure description",
+      "effect_on_change": "Effect on change",
+      "effect_on_impact": "Effect on impact",
+      "save_measure": "Save measure",
+      "invalid_combination_or_bad_password.": "This combination of username and password is not valid or the password is invalid.",
+      "account_created_needs_to_be_activated": "Account is created, it needs to be activated by an administrator.",
+      "progress_saved": "Progress saved!!",
+      "not_related_to_risk": "Not related to risk yet!",
+      "assessment_removed_succesfull.": "Assessment removed succesfully!",
+      "new_risk_added_succesfull.": "New risk addedd succesfully!",
+      "something_went_wrong_when_adding_risk.": "Something went wrong when adding a new risk",
+      "DPIA/FRIA Tool": "",
+      "welcome_message": "Welcome",
+      "usr_mgmt": "User management",
+      "tag_logout": "Logout",
+      "lng_switch": "Language",
+      "it is een test": "His is a test",
+      "answer_questions_identify_risks_and_measures": "Answer the questions to identify risks and measures",
+      "back_overview": "Back to overview",
+      "save_progress": "Save progress",
+      "risk_analysis_dpia_fria": "Risk analysis for DPIA/FRIA",
+      "new_risk_btn": "New risk",
+      "initial_risk": "Initial risk",
+      "residual_risk": "Residual risk",
+      "risk_actions": "Risk actions",
+      "no_risk_identified": "No risk identified",
+      "risk_reducing_measures": "Risk reducing measures",
+      "new_measure_btn": "New measure",
+      "describe_measure": "Descripe the measure",
+      "effect_change_impact": "Effect on change and impact",
+      "related_to_risk": "Related to risk",
+      "Actie": "Action",
+      "general": "General",
+      "notify_no_measures_added.": "No measures added yet.",
+      "to_report": "Report",
+      "button_cancel": "Cancel",
+      "effectivness_measure": "Effectiveness measure",
+      "my_assessments": "My assessments",
+      "start_new_assessment": "Start new assessment",
+      "Vresponsible": "Responsible: ",
+      "last_update: ": "Last update: ",
+      "edit": "Edit",
+      "report": "Report",
+      "notification_no_assessments": "There are no assessments yet. Start a new assessment.",
+      "new_assessment": "New assessment",
+      "basic_information_to_start": "Give basic information to start"
     }
   }
 }
