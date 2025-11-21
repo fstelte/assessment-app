@@ -1,4 +1,15 @@
 {% extends "base.html" %}
+{% block extra_css %}
+  {{ super() }}
+  {% if export_mode %}
+    <style>
+      .badge-ai-high-risk {
+        background-color: #fd7e14;
+        color: #212529 !important;
+      }
+    </style>
+  {% endif %}
+{% endblock %}
 {% block title %}{{ item.name }} | BIA{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
@@ -69,7 +80,7 @@
                 <th scope="col">Owner</th>
                 <th scope="col">Users</th>
                 <th scope="col">Consequences</th>
-                <th scope="col">Authentication</th>
+                <th scope="col">{{ _('bia.components.table.headers.environments') }}</th>
                 <th scope="col">AI</th>
               </tr>
             </thead>
@@ -80,7 +91,20 @@
                 <td>{{ component.info_owner or 'Not set' }}</td>
                 <td>{{ component.user_type or 'Not set' }}</td>
                 <td>{{ component.consequences | length }}</td>
-                <td>{{ bia_component_authentication(component) or 'Not set' }}</td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for environment_type in bia_environment_types %}
+                      {% set env_assignment = bia_component_environment(component, environment_type) %}
+                      {% set environment_label = bia_environment_label(environment_type) %}
+                      {% if env_assignment and env_assignment.is_enabled %}
+                        {% set env_auth = bia_environment_authentication(env_assignment) %}
+                        <span class="badge bg-success">{{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}</span>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </td>
                 <td>
                   {% set ai_record = ai_identifications.get(component.id) %}
                   {% if ai_record %}

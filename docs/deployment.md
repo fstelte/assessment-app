@@ -87,6 +87,21 @@ Refer to `docs/authentication.md` for the full end-to-end setup guide, troublesh
 - Consider integrating Sentry or OpenTelemetry for error/trace capture.
 - Expose structured logs (JSON) to support centralised logging pipelines.
 
+### Audit Logging & Retention
+
+- Configure `AUDIT_LOG_PATH` so the web container writes structured JSON audit events to a persistent location (the default resolves to `<BACKUP_DIR>/logs/audit.log` when `BACKUP_DIR` is set).
+- Set `AUDIT_LOG_RETENTION_DAYS` to define the lifespan for both database rows and rotated log files; the background worker enforces this window at the cadence specified by `AUDIT_LOG_PRUNE_INTERVAL_HOURS`.
+- When you need an immediate cleanup (for example before creating a cold backup), run `poetry run flask --app scaffold:create_app audit-retention`. Pass `--retention-days` or `--log-path` to override defaults during the invocation.
+- Extend the automatic ORM listener coverage by supplying a JSON mapping via `AUDIT_LOG_MODEL_EVENTS`—each entry defines the entity name, tracked fields, and operations that should be recorded without manual helper calls. The parser now falls back to Python's standard library JSON loader if Flask's deserialiser is unavailable, suppressing noisy startup warnings in container overlays.
+- The retention helper logs a short summary of deleted rows and removed files whenever it prunes data, making recurring tasks easier to monitor.
+
+### BIA Export Artefacts
+
+- The `/bia/item/<component_id>/export` HTML view reuses the on-screen context detail template with export-only styling so the same artifact works for print and PDF workflows.
+- CSV exports include a `bia_component_environments.csv` sheet that lists each component environment alongside authentication methods, owners, and AI adoption flags.
+- The SQL export defines a `bia_component_environments` table (plus sequence handling) to keep environment data aligned with the CSV output for audit imports.
+- New translation keys in `en.json` cover the environment-specific export labels; regenerate other locale files with `poetry run flask babel compile` when adding translations.
+
 ## Deployment Troubleshooting
 
 - **SSO failures on first request** – Confirm all `SAML_*` environment variables

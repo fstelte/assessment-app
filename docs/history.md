@@ -20,6 +20,7 @@ This log tracks major decisions and milestones as the scaffold application evolv
 | 2025-10-24 | Auth flow consolidated | Centralised MFA/session helpers and reintroduced security headers. |
 | 2025-10-24 | Admin module scaffolded | Ported MFA management to shared helpers and added admin blueprint. |
 | 2025-10-24 | Navigation refactored | Introduced dynamic Bootstrap dark-mode nav with registry-driven entries. |
+| 2025-02-08 | BIA environment exports and audit hardening | Component environments appear in CSV/SQL exports, HTML export reuses the context detail template with print styles, audit event JSON parsing is more tolerant, and translations refreshed. |
 | TBD | BIA models migrated | Pending reconciliation of models and migrations. |
 | TBD | CSA models migrated | Pending integration work. |
 | TBD | Unified auth released | Merge MFA flows, role mapping, and session security. |

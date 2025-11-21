@@ -14,6 +14,7 @@
         "created": "Authenticatiemethode {name} aangemaakt.",
       "profile": "Profiel",
       "admin": "Beheer",
+        "audit_trail": "Auditlog",
       "logout": "Afmelden",
       "login": "Aanmelden",
       "register": "Registreren",
@@ -123,8 +124,7 @@
         },
         "start_date": {
           "label": "Startdatum"
-            "consequences": "Gevolgen",
-            "dpia": "DPIA / FRIA",
+        },
         "end_date": {
           "label": "Einddatum"
         },
@@ -236,6 +236,7 @@
           "info_owner": "Eigenaar",
           "user_type": "Gebruikerstype",
           "authentication": "Authenticatie",
+          "environments": "Omgevingen",
           "dependencies": "Afhankelijkheden",
           "description": "Omschrijving",
           "consequences": "Gevolgen",
@@ -283,6 +284,7 @@
           "owner": "Eigenaar",
           "users": "Gebruikers",
           "authentication": "Authenticatie",
+          "environments": "Omgevingen",
           "consequences": "Gevolgen",
           "dpia": "DPIA / FRIA",
           "actions": "Acties"
@@ -351,6 +353,24 @@
       "authentication": {
         "placeholder": "Selecteer authenticatie",
         "unset_badge": "Niet ingesteld"
+      },
+      "environments": {
+        "section_title": "Gebruik van omgevingen",
+        "section_help": "Geef aan welke lifecycle-omgevingen dit component gebruikt en welke authenticatie daarbij hoort.",
+        "columns": {
+          "environment": "Omgeving",
+          "used": "Gebruikt",
+          "authentication": "Authenticatie"
+        },
+        "toggle_label": "Gebruikt deze omgeving",
+        "types": {
+          "development": "Ontwikkel",
+          "test": "Test",
+          "acceptance": "Acceptatie",
+          "production": "Productie"
+        },
+        "badge_not_used": "Niet gebruikt",
+        "badge_no_auth": "Authenticatie niet ingesteld"
       }
     },
     "authentication_methods": {
@@ -654,6 +674,7 @@
             "link_csa_dashboard": "CSA-dashboard",
             "link_bia_dashboard": "BIA-dashboard",
             "link_authentication_methods": "Authenticatiemethoden",
+            "link_audit_trail": "Audittrail",
             "table": {
               "user": "Gebruiker",
               "status": "Status",
@@ -725,6 +746,45 @@
                 "back_to_users": "Terug naar gebruikers"
               }
             }
+          },
+          "audit": {
+            "title": "Auditlogboek",
+            "heading": "Auditlogboek",
+            "subtitle": "Bekijk geregistreerde acties en verzoekmetadata.",
+            "link_back": "Terug naar gebruikersbeheer",
+            "filters": {
+              "action": "Actie bevat",
+              "entity": "Entiteit bevat",
+              "actor": "E-mailadres of ID",
+              "actor_placeholder": "E-mailadres of gebruikers-ID",
+              "event_type": "Gebeurtenistype",
+              "event_type_all": "Alle typen",
+              "start_date": "Vanaf datum",
+              "end_date": "Tot en met datum",
+              "per_page": "Per pagina",
+              "submit": "Toepassen",
+              "reset": "Resetten",
+              "invalid_date": "Een of meer datums konden niet worden verwerkt."
+            },
+            "table": {
+              "timestamp": "Tijdstip",
+              "user": "Gebruiker",
+              "action": "Actie",
+              "entity": "Entiteit",
+              "details": "Details",
+              "ip": "IP-adres",
+              "user_agent": "User-agent",
+              "anonymous": "Onbekende actor",
+              "entity_id": "Identificatie: {identifier}",
+              "no_details": "Geen aanvullende details."
+            },
+            "pagination": {
+              "summary": "Toont {start}-{end} van {total} regels",
+              "aria": "Auditlog paginering",
+              "previous": "Vorige",
+              "next": "Volgende"
+            },
+            "empty": "Geen auditgebeurtenissen voor deze selectie."
           },
           "authentication_methods": {
             "title": "Authenticatiemethoden",

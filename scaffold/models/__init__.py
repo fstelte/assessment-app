@@ -41,6 +41,7 @@ from ..apps.csa.models import (
     AuditTrail,
     Control,
 )
+from .audit import AuditLog
 
 __all__ = [
     "TimestampMixin",
@@ -63,6 +64,7 @@ __all__ = [
     "AssessmentTemplate",
     "Control",
     "AuditTrail",
+    "AuditLog",
 ]
 
 MIGRATION_REQUIREMENTS: list[str] = [

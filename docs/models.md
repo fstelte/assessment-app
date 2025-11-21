@@ -25,6 +25,8 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 - `AssessmentAssignment`: many-to-many assignments between assessments and users.
 - `AssessmentResponse`: answers and evidence per dimension.
 - `AuditTrail`: compliance-grade activity log.
+- `AuditLog`: central audit stream capturing admin and system events with actor metadata.
+  - Automatic SQLAlchemy listeners record create/update/delete events for configured models (defaults include `User` and `Role`). Override `AUDIT_LOG_MODEL_EVENTS` to adjust tracked fields per model.
 
 ## Metadata
 

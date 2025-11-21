@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import UTC, datetime
-from typing import Iterable, Mapping, cast
+from typing import Any, Iterable, Mapping, cast
 
 from flask import Blueprint, current_app, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
@@ -146,7 +146,7 @@ def login():
                     queue_mfa_enrolment(user, remember)
                     flash(_("auth.login.notices.mfa_enrol"), "info")
                     return redirect(url_for("auth.mfa_enroll"))
-                finalise_login(user, remember)
+                finalise_login(user, remember, method="password")
                 _flash_login_result(user)
                 return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
         else:
@@ -286,7 +286,13 @@ def login_saml_acs():
 
     db.session.commit()
 
-    finalise_login(user, remember=False)
+    saml_metadata: dict[str, Any] = {"provider": "saml"}
+    if session_index:
+        saml_metadata["saml_session_index"] = session_index
+    if name_id:
+        saml_metadata["saml_name_id"] = name_id
+
+    finalise_login(user, remember=False, method="saml", metadata=saml_metadata)
     flash("Signed in with SAML.", "success")
     return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
 
@@ -378,7 +384,7 @@ def mfa_enroll():
             user.mfa_setting.secret = provisioning.secret
             user.mfa_setting.mark_enrolled()
             db.session.commit()
-            finalise_login(user, current_remember_me())
+            finalise_login(user, current_remember_me(), method="mfa_enroll")
             _flash_login_result(user)
             flash("Multi-factor authentication enabled.", "success")
             return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
@@ -401,7 +407,7 @@ def mfa_verify():
             user.mfa_setting.mark_verified()
             db.session.commit()
             remember = bool(current_remember_me() or form.remember_device.data)
-            finalise_login(user, remember)
+            finalise_login(user, remember, method="mfa_verify")
             _flash_login_result(user)
             flash("MFA verification successful.", "success")
             return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))

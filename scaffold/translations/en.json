@@ -14,6 +14,7 @@
       "bia": "BIA",
       "profile": "Profile",
       "admin": "Admin",
+      "audit_trail": "Audit trail",
       "logout": "Logout",
       "login": "Login",
       "register": "Register",
@@ -235,6 +236,7 @@
           "info_owner": "Owner",
           "user_type": "User type",
           "authentication": "Authentication",
+          "environments": "Environments",
           "dependencies": "Dependencies",
           "description": "Description",
           "consequences": "Consequences",
@@ -282,6 +284,7 @@
           "owner": "Owner",
           "users": "Users",
           "authentication": "Authentication",
+          "environments": "Environments",
           "consequences": "Consequences",
           "dpia": "DPIA / FRIA",
           "actions": "Actions"
@@ -350,6 +353,24 @@
       "authentication": {
         "placeholder": "Select authentication",
         "unset_badge": "Not set"
+      },
+      "environments": {
+        "section_title": "Environment usage",
+        "section_help": "Toggle the lifecycle environments this component uses and capture their authentication method.",
+        "columns": {
+          "environment": "Environment",
+          "used": "Used",
+          "authentication": "Authentication"
+        },
+        "toggle_label": "Uses this environment",
+        "types": {
+          "development": "Development",
+          "test": "Test",
+          "acceptance": "Acceptance",
+          "production": "Production"
+        },
+        "badge_not_used": "Not used",
+        "badge_no_auth": "Authentication not set"
       }
     },
     "authentication_methods": {
@@ -652,7 +673,8 @@
       "subtitle": "Assign roles, manage activation, and administer MFA.",
       "link_csa_dashboard": "CSA dashboard",
       "link_bia_dashboard": "BIA dashboard",
-  "link_authentication_methods": "Authentication methods",
+        "link_authentication_methods": "Authentication methods",
+        "link_audit_trail": "Audit trail",
       "table": {
         "user": "User",
         "status": "Status",
@@ -724,6 +746,45 @@
           "back_to_users": "Back to users"
         }
       }
+    },
+    "audit": {
+      "title": "Audit trail",
+      "heading": "Audit trail",
+      "subtitle": "Review recorded actions and related request metadata.",
+      "link_back": "Back to user administration",
+      "filters": {
+        "action": "Action contains",
+        "entity": "Entity contains",
+        "actor": "Actor email or ID",
+        "actor_placeholder": "Email or user ID",
+        "event_type": "Event type",
+        "event_type_all": "All event types",
+        "start_date": "Start date",
+        "end_date": "End date",
+        "per_page": "Per page",
+        "submit": "Apply",
+        "reset": "Reset",
+        "invalid_date": "One or more dates could not be parsed."
+      },
+      "table": {
+        "timestamp": "Timestamp",
+        "user": "User",
+        "action": "Action",
+        "entity": "Entity",
+        "details": "Details",
+        "ip": "IP address",
+        "user_agent": "User agent",
+        "anonymous": "Unknown actor",
+        "entity_id": "Identifier: {identifier}",
+        "no_details": "No additional details provided."
+      },
+      "pagination": {
+        "summary": "Showing {start}-{end} of {total} entries",
+        "aria": "Audit trail pagination",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "empty": "No audit events match the selected filters."
     },
     "authentication_methods": {
       "title": "Authentication methods",

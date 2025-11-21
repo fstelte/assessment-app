@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .routes import bp
-from ...templates.navigation import NavEntry
 
 
 def register(app):
@@ -12,5 +11,5 @@ def register(app):
 
 
 NAVIGATION = [
-    NavEntry(endpoint="admin.list_users", label="app.navigation.admin", order=80),
+    # Admin navigation removed from global menu; direct links live in admin views.
 ]

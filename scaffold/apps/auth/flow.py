@@ -10,10 +10,12 @@ control flow declarative and make the security guarantees auditable.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any, Mapping
 
 from flask import session
 from flask_login import login_user
 
+from ...core.audit import log_login_event
 from ...core.security import generate_session_fingerprint
 from ...extensions import db
 from ..identity.models import MFASetting, User
@@ -85,12 +87,38 @@ def clear_mfa_state() -> None:
         session.pop(key, None)
 
 
-def finalise_login(user: User, remember: bool) -> None:
-    """Complete the login by stamping security metadata and updating the user."""
+def finalise_login(
+    user: User,
+    remember: bool,
+    *,
+    method: str = "password",
+    metadata: Mapping[str, Any] | None = None,
+) -> None:
+    """Complete the login, update audit trail, and stamp session security metadata."""
 
     now = datetime.now(UTC)
     login_user(user, remember=remember)
     user.last_login_at = now
+
+    method_label = (method or "password").strip().lower() or "password"
+    audit_metadata: dict[str, Any] = {
+        "method": method_label,
+        "remember": remember,
+        "login_time": now.isoformat(),
+        "mfa_enrolled": user.mfa_is_enrolled,
+    }
+    if metadata:
+        for key, value in metadata.items():
+            if value is not None:
+                audit_metadata[key] = value
+
+    log_login_event(
+        "success",
+        user=user,
+        metadata=audit_metadata,
+        commit=False,
+    )
+
     db.session.commit()
 
     session.permanent = True

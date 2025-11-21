@@ -20,8 +20,10 @@ from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
     Component,
+    ComponentEnvironment,
     Consequences,
     ContextScope,
+    ENVIRONMENT_TYPES,
     Summary,
 )
 from .services.authentication import AuthenticationOption, list_authentication_options, lookup_by_slug
@@ -48,6 +50,7 @@ _SQL_TABLE_ALIASES = {
     "consequences": Consequences.__table__.name,
     "availability_requirements": AvailabilityRequirements.__table__.name,
     "ai_identificatie": AIIdentificatie.__table__.name,
+    "component_environments": ComponentEnvironment.__table__.name,
     "summary": Summary.__table__.name,
 }
 
@@ -59,6 +62,7 @@ _SQL_COLUMN_WHITELIST = {
     Consequences.__table__.name: {column.key for column in Consequences.__table__.columns},
     AvailabilityRequirements.__table__.name: {column.key for column in AvailabilityRequirements.__table__.columns},
     AIIdentificatie.__table__.name: {column.key for column in AIIdentificatie.__table__.columns},
+    ComponentEnvironment.__table__.name: {column.key for column in ComponentEnvironment.__table__.columns},
     Summary.__table__.name: {column.key for column in Summary.__table__.columns},
 }
 
@@ -273,6 +277,40 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
             ]
         )
     exports[f"{prefix}_components.csv"] = components_buffer.getvalue()
+
+    # Component environments
+    environments_buffer = io.StringIO()
+    environments_writer = csv.writer(environments_buffer)
+    environments_writer.writerow(
+        [
+            "Gerelateerd aan BIA",
+            "Gerelateerd aan Component",
+            "Environment",
+            "Uses Environment",
+            "Authentication Slug",
+            "Authentication Label (EN)",
+            "Authentication Label (NL)",
+        ]
+    )
+    for component in context.components:
+        assignments = {environment.environment_type: environment for environment in component.environments}
+        for environment_type in ENVIRONMENT_TYPES:
+            assignment = assignments.get(environment_type)
+            is_enabled = bool(assignment and assignment.is_enabled)
+            option = authentication_options.get(assignment.authentication_method_id) if assignment else None
+            env_name = environment_type.replace("_", " ").title()
+            environments_writer.writerow(
+                [
+                    stringify(context.name),
+                    stringify(component.name),
+                    env_name,
+                    "Yes" if is_enabled else "No",
+                    stringify(option.slug if option else ""),
+                    stringify(option.label_for_locale("en") if option else ""),
+                    stringify(option.label_for_locale("nl") if option else ""),
+                ]
+            )
+    exports[f"{prefix}_component_environments.csv"] = environments_buffer.getvalue()
 
     # Consequences
     consequences_buffer = io.StringIO()
@@ -628,6 +666,7 @@ def export_to_sql(context: ContextScope) -> str:
     component_table = Component.__table__.name
     consequence_table = Consequences.__table__.name
     availability_table = AvailabilityRequirements.__table__.name
+    component_environment_table = ComponentEnvironment.__table__.name
     ai_table = AIIdentificatie.__table__.name
     summary_table = Summary.__table__.name
 
@@ -691,6 +730,19 @@ def export_to_sql(context: ContextScope) -> str:
                     },
                 )
             )
+        for environment in component.environments:
+            statements.append(
+                insert_statement(
+                    component_environment_table,
+                    {
+                        "id": environment.id,
+                        "component_id": environment.component_id,
+                        "environment_type": environment.environment_type,
+                        "is_enabled": int(bool(environment.is_enabled)),
+                        "authentication_method_id": environment.authentication_method_id,
+                    },
+                )
+            )
 
     if context.summary:
         statements.append(
@@ -717,6 +769,7 @@ def export_to_sql(context: ContextScope) -> str:
             sequence_reset_statement(consequence_table),
             sequence_reset_statement(availability_table),
             sequence_reset_statement(ai_table),
+            sequence_reset_statement(component_environment_table),
             sequence_reset_statement(summary_table),
         ]
     )

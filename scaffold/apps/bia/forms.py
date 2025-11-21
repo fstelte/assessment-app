@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import BooleanField, DateField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, DateField, FieldList, FormField, HiddenField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
+from wtforms.form import Form
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
+
+
+# Keep in sync with ENVIRONMENT_TYPES in .models.__init__
+_COMPONENT_ENVIRONMENT_TYPES = ("development", "test", "acceptance", "production")
 
 
 def _optional_int(value: object) -> int | None:
@@ -45,6 +50,21 @@ class ContextScopeForm(FlaskForm):
     incident_contact = StringField("Incident contact", validators=[Optional(), Length(max=255)])
     submit = SubmitField("Save context")
 
+class ComponentEnvironmentForm(Form):
+    """Capture whether a component uses a specific environment."""
+
+    environment_type = HiddenField(validators=[DataRequired()])
+    is_enabled = BooleanField("Environment enabled")
+    authentication_method = SelectField(
+        "Environment authentication",
+        validators=[Optional()],
+        choices=[],
+        coerce=_optional_int,
+    )
+
+    class Meta:
+        csrf = False
+
 
 class ComponentForm(FlaskForm):
     """Create or update a component linked to a BIA context."""
@@ -55,11 +75,10 @@ class ComponentForm(FlaskForm):
     user_type = StringField("User type", validators=[Optional(), Length(max=255)])
     process_dependencies = TextAreaField("Process dependencies", validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
-    authentication_method = SelectField(
-        "Authentication type",
-        validators=[Optional()],
-        choices=[],
-        coerce=_optional_int,
+    environments = FieldList(
+        FormField(ComponentEnvironmentForm),
+        min_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
+        max_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
     )
     submit = SubmitField("Save component")
 

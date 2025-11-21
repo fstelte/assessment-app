@@ -38,8 +38,46 @@
       <div class="col-md-4">{{ component_form.info_owner.label(_('bia.components.labels.owner'), class="form-label") }}{{ component_form.info_owner(class="form-control") }}</div>
       <div class="col-md-4">{{ component_form.info_type.label(_('bia.components.labels.information_type'), class="form-label") }}{{ component_form.info_type(class="form-control") }}</div>
       <div class="col-md-4">{{ component_form.user_type.label(_('bia.components.labels.user_type'), class="form-label") }}{{ component_form.user_type(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.authentication_method.label(_('bia.components.labels.authentication'), class="form-label") }}{{ component_form.authentication_method(class="form-select") }}</div>
       <div class="col-md-4">{{ component_form.process_dependencies.label(_('bia.components.labels.process_dependencies'), class="form-label") }}{{ component_form.process_dependencies(class="form-control") }}</div>
+      <div class="col-12">
+        <fieldset class="border rounded p-3">
+          <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+          <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-dark align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                  <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                  <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for environment_field in component_form.environments %}
+                  {% set environment_form = environment_field.form %}
+                  <tr>
+                    <td class="text-nowrap">
+                      {{ environment_form.environment_type() }}
+                      {{ bia_environment_label(environment_form.environment_type.data) }}
+                    </td>
+                    <td>
+                      {% set checkbox_id = 'environment-enabled-add-' ~ loop.index0 %}
+                      <div class="form-check">
+                        {{ environment_form.is_enabled(class="form-check-input", id=checkbox_id) }}
+                        <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                      </div>
+                    </td>
+                    <td>
+                      {% set select_id = 'environment-auth-add-' ~ loop.index0 %}
+                      {{ environment_form.authentication_method(class="form-select", id=select_id) }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </fieldset>
+      </div>
       <div class="col-12">{{ component_form.description.label(_('bia.components.labels.description'), class="form-label") }}{{ component_form.description(class="form-control", rows=2) }}</div>
       <div class="col-12 text-end">
         <button type="submit" class="btn btn-primary">{{ _('bia.components.add.submit') }}</button>
@@ -60,7 +98,7 @@
             <th scope="col">{{ _('bia.components.table.headers.bia') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.owner') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.users') }}</th>
-            <th scope="col">{{ _('bia.components.table.headers.authentication') }}</th>
+            <th scope="col">{{ _('bia.components.table.headers.environments') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.consequences') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.dpia') }}</th>
             <th scope="col">{{ _('bia.components.table.headers.actions') }}</th>
@@ -74,12 +112,20 @@
             <td>{{ component.info_owner or _('bia.components.table.not_set') }}</td>
             <td>{{ component.user_type or _('bia.components.table.not_set') }}</td>
             <td>
-              {% set auth_label = bia_component_authentication(component) %}
-              {% if auth_label %}
-                <span class="badge bg-info text-dark">{{ auth_label }}</span>
-              {% else %}
-                <span class="badge bg-secondary">{{ _('bia.components.authentication.unset_badge') }}</span>
-              {% endif %}
+              <div class="d-flex flex-wrap gap-1">
+                {% for environment_type in bia_environment_types %}
+                  {% set env_assignment = bia_component_environment(component, environment_type) %}
+                  {% set environment_label = bia_environment_label(environment_type) %}
+                  {% if env_assignment and env_assignment.is_enabled %}
+                    {% set env_auth = bia_environment_authentication(env_assignment) %}
+                    <span class="badge bg-success">
+                      {{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
             </td>
             <td>{{ component.consequences | length }}</td>
             <td>
@@ -109,7 +155,7 @@
             </td>
           </tr>
           <tr class="collapse" id="edit-component-{{ component.id }}">
-            <td colspan="7" class="bg-secondary bg-opacity-10">
+            <td colspan="8" class="bg-secondary bg-opacity-10">
               <form class="component-edit-form row g-3" data-action="{{ url_for('bia.update_component', component_id=component.id) }}">
                 {{ component_form.hidden_tag() }}
                 <div class="col-md-4 tooltip-wrapper" data-tooltip="{{ _('bia.components.tooltips.name') }}">
@@ -139,17 +185,59 @@
                   <input type="text" id="user_type-{{ component.id }}" name="user_type" class="form-control" value="{{ component.user_type }}">
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label" for="authentication_method-{{ component.id }}">{{ _('bia.components.labels.authentication') }}</label>
-                  {% set selected_value = component.authentication_method_id|string if component.authentication_method_id is not none else '' %}
-                  <select id="authentication_method-{{ component.id }}" name="authentication_method" class="form-select">
-                    {% for value, label in component_form.authentication_method.choices %}
-                      <option value="{{ value }}" {% if value == selected_value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="col-md-4">
                   <label class="form-label" for="process_dependencies-{{ component.id }}">{{ _('bia.components.labels.process_dependencies') }}</label>
                   <input type="text" id="process_dependencies-{{ component.id }}" name="process_dependencies" class="form-control" value="{{ component.process_dependencies }}">
+                </div>
+                <div class="col-12">
+                  <fieldset class="border rounded p-3">
+                    <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+                    <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+                    <div class="table-responsive">
+                      <table class="table table-sm table-dark align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                            <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                            <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for environment_type in bia_environment_types %}
+                            {% set env_assignment = bia_component_environment(component, environment_type) %}
+                            {% set checkbox_id = 'environment-enabled-' ~ component.id ~ '-' ~ environment_type %}
+                            {% set select_id = 'environment-auth-' ~ component.id ~ '-' ~ environment_type %}
+                            <tr>
+                              <td class="text-nowrap">
+                                <input type="hidden" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
+                                {{ bia_environment_label(environment_type) }}
+                              </td>
+                              <td>
+                                <div class="form-check">
+                                  <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled" {% if env_assignment and env_assignment.is_enabled %}checked{% endif %}>
+                                  <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                                </div>
+                              </td>
+                              <td>
+                                <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
+                                  {% for value, label in component_form.environment_authentication_choices %}
+                                    {% set selected = '' %}
+                                    {% if env_assignment %}
+                                      {% if value == '' and env_assignment.authentication_method_id is none %}
+                                        {% set selected = 'selected' %}
+                                      {% elif value != '' and env_assignment.authentication_method_id is not none and value == env_assignment.authentication_method_id|string %}
+                                        {% set selected = 'selected' %}
+                                      {% endif %}
+                                    {% endif %}
+                                    <option value="{{ value }}" {{ selected }}>{{ label }}</option>
+                                  {% endfor %}
+                                </select>
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </fieldset>
                 </div>
                 <div class="col-md-12">
                   <label class="form-label" for="description-{{ component.id }}">{{ _('bia.components.labels.description') }}</label>
