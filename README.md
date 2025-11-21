@@ -9,7 +9,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - SAML single sign-on via Microsoft Entra ID (Azure AD) with automatic user provisioning and group gates.
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Accessible, CSS-only form tooltips via a shared macro and `tooltip-wrapper` utility classes.
-- BIA component workflows capture authentication methods and provide an exportable overview for audit teams.
+- BIA component workflows capture environment-specific authentication methods, surface them in the UI, and provide exportable CSV/SQL payloads for audit teams.
 - DPIA / FRIA module linked to BIA components with editable risk registers, mitigating measures, colored risk severity badges, and a four-state workflow (in progress, in review, finished, abandoned).
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
@@ -32,6 +32,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
    - Capture Microsoft Entra ID SAML metadata once the enterprise application is created. Populate `SAML_SP_ENTITY_ID`, `SAML_SP_ACS_URL`, and `SAML_SP_SLS_URL` for the service provider; store signing material in `SAML_SP_CERT` and `SAML_SP_PRIVATE_KEY` when requests or responses must be signed.
    - Configure the identity provider section with `SAML_IDP_ENTITY_ID`, `SAML_IDP_SSO_URL`, `SAML_IDP_SLO_URL`, and `SAML_IDP_CERT`. Optional toggles include `SAML_SIGN_AUTHN_REQUESTS`, `SAML_SIGN_LOGOUT_REQUESTS`, `SAML_SIGN_LOGOUT_RESPONSES`, `SAML_WANT_MESSAGE_SIGNED`, and `SAML_WANT_ASSERTION_SIGNED`.
    - Map directory attributes via `SAML_ATTRIBUTE_EMAIL`, `SAML_ATTRIBUTE_FIRST_NAME`, `SAML_ATTRIBUTE_LAST_NAME`, `SAML_ATTRIBUTE_DISPLAY_NAME`, `SAML_ATTRIBUTE_OBJECT_ID`, `SAML_ATTRIBUTE_UPN`, and `SAML_ATTRIBUTE_GROUPS`. Restrict access with `SAML_ALLOWED_GROUP_IDS` (comma-separated) and align application roles with `SAML_ROLE_MAP` (JSON mapping of group IDs to role names).
+   - Configure structured audit logging by pointing `AUDIT_LOG_PATH` to a writable directory (defaults to `<BACKUP_DIR>/logs/audit.log`) and tuning `AUDIT_LOG_RETENTION_DAYS`/`AUDIT_LOG_PRUNE_INTERVAL_HOURS`. Set `AUDIT_LOG_MODEL_EVENTS` to a JSON mapping when you want to extend the automatic ORM listeners beyond the defaults—the parser now accepts either Flask's JSON loader or standard JSON, reducing startup warnings in containerised environments.
    - For break-glass access or automated tests you can expose the legacy password form by setting `PASSWORD_LOGIN_ENABLED=true` (aliases `SAML_PASSWORD_LOGIN_ENABLED`, `ENTRA_PASSWORD_LOGIN_ENABLED`, and `AZURE_PASSWORD_LOGIN_ENABLED` remain recognised).
 3. **Initialise local database**
    - Run `poetry run flask --app scaffold:create_app db upgrade` to apply migrations.
@@ -88,6 +89,7 @@ The platform offers lightweight JSON-driven localisation that allows text to be 
    group enablement, and break-glass access.
 - `docs/deployment.md` covers infrastructure touchpoints, backup helpers, and a
    release management checklist with SSO smoke-test reminders.
+- Use `poetry run flask --app scaffold:create_app audit-retention` to perform an immediate cleanup of stale audit rows and rotated log files (handy for scripted maintenance windows); the web process also prunes the data on a schedule based on `AUDIT_LOG_PRUNE_INTERVAL_HOURS`. The same helper now tracks removed rows/files in the logs for easier monitoring.
 
 ## License
 

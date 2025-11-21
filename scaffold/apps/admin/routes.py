@@ -24,11 +24,13 @@ from ...extensions import db
 from ..auth.flow import ensure_mfa_provisioning
 from ..auth.mfa import build_provisioning
 from ..csa.forms import UserRoleAssignForm, UserRoleRemoveForm
+from ...models import AuditLog
 from ..identity.models import MFASetting, Role, User, UserStatus
 from ..bia.localization import translate_authentication_label
 from ..bia.models import AuthenticationMethod, Component
 from ..bia.services.authentication import clear_authentication_cache
 from .forms import AuthenticationMethodDeleteForm, AuthenticationMethodForm, AuthenticationMethodToggleForm
+from ...core.audit import log_event
 
 bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="templates")
 
@@ -62,6 +64,110 @@ def _method_display_name(method: AuthenticationMethod, locale: str | None = None
     return translate_authentication_label(method.slug, locale or get_locale(), _fallback_map(method))
 
 
+@bp.get("/audit-trail")
+@login_required
+@require_fresh_login()
+def audit_trail():
+    _require_admin()
+
+    try:
+        page = int(request.args.get("page", 1))
+    except (TypeError, ValueError):
+        page = 1
+    page = max(1, page)
+
+    try:
+        per_page = int(request.args.get("per_page", 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    per_page = min(max(1, per_page), 100)
+
+    action_filter = (request.args.get("action") or "").strip()
+    event_type_filter = (request.args.get("event_type") or "").strip()
+    entity_filter = (request.args.get("entity_type") or "").strip()
+    actor_filter = (request.args.get("actor") or "").strip()
+    start_raw = (request.args.get("start_date") or "").strip()
+    end_raw = (request.args.get("end_date") or "").strip()
+
+    query = AuditLog.query.order_by(AuditLog.created_at.desc())
+
+    if action_filter:
+        lowered = f"%{action_filter.lower()}%"
+        query = query.filter(sa.func.lower(AuditLog.event_type).like(lowered))
+
+    if event_type_filter:
+        query = query.filter(AuditLog.event_type == event_type_filter)
+
+    if entity_filter:
+        lowered = f"%{entity_filter.lower()}%"
+        query = query.filter(sa.func.lower(AuditLog.target_type).like(lowered))
+
+    if actor_filter:
+        lowered = f"%{actor_filter.lower()}%"
+        predicates = [sa.func.lower(AuditLog.actor_email).like(lowered)]
+        if actor_filter.isdigit():
+            predicates.append(AuditLog.actor_id == int(actor_filter))
+        query = query.filter(sa.or_(*predicates))
+
+    if start_raw:
+        try:
+            start_dt = datetime.fromisoformat(f"{start_raw}T00:00:00+00:00")
+        except ValueError:
+            flash(_("admin.audit.filters.invalid_date"), "warning")
+        else:
+            query = query.filter(AuditLog.created_at >= start_dt)
+
+    if end_raw:
+        try:
+            end_dt = datetime.fromisoformat(f"{end_raw}T23:59:59.999999+00:00")
+        except ValueError:
+            flash(_("admin.audit.filters.invalid_date"), "warning")
+        else:
+            query = query.filter(AuditLog.created_at <= end_dt)
+
+    pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
+
+    event_type_options = [
+        value
+        for value in db.session.execute(
+            sa.select(AuditLog.event_type)
+            .distinct()
+            .where(AuditLog.event_type.isnot(None))
+            .order_by(AuditLog.event_type.asc())
+        ).scalars()
+        if value
+    ]
+
+    actor_options = [
+        value
+        for value in db.session.execute(
+            sa.select(AuditLog.actor_email)
+            .distinct()
+            .where(AuditLog.actor_email.isnot(None))
+            .order_by(AuditLog.actor_email)
+        ).scalars()
+        if value
+    ]
+
+    filters = {
+        "action": action_filter,
+        "event_type": event_type_filter,
+        "entity_type": entity_filter,
+        "actor": actor_filter,
+        "start_date": start_raw,
+        "end_date": end_raw,
+    }
+
+    return render_template(
+        "admin/audit_trail.html",
+        pagination=pagination,
+        entries=pagination.items,
+        filters=filters,
+        event_types=event_type_options,
+        actor_options=actor_options,
+    )
+
+
 @bp.route("/authentication-methods", methods=["GET", "POST"])
 @login_required
 @require_fresh_login()
@@ -83,6 +189,13 @@ def list_authentication_methods():
             method = AuthenticationMethod(slug=slug, is_active=True)
             _refresh_method_labels(method)
             db.session.add(method)
+            db.session.flush()
+            log_event(
+                action="authentication_method_created",
+                entity_type="authentication_method",
+                entity_id=method.id,
+                details={"slug": method.slug, "is_active": method.is_active},
+            )
             db.session.commit()
             clear_authentication_cache()
             flash(
@@ -180,8 +293,19 @@ def update_authentication_method(method_id: int):
         if existing:
             flash(_("admin.authentication_methods.errors.slug_exists"), "danger")
         else:
+            previous_slug = method.slug
             method.slug = slug
             _refresh_method_labels(method)
+            db.session.flush()
+            log_event(
+                action="authentication_method_updated",
+                entity_type="authentication_method",
+                entity_id=method.id,
+                details={
+                    "slug": method.slug,
+                    "previous_slug": previous_slug,
+                },
+            )
             db.session.commit()
             clear_authentication_cache()
             flash(
@@ -215,6 +339,13 @@ def toggle_authentication_method(method_id: int):
             submitted_id = None
     if submitted_id == method_id:
         method.is_active = not method.is_active
+        db.session.flush()
+        log_event(
+            action="authentication_method_toggled",
+            entity_type="authentication_method",
+            entity_id=method.id,
+            details={"is_active": method.is_active},
+        )
         db.session.commit()
         clear_authentication_cache()
         flash(
@@ -253,6 +384,13 @@ def delete_authentication_method(method_id: int):
     usage_count = Component.query.filter(Component.authentication_method_id == method.id).count()
     if usage_count:
         method.is_active = False
+        db.session.flush()
+        log_event(
+            action="authentication_method_deactivated",
+            entity_type="authentication_method",
+            entity_id=method.id,
+            details={"slug": method.slug, "reason": "in_use", "usage_count": usage_count},
+        )
         db.session.commit()
         clear_authentication_cache()
         flash(
@@ -265,7 +403,15 @@ def delete_authentication_method(method_id: int):
         )
         return redirect(url_for("admin.list_authentication_methods"))
 
+    method_id = method.id
+    method_slug = method.slug
     db.session.delete(method)
+    log_event(
+        action="authentication_method_deleted",
+        entity_type="authentication_method",
+        entity_id=method_id,
+        details={"slug": method_slug},
+    )
     db.session.commit()
     clear_authentication_cache()
     flash(
@@ -345,6 +491,13 @@ def activate_user(user_id: int):
         user.status = UserStatus.ACTIVE
         user.activated_at = datetime.now(UTC)
         user.deactivated_at = None
+        db.session.flush()
+        log_event(
+            action="user_activated",
+            entity_type="user",
+            entity_id=user.id,
+            details={"email": user.email},
+        )
         db.session.commit()
         flash(_("admin.users.flash.user_activated"), "success")
     else:
@@ -374,6 +527,13 @@ def deactivate_user(user_id: int):
     else:
         user.status = UserStatus.DISABLED
         user.deactivated_at = datetime.now(UTC)
+        db.session.flush()
+        log_event(
+            action="user_deactivated",
+            entity_type="user",
+            entity_id=user.id,
+            details={"email": user.email},
+        )
         db.session.commit()
         flash(_("admin.users.flash.user_deactivated"), "success")
 
@@ -400,7 +560,15 @@ def delete_user(user_id: int):
             flash(_("admin.users.flash.final_admin_cannot_be_deleted"), "danger")
             return redirect(url_for("admin.list_users"))
 
+    target_id = user.id
+    target_email = user.email
     db.session.delete(user)
+    log_event(
+        action="user_deleted",
+        entity_type="user",
+        entity_id=target_id,
+        details={"email": target_email},
+    )
     db.session.commit()
     flash(_("admin.users.flash.user_deleted"), "success")
     return redirect(url_for("admin.list_users"))
@@ -434,6 +602,13 @@ def assign_user_role(user_id: int):
             flash(_("admin.users.flash.user_has_role"), "info")
         else:
             user.roles.append(role_obj)
+            db.session.flush()
+            log_event(
+                action="user_role_assigned",
+                entity_type="user_role",
+                entity_id=user.id,
+                details={"role": role_obj.name, "user_id": user.id},
+            )
             db.session.commit()
             flash(_("admin.users.flash.role_assigned"), "success")
     else:
@@ -474,6 +649,13 @@ def remove_user_role(user_id: int):
                     flash(_("admin.users.flash.admin_must_remain"), "danger")
                     return redirect(url_for("admin.list_users"))
             user.roles.remove(role_obj)
+            db.session.flush()
+            log_event(
+                action="user_role_removed",
+                entity_type="user_role",
+                entity_id=user.id,
+                details={"role": role_obj.name, "user_id": user.id},
+            )
             db.session.commit()
             flash(_("admin.users.flash.role_removed"), "success")
     else:
@@ -500,12 +682,26 @@ def user_mfa(user_id: int):
         action = request.form.get("action", "").lower()
         if action == "enable":
             provisioning = ensure_mfa_provisioning(user, issuer)
+            log_event(
+                action="user_mfa_enabled",
+                entity_type="user",
+                entity_id=user.id,
+                details={"email": user.email},
+                commit=True,
+            )
             flash(_("admin.users.flash.mfa_enabled"), "success")
             return redirect(url_for("admin.user_mfa", user_id=user.id))
         if action == "disable":
             if user.mfa_setting:
                 user.mfa_setting.enabled = False
                 user.mfa_setting.enrolled_at = None
+                db.session.flush()
+                log_event(
+                    action="user_mfa_disabled",
+                    entity_type="user",
+                    entity_id=user.id,
+                    details={"email": user.email},
+                )
                 db.session.commit()
                 flash(_("admin.users.flash.mfa_disabled"), "info")
             else:
@@ -523,6 +719,13 @@ def user_mfa(user_id: int):
                 user.mfa_setting.secret = provisioning.secret
                 user.mfa_setting.enabled = True
                 user.mfa_setting.enrolled_at = None
+            db.session.flush()
+            log_event(
+                action="user_mfa_regenerated",
+                entity_type="user",
+                entity_id=user.id,
+                details={"email": user.email},
+            )
             db.session.commit()
             flash(_("admin.users.flash.mfa_regenerated"), "warning")
             return redirect(url_for("admin.user_mfa", user_id=user.id))

@@ -110,13 +110,17 @@
               <div class="card-body">
                 <h3 class="h6 text-uppercase {{ text_muted }}">{{ component.name }}</h3>
                 <p class="{{ text_muted }} small mb-3">{{ _('bia.context_form.components.linked_to', context=item.name) }}</p>
-                {% set auth_label = bia_component_authentication(component) %}
-                <div class="mb-3">
-                  {% if auth_label %}
-                  <span class="badge bg-info text-dark">{{ auth_label }}</span>
-                  {% else %}
-                  <span class="badge bg-secondary">{{ _('bia.components.authentication.unset_badge') }}</span>
-                  {% endif %}
+                <div class="d-flex flex-wrap gap-1 mb-3" data-environment-summary>
+                  {% for environment_type in bia_environment_types %}
+                    {% set env_assignment = bia_component_environment(component, environment_type) %}
+                    {% set env_label = bia_environment_label(environment_type) %}
+                    {% if env_assignment and env_assignment.is_enabled %}
+                      {% set env_auth = bia_environment_authentication(env_assignment) %}
+                      <span class="badge bg-success">{{ env_label }}{% if env_auth %} · {{ env_auth }}{% else %} · {{ _('bia.components.environments.badge_no_auth') }}{% endif %}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ env_label }} · {{ _('bia.components.environments.badge_not_used') }}</span>
+                    {% endif %}
+                  {% endfor %}
                 </div>
                 <div class="d-flex gap-2">
                   <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="{{ component.id }}">
@@ -169,8 +173,8 @@
               <dd class="col-sm-8" id="bia-view-component-info-owner"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.user_type') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-user-type"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.authentication') }}</dt>
-              <dd class="col-sm-8" id="bia-view-component-authentication"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.environments') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-environments"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.dependencies') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-process"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.description') }}</dt>
@@ -217,13 +221,49 @@
                 {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.authentication_method.label(_('bia.context_form.component_fields.authentication.label'), class="form-label") }}
-                {{ component_form.authentication_method(class="form-select", id="bia-component-authentication") }}
-              </div>
-              <div class="mb-3">
                 {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
                 {{ component_form.process_dependencies(class="form-control", id="bia-component-process-dependencies", rows=3) }}
               </div>
+              <fieldset class="border rounded p-3 mb-3">
+                <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+                <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+                <div class="table-responsive">
+                  <table class="table table-sm table-dark align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                        <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                        <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for environment_type in bia_environment_types %}
+                        {% set checkbox_id = 'bia-component-environment-enabled-' ~ loop.index0 %}
+                        {% set select_id = 'bia-component-environment-auth-' ~ loop.index0 %}
+                        <tr>
+                          <td class="text-nowrap">
+                            <input type="hidden" id="bia-component-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
+                            {{ bia_environment_label(environment_type) }}
+                          </td>
+                          <td>
+                            <div class="form-check">
+                              <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
+                              <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                            </div>
+                          </td>
+                          <td>
+                            <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
+                              {% for value, label in component_form.environment_authentication_choices %}
+                                <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
+                              {% endfor %}
+                            </select>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
               <div class="mb-3">
                 {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
                 {{ component_form.description(class="form-control", id="bia-component-description", rows=3) }}
@@ -264,13 +304,49 @@
                 {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.authentication_method.label(_('bia.context_form.component_fields.authentication.label'), class="form-label") }}
-                {{ component_form.authentication_method(class="form-select", id="bia-edit-component-authentication") }}
-              </div>
-              <div class="mb-3">
                 {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
                 {{ component_form.process_dependencies(class="form-control", id="bia-edit-component-process-dependencies", rows=3) }}
               </div>
+              <fieldset class="border rounded p-3 mb-3">
+                <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+                <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+                <div class="table-responsive">
+                  <table class="table table-sm table-dark align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                        <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                        <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for environment_type in bia_environment_types %}
+                        {% set checkbox_id = 'bia-edit-environment-enabled-' ~ loop.index0 %}
+                        {% set select_id = 'bia-edit-environment-auth-' ~ loop.index0 %}
+                        <tr>
+                          <td class="text-nowrap">
+                            <input type="hidden" id="bia-edit-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
+                            {{ bia_environment_label(environment_type) }}
+                          </td>
+                          <td>
+                            <div class="form-check">
+                              <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
+                              <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                            </div>
+                          </td>
+                          <td>
+                            <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
+                              {% for value, label in component_form.environment_authentication_choices %}
+                                <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
+                              {% endfor %}
+                            </select>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
               <div class="mb-3">
                 {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
                 {{ component_form.description(class="form-control", id="bia-edit-component-description", rows=3) }}
@@ -290,7 +366,12 @@
       data-linked="{{ _('bia.context_form.components.linked_to', context=item.name)|e }}"
       data-view="{{ _('actions.view') }}"
       data-delete="{{ _('actions.delete') }}"
-      data-auth-unset="{{ _('bia.components.authentication.unset_badge') }}">
+      data-env-not-used="{{ _('bia.components.environments.badge_not_used') }}"
+      data-env-no-auth="{{ _('bia.components.environments.badge_no_auth') }}"
+      data-env-order='{{ bia_environment_types | tojson | e }}'
+      {% for environment_type in bia_environment_types %}
+      data-env-{{ environment_type }}="{{ bia_environment_label(environment_type) }}"
+      {% endfor %}>
     </div>
 
   <script nonce="{{ csp_nonce }}">
@@ -310,7 +391,51 @@
         componentsLinkedTo: translationNode.dataset.linked || '',
         actionsView: translationNode.dataset.view || '',
         actionsDelete: translationNode.dataset.delete || '',
-        authenticationUnset: translationNode.dataset.authUnset || ''
+        environmentNotUsed: translationNode.dataset.envNotUsed || '',
+        environmentNoAuth: translationNode.dataset.envNoAuth || ''
+      };
+
+      const environmentTypes = JSON.parse(translationNode.dataset.envOrder || '[]');
+      const environmentLabels = environmentTypes.reduce((accumulator, type) => {
+        const datasetKey = `env${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+        accumulator[type] = translationNode.dataset[datasetKey] || type;
+        return accumulator;
+      }, {});
+
+      const buildEnvironmentBadges = (environments = []) => {
+        const environmentMap = new Map(environments.map((environment) => [environment.environment_type, environment]));
+        return environmentTypes.map((type) => {
+          const label = environmentLabels[type] || type;
+          const environment = environmentMap.get(type);
+          if (environment && environment.is_enabled) {
+            const authenticationLabel = environment.authentication_method_label || translations.environmentNoAuth;
+            return `<span class="badge bg-success">${label} · ${authenticationLabel}</span>`;
+          }
+          return `<span class="badge bg-secondary">${label} · ${translations.environmentNotUsed}</span>`;
+        }).join(' ');
+      };
+
+      const applyEnvironmentBadges = (container, environments = []) => {
+        if (!container) {
+          return;
+        }
+        container.innerHTML = buildEnvironmentBadges(environments);
+      };
+
+      const updateEnvironmentForm = (form, prefix, environments = []) => {
+        const environmentMap = new Map(environments.map((environment) => [environment.environment_type, environment]));
+        environmentTypes.forEach((type, index) => {
+          const checkbox = form.querySelector(`#${prefix}-environment-enabled-${index}`);
+          const select = form.querySelector(`#${prefix}-environment-auth-${index}`);
+          const environment = environmentMap.get(type);
+          if (checkbox) {
+            checkbox.checked = !!(environment && environment.is_enabled);
+          }
+          if (select) {
+            const value = environment && environment.authentication_method_id != null ? String(environment.authentication_method_id) : '';
+            select.value = value;
+          }
+        });
       };
 
       const routes = {
@@ -337,7 +462,7 @@
         consequencesLink: document.getElementById('bia-view-consequences-link'),
         editTrigger: document.getElementById('bia-edit-component-launch'),
         deleteTrigger: document.getElementById('bia-delete-component-launch'),
-        authentication: document.getElementById('bia-view-component-authentication')
+        environments: document.getElementById('bia-view-component-environments')
       };
 
       const addForm = document.getElementById('bia-component-form');
@@ -380,8 +505,7 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'col-md-6 col-xl-4';
         wrapper.dataset.componentId = component.id;
-        const badgeLabel = component.authentication_method_label || translations.authenticationUnset;
-        const badgeClass = component.authentication_method_label ? 'badge bg-info text-dark' : 'badge bg-secondary';
+        const environmentMarkup = buildEnvironmentBadges(component.environments || []);
         wrapper.innerHTML = `
           <div class="card {{ card_surface }} h-100">
             <div class="card-body">
@@ -389,8 +513,8 @@
                 ${component.name}
               </h3>
               <p class="{{ text_muted }} small mb-3">${translations.componentsLinkedTo}</p>
-              <div class="mb-3">
-                <span class="${badgeClass}">${badgeLabel}</span>
+              <div class="d-flex flex-wrap gap-1 mb-3" data-environment-summary>
+                ${environmentMarkup}
               </div>
               <div class="d-flex gap-2">
                 <button type="button" class="btn {{ outline_inverse }} btn-sm w-50 bia-view-component" data-component-id="${component.id}">
@@ -411,7 +535,7 @@
         detailFields.info_type.textContent = fallback(data.info_type || '');
         detailFields.info_owner.textContent = fallback(data.info_owner || '');
         detailFields.user_type.textContent = fallback(data.user_type || '');
-  detailFields.authentication.textContent = fallback(data.authentication_method_label || '');
+          applyEnvironmentBadges(detailFields.environments, data.environments || []);
         detailFields.process_dependencies.textContent = fallback(data.process_dependencies || '');
         detailFields.description.textContent = fallback(data.description || '');
         detailFields.consequences.textContent = data.consequences_count ?? 0;
@@ -426,12 +550,9 @@
         editForm.querySelector('#bia-edit-component-info-type').value = data.info_type || '';
         editForm.querySelector('#bia-edit-component-info-owner').value = data.info_owner || '';
         editForm.querySelector('#bia-edit-component-user-type').value = data.user_type || '';
-        const editAuthentication = editForm.querySelector('#bia-edit-component-authentication');
-        if (editAuthentication) {
-          editAuthentication.value = data.authentication_method_id ? String(data.authentication_method_id) : '';
-        }
         editForm.querySelector('#bia-edit-component-process-dependencies').value = data.process_dependencies || '';
         editForm.querySelector('#bia-edit-component-description').value = data.description || '';
+        updateEnvironmentForm(editForm, 'bia-edit', data.environments || []);
         if (editCsrfField) {
           editCsrfField.value = initialEditCsrf || editCsrfField.value;
         }
@@ -507,6 +628,7 @@
             refreshEmptyState();
             addModal.hide();
             addForm.reset();
+            updateEnvironmentForm(addForm, 'bia-component', []);
             if (addCsrfField) {
               addCsrfField.value = initialAddCsrf;
             }
@@ -546,10 +668,9 @@
               if (title) {
                 title.textContent = data.name;
               }
-              const badge = card.querySelector('.card-body .badge');
-              if (badge) {
-                badge.textContent = data.authentication_method_label || translations.authenticationUnset;
-                badge.className = data.authentication_method_label ? 'badge bg-info text-dark' : 'badge bg-secondary';
+              const environmentSummary = card.querySelector('[data-environment-summary]');
+              if (environmentSummary) {
+                environmentSummary.innerHTML = buildEnvironmentBadges(data.environments || []);
               }
             }
             if (activeComponent && String(activeComponent.id) === String(componentId)) {
@@ -557,7 +678,9 @@
                 ...activeComponent,
                 name: data.name,
                 authentication_method_id: data.authentication_method_id,
-                authentication_method_label: data.authentication_method_label
+                authentication_method_label: data.authentication_method_label,
+                authentication_method_slug: data.authentication_method_slug,
+                environments: data.environments || []
               };
               populateDetail(activeComponent);
             }

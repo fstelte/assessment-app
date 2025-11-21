@@ -13,6 +13,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 import threading
+from logging.handlers import RotatingFileHandler
+from datetime import datetime, UTC
 
 import tomllib
 
@@ -26,6 +28,7 @@ from werkzeug.exceptions import Forbidden
 from jinja2 import TemplateError
 
 from .config import Settings
+from .core.audit import init_auto_audit
 from .core.registry import AppRegistry
 from .core.security import init_session_security
 from .core.security_headers import init_security_headers
@@ -59,6 +62,8 @@ def create_app(settings: Settings | None = None) -> Flask:
     _ensure_sqlite_uri(app)
 
     _init_extensions(app)
+    from . import models as _models  # noqa: F401 - ensure models are imported for metadata registration
+    _configure_logging(app)
     init_session_security(app)
     init_security_headers(app)
     _register_apps(app, app_settings)
@@ -151,8 +156,10 @@ def create_app(settings: Settings | None = None) -> Flask:
             ensure_default_roles()
         except (OperationalError, ProgrammingError):  # pragma: no cover - happens before migrations
             app.logger.debug("Default role provisioning skipped; tables not ready yet.", exc_info=True)
+        init_auto_audit(app)
 
     _start_export_cleanup_worker(app)
+    _start_audit_cleanup_worker(app)
 
     return app
 
@@ -240,6 +247,24 @@ def _register_cli_commands(app: Flask) -> None:
         db.session.commit()
         click.echo("Administrator account created or updated.")
 
+    @app.cli.command("audit-retention")
+    @click.option("--retention-days", type=int, default=None, help="Override retention window in days.")
+    @click.option(
+        "--log-path",
+        type=click.Path(path_type=str),
+        default=None,
+        help="Override audit log path.",
+    )
+    def audit_retention_command(retention_days: int | None, log_path: str | None) -> None:
+        """Enforce audit log retention for database records and log files."""
+
+        from .core.audit import enforce_audit_retention
+
+        outcome = enforce_audit_retention(retention_days=retention_days, log_path=log_path)
+        click.echo(
+            f"Removed {outcome.get('db_deleted', 0)} audit log rows and {outcome.get('files_deleted', 0)} log files."
+        )
+
 
 @lru_cache(maxsize=1)
 def _load_app_metadata() -> dict[str, str]:
@@ -321,5 +346,100 @@ def _start_export_cleanup_worker(app: Flask) -> None:
     worker = threading.Thread(target=_worker, name="export-cleanup", daemon=True)
     worker.start()
     storage["thread"] = worker
+
+    atexit.register(stop_event.set)
+
+
+def _configure_logging(app: Flask) -> None:
+    if app.extensions.get("audit_log_handler"):
+        return
+
+    config = app.config
+    if not config.get("AUDIT_LOG_ENABLED", True):
+        return
+
+    log_path = config.get("AUDIT_LOG_PATH")
+    if not isinstance(log_path, str) or not log_path.strip():
+        app.logger.warning("Audit log path is not configured; skipping rotating handler setup.")
+        return
+
+    try:
+        target = Path(log_path).expanduser()
+        target.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:  # pragma: no cover - guard against filesystem errors
+        app.logger.exception("Failed to prepare audit log directory; audit log handler not configured.")
+        return
+
+    retention_days = int(config.get("AUDIT_LOG_RETENTION_DAYS", 0))
+    backup_count = max(1, retention_days) if retention_days > 0 else 30
+
+    formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s %(name)s %(message)s")
+    formatter.converter = lambda *args: datetime.now(UTC).timetuple()  # type: ignore[assignment]
+
+    handler = RotatingFileHandler(
+        target,
+        maxBytes=5 * 1024 * 1024,
+        backupCount=backup_count,
+        encoding="utf-8",
+    )
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.INFO)
+
+    audit_logger = logging.getLogger("scaffold.audit")
+    audit_logger.setLevel(logging.INFO)
+    audit_logger.addHandler(handler)
+    audit_logger.propagate = False
+
+    app.extensions["audit_log_handler"] = handler
+
+def _start_audit_cleanup_worker(app: Flask) -> None:
+    if app.testing:
+        return
+    if not app.config.get("AUDIT_LOG_ENABLED"):
+        return
+
+    retention_days = int(app.config.get("AUDIT_LOG_RETENTION_DAYS", 0))
+    if retention_days <= 0:
+        return
+
+    interval_hours = max(1, int(app.config.get("AUDIT_LOG_PRUNE_INTERVAL_HOURS", 24)))
+    storage = app.extensions.setdefault("audit_logging", {})
+    if storage.get("cleanup_thread"):
+        return
+
+    stop_event = threading.Event()
+    storage["stop_event"] = stop_event
+
+    def _run_cycle() -> None:
+        from .core.audit import enforce_audit_retention
+
+        outcome = enforce_audit_retention(retention_days=retention_days)
+        removed_rows = outcome.get("db_deleted", 0)
+        removed_files = outcome.get("files_deleted", 0)
+        if removed_rows or removed_files:
+            app.logger.info(
+                "Audit retention removed %s database rows and %s log files",
+                removed_rows,
+                removed_files,
+            )
+
+    def _worker() -> None:
+        with app.app_context():
+            try:
+                _run_cycle()
+            except Exception:  # pragma: no cover - defensive logging
+                app.logger.exception("Initial audit log pruning failed")
+
+        interval_seconds = max(3600, int(interval_hours * 3600))
+        while not stop_event.wait(interval_seconds):
+            with app.app_context():
+                try:
+                    _run_cycle()
+                except Exception:  # pragma: no cover - defensive logging
+                    app.logger.exception("Scheduled audit log pruning failed")
+
+    worker = threading.Thread(target=_worker, name="audit-prune", daemon=True)
+    worker.start()
+    storage["cleanup_thread"] = worker
 
     atexit.register(stop_event.set)

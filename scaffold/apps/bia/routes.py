@@ -23,6 +23,7 @@ from flask import (
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
+from ...core.audit import log_change_event
 from ...core.security import require_fresh_login
 from ...core.i18n import gettext as _, get_locale
 from ...extensions import db
@@ -40,8 +41,10 @@ from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
     Component,
+    ComponentEnvironment,
     Consequences,
     ContextScope,
+    ENVIRONMENT_TYPES,
     Summary,
 )
 from .services.authentication import (
@@ -86,6 +89,10 @@ def inject_helpers():
         "bia_get_max_cia_impact": get_max_cia_impact,
         "bia_ai_badge_tokens": _ai_badge_tokens,
         "bia_component_authentication": _describe_authentication,
+        "bia_environment_label": _environment_label,
+        "bia_environment_types": ENVIRONMENT_TYPES,
+        "bia_component_environment": _get_component_environment,
+        "bia_environment_authentication": _describe_environment_authentication,
     }
 
 
@@ -104,16 +111,59 @@ def _ai_badge_tokens(category: str | None) -> dict[str, str]:
     return {"class": "bg-secondary"}
 
 
-def _configure_component_form(form: ComponentForm, *, selected_method_id: int | None = None) -> None:
+def _environment_label(environment_type: str) -> str:
+    return _("bia.components.environments.types." + environment_type)
+
+
+def _configure_component_form(
+    form: ComponentForm,
+    *,
+    component: Component | None = None,
+) -> None:
     locale = get_locale()
     choices: list[tuple[str, str]] = [("", _("bia.components.authentication.placeholder"))]
+    assigned_auth_ids: set[int] = set()
+    if component is not None:
+        if component.authentication_method_id is not None:
+            assigned_auth_ids.add(component.authentication_method_id)
+        for environment in component.environments:
+            if environment.authentication_method_id is not None:
+                assigned_auth_ids.add(environment.authentication_method_id)
     for option in list_authentication_options(active_only=False):
-        if not option.is_active and option.id != selected_method_id:
+        if not option.is_active and option.id not in assigned_auth_ids:
             continue
         choices.append((str(option.id), option.label(locale)))
-    form.authentication_method.choices = choices
-    if selected_method_id is not None:
-        form.authentication_method.data = selected_method_id
+    form.environment_authentication_choices = choices
+    _configure_environment_subforms(form, choices, component)
+
+
+def _configure_environment_subforms(
+    form: ComponentForm,
+    auth_choices: list[tuple[str, str]],
+    component: Component | None,
+) -> None:
+    while len(form.environments) < len(ENVIRONMENT_TYPES):
+        form.environments.append_entry()
+    while len(form.environments) > len(ENVIRONMENT_TYPES):
+        form.environments.pop_entry()
+
+    existing: dict[str, ComponentEnvironment] = {}
+    if component is not None:
+        existing = {env.environment_type: env for env in component.environments}
+
+    for index, environment_type in enumerate(ENVIRONMENT_TYPES):
+        subform = form.environments[index].form
+        subform.environment_type.data = environment_type
+        subform.authentication_method.choices = auth_choices
+        subform.environment_label = _environment_label(environment_type)
+        if request.method != "POST":
+            matched = existing.get(environment_type)
+            if matched is not None:
+                subform.is_enabled.data = bool(matched.is_enabled)
+                subform.authentication_method.data = matched.authentication_method_id
+            else:
+                subform.is_enabled.data = False
+                subform.authentication_method.data = None
 
 
 def _describe_authentication(component: Component) -> str | None:
@@ -126,6 +176,74 @@ def _describe_authentication(component: Component) -> str | None:
     if snapshot is None:
         return None
     return snapshot.label(get_locale())
+
+
+def _describe_environment_authentication(environment: ComponentEnvironment | None) -> str | None:
+    if environment is None:
+        return None
+    method = environment.authentication_method
+    if method is not None:
+        return method.get_label(get_locale())
+    if environment.authentication_method_id is None:
+        return None
+    snapshot = lookup_authentication_option(environment.authentication_method_id)
+    if snapshot is None:
+        return None
+    return snapshot.label(get_locale())
+
+
+def _get_component_environment(component: Component, environment_type: str) -> ComponentEnvironment | None:
+    for environment in component.environments:
+        if environment.environment_type == environment_type:
+            return environment
+    return None
+
+
+def _serialize_environments(component: Component) -> list[dict[str, object]]:
+    ordering = {environment: index for index, environment in enumerate(ENVIRONMENT_TYPES)}
+    serialized: list[dict[str, object]] = []
+    for environment in sorted(
+        component.environments,
+        key=lambda item: ordering.get(item.environment_type, len(ordering)),
+    ):
+        serialized.append(
+            {
+                "environment_type": environment.environment_type,
+                "is_enabled": environment.is_enabled,
+                "authentication_method_id": environment.authentication_method_id,
+                "authentication_method_label": _describe_environment_authentication(environment),
+            }
+        )
+    return serialized
+
+
+def _sync_component_environments(component: Component, form: ComponentForm) -> None:
+    existing = {environment.environment_type: environment for environment in component.environments}
+    seen: set[str] = set()
+
+    for entry in form.environments:
+        subform = entry.form
+        environment_type = (subform.environment_type.data or "").strip()
+        if not environment_type:
+            continue
+        seen.add(environment_type)
+        is_enabled = bool(subform.is_enabled.data)
+        authentication_method_id = subform.authentication_method.data
+        environment = existing.get(environment_type)
+        if is_enabled:
+            if environment is None:
+                environment = ComponentEnvironment(component=component, environment_type=environment_type)
+                db.session.add(environment)
+                existing[environment_type] = environment
+            environment.is_enabled = is_enabled
+            environment.authentication_method_id = authentication_method_id
+        elif environment is not None:
+            db.session.delete(environment)
+            existing.pop(environment_type, None)
+
+    for environment_type, environment in list(existing.items()):
+        if environment_type not in seen:
+            db.session.delete(environment)
 
 def _can_manage_bia_owner() -> bool:
     return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
@@ -258,6 +376,13 @@ def update_owner(item_id: int):
         flash(_("bia.flash.owner_permission_denied"), "danger")
         return redirect(url_for("bia.dashboard"))
 
+    previous_state = {
+        "author_id": context.author_id,
+        "author_name": getattr(context.author, "full_name", None) if context.author else None,
+        "responsible": context.responsible,
+        "security_manager": context.security_manager,
+    }
+
     owner_raw = (request.form.get("owner_id") or "").strip()
     message: str
     if not owner_raw:
@@ -265,6 +390,7 @@ def update_owner(item_id: int):
         context.responsible = None
         context.security_manager = None
         message = _("bia.flash.owner_cleared")
+        assigned_owner = None
     else:
         try:
             owner_id = int(owner_raw)
@@ -279,7 +405,39 @@ def update_owner(item_id: int):
         context.responsible = owner.full_name
         context.security_manager = owner.full_name
         message = _("bia.flash.owner_set", name=owner.full_name)
+        assigned_owner = owner
     context._suppress_last_update = True
+
+    current_state = {
+        "author_id": context.author_id,
+        "author_name": getattr(context.author, "full_name", None) if context.author else None,
+        "responsible": context.responsible,
+        "security_manager": context.security_manager,
+    }
+
+    changes: dict[str, dict[str, str | int | None]] = {}
+
+    for field, previous in previous_state.items():
+        current = current_state.get(field)
+        if previous != current:
+            changes[field] = {"old": previous, "new": current}
+
+    if changes:
+        metadata = {
+            "source": "bia.dashboard",
+            "bia_name": context.name,
+        }
+        if assigned_owner is not None:
+            metadata["assigned_owner_id"] = assigned_owner.id
+            metadata["assigned_owner_email"] = assigned_owner.email
+        log_change_event(
+            action="owner_updated",
+            entity_type="bia.context_scope",
+            entity_id=context.id,
+            changes=changes,
+            metadata=metadata,
+        )
+
     db.session.commit()
     flash(message, "success")
     return redirect(url_for("bia.dashboard"))
@@ -307,10 +465,11 @@ def add_component():
             user_type=form.user_type.data,
             process_dependencies=form.process_dependencies.data,
             description=form.description.data,
-            authentication_method_id=form.authentication_method.data,
             context_scope=context,
         )
+        component.authentication_method_id = None
         db.session.add(component)
+        _sync_component_environments(component, form)
         db.session.commit()
         return jsonify(
             {
@@ -320,6 +479,7 @@ def add_component():
                 "authentication_method_id": component.authentication_method_id,
                 "authentication_method_label": _describe_authentication(component),
                 "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
+                "environments": _serialize_environments(component),
             }
         )
     return jsonify({"success": False, "errors": form.errors}), 400
@@ -335,7 +495,7 @@ def update_component(component_id: int):
             403,
         )
     form = ComponentForm()
-    _configure_component_form(form, selected_method_id=component.authentication_method_id)
+    _configure_component_form(form, component=component)
     if form.validate_on_submit():
         component.name = form.name.data
         component.info_type = form.info_type.data
@@ -343,7 +503,8 @@ def update_component(component_id: int):
         component.user_type = form.user_type.data
         component.process_dependencies = form.process_dependencies.data
         component.description = form.description.data
-        component.authentication_method_id = form.authentication_method.data
+        component.authentication_method_id = None
+        _sync_component_environments(component, form)
         db.session.commit()
         return jsonify(
             {
@@ -352,6 +513,7 @@ def update_component(component_id: int):
                 "authentication_method_id": component.authentication_method_id,
                 "authentication_method_label": _describe_authentication(component),
                 "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
+                "environments": _serialize_environments(component),
             }
         )
     return jsonify({"success": False, "errors": form.errors}), 400
@@ -431,6 +593,7 @@ def get_component(component_id: int):
             "authentication_method_id": component.authentication_method_id,
             "authentication_method_label": _describe_authentication(component),
             "authentication_method_slug": component.authentication_method.slug if component.authentication_method else None,
+            "environments": _serialize_environments(component),
         }
     )
 
@@ -676,11 +839,13 @@ def export_item(item_id: int):
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
     html_content = render_template(
-        "bia/export_item.html",
+        "bia/context_detail.html",
         item=item,
         consequences=consequences,
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
+        can_edit_context=_can_edit_context(item),
+        export_mode=True,
     )
 
     safe_name = _safe_filename(item.name)

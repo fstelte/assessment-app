@@ -68,12 +68,20 @@ class Settings:
     export_cleanup_enabled: bool = False
     export_cleanup_max_age_days: int = 7
     export_cleanup_interval_minutes: int = 60
+    audit_log_enabled: bool = True
+    audit_log_path: str = "/backups/logs/audit.log"
+    audit_log_retention_days: int = 90
+    audit_log_prune_interval_hours: int = 24
+    audit_log_model_events: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
         defaults = cls()
         modules = os.getenv("SCAFFOLD_APP_MODULES") or ""
         module_list = [m.strip() for m in modules.split(",") if m.strip()] or list(_DEFAULT_MODULES)
+        backup_dir = os.getenv("BACKUP_DIR", "/backups")
+        default_audit_path = os.path.join(backup_dir, "logs", "audit.log")
+
         return cls(
             secret_key=os.getenv("SECRET_KEY", defaults.secret_key),
             database_url=os.getenv("DATABASE_URL", defaults.database_url),
@@ -125,6 +133,14 @@ class Settings:
             export_cleanup_enabled=_as_bool(os.getenv("EXPORT_CLEANUP_ENABLED")) or defaults.export_cleanup_enabled,
             export_cleanup_max_age_days=_int_env("EXPORT_CLEANUP_MAX_AGE_DAYS", defaults.export_cleanup_max_age_days),
             export_cleanup_interval_minutes=_int_env("EXPORT_CLEANUP_INTERVAL_MINUTES", defaults.export_cleanup_interval_minutes),
+            audit_log_enabled=_bool_env("AUDIT_LOG_ENABLED", defaults.audit_log_enabled),
+            audit_log_path=os.getenv("AUDIT_LOG_PATH", default_audit_path),
+            audit_log_retention_days=_int_env("AUDIT_LOG_RETENTION_DAYS", defaults.audit_log_retention_days),
+            audit_log_prune_interval_hours=_int_env(
+                "AUDIT_LOG_PRUNE_INTERVAL_HOURS",
+                defaults.audit_log_prune_interval_hours,
+            ),
+            audit_log_model_events=os.getenv("AUDIT_LOG_MODEL_EVENTS", defaults.audit_log_model_events),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -179,6 +195,11 @@ class Settings:
             "EXPORT_CLEANUP_ENABLED": self.export_cleanup_enabled,
             "EXPORT_CLEANUP_MAX_AGE_DAYS": self.export_cleanup_max_age_days,
             "EXPORT_CLEANUP_INTERVAL_MINUTES": self.export_cleanup_interval_minutes,
+            "AUDIT_LOG_ENABLED": self.audit_log_enabled,
+            "AUDIT_LOG_PATH": self.audit_log_path,
+            "AUDIT_LOG_RETENTION_DAYS": self.audit_log_retention_days,
+            "AUDIT_LOG_PRUNE_INTERVAL_HOURS": self.audit_log_prune_interval_hours,
+            "AUDIT_LOG_MODEL_EVENTS": self.audit_log_model_events,
         }
 
     def saml_allowed_groups(self) -> List[str]:

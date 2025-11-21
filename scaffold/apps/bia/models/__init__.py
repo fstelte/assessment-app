@@ -14,6 +14,9 @@ from ..localization import translate_authentication_label
 from ...dpia import models as dpia_models  # noqa: F401  pylint: disable=unused-import
 
 
+ENVIRONMENT_TYPES = ("development", "test", "acceptance", "production")
+
+
 class ContextScope(db.Model):
     """Represents the scope of a BIA context."""
 
@@ -108,9 +111,49 @@ class Component(db.Model):
         back_populates="component",
         cascade="all, delete-orphan",
     )
+    environments = db.relationship(
+        "ComponentEnvironment",
+        back_populates="component",
+        cascade="all, delete-orphan",
+        order_by="ComponentEnvironment.environment_type",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Component {self.name}>"
+
+
+class ComponentEnvironment(db.Model):
+    """Environment usage and authentication per component."""
+
+    __tablename__ = "bia_component_environments"
+    __table_args__ = (db.UniqueConstraint("component_id", "environment_type", name="uq_component_environment"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    component_id = db.Column(db.Integer, db.ForeignKey("bia_components.id", ondelete="CASCADE"), nullable=False)
+    environment_type = db.Column(
+        Enum(
+            *ENVIRONMENT_TYPES,
+            name="bia_environment_type",
+            create_type=False,
+            use_existing_type=True,
+        ),
+        nullable=False,
+    )
+    is_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    authentication_method_id = db.Column(
+        db.Integer,
+        db.ForeignKey("bia_authentication_methods.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    component = db.relationship("Component", back_populates="environments")
+    authentication_method = db.relationship("AuthenticationMethod", back_populates="environment_assignments")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            "<ComponentEnvironment component_id="
+            f"{self.component_id} environment_type={self.environment_type} enabled={self.is_enabled}>"
+        )
 
 
 class Consequences(db.Model):
@@ -200,6 +243,11 @@ class AuthenticationMethod(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     components = db.relationship("Component", back_populates="authentication_method")
+    environment_assignments = db.relationship(
+        "ComponentEnvironment",
+        back_populates="authentication_method",
+        cascade="all, delete-orphan",
+    )
 
     def get_label(self, locale: str | None = None) -> str:
         """Return the display label for the configured locale."""
@@ -211,7 +259,15 @@ class AuthenticationMethod(db.Model):
         return translate_authentication_label(self.slug, locale, fallbacks)
 
 
-_TRACKED_MODELS = [ContextScope, Component, Consequences, AvailabilityRequirements, AIIdentificatie, Summary]
+_TRACKED_MODELS = [
+    ContextScope,
+    Component,
+    ComponentEnvironment,
+    Consequences,
+    AvailabilityRequirements,
+    AIIdentificatie,
+    Summary,
+]
 
 
 def _update_last_modified(mapper, connection, target) -> None:
@@ -233,7 +289,7 @@ def _update_last_modified(mapper, connection, target) -> None:
         context_scope = target
     elif isinstance(target, Component):
         context_scope = target.context_scope
-    elif isinstance(target, (Consequences, AvailabilityRequirements, AIIdentificatie)):
+    elif isinstance(target, (Consequences, AvailabilityRequirements, AIIdentificatie, ComponentEnvironment)):
         component = getattr(target, "component", None)
         if component is not None:
             context_scope = component.context_scope
