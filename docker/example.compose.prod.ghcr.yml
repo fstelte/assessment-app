@@ -1,6 +1,7 @@
 services:
   web:
     image: ${APP_IMAGE:-ghcr.io/fstelte/assessment-app:latest}
+    pull_policy: always
     env_file:
       - ../.env.production
     environment:
