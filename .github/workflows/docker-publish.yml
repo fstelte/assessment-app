@@ -31,13 +31,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          export PATH="$HOME/.local/bin:$PATH"
+
       - name: Extract project version
         id: project_version
         shell: bash
         run: |
-          VERSION=$(python -c "import pathlib, re; data = pathlib.Path('pyproject.toml').read_text(); match = re.search(r'^version\s*=\s*\"([^\"]+)\"', data, re.MULTILINE); print(match.group(1) if match else '')")
+          VERSION=$(poetry version -s)
           if [ -z "$VERSION" ]; then
-            echo "Project version not found in pyproject.toml" >&2
+            echo "Project version not found by Poetry" >&2
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
