@@ -34,7 +34,8 @@
     {% set repo_external = '://' in repo_url %}
     {% set changelog_url = meta.get('changelog', '#') %}
     {% set changelog_external = '://' in changelog_url %}
-  <footer class="border-top border-secondary py-3 mt-4 mt-lg-5 mt-auto">
+    {% if not export_mode|default(false) %}
+    <footer class="border-top border-secondary py-3 mt-4 mt-lg-5 mt-auto">
       <div class="container text-center small text-secondary">
         {{ _('app.footer.version', version=meta.get('version', '0.0.0')) }} ·
         {{ _('app.footer.built_by', author=meta.get('author', 'Unknown author')) }} ·
@@ -43,6 +44,7 @@
         <a href="{{ changelog_url }}" class="{{ link_class }} text-decoration-none" {% if changelog_external %}target="_blank" rel="noopener"{% endif %}>{{ _('app.footer.changelog') }}</a>
       </div>
     </footer>
+    {% endif %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
   </body>
