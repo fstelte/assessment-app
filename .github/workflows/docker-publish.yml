@@ -50,7 +50,6 @@ jobs:
           tags: |
             type=raw,value=${{ steps.project_version.outputs.version }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=ref,event=branch
             type=sha
 
       - name: Build and push image
