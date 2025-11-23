@@ -81,6 +81,10 @@ bp = Blueprint(
 )
 
 
+_ENVIRONMENT_SELECTION_ORDER = tuple(reversed(ENVIRONMENT_TYPES))
+_ENVIRONMENT_SELECTION_RANK = {name: index for index, name in enumerate(_ENVIRONMENT_SELECTION_ORDER)}
+
+
 @bp.app_context_processor
 def inject_helpers():
     return {
@@ -166,13 +170,35 @@ def _configure_environment_subforms(
                 subform.authentication_method.data = None
 
 
+def _select_primary_environment_assignment(component: Component) -> ComponentEnvironment | None:
+    best_assignment: ComponentEnvironment | None = None
+    best_rank: int | None = None
+    for environment in component.environments:
+        if not getattr(environment, "is_enabled", True):
+            continue
+        if environment.authentication_method_id is None:
+            continue
+        rank = _ENVIRONMENT_SELECTION_RANK.get(environment.environment_type, len(_ENVIRONMENT_SELECTION_RANK))
+        if best_assignment is None or best_rank is None or rank < best_rank:
+            best_assignment = environment
+            best_rank = rank
+    return best_assignment
+
+
+def _resolve_component_authentication_method_id(component: Component) -> int | None:
+    if component.authentication_method_id is not None:
+        return component.authentication_method_id
+    assignment = _select_primary_environment_assignment(component)
+    if assignment is not None:
+        return assignment.authentication_method_id
+    return None
+
+
 def _describe_authentication(component: Component) -> str | None:
-    method = component.authentication_method
-    if method is not None:
-        return method.get_label(get_locale())
-    if component.authentication_method_id is None:
+    method_id = _resolve_component_authentication_method_id(component)
+    if method_id is None:
         return None
-    snapshot = lookup_authentication_option(component.authentication_method_id)
+    snapshot = lookup_authentication_option(method_id)
     if snapshot is None:
         return None
     return snapshot.label(get_locale())
@@ -953,6 +979,7 @@ def export_data_inventory():
         Component.query.options(
             joinedload(Component.context_scope),
             joinedload(Component.authentication_method),
+            joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
         .join(ContextScope)
         .all()
@@ -987,6 +1014,7 @@ def export_authentication_overview():
         Component.query.options(
             joinedload(Component.context_scope),
             joinedload(Component.authentication_method),
+            joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
         .order_by(Component.name.asc())
         .all()
@@ -998,7 +1026,8 @@ def export_authentication_overview():
     unassigned: list[Component] = []
 
     for component in components:
-        option = option_map.get(component.authentication_method_id or 0)
+        method_id = _resolve_component_authentication_method_id(component)
+        option = option_map.get(method_id or 0)
         if option is None:
             unassigned.append(component)
             continue
