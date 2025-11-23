@@ -80,3 +80,54 @@ def test_assigning_bia_owner_records_audit_event(app, client, login):
         changes = payload.get("changes") or {}
         assert changes.get("author_id", {}).get("new") == target_id
         assert changes.get("author_name", {}).get("new") == target_name
+
+
+def test_updating_bia_owner_does_not_change_security_manager(app, client, login):
+    with app.app_context():
+        ensure_default_roles()
+        admin = User.find_by_email("user@example.com")
+        assert admin is not None
+        admin.ensure_role(ROLE_ADMIN)
+
+        target = User(
+            email="owner2@example.com",
+            first_name="Morgan",
+            last_name="Lead",
+            status=UserStatus.ACTIVE,
+        )
+        target.set_password("Password123!")
+        context = ContextScope(
+            name="Continuity Plan Two",
+            security_manager="Existing Manager",
+        )
+        db.session.add_all([admin, target, context])
+        db.session.commit()
+
+        context_id = context.id
+        target_id = target.id
+
+    response = client.post(
+        f"/bia/item/{context_id}/owner",
+        data={"owner_id": str(target_id)},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        updated = ContextScope.query.get(context_id)
+        assert updated is not None
+        assert updated.responsible == target.full_name
+        assert updated.security_manager == "Existing Manager"
+
+    response = client.post(
+        f"/bia/item/{context_id}/owner",
+        data={"owner_id": ""},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        cleared = ContextScope.query.get(context_id)
+        assert cleared is not None
+        assert cleared.responsible is None
+        assert cleared.security_manager == "Existing Manager"
