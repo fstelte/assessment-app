@@ -388,7 +388,6 @@ def update_owner(item_id: int):
     if not owner_raw:
         context.author = None
         context.responsible = None
-        context.security_manager = None
         message = _("bia.flash.owner_cleared")
         assigned_owner = None
     else:
@@ -403,7 +402,6 @@ def update_owner(item_id: int):
             return redirect(url_for("bia.dashboard"))
         context.author = owner
         context.responsible = owner.full_name
-        context.security_manager = owner.full_name
         message = _("bia.flash.owner_set", name=owner.full_name)
         assigned_owner = owner
     context._suppress_last_update = True
