@@ -186,6 +186,14 @@ def _select_primary_environment_assignment(component: Component) -> ComponentEnv
 
 
 def _resolve_component_authentication_method_id(component: Component) -> int | None:
+    """Resolve authentication method ID for a component.
+
+    Returns the component's direct authentication_method_id if set,
+    otherwise falls back to the authentication method from the highest
+    priority enabled environment (production > acceptance > test > development).
+
+    Returns None if no authentication method is assigned.
+    """
     if component.authentication_method_id is not None:
         return component.authentication_method_id
     assignment = _select_primary_environment_assignment(component)
