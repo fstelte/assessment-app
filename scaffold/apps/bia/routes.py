@@ -181,7 +181,7 @@ def _select_primary_environment_assignment(component: Component) -> ComponentEnv
         if environment.authentication_method_id is None:
             continue
         rank = _ENVIRONMENT_SELECTION_RANK.get(environment.environment_type, len(_ENVIRONMENT_SELECTION_RANK))
-        if best_assignment is None or best_rank is None or rank < best_rank:
+        if best_assignment is None or rank < best_rank:
             best_assignment = environment
             best_rank = rank
     return best_assignment
