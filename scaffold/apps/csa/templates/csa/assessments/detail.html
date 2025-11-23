@@ -37,6 +37,19 @@
         </dl>
       </div>
     </div>
+
+    {% if review_allowed %}
+      <div class="card bg-dark border-danger mb-4">
+        <div class="card-body">
+          <h2 class="h5 text-danger mb-2">{{ _('csa.assessments.detail.delete.title') }}</h2>
+          <p class="text-secondary mb-3">{{ _('csa.assessments.detail.delete.body') }}</p>
+          <form method="post" action="{{ url_for('csa.delete_assessment', assessment_id=assessment.id) }}" onsubmit="return confirm('{{ _('csa.assessments.detail.delete.confirm') }}');">
+            {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+            <button type="submit" class="btn btn-outline-danger">{{ _('csa.assessments.detail.delete.button') }}</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
     <h2 class="h4 mb-3">{{ _('csa.assessments.detail.questions.title') }}</h2>
     {% if has_questions %}
       {% if not can_edit %}

@@ -450,6 +450,7 @@
       "assessment_locked": "This assessment is already submitted and cannot be edited.",
       "submitted_for_review": "Assessment submitted for review.",
       "responses_saved": "Responses saved.",
+      "assessment_deleted": "Assessment deleted.",
       "review_approved": "Assessment approved.",
       "review_comment_required": "Add a comment when returning an assessment.",
       "review_returned": "Assessment returned to assignee.",
@@ -591,6 +592,12 @@
           "submit_for_review": "Submit for review"
         },
         "locked": "This assessment is locked because it has already been submitted.",
+        "delete": {
+          "title": "Danger zone",
+          "body": "Deleting an assessment removes all responses and assignments. This action cannot be undone.",
+          "button": "Delete assessment",
+          "confirm": "Are you sure you want to delete this assessment?"
+        },
         "review": {
           "heading": "Review",
           "comment_label": "Review comment",

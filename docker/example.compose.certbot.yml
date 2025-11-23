@@ -1,0 +1,35 @@
+name: ${COMPOSE_PROJECT_NAME:-assessment_app}
+
+services:
+  gateway:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+
+  certbot:
+    image: certbot/certbot:v2.12.0
+    depends_on:
+      - gateway
+    env_file:
+      - ../.env.production
+    environment:
+      CERTBOT_ENABLED: ${CERTBOT_ENABLED:-false}
+      CERTBOT_RENEW_INTERVAL: ${CERTBOT_RENEW_INTERVAL:-43200}
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
+      CERTBOT_PRIMARY_DOMAIN: ${CERTBOT_PRIMARY_DOMAIN:-}
+      CERTBOT_ADDITIONAL_DOMAINS: ${CERTBOT_ADDITIONAL_DOMAINS:-}
+      CERTBOT_STAGING: ${CERTBOT_STAGING:-false}
+      CERTBOT_RSA_KEY_SIZE: ${CERTBOT_RSA_KEY_SIZE:-4096}
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+      - ./certbot/start-certbot.sh:/usr/local/bin/start-certbot.sh:ro
+    command: ["/bin/sh", "/usr/local/bin/start-certbot.sh"]
+    restart: unless-stopped
+
+volumes:
+  certbot-webroot:
+  certbot-certs:

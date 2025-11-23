@@ -615,7 +615,7 @@ def delete_assessment(assessment_id: int):
     assessment = Assessment.query.get_or_404(assessment_id)
     db.session.delete(assessment)
     db.session.commit()
-    flash(_("Assessment deleted."), "success")
+    flash(_("csa.flash.assessment_deleted"), "success")
 
     return redirect(url_for("csa.overview_assessments"))
 

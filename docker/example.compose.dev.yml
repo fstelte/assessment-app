@@ -1,4 +1,5 @@
 version: "3.9"
+name: ${COMPOSE_PROJECT_NAME:-assessment_app}
 
 services:
   web:

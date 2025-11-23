@@ -1,0 +1,62 @@
+name: ${COMPOSE_PROJECT_NAME:-assessment_app}
+
+services:
+  fail2ban:
+    image: crazymax/fail2ban:1.0.2
+    profiles:
+      - fail2ban
+    env_file:
+      - ../.env.production
+    volumes:
+      - fail2ban-data:/data
+      - gateway-logs:/var/log/nginx:ro
+      - ./fail2ban/start-fail2ban.sh:/usr/local/bin/start-fail2ban.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/start-fail2ban.sh"]
+    command: ["fail2ban-server", "-f", "-x", "-v", "start"]
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: host
+    restart: unless-stopped
+
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    profiles:
+      - crowdsec
+    env_file:
+      - ../.env.production
+    environment:
+      LAPI_URL: ${CROWDSEC_LAPI_URL:-http://crowdsec:8080/}
+    volumes:
+      - crowdsec-data:/var/lib/crowdsec/data
+      - crowdsec-config:/etc/crowdsec
+      - gateway-logs:/var/log/nginx:ro
+      - ./crowdsec/start-crowdsec.sh:/usr/local/bin/start-crowdsec.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/start-crowdsec.sh"]
+    command: ["crowdsec"]
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  crowdsec-firewall-bouncer:
+    image: crowdsecurity/cs-firewall-bouncer:latest
+    profiles:
+      - crowdsec
+    depends_on:
+      - crowdsec
+    env_file:
+      - ../.env.production
+    volumes:
+      - ./crowdsec/start-firewall-bouncer.sh:/usr/local/bin/start-firewall-bouncer.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/start-firewall-bouncer.sh"]
+    command: []
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: host
+    restart: unless-stopped
+
+volumes:
+  fail2ban-data:
+  crowdsec-data:
+  crowdsec-config:

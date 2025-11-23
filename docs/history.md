@@ -4,6 +4,8 @@ This log tracks major decisions and milestones as the scaffold application evolv
 
 | Date | Change | Notes |
 | --- | --- | --- |
+| 2025-11-23 | CSA assessment deletion controls | Admins and assessment managers can now remove assessments (with cascaded responses/assignments) from the detail view, plus new translations and tests. |
+| 2025-11-23 | Optional Certbot & security overlays | Added automated Let's Encrypt support plus fail2ban and CrowdSec sidecars for standalone deployments, with new `.env.production` toggles and compose overlays. |
 | 2025-11-16 | DPIA workflow overhaul | Added colored status badges (in progress, in review, finished, abandoned), CRUD controls for risks/measures, and severity badge alignment with BIA colors. |
 | 2025-11-15 | CSS-only form tooltips and translations | Added reusable tooltip macro, styling, and localisation updates for BIA forms with accessible hover/focus helpers. |
 | 2025-11-05 | BIA owner assignment and AI risk display updates | Owner reassignment no longer changes last-update timestamps, risk indicators show yes/no, and AI risk tables now include motivation, colour-coded badges, and translations. |

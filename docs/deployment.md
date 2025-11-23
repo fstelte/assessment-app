@@ -17,6 +17,9 @@ The reference Compose file runs the web application alongside PostgreSQL.
 - Customise the message/branding by editing `docker/templates/maintenance.html.tmpl`; the rendered output is shared by Flask (for 503 responses) and Nginx (for upstream failures).
 - Because the `web` container no longer exposes a host port, target `http://localhost:8000` via the `gateway` service. Continue using `docker compose exec web ...` for CLI tasks.
 - Configure contact information via `.env.production` using `MAINTENANCE_CONTACT_EMAIL` (with optional `MAINTENANCE_CONTACT_LABEL` and `MAINTENANCE_CONTACT_LINK`). The entrypoint renders the HTML before database checks, keeping the page available even if the app fails to boot.
+- Decide how Nginx integrates into your network perimeter:
+  - If a platform load balancer already terminates TLS, keep the gateway internal-only and follow `docker/nginx/nginx.conf.example.behind-proxy.md`.
+  - If the compose stack must face the public internet, pair it with the Certbot/security overlays and use `docker/nginx/nginx.conf.example.public.md` as the reference configuration.
 
 ## Kubernetes (Optional)
 

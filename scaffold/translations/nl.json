@@ -450,6 +450,7 @@
             "assessment_locked": "Deze assessment is vergrendeld omdat deze al is ingediend.",
             "submitted_for_review": "Assessment ter beoordeling ingediend.",
             "responses_saved": "Antwoorden opgeslagen.",
+            "assessment_deleted": "Assessment verwijderd.",
             "review_approved": "Assessment goedgekeurd.",
             "review_comment_required": "Voeg een opmerking toe bij het terugsturen van een assessment.",
             "review_returned": "Assessment teruggestuurd naar de verantwoordelijke.",
@@ -591,6 +592,12 @@
                 "submit_for_review": "Indienen voor beoordeling"
               },
               "locked": "Deze assessment is vergrendeld omdat deze al is ingediend.",
+              "delete": {
+                "title": "Gevarenzone",
+                "body": "Het verwijderen van een assessment verwijdert alle antwoorden en toewijzingen. Deze actie kan niet ongedaan worden gemaakt.",
+                "button": "Assessment verwijderen",
+                "confirm": "Weet je zeker dat je deze assessment wilt verwijderen?"
+              },
               "review": {
                 "heading": "Review",
                 "comment_label": "Reviewopmerking",

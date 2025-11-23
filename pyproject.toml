@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2025.11.6.2"
+version = "2025.11.7"
 description = "Unified scaffold for applications"
 authors = ["Ferry Stelte"]
 readme = "README.md"
