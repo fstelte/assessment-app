@@ -63,6 +63,7 @@ The entrypoint script waits for the database container, ensures the database exi
 - `docker/compose.backup.yml` extends the production stack with:
   - `db-backup`: creates compressed snapshots on a schedule (`BACKUP_INTERVAL_SECONDS`) and optional S3 upload.
   - `db-restore`: watches a directory for new dump files, stops the configured application containers, restores the database, and brings the services back online.
+- The backup helper is published as `ghcr.io/fstelte/assessment-app-backup` on pushes to `main`. Override `BACKUP_IMAGE` in your compose file (defaults to that tag) if you want to use a different registry or a locally-built image.
 - Mount host directories so files persist outside the container lifecycle:
   - `./backups:/backups` (written by `db-backup`).
   - `./restore:/restore` (watched by `db-restore`; drop `.sql[.gz]`, `.dump[.gz]`, or `.db[.gz]` files into `/restore/incoming`).

@@ -5,7 +5,7 @@ services:
     build:
       context: ..
       dockerfile: docker/backup/Dockerfile
-    image: assessment-app-db-backup:latest
+    image: ${BACKUP_IMAGE:-ghcr.io/fstelte/assessment-app-backup:latest}
     env_file:
       - ../.env.production
     environment:
