@@ -60,6 +60,8 @@ http {
   }
 
   server {
+    listen 8000;
+    listen [::]:8000;
     listen 80;
     listen [::]:80;
 
