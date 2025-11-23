@@ -34,10 +34,16 @@ if [ -z "$DB_URI" ]; then
   fail "No database URI found. Set SQLALCHEMY_DATABASE_URI or DATABASE_URL."
 fi
 
+# Some orchestrators wrap env values in quotes; strip matching leading/trailing quotes.
+if [ "${DB_URI#\"}" != "$DB_URI" ] && [ "${DB_URI%\"}" != "$DB_URI" ]; then
+  DB_URI=${DB_URI#\"}
+  DB_URI=${DB_URI%\"}
+fi
+
 mkdir -p "$BACKUP_DIR" || fail "Could not create backup dir: $BACKUP_DIR"
 
 # Determine scheme (e.g. "sqlite", "postgresql+psycopg") and normalize
-SCHEME_WITH_PLUS=$(printf '%s' "$DB_URI" | sed -n 's,\([a-zA-Z0-9+._-]*\):.*,\1,p')
+SCHEME_WITH_PLUS=${DB_URI%%:*}
 SCHEME=${SCHEME_WITH_PLUS%%+*}
 
 if [ "$SCHEME" = "sqlite" ]; then
@@ -72,11 +78,23 @@ elif [ "$SCHEME" = "postgres" ] || [ "$SCHEME" = "postgresql" ]; then
   rest=${DB_URI#*://}
   PG_URI="$SCHEME://$rest"
 
-  OUT_FILE_GZ="$BACKUP_DIR/pg_dump-$(timestamp).sql.gz"
+  STAMP=$(timestamp)
+  OUT_FILE_BASE="$BACKUP_DIR/pg_dump-$STAMP.sql"
+  OUT_FILE_GZ="$OUT_FILE_BASE.gz"
   printf '%s - backup-db: running pg_dump for %s -> %s\n' "$(timestamp)" "$PG_URI" "$OUT_FILE_GZ"
-  pg_dump "$PG_URI" --format=plain --no-owner --no-privileges 2>/dev/null | gzip > "$OUT_FILE_GZ" || fail "pg_dump failed"
-  printf '%s - backup-db: success: %s\n' "$(timestamp)" "$OUT_FILE_GZ"
-  LAST_CREATED="$OUT_FILE_GZ"
+  if pg_dump "$PG_URI" --format=plain --no-owner --no-privileges --file="$OUT_FILE_BASE"; then
+    if gzip -9 "$OUT_FILE_BASE"; then
+      mv "$OUT_FILE_BASE.gz" "$OUT_FILE_GZ"
+      printf '%s - backup-db: success: %s\n' "$(timestamp)" "$OUT_FILE_GZ"
+      LAST_CREATED="$OUT_FILE_GZ"
+    else
+      rm -f "$OUT_FILE_BASE"
+      fail "Failed to compress pg_dump output"
+    fi
+  else
+    rm -f "$OUT_FILE_BASE"
+    fail "pg_dump failed"
+  fi
 
 else
   fail "Unsupported or unknown DB URI scheme: $DB_URI"
