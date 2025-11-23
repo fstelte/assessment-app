@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from scaffold.apps.bia.models import Component, Consequences, ContextScope
+from scaffold.apps.bia.models import AuthenticationMethod, Component, ComponentEnvironment, Consequences, ContextScope
 from scaffold.apps.identity.models import ROLE_ADMIN, User, UserStatus, ensure_default_roles
 from scaffold.extensions import db
 from scaffold.models import AuditLog
@@ -131,3 +131,25 @@ def test_updating_bia_owner_does_not_change_security_manager(app, client, login)
         assert cleared is not None
         assert cleared.responsible is None
         assert cleared.security_manager == "Existing Manager"
+
+
+def test_export_authentication_overview_uses_environment_method(app, client, login):
+    with app.app_context():
+        method = AuthenticationMethod(slug="central-idp", label_en="Central IdP", label_nl="Centraal IdP")
+        context = ContextScope(name="Continuity Plan Three")
+        component = Component(name="Access Portal", context_scope=context)
+        environment = ComponentEnvironment(
+            environment_type="production",
+            is_enabled=True,
+            authentication_method=method,
+        )
+        component.environments.append(environment)
+        db.session.add_all([method, context, component])
+        db.session.commit()
+
+    response = client.get("/bia/export_authentication_overview")
+    assert response.status_code == 200
+    body = response.data.decode()
+    assert "Access Portal" in body
+    assert "Central IdP" in body
+    assert "All components have an authentication type assigned." in body
