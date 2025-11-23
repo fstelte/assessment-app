@@ -81,6 +81,8 @@ bp = Blueprint(
 )
 
 
+# Environment selection order and ranking for fallback authentication resolution.
+# Priority: production (0) > acceptance (1) > test (2) > development (3)
 _ENVIRONMENT_SELECTION_ORDER = tuple(reversed(ENVIRONMENT_TYPES))
 _ENVIRONMENT_SELECTION_RANK = {name: index for index, name in enumerate(_ENVIRONMENT_SELECTION_ORDER)}
 
