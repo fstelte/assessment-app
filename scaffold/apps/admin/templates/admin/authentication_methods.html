@@ -86,7 +86,7 @@
                 </td>
                 <td class="text-end">
                   <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
-                    <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#edit-method-{{ method.id }}">
+                    <button class="btn btn-outline-light btn-sm" type="button" data-modal-target="edit-method-{{ method.id }}">
                       {{ _('admin.authentication_methods.list.actions.edit') }}
                     </button>
                     <form method="post" action="{{ url_for('admin.toggle_authentication_method', method_id=method.id) }}">
@@ -105,12 +105,12 @@
           </table>
         </div>
         {% for method in methods %}
-        <div class="modal fade" id="edit-method-{{ method.id }}" tabindex="-1" aria-labelledby="edit-method-label-{{ method.id }}" aria-hidden="true">
+        <div class="modal" id="edit-method-{{ method.id }}" tabindex="-1" aria-labelledby="edit-method-label-{{ method.id }}" aria-hidden="true">
           <div class="modal-dialog">
             <div class="modal-content {{ 'bg-dark border-secondary' if is_dark else '' }}">
               <div class="modal-header {{ border_class }}">
                 <h3 class="modal-title h5" id="edit-method-label-{{ method.id }}">{{ _('admin.authentication_methods.edit.title', name=method_display_names[method.id]) }}</h3>
-                <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
+                <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
               </div>
               <div class="modal-body">
                 <form method="post" action="{{ url_for('admin.update_authentication_method', method_id=method.id) }}" class="vstack gap-3">

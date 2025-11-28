@@ -46,9 +46,9 @@
   {% endif %}
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
   {% for property, value in max_cia_impact.items() %}
-  <div class="col-md-4">
+  <div class="col">
     <div class="card {{ card_surface }} h-100">
       <div class="card-body">
         <div class="{{ text_muted }} text-uppercase small">{{ property.capitalize() }}</div>
@@ -57,7 +57,7 @@
     </div>
   </div>
   {% endfor %}
-  <div class="col-md-4">
+  <div class="col">
     <div class="card {{ card_surface }} h-100">
       <div class="card-body">
         <div class="{{ text_muted }} text-uppercase small">Components</div>
@@ -67,8 +67,8 @@
   </div>
 </div>
 
-<div class="row g-4 mb-4">
-  <div class="col-lg-7">
+<div class="d-flex flex-column flex-lg-row align-items-start gap-4 mb-4">
+  <div class="flex-grow-1">
     <div class="card {{ card_surface }} h-100">
       <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
         <span>Components</span>
@@ -132,7 +132,7 @@
       </div>
     </div>
   </div>
-  <div class="col-lg-5">
+  <div class="flex-shrink-0 w-100 w-lg-auto" style="min-width: 220px; max-width: 320px;">
     <div class="card {{ card_surface }} mb-4">
       <div class="card-header {{ border_class }}">Risk Assessment</div>
       <div class="card-body d-flex flex-column gap-3">
@@ -186,7 +186,7 @@
       </div>
     </div>
     <div class="card {{ card_surface }}">
-      <div class="card-header {{ border_class }}">Summary</div>
+      <div class="card-header {{ border_class }}>Summary</div>
       <div class="card-body">
         {% if item.summary %}
           <p class="mb-0">{{ item.summary.content }}</p>

@@ -8,9 +8,9 @@
 {% set nav_link_color = 'text-light' if is_dark else 'text-dark' %}
 {% set outline_inverse = 'btn-outline-light' if is_dark else 'btn-outline-dark' %}
 {% set badge_muted = 'text-bg-secondary' if is_dark else 'text-bg-secondary' %}
-<div class="row g-4">
-	<div class="col-lg-3 col-xl-2">
-		<nav class="{{ sidebar_card }} sticky-top offset-top-6rem">
+<div class="d-flex flex-column flex-lg-row gap-4">
+  <aside class="col-lg-3 col-xl-2 order-2 order-lg-1">
+    <nav class="{{ sidebar_card }} sticky-top offset-top-6rem">
 			<div class="card-body p-3">
 				<h2 class="h6 text-uppercase text-secondary">{{ _('bia.dashboard.sidebar.navigate') }}</h2>
 				<ul class="nav flex-column gap-2 mt-3">
@@ -40,8 +40,8 @@
 				</div>
 			</div>
 		</nav>
-	</div>
-	<div class="col-lg-9 col-xl-10">
+	</aside>
+	<section class="flex-grow-1 order-1 order-lg-2">
 		<div class="mb-4">
 			<h1 class="mb-1">{{ _('bia.dashboard.header.title') }}</h1>
 			<p class="text-secondary mb-0">{{ _('bia.dashboard.header.subtitle') }}</p>
@@ -112,6 +112,6 @@
 			<strong>{{ _('bia.dashboard.empty.title') }}</strong> {{ _('bia.dashboard.empty.body') }}
 		</div>
 		{% endif %}
-	</div>
+	</section>
 </div>
 {% endblock %}

@@ -10,7 +10,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Consequences for {{ component.name }}</h1>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addConsequenceModal">Add consequence</button>
+  <button class="btn btn-primary" data-modal-target="addConsequenceModal">Add consequence</button>
 </div>
 
 <div class="card bg-dark border-secondary">
@@ -62,12 +62,12 @@
 </div>
 
 <!-- Add consequence modal -->
-<div class="modal fade" id="addConsequenceModal" tabindex="-1" aria-labelledby="addConsequenceLabel" aria-hidden="true">
+<div class="modal" id="addConsequenceModal" tabindex="-1" aria-labelledby="addConsequenceLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content bg-dark border-secondary">
       <div class="modal-header border-secondary">
         <h2 class="modal-title h5" id="addConsequenceLabel">Add consequence</h2>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form id="add-consequence-form" class="vstack gap-3">
@@ -104,7 +104,7 @@
         </form>
       </div>
       <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-light" data-modal-close>Cancel</button>
         <button type="button" class="btn btn-primary" data-submit-add>Save consequence(s)</button>
       </div>
     </div>
@@ -112,12 +112,12 @@
 </div>
 
 <!-- Edit consequence modal -->
-<div class="modal fade" id="editConsequenceModal" tabindex="-1" aria-labelledby="editConsequenceLabel" aria-hidden="true">
+<div class="modal" id="editConsequenceModal" tabindex="-1" aria-labelledby="editConsequenceLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content bg-dark border-secondary">
       <div class="modal-header border-secondary">
         <h2 class="modal-title h5" id="editConsequenceLabel">Edit consequence</h2>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form id="edit-consequence-form" class="vstack gap-3">
@@ -170,7 +170,7 @@
         </form>
       </div>
       <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-light" data-modal-close>Cancel</button>
         <button type="button" class="btn btn-primary" data-submit-edit>Save changes</button>
       </div>
     </div>
@@ -179,21 +179,18 @@
 
 <script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', () => {
-  const bootstrapLib = window.bootstrap;
-  if (!bootstrapLib) {
-    console.error('Bootstrap library not available; consequence modals inactive.');
-    return;
-  }
-
+  const ui = window.tailwindUI || {};
   const csrfTokenInput = document.getElementById('csrf-token');
   const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
   const addEndpoint = "{{ url_for('bia.add_consequence', component_id=component.id) }}";
   const addModalElement = document.getElementById('addConsequenceModal');
   const editModalElement = document.getElementById('editConsequenceModal');
-  const addModal = addModalElement ? new bootstrapLib.Modal(addModalElement) : null;
-  const editModal = editModalElement ? new bootstrapLib.Modal(editModalElement) : null;
   const addForm = document.getElementById('add-consequence-form');
   const editForm = document.getElementById('edit-consequence-form');
+  const showAddModal = () => ui.openModal?.(addModalElement);
+  const hideAddModal = () => ui.closeModal?.(addModalElement);
+  const showEditModal = () => ui.openModal?.(editModalElement);
+  const hideEditModal = () => ui.closeModal?.(editModalElement);
 
   const resetForm = (form) => {
     if (!form) {
@@ -202,8 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
     form.reset();
   };
 
-  addModalElement?.addEventListener('hidden.bs.modal', () => resetForm(addForm));
-  editModalElement?.addEventListener('hidden.bs.modal', () => resetForm(editForm));
+  addModalElement?.addEventListener('twui:modal:close', () => resetForm(addForm));
+  editModalElement?.addEventListener('twui:modal:close', () => resetForm(editForm));
 
   const collectFormValues = (form) => Object.fromEntries(new FormData(form));
 
@@ -230,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
-          addModal?.hide();
+          hideAddModal();
           window.location.reload();
         } else {
           window.alert('Unable to add consequence: ' + JSON.stringify(result.errors));
@@ -261,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
-          editModal?.hide();
+          hideEditModal();
           window.location.reload();
         } else {
           window.alert('Unable to update consequence: ' + JSON.stringify(result.errors));
@@ -299,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then((data) => {
         hydrateEditForm(data, updateUrl);
-        editModal?.show();
+        showEditModal();
       })
       .catch(() => window.alert('Failed to load the selected consequence.'));
   };

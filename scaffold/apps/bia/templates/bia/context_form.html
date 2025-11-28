@@ -99,7 +99,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h5 mb-0">{{ _('bia.context_form.components.title') }}</h2>
-          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#biaAddComponentModal">
+          <button type="button" class="btn btn-primary btn-sm" data-modal-target="biaAddComponentModal">
             <i class="fas fa-plus me-1"></i>{{ _('bia.context_form.components.add') }}
           </button>
         </div>
@@ -156,12 +156,12 @@
     </div>
 
     <!-- View component modal -->
-    <div class="modal fade" id="biaViewComponentModal" tabindex="-1" aria-labelledby="biaViewComponentModalLabel" aria-hidden="true">
+    <div class="modal" id="biaViewComponentModal" tabindex="-1" aria-labelledby="biaViewComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaViewComponentModalLabel">{{ _('bia.context_form.modals.view.title') }}</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <dl class="row mb-0">
@@ -197,12 +197,12 @@
     </div>
 
     <!-- Add component modal -->
-    <div class="modal fade" id="biaAddComponentModal" tabindex="-1" aria-labelledby="biaAddComponentModalLabel" aria-hidden="true">
+    <div class="modal" id="biaAddComponentModal" tabindex="-1" aria-labelledby="biaAddComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaAddComponentModalLabel">{{ _('bia.context_form.modals.add.title') }}</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <form id="bia-component-form">
@@ -271,7 +271,7 @@
             </form>
           </div>
           <div class="modal-footer {{ border_class }}">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('actions.cancel') }}</button>
+            <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('actions.cancel') }}</button>
             <button type="button" class="btn btn-primary" id="bia-save-component">{{ _('bia.context_form.modals.add.submit') }}</button>
           </div>
         </div>
@@ -279,12 +279,12 @@
     </div>
 
     <!-- Edit component modal -->
-    <div class="modal fade" id="biaEditComponentModal" tabindex="-1" aria-labelledby="biaEditComponentModalLabel" aria-hidden="true">
+    <div class="modal" id="biaEditComponentModal" tabindex="-1" aria-labelledby="biaEditComponentModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaEditComponentModalLabel">{{ _('bia.context_form.modals.edit.title') }}</h2>
-            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-bs-dismiss="modal" aria-label="{{ _('actions.close') }}"></button>
+            <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
             <form id="bia-edit-component-form">
@@ -354,7 +354,7 @@
             </form>
           </div>
           <div class="modal-footer {{ border_class }}">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('actions.cancel') }}</button>
+            <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('actions.cancel') }}</button>
             <button type="button" class="btn btn-primary" id="bia-save-edit-component">{{ _('bia.context_form.modals.edit.submit') }}</button>
           </div>
         </div>
@@ -376,6 +376,7 @@
 
   <script nonce="{{ csp_nonce }}">
     document.addEventListener('DOMContentLoaded', () => {
+      const ui = window.tailwindUI || {};
       const componentList = document.getElementById('bia-component-list');
       if (!componentList) {
         return;
@@ -446,10 +447,11 @@
         consequences: '{{ url_for("bia.view_consequences", component_id=0)[:-1] }}'
       };
 
-      const addModal = new bootstrap.Modal(document.getElementById('biaAddComponentModal'));
-      const editModal = new bootstrap.Modal(document.getElementById('biaEditComponentModal'));
+      const addModalEl = document.getElementById('biaAddComponentModal');
+      const editModalEl = document.getElementById('biaEditComponentModal');
       const viewModalEl = document.getElementById('biaViewComponentModal');
-      const viewModal = new bootstrap.Modal(viewModalEl);
+      const closeModal = (modalEl) => ui.closeModal?.(modalEl);
+      const openModal = (modalEl) => ui.openModal?.(modalEl);
 
       const detailFields = {
         name: document.getElementById('bia-view-component-name'),
@@ -564,7 +566,7 @@
           .then((data) => {
             activeComponent = { ...data, id: componentId };
             populateDetail(activeComponent);
-            viewModal.show();
+            openModal(viewModalEl);
           })
           .catch(() => {
             alert('Unable to load component details.');
@@ -593,8 +595,8 @@
               card.remove();
             }
             refreshEmptyState();
-            if (viewModalEl.classList.contains('show')) {
-              viewModal.hide();
+            if (viewModalEl && viewModalEl.classList.contains('show')) {
+              closeModal(viewModalEl);
             }
           })
           .catch(() => {
@@ -626,7 +628,7 @@
             }
             componentList.appendChild(card);
             refreshEmptyState();
-            addModal.hide();
+            closeModal(addModalEl);
             addForm.reset();
             updateEnvironmentForm(addForm, 'bia-component', []);
             if (addCsrfField) {
@@ -684,7 +686,7 @@
               };
               populateDetail(activeComponent);
             }
-            editModal.hide();
+            closeModal(editModalEl);
           })
           .catch((error) => {
             if (error && error.errors) {
@@ -701,8 +703,8 @@
           return;
         }
         populateEditForm(activeComponent);
-        viewModal.hide();
-        editModal.show();
+        closeModal(viewModalEl);
+        openModal(editModalEl);
       });
 
       detailFields.deleteTrigger.addEventListener('click', () => {
