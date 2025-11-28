@@ -34,7 +34,11 @@ def init_security_headers(app: Flask) -> None:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         script_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
-        style_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
+        # Allow inline style elements from trusted sources and nonce-protected inline styles.
+        # Note: adding 'unsafe-inline' for style elements relaxes CSP for styles; consider
+        # replacing this with a library-specific fix (injecting nonce into created <style>
+        # tags) for stronger security if you can.
+        style_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'", "'unsafe-inline'"))
         policy = (
             "default-src 'self'; "
             "base-uri 'self'; "

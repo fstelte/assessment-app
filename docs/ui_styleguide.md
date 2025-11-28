@@ -7,6 +7,9 @@ The scaffold application standardises on Bootstrap 5 with a dark-mode first desi
 - Base template defines a responsive dark header with dynamic navigation, optional breadcrumb slot, and content area.
 - Dark mode is the default; provide a toggle to switch to light mode and store preference in user profile.
 - Use responsive utilities to ensure usability on tablets.
+- The navigation component hides the hamburger toggle on `lg` and wider breakpoints (`.d-lg-none`) so the button only appears when the collapse panel is initially hidden on narrow viewports.
+- The BIA detail/context view builds on a flex layout (`d-flex flex-column flex-lg-row`) so the components table can grow while the Risk/Overview/Summary stack stays adjacent (`flex-grow-1` for the table, `flex-shrink-0 w-100 w-lg-auto` with min/max constraints for the sidebar) even as the viewport changes.
+- CSA dashboard cards (assessments, controls, workflow) and quick-action buttons use `row row-cols-*` patterns to keep each set aligned in a single row on medium-plus breakpoints; avoiding explicit column numbers prevents single buttons from wrapping below the others when additional actions appear.
 
 ## Components
 

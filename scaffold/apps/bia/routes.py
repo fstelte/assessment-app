@@ -8,6 +8,8 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime
 
+from pathlib import Path
+
 from flask import (
     Blueprint,
     abort,
@@ -872,6 +874,8 @@ def export_item(item_id: int):
     consequences = [consequence for component in item.components for consequence in component.consequences]
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
+    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
+    export_css = css_path.read_text(encoding="utf-8") if css_path.exists() else ""
     html_content = render_template(
         "bia/context_detail.html",
         item=item,
@@ -880,6 +884,7 @@ def export_item(item_id: int):
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
         export_mode=True,
+        export_css=export_css,
     )
 
     safe_name = _safe_filename(item.name)

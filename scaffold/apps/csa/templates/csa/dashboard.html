@@ -6,8 +6,8 @@
 	<p class="text-secondary mb-0">{{ _('csa.dashboard.lead') }}</p>
 </div>
 
-<div class="row g-4">
-	<div class="col-md-4">
+<div class="row row-cols-1 row-cols-md-3 g-4">
+	<div class="col">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
 				<h5 class="card-title">{{ _('csa.dashboard.cards.assessments.title') }}</h5>
@@ -16,7 +16,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="col-md-4">
+	<div class="col">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
 				<h5 class="card-title">{{ _('csa.dashboard.cards.controls.title') }}</h5>
@@ -25,7 +25,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="col-md-4">
+	<div class="col">
 		<div class="card bg-dark border-secondary h-100">
 			<div class="card-body">
 				<h5 class="card-title">{{ _('csa.dashboard.cards.workflow.title') }}</h5>
@@ -45,20 +45,20 @@
 <div class="mt-5">
 	<h2 class="h4 mb-3">{{ _('csa.dashboard.quick_actions.title') }}</h2>
 	{% set can_manage_assignments = current_user.has_role('admin') or current_user.has_role('manager') %}
-	<div class="row g-3">
-		<div class="col-sm-6 col-lg-3">
+	<div class="row row-cols-2 row-cols-lg-4 g-3">
+		<div class="col">
 			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.start_assessment') }}">{{ _('csa.dashboard.quick_actions.start') }}</a>
 		</div>
 		{% if can_manage_assignments %}
-		<div class="col-sm-6 col-lg-3">
+		<div class="col">
 			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.assign_assessment') }}">{{ _('csa.dashboard.quick_actions.assign') }}</a>
 		</div>
-		<div class="col-sm-6 col-lg-3">
+		<div class="col">
 			<a class="btn btn-outline-light w-100" href="{{ url_for('csa.overview_assessments') }}">{{ _('csa.dashboard.quick_actions.overview') }}</a>
 		</div>
 		{% endif %}
 		{% if current_user.has_role('admin') %}
-		<div class="col-sm-6 col-lg-3">
+		<div class="col">
 			<a class="btn btn-warning w-100" href="{{ url_for('csa.import_controls') }}">{{ _('csa.dashboard.quick_actions.import_controls') }}</a>
 		</div>
 		{% endif %}

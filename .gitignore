@@ -43,6 +43,7 @@ Thumbs.db
 instance/*.db
 instance/*.sqlite*
 instance/*.log
+.tailwind/
 
 # Generated exports
 scaffold/apps/bia/exports/

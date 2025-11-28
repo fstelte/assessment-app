@@ -152,7 +152,7 @@
                       </td>
                       <td class="text-end">
                         <div class="d-inline-flex gap-2">
-                          <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#editRiskModal-{{ risk.id }}">{{ _('dpia.assessment.actions.edit') }}</button>
+                          <button type="button" class="btn btn-outline-light btn-sm" data-modal-target="editRiskModal-{{ risk.id }}">{{ _('dpia.assessment.actions.edit') }}</button>
                           <form method="post" class="d-inline" data-confirm="true">
                             <input type="hidden" name="form_name" value="risk_delete">
                             <input type="hidden" name="risk_id" value="{{ risk.id }}">
@@ -170,12 +170,12 @@
             </div>
 
             {% for risk in sorted_risks %}
-              <div class="modal fade" id="editRiskModal-{{ risk.id }}" tabindex="-1" aria-labelledby="editRiskModalLabel-{{ risk.id }}" aria-hidden="true">
+              <div class="modal" id="editRiskModal-{{ risk.id }}" tabindex="-1" aria-labelledby="editRiskModalLabel-{{ risk.id }}" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                   <div class="modal-content bg-dark border-secondary">
                     <div class="modal-header border-secondary">
                       <h5 class="modal-title" id="editRiskModalLabel-{{ risk.id }}">{{ _('dpia.assessment.forms.risk.edit_title') }}</h5>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('dpia.assessment.actions.close') }}"></button>
+                      <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="{{ _('dpia.assessment.actions.close') }}"></button>
                     </div>
                     <form method="post">
                       <div class="modal-body">
@@ -216,7 +216,7 @@
                         </div>
                       </div>
                       <div class="modal-footer border-secondary">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('dpia.assessment.actions.cancel') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('dpia.assessment.actions.cancel') }}</button>
                         <button type="submit" class="btn btn-primary">{{ _('dpia.assessment.forms.risk.update_submit') }}</button>
                       </div>
                     </form>
@@ -286,7 +286,7 @@
                       </td>
                       <td class="text-end">
                         <div class="d-inline-flex gap-2">
-                          <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#editMeasureModal-{{ measure.id }}">{{ _('dpia.assessment.actions.edit') }}</button>
+                          <button type="button" class="btn btn-outline-light btn-sm" data-modal-target="editMeasureModal-{{ measure.id }}">{{ _('dpia.assessment.actions.edit') }}</button>
                           <form method="post" class="d-inline">
                             <input type="hidden" name="form_name" value="measure_delete">
                             <input type="hidden" name="measure_id" value="{{ measure.id }}">
@@ -304,12 +304,12 @@
             </div>
 
             {% for measure in sorted_measures %}
-              <div class="modal fade" id="editMeasureModal-{{ measure.id }}" tabindex="-1" aria-labelledby="editMeasureModalLabel-{{ measure.id }}" aria-hidden="true">
+              <div class="modal" id="editMeasureModal-{{ measure.id }}" tabindex="-1" aria-labelledby="editMeasureModalLabel-{{ measure.id }}" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered">
                   <div class="modal-content bg-dark border-secondary">
                     <div class="modal-header border-secondary">
                       <h5 class="modal-title" id="editMeasureModalLabel-{{ measure.id }}">{{ _('dpia.assessment.forms.measure.edit_title') }}</h5>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('dpia.assessment.actions.close') }}"></button>
+                      <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="{{ _('dpia.assessment.actions.close') }}"></button>
                     </div>
                     <form method="post">
                       <div class="modal-body">
@@ -351,7 +351,7 @@
                         </div>
                       </div>
                       <div class="modal-footer border-secondary">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('dpia.assessment.actions.cancel') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('dpia.assessment.actions.cancel') }}</button>
                         <button type="submit" class="btn btn-primary">{{ _('dpia.assessment.forms.measure.update_submit') }}</button>
                       </div>
                     </form>

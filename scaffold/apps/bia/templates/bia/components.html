@@ -147,7 +147,7 @@
             </td>
             <td>
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#edit-component-{{ component.id }}" aria-expanded="false" aria-controls="edit-component-{{ component.id }}">{{ _('bia.components.buttons.edit') }}</button>
+                <button class="btn btn-outline-light btn-sm" type="button" data-collapse-target="edit-component-{{ component.id }}" aria-expanded="false" aria-controls="edit-component-{{ component.id }}">{{ _('bia.components.buttons.edit') }}</button>
                 <button class="btn btn-outline-primary btn-sm" type="button" data-ai-manage data-component-id="{{ component.id }}">{{ _('bia.components.ai.identify') }}</button>
                 <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.components.buttons.consequences') }}</a>
                 <button class="btn btn-outline-danger btn-sm" type="button" data-delete-url="{{ url_for('bia.delete_component', component_id=component.id) }}">{{ _('bia.components.buttons.delete') }}</button>
@@ -289,12 +289,12 @@
   </div>
   </div>
 
-  <div class="modal fade" id="ai-identification-modal" tabindex="-1" aria-labelledby="ai-identification-label" aria-hidden="true">
+  <div class="modal" id="ai-identification-modal" tabindex="-1" aria-labelledby="ai-identification-label" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content bg-dark border-secondary">
         <div class="modal-header border-secondary">
           <h2 class="modal-title h5" id="ai-identification-label">{{ _('bia.components.modal.title') }}</h2>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="ai-identification-form" class="vstack gap-3">
@@ -316,7 +316,7 @@
           </form>
         </div>
         <div class="modal-footer border-secondary">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('bia.components.modal.buttons.cancel') }}</button>
+          <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('bia.components.modal.buttons.cancel') }}</button>
           <button type="button" class="btn btn-primary" data-ai-save>{{ _('bia.components.modal.buttons.save') }}</button>
         </div>
       </div>
@@ -348,6 +348,7 @@
     detail: '{{ url_for("bia.get_ai_identification", component_id=0)[:-1] }}',
     upsert: '{{ url_for("bia.add_ai_identification", component_id=0)[:-1] }}'
   };
+  const ui = window.tailwindUI || {};
   const handleErrors = (messages) => {
     if (!messages) {
       window.alert(i18n.errorUnexpected);
@@ -361,7 +362,6 @@
     if (!aiComponentIdField) {
       return;
     }
-    const modalInstance = aiModalElement ? window.bootstrap?.Modal.getOrCreateInstance(aiModalElement) : null;
     aiComponentIdField.value = componentId;
     const targetUrl = aiRoutes.detail + componentId;
     fetch(targetUrl, { credentials: 'same-origin' })
@@ -381,7 +381,7 @@
         if (aiMotivationField) {
           aiMotivationField.value = data.motivatie || '';
         }
-        modalInstance?.show();
+        ui.openModal?.(aiModalElement);
       })
       .catch(() => {
         if (aiCategoryField) {
@@ -390,7 +390,7 @@
         if (aiMotivationField) {
           aiMotivationField.value = '';
         }
-        modalInstance?.show();
+        ui.openModal?.(aiModalElement);
       });
   };
 
@@ -403,7 +403,7 @@
     });
   });
 
-  aiModalElement?.addEventListener('hidden.bs.modal', () => {
+  aiModalElement?.addEventListener('twui:modal:close', () => {
     if (aiForm) {
       aiForm.reset();
     }
@@ -440,8 +440,7 @@
         if (!data.success) {
           throw new Error('Server rejected the request');
         }
-        const modalInstance = aiModalElement ? window.bootstrap?.Modal.getInstance(aiModalElement) : null;
-        modalInstance?.hide();
+        ui.closeModal?.(aiModalElement);
         window.location.reload();
       })
       .catch(() => {

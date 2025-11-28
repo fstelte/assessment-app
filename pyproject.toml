@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2025.11.7"
+version = "2025.11.8"
 description = "Unified scaffold for applications"
 authors = ["Ferry Stelte"]
 readme = "README.md"
@@ -65,6 +65,7 @@ scaffold = "scaffold.cli:main"
 lint = "scaffold.scripts:lint"
 test = "scaffold.scripts:test"
 run = "scaffold.scripts:run"
+tailwind = "scaffold.tailwind_cli:cli"
 
 [build-system]
 requires = ["poetry-core>=1.6.1"]
