@@ -67,6 +67,8 @@
       "title": "BIA Dashboard",
       "sidebar": {
         "navigate": "Navigate",
+        "manage": "Manage",
+        "exports": "Exports",
         "overview": "Dashboard overview",
         "components": "View components",
         "actions": "Actions",
