@@ -67,6 +67,8 @@
       "title": "BIA-dashboard",
       "sidebar": {
         "navigate": "Navigatie",
+        "manage": "Beheer",
+        "exports": "Exporteren",
         "overview": "Dashboardoverzicht",
         "components": "Componenten bekijken",
         "actions": "Acties",
