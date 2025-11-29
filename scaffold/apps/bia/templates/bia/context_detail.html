@@ -1,14 +1,24 @@
 {% extends "base.html" %}
 {% block extra_css %}
   {{ super() }}
-  {% if export_mode %}
-    <style>
-      .badge-ai-high-risk {
-        background-color: #fd7e14;
-        color: #212529 !important;
+  <style nonce="{{ csp_nonce }}">
+    .bia-cia-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    @media (min-width: 768px) {
+      .bia-cia-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
-    </style>
-  {% endif %}
+    }
+    {% if export_mode %}
+    .badge-ai-high-risk {
+      background-color: #fd7e14;
+      color: #212529 !important;
+    }
+    {% endif %}
+  </style>
 {% endblock %}
 {% block title %}{{ item.name }} | BIA{% endblock %}
 {% block content %}
@@ -46,18 +56,22 @@
   {% endif %}
 </div>
 
-<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-  {% for property, value in max_cia_impact.items() %}
-  <div class="col">
+<div class="bia-cia-grid mb-3">
+  {% for property in ['confidentiality', 'integrity', 'availability'] %}
+    {% set value = max_cia_impact.get(property) %}
+    {% if value is not none %}
     <div class="card {{ card_surface }} h-100">
       <div class="card-body">
         <div class="{{ text_muted }} text-uppercase small">{{ property.capitalize() }}</div>
         <span class="badge {{ bia_get_impact_color(value) }}">{{ value.capitalize() }}</span>
       </div>
     </div>
-  </div>
+    {% endif %}
   {% endfor %}
-  <div class="col">
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col col-md-4 col-lg-3">
     <div class="card {{ card_surface }} h-100">
       <div class="card-body">
         <div class="{{ text_muted }} text-uppercase small">Components</div>
