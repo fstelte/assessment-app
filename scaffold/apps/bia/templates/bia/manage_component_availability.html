@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% set back_url = return_to or url_for('bia.view_components') %}
+{% block title %}{{ _('Availability requirements · %(component)s', component=component.name) }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ back_url }}" class="text-secondary text-decoration-none">&larr; {{ _('Back to components') }}</a>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+    <div>
+      <div class="fw-semibold">{{ component.name }}</div>
+      <div class="text-secondary small">
+        {% if component.context_scope %}
+          {{ component.context_scope.name }}
+        {% else %}
+          {{ _('No BIA context linked') }}
+        {% endif %}
+      </div>
+    </div>
+    <span class="badge bg-primary text-uppercase">{{ _('Availability requirements') }}</span>
+  </div>
+  <div class="card-body">
+    <form method="post" class="vstack gap-4">
+      {{ form.hidden_tag() }}
+      <div>
+        {{ form.mtd.label(class="form-label") }}
+        {{ form.mtd(class="form-control", placeholder=_('e.g. 24 hours')) }}
+        {% if form.mtd.errors %}
+          <div class="form-text text-danger">{{ form.mtd.errors | join(', ') }}</div>
+        {% else %}
+          <div class="form-text text-secondary">{{ _('Maximum tolerable downtime before operations critically fail.') }}</div>
+        {% endif %}
+      </div>
+      <div>
+        {{ form.rto.label(class="form-label") }}
+        {{ form.rto(class="form-control", placeholder=_('e.g. 8 hours')) }}
+        {% if form.rto.errors %}
+          <div class="form-text text-danger">{{ form.rto.errors | join(', ') }}</div>
+        {% else %}
+          <div class="form-text text-secondary">{{ _('Target for restoring service after a disruption.') }}</div>
+        {% endif %}
+      </div>
+      <div>
+        {{ form.rpo.label(class="form-label") }}
+        {{ form.rpo(class="form-control", placeholder=_('e.g. 15 minutes')) }}
+        {% if form.rpo.errors %}
+          <div class="form-text text-danger">{{ form.rpo.errors | join(', ') }}</div>
+        {% else %}
+          <div class="form-text text-secondary">{{ _('Acceptable data loss measured in time.') }}</div>
+        {% endif %}
+      </div>
+      <div>
+        {{ form.masl.label(class="form-label") }}
+        {{ form.masl(class="form-control", placeholder=_('Describe the minimum acceptable level of service.')) }}
+        {% if form.masl.errors %}
+          <div class="form-text text-danger">{{ form.masl.errors | join(', ') }}</div>
+        {% else %}
+          <div class="form-text text-secondary">{{ _('Define the minimum capabilities that must remain available.') }}</div>
+        {% endif %}
+      </div>
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ back_url }}" class="btn btn-outline-light">{{ _('Cancel') }}</a>
+        <button type="submit" class="btn btn-primary">{{ _('Save requirements') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
