@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set back_url = return_to or url_for('bia.view_components') %}
+{% block title %}{{ _('Add consequences · %(component)s', component=component.name) }}{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+  <a href="{{ back_url }}" class="text-secondary text-decoration-none">&larr; {{ _('Back to components') }}</a>
+  <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="text-secondary text-decoration-none">{{ _('View existing consequences') }}</a>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+    <div>
+      <div class="fw-semibold">{{ component.name }}</div>
+      <div class="text-secondary small">
+        {% if component.context_scope %}
+          {{ component.context_scope.name }}
+        {% else %}
+          {{ _('No BIA context linked') }}
+        {% endif %}
+      </div>
+    </div>
+    <span class="badge bg-info text-dark text-uppercase">{{ _('CIA consequences') }}</span>
+  </div>
+  <div class="card-body">
+    <form method="post" class="vstack gap-4">
+      {{ form.hidden_tag() }}
+      <div>
+        {{ form.consequence_category.label(class="form-label") }}
+        {{ form.consequence_category(class="form-select", multiple=True) }}
+        {% if form.consequence_category.errors %}
+          <div class="form-text text-danger">{{ form.consequence_category.errors | join(', ') }}</div>
+        {% else %}
+          <div class="form-text text-secondary">{{ _('Select one or more impact categories to populate individual consequence entries.') }}</div>
+        {% endif %}
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.security_property.label(class="form-label") }}
+          {{ form.security_property(class="form-select") }}
+          {% if form.security_property.errors %}
+            <div class="form-text text-danger">{{ form.security_property.errors | join(', ') }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          {{ form.consequence_worstcase.label(class="form-label") }}
+          {{ form.consequence_worstcase(class="form-select") }}
+          {% if form.consequence_worstcase.errors %}
+            <div class="form-text text-danger">{{ form.consequence_worstcase.errors | join(', ') }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        {{ form.justification_worstcase.label(class="form-label") }}
+        {{ form.justification_worstcase(class="form-control", rows=3, placeholder=_('Describe the rationale behind the worst case impact.')) }}
+        {% if form.justification_worstcase.errors %}
+          <div class="form-text text-danger">{{ form.justification_worstcase.errors | join(', ') }}</div>
+        {% endif %}
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.consequence_realisticcase.label(class="form-label") }}
+          {{ form.consequence_realisticcase(class="form-select") }}
+          {% if form.consequence_realisticcase.errors %}
+            <div class="form-text text-danger">{{ form.consequence_realisticcase.errors | join(', ') }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          {{ form.justification_realisticcase.label(class="form-label") }}
+          {{ form.justification_realisticcase(class="form-control", rows=3, placeholder=_('Explain the expected realistic case impact.')) }}
+          {% if form.justification_realisticcase.errors %}
+            <div class="form-text text-danger">{{ form.justification_realisticcase.errors | join(', ') }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ back_url }}" class="btn btn-outline-light">{{ _('Cancel') }}</a>
+        <button type="submit" class="btn btn-primary">{{ _('Add consequences') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

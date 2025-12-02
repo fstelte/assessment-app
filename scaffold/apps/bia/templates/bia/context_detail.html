@@ -145,6 +145,40 @@
         {% endif %}
       </div>
     </div>
+    <div class="card {{ card_surface }} mt-4">
+      <div class="card-header {{ border_class }}">Availability requirements</div>
+      <div class="card-body p-0">
+        {% if item.components %}
+        <div class="table-responsive">
+          <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">MTD</th>
+                <th scope="col">RTO</th>
+                <th scope="col">RPO</th>
+                <th scope="col">MAMSL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for component in item.components %}
+              {% set availability = component.availability_requirement %}
+              <tr>
+                <td>{{ component.name }}</td>
+                <td>{{ availability.mtd if availability else 'Not set' }}</td>
+                <td>{{ availability.rto if availability else 'Not set' }}</td>
+                <td>{{ availability.rpo if availability else 'Not set' }}</td>
+                <td>{{ availability.masl if availability else 'Not set' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="p-4 {{ text_muted }} mb-0">No availability requirements captured yet.</div>
+        {% endif %}
+      </div>
+    </div>
   </div>
   <div class="flex-shrink-0 w-100 w-lg-auto" style="min-width: 220px; max-width: 320px;">
     <div class="card {{ card_surface }} mb-4">

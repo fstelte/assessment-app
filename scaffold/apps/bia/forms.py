@@ -134,6 +134,16 @@ class ConsequenceForm(FlaskForm):
     submit = SubmitField("Save consequence")
 
 
+class AvailabilityForm(FlaskForm):
+    """Capture availability requirement targets for a component."""
+
+    mtd = StringField("Maximum tolerable downtime", validators=[Optional(), Length(max=255)])
+    rto = StringField("Recovery time objective", validators=[Optional(), Length(max=255)])
+    rpo = StringField("Recovery point objective", validators=[Optional(), Length(max=255)])
+    masl = StringField("Minimum acceptable service level", validators=[Optional(), Length(max=255)])
+    submit = SubmitField("Save availability requirements")
+
+
 class SummaryForm(FlaskForm):
     """Capture executive summary details."""
 

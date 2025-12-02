@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_tooltip %}
+{% block title %}{{ _('Edit component') }} · {{ component.name }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.view_components') }}" class="text-secondary text-decoration-none">&larr; {{ _('bia.components.back') }}</a>
+</div>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <h1 class="mb-1">{{ _('Edit component') }}</h1>
+    <p class="text-secondary mb-0">{{ component.name }}</p>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+    <span>{{ _('Component details') }}</span>
+    <span class="text-secondary small">{{ _('Changes are saved per component.') }}</span>
+  </div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {{ form.hidden_tag() }}
+      <div class="col-md-4">
+        <label for="bia_id" class="form-label">{{ _('bia.components.add.bia_label') }}</label>
+        <select id="bia_id" name="bia_id" class="form-select" required>
+          {% for context in contexts %}
+            <option value="{{ context.id }}" {% if component.context_scope and component.context_scope.id == context.id %}selected{% endif %}>{{ context.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {{ render_field_with_tooltip(form.name, _('bia.components.labels.name'), _('bia.components.tooltips.name'), container_class='col-md-4', input_class='form-control') }}
+      <div class="col-md-4">{{ form.info_owner.label(_('bia.components.labels.owner'), class="form-label") }}{{ form.info_owner(class="form-control") }}</div>
+      <div class="col-md-4">{{ form.info_type.label(_('bia.components.labels.information_type'), class="form-label") }}{{ form.info_type(class="form-control") }}</div>
+      <div class="col-md-4">{{ form.user_type.label(_('bia.components.labels.user_type'), class="form-label") }}{{ form.user_type(class="form-control") }}</div>
+      <div class="col-md-4">{{ form.process_dependencies.label(_('bia.components.labels.process_dependencies'), class="form-label") }}{{ form.process_dependencies(class="form-control") }}</div>
+      <div class="col-12">
+        <fieldset class="border rounded p-3">
+          <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+          <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-dark align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                  <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                  <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for environment_field in form.environments %}
+                  {% set environment_form = environment_field.form %}
+                  {% set idx = loop.index0 %}
+                  {% set checkbox_id = 'environment-enabled-edit-' ~ idx %}
+                  {% set select_id = 'environment-auth-edit-' ~ idx %}
+                  <tr>
+                    <td class="text-nowrap">
+                      {{ environment_form.environment_type() }}
+                      {{ bia_environment_label(environment_form.environment_type.data) }}
+                    </td>
+                    <td>
+                      <div class="form-check">
+                        {{ environment_form.is_enabled(class="form-check-input", id=checkbox_id) }}
+                        <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                      </div>
+                    </td>
+                    <td>
+                      {{ environment_form.authentication_method(class="form-select", id=select_id) }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </fieldset>
+      </div>
+      <div class="col-12">{{ form.description.label(_('bia.components.labels.description'), class="form-label") }}{{ form.description(class="form-control", rows=3) }}</div>
+      <div class="col-12 d-flex justify-content-between">
+        <a href="{{ url_for('bia.view_components') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+        <button type="submit" class="btn btn-primary">{{ _('bia.components.buttons.save_changes') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

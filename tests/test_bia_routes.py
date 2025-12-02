@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-from scaffold.apps.bia.models import AuthenticationMethod, Component, ComponentEnvironment, Consequences, ContextScope
+from scaffold.apps.bia.models import (
+    AuthenticationMethod,
+    AvailabilityRequirements,
+    Component,
+    ComponentEnvironment,
+    Consequences,
+    ContextScope,
+)
 from scaffold.apps.identity.models import ROLE_ADMIN, User, UserStatus, ensure_default_roles
 from scaffold.extensions import db
 from scaffold.models import AuditLog
+from werkzeug.datastructures import MultiDict
 
 
 def test_bia_detail_shows_component_summary(app, client, login):
@@ -153,3 +161,144 @@ def test_export_authentication_overview_uses_environment_method(app, client, log
     assert "Access Portal" in body
     assert "Central IdP" in body
     assert "All components have an authentication type assigned." in body
+
+
+def test_components_page_exposes_action_buttons(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Continuity Plan Four")
+        component = Component(name="Messaging Gateway", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        if "dpia.start_from_component" not in app.view_functions:
+            app.add_url_rule(
+                "/dpia/mock/start/<int:component_id>",
+                "dpia.start_from_component",
+                lambda component_id: "",
+            )
+        if "dpia.dashboard" not in app.view_functions:
+            app.add_url_rule("/dpia/mock/dashboard", "dpia.dashboard", lambda: "")
+
+    response = client.get("/bia/components")
+    assert response.status_code == 200
+    body = response.data.decode()
+    assert f"/bia/component/{component.id}/availability?return_to=%2Fbia%2Fcomponents" in body
+    assert f"/bia/component/{component.id}/consequences/new?return_to=%2Fbia%2Fcomponents" in body
+    assert 'data-dpia-action="start"' in body
+    assert 'id="component-query"' in body
+    assert 'table-components' in body
+    assert 'btn-icon' in body
+    assert f"/bia/component/{component.id}/edit" in body
+
+
+def test_edit_component_view_updates_component(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Continuity Plan Five")
+        component = Component(name="Legacy Portal", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        component_id = component.id
+        context_id = context.id
+
+    response = client.get(f"/bia/component/{component_id}/edit")
+    assert response.status_code == 200
+    assert "Legacy Portal" in response.data.decode()
+
+    data = {
+        "bia_id": str(context_id),
+        "name": "Modern Portal",
+        "info_type": "PII",
+        "info_owner": "Security",
+        "user_type": "External",
+        "process_dependencies": "CRM",
+        "description": "Updated description",
+    }
+    environment_order = ("development", "test", "acceptance", "production")
+    for idx, env in enumerate(environment_order):
+        data[f"environments-{idx}-environment_type"] = env
+        data[f"environments-{idx}-authentication_method"] = ""
+
+    response = client.post(
+        f"/bia/component/{component_id}/edit",
+        data=data,
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        updated = Component.query.get(component_id)
+        assert updated is not None
+        assert updated.name == "Modern Portal"
+        assert updated.description == "Updated description"
+
+
+def test_manage_component_availability_updates_requirements(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Continuity Plan Six")
+        component = Component(name="Batch Processor", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        component_id = component.id
+
+    response = client.get(f"/bia/component/{component_id}/availability")
+    assert response.status_code == 200
+    assert "Save requirements" in response.data.decode()
+
+    post_response = client.post(
+        f"/bia/component/{component_id}/availability",
+        data={
+            "mtd": "24h",
+            "rto": "8h",
+            "rpo": "30m",
+            "masl": "Minimal core services",
+        },
+        follow_redirects=False,
+    )
+    assert post_response.status_code == 302
+
+    with app.app_context():
+        availability = AvailabilityRequirements.query.filter_by(component_id=component_id).first()
+        assert availability is not None
+        assert availability.mtd == "24h"
+        assert availability.rto == "8h"
+        assert availability.rpo == "30m"
+        assert availability.masl == "Minimal core services"
+
+
+def test_manage_component_consequence_creates_multiple_entries(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Continuity Plan Seven")
+        component = Component(name="Messaging Fabric", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        component_id = component.id
+
+    response = client.get(f"/bia/component/{component_id}/consequences/new")
+    assert response.status_code == 200
+    assert "Add consequences" in response.data.decode()
+
+    payload = MultiDict(
+        [
+            ("consequence_category", "financial"),
+            ("consequence_category", "operational"),
+            ("security_property", "confidentiality"),
+            ("consequence_worstcase", "major"),
+            ("justification_worstcase", "Critical vendor exposure"),
+            ("consequence_realisticcase", "moderate"),
+            ("justification_realisticcase", "Impacts day-to-day workflows"),
+        ]
+    )
+
+    post_response = client.post(
+        f"/bia/component/{component_id}/consequences/new",
+        data=payload,
+        follow_redirects=False,
+    )
+    assert post_response.status_code == 302
+    assert post_response.headers["Location"].endswith(f"/bia/consequences/{component_id}")
+
+    with app.app_context():
+        stored = Consequences.query.filter_by(component_id=component_id).all()
+        assert len(stored) == 2
+        assert {row.consequence_category for row in stored} == {"financial", "operational"}
+        for row in stored:
+            assert row.security_property == "confidentiality"

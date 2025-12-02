@@ -24,6 +24,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
+from urllib.parse import urlparse
 
 from ...core.audit import log_change_event
 from ...core.security import require_fresh_login
@@ -31,6 +32,7 @@ from ...core.i18n import gettext as _, get_locale
 from ...extensions import db
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, User, UserStatus
 from .forms import (
+    AvailabilityForm,
     ChangePasswordForm,
     ComponentForm,
     ConsequenceForm,
@@ -293,6 +295,23 @@ def _can_edit_context(context: ContextScope) -> bool:
     return current_user.has_role(ROLE_ADMIN)
 
 
+def _safe_return_target(target: str | None) -> str | None:
+    if not target:
+        return None
+    parsed = urlparse(target)
+    if parsed.scheme or parsed.netloc:
+        return None
+    path = parsed.path or ""
+    if not path.startswith("/"):
+        return None
+    sanitized = path
+    if parsed.query:
+        sanitized = f"{sanitized}?{parsed.query}"
+    if parsed.fragment:
+        sanitized = f"{sanitized}#{parsed.fragment}"
+    return sanitized
+
+
 @bp.route("/")
 @bp.route("/index")
 @login_required
@@ -348,7 +367,20 @@ def new_item():
 @bp.route("/item/<int:item_id>")
 @login_required
 def view_item(item_id: int):
-    item = ContextScope.query.get_or_404(item_id)
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components)
+            .joinedload(Component.environments)
+            .joinedload(ComponentEnvironment.authentication_method),
+            joinedload(ContextScope.components).joinedload(Component.consequences),
+            joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
+            joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
     consequences = [consequence for component in item.components for consequence in component.consequences]
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
@@ -555,6 +587,57 @@ def update_component(component_id: int):
     return jsonify({"success": False, "errors": form.errors}), 400
 
 
+@bp.route("/component/<int:component_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_component_form(component_id: int):
+    component = (
+        Component.query.options(
+            joinedload(Component.context_scope),
+            joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
+        )
+        .filter(Component.id == component_id)
+        .one_or_none()
+    )
+    if component is None:
+        abort(404)
+    if not _can_edit_context(component.context_scope):
+        flash(_("bia.flash.owner_forbidden"), "danger")
+        return redirect(url_for("bia.view_components"))
+
+    form = ComponentForm(obj=component)
+    _configure_component_form(form, component=component)
+    contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
+
+    if form.validate_on_submit():
+        context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
+        context = ContextScope.query.get(context_id) if context_id else None
+        if context is None:
+            flash(_("Select a valid BIA context before saving."), "danger")
+        elif not _can_edit_context(context):
+            flash(_("bia.flash.owner_forbidden"), "danger")
+            return redirect(url_for("bia.view_components"))
+        else:
+            component.context_scope = context
+            component.name = form.name.data
+            component.info_type = form.info_type.data
+            component.info_owner = form.info_owner.data
+            component.user_type = form.user_type.data
+            component.process_dependencies = form.process_dependencies.data
+            component.description = form.description.data
+            component.authentication_method_id = None
+            _sync_component_environments(component, form)
+            db.session.commit()
+            flash(_("bia.flash.updated"), "success")
+            return redirect(url_for("bia.view_components", scope=context.name))
+
+    return render_template(
+        "bia/edit_component.html",
+        form=form,
+        component=component,
+        contexts=contexts,
+    )
+
+
 @bp.route("/delete_component/<int:component_id>", methods=["POST"])
 @login_required
 def delete_component(component_id: int):
@@ -573,21 +656,32 @@ def delete_component(component_id: int):
 @login_required
 def view_components():
     scope_filter = request.args.get("scope", "all").strip()
+    search_term = request.args.get("q", "").strip()
     page = request.args.get("page", 1, type=int)
     if page < 1:
         page = 1
     per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
-    query = Component.query.join(ContextScope)
+    query = (
+        Component.query.options(
+            joinedload(Component.context_scope),
+            joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
+            joinedload(Component.availability_requirement),
+            joinedload(Component.ai_identificaties),
+            joinedload(Component.dpia_assessments),
+        )
+        .join(ContextScope)
+    )
     if scope_filter and scope_filter.lower() != "all":
         query = query.filter(ContextScope.name.ilike(f"%{scope_filter}%"))
+    if search_term:
+        query = query.filter(Component.name.ilike(f"%{search_term}%"))
     pagination = query.order_by(Component.name.asc()).paginate(page=page, per_page=per_page, error_out=False)
     if pagination.total and page > pagination.pages:
-        return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter))
+        return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter, q=search_term))
     components = pagination.items
     contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()
     _configure_component_form(component_form)
-    consequence_form = ConsequenceForm()
     view_functions = current_app.view_functions
     dpia_enabled = "dpia.start_from_component" in view_functions and "dpia.dashboard" in view_functions
     if pagination.total:
@@ -596,6 +690,10 @@ def view_components():
     else:
         page_start = 0
         page_end = 0
+    full_path = request.full_path or request.path
+    if full_path.endswith("?"):
+        full_path = full_path[:-1]
+    current_view_url = full_path or request.path
     return render_template(
         "bia/components.html",
         components=components,
@@ -605,9 +703,77 @@ def view_components():
         page_start=page_start,
         page_end=page_end,
         component_form=component_form,
-        consequence_form=consequence_form,
         per_page=per_page,
         dpia_enabled=dpia_enabled,
+        search_term=search_term,
+        current_view_url=current_view_url,
+    )
+
+
+@bp.route("/component/<int:component_id>/availability", methods=["GET", "POST"])
+@login_required
+def manage_component_availability(component_id: int):
+    component = Component.query.options(joinedload(Component.context_scope)).get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        flash(_("bia.flash.owner_forbidden"), "danger")
+        return redirect(url_for("bia.view_components"))
+    form = AvailabilityForm(obj=component.availability_requirement)
+    return_to = _safe_return_target(request.args.get("return_to"))
+    if form.validate_on_submit():
+        requirement = component.availability_requirement
+        if requirement is None:
+            requirement = AvailabilityRequirements(component=component)
+            db.session.add(requirement)
+        requirement.mtd = form.mtd.data
+        requirement.rto = form.rto.data
+        requirement.rpo = form.rpo.data
+        requirement.masl = form.masl.data
+        db.session.commit()
+        flash(_("Availability requirements updated."), "success")
+        return redirect(return_to or url_for("bia.view_components"))
+    return render_template(
+        "bia/manage_component_availability.html",
+        component=component,
+        form=form,
+        return_to=return_to,
+    )
+
+
+@bp.route("/component/<int:component_id>/consequences/new", methods=["GET", "POST"])
+@login_required
+def add_component_consequence_view(component_id: int):
+    component = Component.query.options(joinedload(Component.context_scope)).get_or_404(component_id)
+    if not _can_edit_context(component.context_scope):
+        flash(_("bia.flash.owner_forbidden"), "danger")
+        return redirect(url_for("bia.view_components"))
+    form = ConsequenceForm()
+    return_to = _safe_return_target(request.args.get("return_to"))
+    if form.validate_on_submit():
+        categories = form.consequence_category.data or []
+        for category in categories:
+            consequence = Consequences(
+                component=component,
+                consequence_category=category,
+                security_property=form.security_property.data,
+                consequence_worstcase=form.consequence_worstcase.data,
+                justification_worstcase=form.justification_worstcase.data,
+                consequence_realisticcase=form.consequence_realisticcase.data,
+                justification_realisticcase=form.justification_realisticcase.data,
+            )
+            db.session.add(consequence)
+        db.session.commit()
+        flash(
+            _("Added %(count)d consequence entries.", count=len(categories)),
+            "success",
+        )
+        if return_to:
+            return redirect(return_to)
+        return redirect(url_for("bia.view_consequences", component_id=component.id))
+    return render_template(
+        "bia/manage_component_consequence.html",
+        component=component,
+        form=form,
+        return_to=return_to,
     )
 
 
@@ -764,16 +930,19 @@ def update_availability(component_id: int):
             jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
             403,
         )
+    form = AvailabilityForm()
+    if not form.validate_on_submit():
+        return jsonify({"success": False, "errors": form.errors}), 400
     availability = AvailabilityRequirements.query.filter_by(component_id=component_id).first()
     if availability is None:
         availability = AvailabilityRequirements(component=component)
         db.session.add(availability)
     else:
         availability.component = component
-    availability.mtd = request.form.get("mtd")
-    availability.rto = request.form.get("rto")
-    availability.rpo = request.form.get("rpo")
-    availability.masl = request.form.get("masl")
+    availability.mtd = form.mtd.data
+    availability.rto = form.rto.data
+    availability.rpo = form.rpo.data
+    availability.masl = form.masl.data
     db.session.commit()
     return jsonify({"success": True})
 
