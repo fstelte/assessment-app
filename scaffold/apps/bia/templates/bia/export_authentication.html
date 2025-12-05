@@ -1,127 +1,127 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" class="h-full">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ _('bia.export.authentication_overview.title') }}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <style nonce="{{ csp_nonce }}">
-      body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
-      .method-card { border-color: rgba(255, 255, 255, 0.1); }
-      .badge-slug { font-family: "Courier New", Courier, monospace; text-transform: none; }
+      body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
     </style>
   </head>
-  <body class="bg-dark text-light">
-    <div class="container my-5">
-      <div class="card bg-dark border-secondary shadow mb-4">
-        <div class="card-header border-secondary">
-          <h1 class="h3 mb-1">{{ _('bia.export.authentication_overview.heading') }}</h1>
-          <div class="text-secondary">{{ _('bia.export.authentication_overview.generated_at', timestamp=generated_at.strftime('%Y-%m-%d %H:%M')) }}</div>
-        </div>
-        <div class="card-body">
-          <p class="mb-3">{{ _('bia.export.authentication_overview.intro') }}</p>
-          <div class="table-responsive">
-            <table class="table table-dark table-striped align-middle mb-0">
-              <thead>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/20">
+        <header class="border-b border-slate-800 px-6 py-5">
+          <h1 class="text-2xl font-semibold tracking-tight">{{ _('bia.export.authentication_overview.heading') }}</h1>
+          <p class="text-sm text-slate-400">{{ _('bia.export.authentication_overview.generated_at', timestamp=generated_at.strftime('%Y-%m-%d %H:%M')) }}</p>
+        </header>
+        <div class="space-y-4 px-6 py-5 text-sm text-slate-200">
+          <p class="text-base text-slate-300">{{ _('bia.export.authentication_overview.intro') }}</p>
+          <div class="overflow-hidden rounded-xl border border-slate-800">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
+              <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th scope="col">{{ _('bia.export.authentication_overview.summary.method') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.summary.slug') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.summary.components') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.summary.method') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.summary.slug') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.summary.components') }}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="divide-y divide-slate-800 bg-slate-950/30">
                 {% for group in groups %}
-                <tr>
-                  <td>
-                    <div>{{ group.option.label_for_locale('en') }}</div>
-                    <div class="text-secondary small">{{ group.option.label_for_locale('nl') }}</div>
+                <tr class="even:bg-slate-900/40">
+                  <td class="px-4 py-3">
+                    <div class="font-medium text-slate-100">{{ group.option.label_for_locale('en') }}</div>
+                    <div class="text-xs text-slate-400">{{ group.option.label_for_locale('nl') }}</div>
                   </td>
-                  <td><span class="badge text-bg-secondary badge-slug">{{ group.option.slug }}</span></td>
-                  <td>{{ group.components | length }}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-100">{{ group.components | length }}</td>
                 </tr>
                 {% endfor %}
-                <tr>
-                  <td>{{ _('bia.export.authentication_overview.summary.unassigned') }}</td>
-                  <td><span class="badge text-bg-warning text-dark">{{ _('bia.export.authentication_overview.summary.unassigned_slug') }}</span></td>
-                  <td>{{ unassigned | length }}</td>
+                <tr class="bg-amber-500/10 text-amber-100">
+                  <td class="px-4 py-3 font-medium">{{ _('bia.export.authentication_overview.summary.unassigned') }}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center rounded-full border border-amber-400/60 bg-amber-500/10 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-amber-100">{{ _('bia.export.authentication_overview.summary.unassigned_slug') }}</span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold">{{ unassigned | length }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      </section>
 
       {% for group in groups %}
-      <div class="card bg-dark border-secondary method-card mb-4">
-        <div class="card-header border-secondary">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-            <div>
-              <h2 class="h5 mb-1">{{ group.option.label_for_locale('en') }}</h2>
-              <div class="text-secondary small">{{ group.option.label_for_locale('nl') }}</div>
-            </div>
-            <span class="badge text-bg-secondary badge-slug">{{ group.option.slug }}</span>
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/50 shadow-xl backdrop-blur">
+        <header class="flex flex-col gap-2 border-b border-slate-800 px-6 py-5 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-100">{{ group.option.label_for_locale('en') }}</h2>
+            <p class="text-xs uppercase tracking-wide text-slate-400">{{ group.option.label_for_locale('nl') }}</p>
           </div>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-dark table-striped align-middle mb-0">
-              <thead>
+          <span class="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-3 py-1 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
+        </header>
+        <div class="overflow-hidden p-0">
+          <div class="overflow-auto">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-200">
+              <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.component') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.users') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.component') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="divide-y divide-slate-900/60">
                 {% for component in group.components %}
-                <tr>
-                  <td>{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
-                  <td>{{ component.name }}</td>
-                  <td>{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  <td>{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                <tr class="even:bg-slate-900/40">
+                  <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
+                  <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
+                  <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      </section>
       {% endfor %}
 
-      <div class="card bg-dark border-secondary">
-        <div class="card-header border-secondary">
-          <h2 class="h5 mb-0">{{ _('bia.export.authentication_overview.unassigned.title') }}</h2>
-        </div>
-        <div class="card-body">
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
+        <header class="border-b border-slate-800 px-6 py-5">
+          <h2 class="text-lg font-semibold text-slate-100">{{ _('bia.export.authentication_overview.unassigned.title') }}</h2>
+        </header>
+        <div class="px-6 py-5">
           {% if unassigned %}
-          <div class="table-responsive">
-            <table class="table table-dark table-striped align-middle mb-0">
-              <thead>
+          <div class="overflow-hidden rounded-xl border border-slate-800">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-200">
+              <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.component') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
-                  <th scope="col">{{ _('bia.export.authentication_overview.columns.users') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.component') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="divide-y divide-slate-900/60">
                 {% for component in unassigned %}
-                <tr>
-                  <td>{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
-                  <td>{{ component.name }}</td>
-                  <td>{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  <td>{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                <tr class="even:bg-slate-900/40">
+                  <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
+                  <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
+                  <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
           {% else %}
-          <p class="text-secondary mb-0">{{ _('bia.export.authentication_overview.unassigned.empty') }}</p>
+          <p class="text-sm text-slate-400">{{ _('bia.export.authentication_overview.unassigned.empty') }}</p>
           {% endif %}
         </div>
-      </div>
+      </section>
     </div>
   </body>
 </html>

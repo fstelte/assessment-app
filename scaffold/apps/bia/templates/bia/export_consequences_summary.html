@@ -1,85 +1,105 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" class="h-full">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>CIA Consequences Summary</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <style nonce="{{ csp_nonce }}">
-      body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
-      .legend-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
-      .impact-badge { text-transform: capitalize; }
+    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style nonce="{{ csp_nonce }}">
+      body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
     </style>
   </head>
-  <body class="bg-dark text-light">
-    <div class="container my-5">
-      <div class="card bg-dark border-secondary shadow">
-        <div class="card-header border-secondary">
-          <h1 class="h3 mb-1">CIA Consequences Summary</h1>
-          <div class="text-secondary">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</div>
-        </div>
-        <div class="card-body">
-          <section class="mb-4">
-            <h2 class="h5">Legend</h2>
-            <div class="d-flex flex-wrap gap-3">
-              <span><span class="legend-swatch bg-success"></span>Minor / Insignificant</span>
-              <span><span class="legend-swatch bg-warning text-dark"></span>Moderate / Minor</span>
-              <span><span class="legend-swatch bg-info text-dark"></span>Major / Moderate</span>
-              <span><span class="legend-swatch bg-danger"></span>Critical / Major</span>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    {% set impact_colors = {
+      'catastrophic': 'bg-rose-600 text-rose-50',
+      'critical': 'bg-rose-600 text-rose-50',
+      'major': 'bg-orange-500 text-orange-950',
+      'moderate': 'bg-amber-400 text-amber-950',
+      'minor': 'bg-emerald-500 text-emerald-50',
+      'insignificant': 'bg-emerald-500 text-emerald-50'
+    } %}
+    {% set default_impact_class = 'bg-slate-800 text-slate-100' %}
+    {% set legend_items = [
+      {'label': 'Minor', 'class': 'bg-emerald-500'},
+      {'label': 'Moderate', 'class': 'bg-amber-400'},
+      {'label': 'Major', 'class': 'bg-orange-500'},
+      {'label': 'Critical', 'class': 'bg-rose-600'}
+    ] %}
+    <div class="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
+        <header class="border-b border-slate-800 px-6 py-5">
+          <h1 class="text-2xl font-semibold tracking-tight">CIA Consequences Summary</h1>
+          <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </header>
+        <div class="space-y-6 px-6 py-5">
+          <section class="rounded-xl border border-slate-800 bg-slate-900/70 px-5 py-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Legend</h2>
+            <div class="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+              {% for item in legend_items %}
+              <span class="inline-flex items-center gap-2">
+                <span class="h-3.5 w-3.5 rounded {{ item.class }}"></span>
+                {{ item.label }}
+              </span>
+              {% endfor %}
             </div>
           </section>
-          <div class="table-responsive">
-            <table class="table table-dark table-striped align-middle">
-              <thead>
+
+          <div class="overflow-hidden rounded-2xl border border-slate-800">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
+              <thead class="bg-slate-900/80 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th scope="col">BIA</th>
-                  <th scope="col">Components</th>
-                  <th scope="col">Consequences</th>
-                  <th scope="col">Confidentiality (Realistic)</th>
-                  <th scope="col">Integrity (Realistic)</th>
-                  <th scope="col">Availability (Realistic)</th>
+                  <th scope="col" class="px-4 py-3">BIA</th>
+                  <th scope="col" class="px-4 py-3">Components</th>
+                  <th scope="col" class="px-4 py-3">Consequences</th>
+                  <th scope="col" class="px-4 py-3">Confidentiality (Realistic)</th>
+                  <th scope="col" class="px-4 py-3">Integrity (Realistic)</th>
+                  <th scope="col" class="px-4 py-3">Availability (Realistic)</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="divide-y divide-slate-900/70 bg-slate-950/40">
                 {% for summary in bia_summaries %}
                 {% set impacts = summary.max_impacts %}
-                <tr>
-                  <td>{{ summary.bia.name }}</td>
-                  <td>{{ summary.component_count }}</td>
-                  <td>{{ summary.consequence_count }}</td>
+                <tr class="even:bg-slate-900/40">
+                  <td class="px-4 py-3 font-semibold text-slate-100">{{ summary.bia.name }}</td>
+                  <td class="px-4 py-3">{{ summary.component_count }}</td>
+                  <td class="px-4 py-3">{{ summary.consequence_count }}</td>
                   {% for prop in ['confidentiality', 'integrity', 'availability'] %}
                   {% set prop_data = impacts.get(prop) %}
-                  <td>
+                  <td class="px-4 py-3">
                     {% if prop_data %}
                       {% set realistic = prop_data.get('realistic') %}
                       {% set fallback = prop_data.get('worstcase') %}
                       {% if realistic %}
-                        <span class="badge impact-badge {{ bia_get_impact_color(realistic) }}">{{ realistic }}</span>
+                        {% set realistic_key = realistic.lower() %}
+                        {% set realistic_class = impact_colors.get(realistic_key, default_impact_class) %}
+                        <span class="inline-flex min-w-[6rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold capitalize {{ realistic_class }}">{{ realistic }}</span>
                         {% if fallback and fallback != realistic %}
-                          <span class="text-secondary small d-block">Worst: {{ fallback }}</span>
+                        <span class="mt-1 block text-xs text-slate-400">Worst: {{ fallback }}</span>
                         {% endif %}
                       {% elif fallback %}
-                        <span class="badge impact-badge {{ bia_get_impact_color(fallback) }}">{{ fallback }}</span>
-                        <span class="text-secondary small d-block">(Worst-case shown)</span>
+                        {% set fallback_key = fallback.lower() %}
+                        {% set fallback_class = impact_colors.get(fallback_key, default_impact_class) %}
+                        <span class="inline-flex min-w-[6rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold capitalize {{ fallback_class }}">{{ fallback }}</span>
+                        <span class="mt-1 block text-xs text-slate-400">Worst-case shown</span>
                       {% else %}
-                        <span class="badge text-bg-secondary">N/A</span>
+                        <span class="inline-flex min-w-[4rem] items-center justify-center rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">N/A</span>
                       {% endif %}
                     {% else %}
-                      <span class="badge text-bg-secondary">N/A</span>
+                      <span class="inline-flex min-w-[4rem] items-center justify-center rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">N/A</span>
                     {% endif %}
                   </td>
                   {% endfor %}
                 </tr>
                 {% else %}
                 <tr>
-                  <td colspan="6" class="text-center text-secondary">No BIAs contained consequences to summarise.</td>
+                  <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-400">No BIAs contained consequences to summarise.</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   </body>
 </html>

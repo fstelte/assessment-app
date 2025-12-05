@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block extra_css %}
   {{ super() }}
+  {% include "bia/_badge_styles.html" %}
   <style nonce="{{ csp_nonce }}">
     .bia-cia-grid {
       display: grid;
@@ -63,7 +64,8 @@
     <div class="card {{ card_surface }} h-100">
       <div class="card-body">
         <div class="{{ text_muted }} text-uppercase small">{{ property.capitalize() }}</div>
-        <span class="badge {{ bia_get_impact_color(value) }}">{{ value.capitalize() }}</span>
+        {% set cia_value = value or 'N/A' %}
+        <span class="bia-impact-badge" data-impact="{{ cia_value | lower }}">{{ cia_value }}</span>
       </div>
     </div>
     {% endif %}
@@ -118,9 +120,9 @@
                       {% set environment_label = bia_environment_label(environment_type) %}
                       {% if env_assignment and env_assignment.is_enabled %}
                         {% set env_auth = bia_environment_authentication(env_assignment) %}
-                        <span class="badge bg-success">{{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}</span>
+                        <span class="env-badge env-badge-enabled">{{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}</span>
                       {% else %}
-                        <span class="badge bg-secondary">{{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}</span>
+                        <span class="env-badge env-badge-disabled">{{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}</span>
                       {% endif %}
                     {% endfor %}
                   </div>
@@ -128,11 +130,10 @@
                 <td>
                   {% set ai_record = ai_identifications.get(component.id) %}
                   {% if ai_record %}
-                    {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
-                    {% set badge_class = badge_tokens['class'] %}
-                    <span class="badge {{ badge_class }}">{{ ai_record.category }}</span>
+                    {% set ai_label = ai_record.category or 'No AI' %}
+                    <span class="bia-ai-badge" data-ai="{{ ai_label | lower }}">{{ ai_label }}</span>
                   {% else %}
-                    <span class="text-secondary">None</span>
+                    <span class="bia-ai-badge" data-ai="no ai">No AI</span>
                   {% endif %}
                 </td>
               </tr>
@@ -267,8 +268,10 @@
             <td>{{ consequence.component.name }}</td>
             <td>{{ consequence.consequence_category or 'Not set' }}</td>
             <td>{{ consequence.security_property or 'Not set' }}</td>
-            <td><span class="badge {{ bia_get_impact_color(consequence.consequence_realisticcase) }}">{{ consequence.consequence_realisticcase or 'Unknown' }}</span></td>
-            <td><span class="badge {{ bia_get_impact_color(consequence.consequence_worstcase) }}">{{ consequence.consequence_worstcase or 'Unknown' }}</span></td>
+            {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
+            {% set worst = consequence.consequence_worstcase or 'N/A' %}
+            <td><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></td>
+            <td><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></td>
           </tr>
           {% endfor %}
         </tbody>
@@ -301,9 +304,8 @@
               {% set ns.has_rows = true %}
               <tr>
                 <td>{{ component.name }}</td>
-                {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
-                {% set badge_class = badge_tokens['class'] %}
-                <td><span class="badge {{ badge_class }}">{{ ai_record.category }}</span></td>
+                {% set ai_label = ai_record.category or 'No AI' %}
+                <td><span class="bia-ai-badge" data-ai="{{ ai_label | lower }}">{{ ai_label }}</span></td>
                 <td>{{ ai_record.motivatie or _('bia.context_detail.ai_risks.motivation_missing') }}</td>
               </tr>
             {% endif %}
