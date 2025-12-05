@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block extra_css %}
+  {{ super() }}
+  {% include "bia/_badge_styles.html" %}
+{% endblock %}
 {% block title %}Consequences | {{ component.name }}{% endblock %}
 {% block content %}
 {% set csrf_field = consequence_form.csrf_token %}
@@ -33,13 +37,15 @@
             <td>{{ consequence.consequence_category }}</td>
             <td class="text-uppercase">{{ consequence.security_property }}</td>
             <td>
-              <span class="badge {{ bia_get_impact_color(consequence.consequence_worstcase) if consequence.consequence_worstcase else 'text-bg-secondary' }} text-capitalize">{{ consequence.consequence_worstcase or 'N/A' }}</span>
+              {% set worst = consequence.consequence_worstcase or 'N/A' %}
+              <span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span>
               {% if consequence.justification_worstcase %}
                 <div class="small text-secondary">{{ consequence.justification_worstcase }}</div>
               {% endif %}
             </td>
             <td>
-              <span class="badge {{ bia_get_impact_color(consequence.consequence_realisticcase) if consequence.consequence_realisticcase else 'text-bg-secondary' }} text-capitalize">{{ consequence.consequence_realisticcase or 'N/A' }}</span>
+              {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
+              <span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span>
               {% if consequence.justification_realisticcase %}
                 <div class="small text-secondary">{{ consequence.justification_realisticcase }}</div>
               {% endif %}

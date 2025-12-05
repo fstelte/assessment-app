@@ -1,0 +1,147 @@
+<style nonce="{{ csp_nonce }}">
+  .component-badge {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .availability-badge {
+    font-size: 0.7rem;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: inherit;
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .availability-badge strong {
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .env-badge {
+    font-size: 0.7rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: rgba(15, 23, 42, 0.6);
+    color: #e2e8f0;
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .env-badge.env-badge-enabled {
+    background-color: #22c55e;
+    color: #052e16;
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+  .env-badge.env-badge-disabled {
+    background-color: rgba(71, 85, 105, 0.7);
+    color: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+  .bia-impact-badge {
+    text-transform: capitalize;
+    border-radius: 999px;
+    font-weight: 600;
+    padding: 0.25rem 0.95rem;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(15, 23, 42, 0.4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6rem;
+    font-size: 0.8rem;
+    background-color: rgba(15, 23, 42, 0.7);
+    color: #e2e8f0;
+  }
+  .bia-impact-badge[data-impact="catastrophic"],
+  .bia-impact-badge[data-impact="critical"],
+  .bia-impact-badge[data-impact="very high"],
+  .bia-impact-badge[data-impact="high"] {
+    background-color: #e11d48;
+    color: #fff1f2;
+    border-color: rgba(225, 29, 72, 0.5);
+  }
+  .bia-impact-badge[data-impact="major"],
+  .bia-impact-badge[data-impact="medium-high"],
+  .bia-impact-badge[data-impact="elevated"],
+  .bia-impact-badge[data-impact="significant"] {
+    background-color: #f97316;
+    color: #431407;
+    border-color: rgba(249, 115, 22, 0.5);
+  }
+  .bia-impact-badge[data-impact="moderate"],
+  .bia-impact-badge[data-impact="medium"],
+  .bia-impact-badge[data-impact="medium-low"] {
+    background-color: #fbbf24;
+    color: #78350f;
+    border-color: rgba(251, 191, 36, 0.5);
+  }
+  .bia-impact-badge[data-impact="minor"],
+  .bia-impact-badge[data-impact="insignificant"],
+  .bia-impact-badge[data-impact="low"],
+  .bia-impact-badge[data-impact="very low"],
+  .bia-impact-badge[data-impact="minimal"] {
+    background-color: #10b981;
+    color: #022c22;
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  .bia-impact-badge[data-impact="n/a"],
+  .bia-impact-badge[data-impact="unknown"],
+  .bia-impact-badge[data-impact=""] {
+    background-color: #0f172a;
+    color: #cbd5f5;
+    border-color: rgba(148, 163, 184, 0.4);
+  }
+  .bia-ai-badge {
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1px solid transparent;
+  }
+  .bia-ai-badge[data-ai="no ai"],
+  .bia-ai-badge[data-ai="none"],
+  .bia-ai-badge[data-ai="n/a"],
+  .bia-ai-badge[data-ai=""] {
+    background: transparent;
+    color: inherit;
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+  .bia-ai-badge[data-ai="limited risk"],
+  .bia-ai-badge[data-ai="limited"],
+  .bia-ai-badge[data-ai="acceptable"] {
+    background-color: #10b981;
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #022c22;
+  }
+  .bia-ai-badge[data-ai="minimal risk"],
+  .bia-ai-badge[data-ai="minimal"],
+  .bia-ai-badge[data-ai="low"] {
+    background-color: #facc15;
+    border-color: rgba(250, 204, 21, 0.45);
+    color: #422006;
+  }
+  .bia-ai-badge[data-ai="high risk"],
+  .bia-ai-badge[data-ai="high"],
+  .bia-ai-badge[data-ai="significant"] {
+    background-color: #fb923c;
+    border-color: rgba(251, 146, 60, 0.45);
+    color: #431407;
+  }
+  .bia-ai-badge[data-ai="unacceptable risk"],
+  .bia-ai-badge[data-ai="critical"],
+  .bia-ai-badge[data-ai="catastrophic"] {
+    background-color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fff1f2;
+  }
+</style>

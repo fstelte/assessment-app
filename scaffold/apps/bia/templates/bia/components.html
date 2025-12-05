@@ -2,6 +2,7 @@
 {% from "partials/forms.html" import render_field_with_tooltip %}
 {% block extra_css %}
   {{ super() }}
+  {% include "bia/_badge_styles.html" %}
   <style nonce="{{ csp_nonce }}">
     .bia-toolbar {
       background: rgba(255, 255, 255, 0.02);
@@ -12,20 +13,6 @@
       font-size: 0.8rem;
       line-height: 1;
       border-radius: 0.4rem;
-    }
-    .component-badge {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .availability-badge {
-      font-size: 0.7rem;
-      background-color: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: inherit;
-    }
-    .availability-badge strong {
-      font-weight: 600;
     }
     .table-components th {
       text-transform: uppercase;
@@ -39,20 +26,50 @@
     .table-components th:first-child {
       min-width: 18rem;
     }
-    .env-badge {
-      font-size: 0.7rem;
-      border-radius: 999px;
-      padding: 0.2rem 0.5rem;
-    }
     body.page-bia-components main.container {
       max-width: 100%;
       width: 100%;
       padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
+    .bia-pagination-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+    .bia-pagination-footer small {
+      text-align: center;
+    }
+    .bia-pagination-footer nav {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .bia-pagination-footer .pagination {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      gap: 0.25rem;
+      justify-content: center;
+    }
+    .bia-pagination-footer .page-item {
+      display: inline-flex;
+    }
     @media (max-width: 767px) {
       .btn-icon {
         width: 100%;
+      }
+    }
+    @media (min-width: 768px) {
+      .bia-pagination-footer {
+        flex-direction: row;
+      }
+      .bia-pagination-footer small {
+        text-align: left;
+      }
+      .bia-pagination-footer nav {
+        width: auto;
       }
     }
   </style>
@@ -226,11 +243,11 @@
                   {% set environment_label = bia_environment_label(environment_type) %}
                   {% if env_assignment and env_assignment.is_enabled %}
                     {% set env_auth = bia_environment_authentication(env_assignment) %}
-                    <span class="env-badge bg-success text-dark">
+                    <span class="env-badge env-badge-enabled">
                       {{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}
                     </span>
                   {% else %}
-                    <span class="env-badge bg-secondary">
+                    <span class="env-badge env-badge-disabled">
                       {{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}
                     </span>
                   {% endif %}
@@ -257,10 +274,10 @@
               <div class="d-flex flex-column gap-2">
                 <div class="d-flex align-items-center gap-2">
                   {% if ai_record %}
-                    {% set badge_tokens = bia_ai_badge_tokens(ai_record.category) %}
-                    <span class="badge {{ badge_tokens['class'] }}">{{ ai_record.category }}</span>
+                    {% set ai_label = ai_record.category or _('No AI profile') %}
+                    <span class="bia-ai-badge" data-ai="{{ ai_label | lower }}">{{ ai_label }}</span>
                   {% else %}
-                    <span class="text-secondary small">{{ _('No AI profile') }}</span>
+                    <span class="bia-ai-badge text-secondary small" data-ai="no ai">{{ _('No AI profile') }}</span>
                   {% endif %}
                   <button class="btn btn-outline-light btn-icon" type="button" data-ai-manage data-component-id="{{ component.id }}" title="{{ _('Manage AI classification') }}" aria-label="{{ _('Manage AI classification') }}">AI</button>
                 </div>
@@ -295,7 +312,7 @@
         </tbody>
       </table>
     </div>
-    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 px-3 py-2 border-top border-secondary">
+    <div class="bia-pagination-footer px-3 py-2 border-top border-secondary">
       <small class="text-secondary mb-0">
         {% if pagination.pages > 1 %}
           {{ _('bia.components.table.pagination_with_pages', start=page_start, end=page_end, total=pagination.total, page=pagination.page, pages=pagination.pages) }}
