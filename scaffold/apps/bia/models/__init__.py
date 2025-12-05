@@ -111,6 +111,11 @@ class Component(db.Model):
         back_populates="component",
         cascade="all, delete-orphan",
     )
+    risks = db.relationship(
+        "Risk",
+        secondary="risk_component_links",
+        back_populates="components",
+    )
     environments = db.relationship(
         "ComponentEnvironment",
         back_populates="component",
@@ -120,6 +125,19 @@ class Component(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Component {self.name}>"
+
+    @property
+    def is_risk_eligible(self) -> bool:
+        """Return True when the parent context scope allows risk assessments."""
+
+        scope = self.context_scope
+        if scope is None:
+            return False
+        return bool(
+            scope.risk_assessment_human
+            or scope.risk_assessment_process
+            or scope.risk_assessment_technological
+        )
 
 
 class ComponentEnvironment(db.Model):

@@ -28,6 +28,13 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 - `AuditLog`: central audit stream capturing admin and system events with actor metadata.
   - Automatic SQLAlchemy listeners record create/update/delete events for configured models (defaults include `User` and `Role`). Override `AUDIT_LOG_MODEL_EVENTS` to adjust tracked fields per model.
 
+## Risk Domain
+
+- `Risk`: captures title, description, discovery date, impact/chance enums, treatment strategy, and (when mitigating) one or more CSA `Control` references stored in the `risk_control_links` join table. Risks also link to one or more BIA `Component` records via `risk_component_links` and expose helper methods that translate the weighted score to a configured severity.
+- `RiskImpactAreaLink`: stores the selected business impact areas (Operational, Financial, Regulatory, Human & Safety, Privacy) per risk with uniqueness enforced per pair.
+- `RiskSeverityThreshold`: administrator-managed ranges that map numeric scores to severities (`low`, `moderate`, `high`, `critical`). Defaults seed values that cover the 1-25 score space but can be adjusted without code changes.
+- Admin panel routes under `/admin/risks` provide CRUD management for risks, while `/admin/risk-thresholds` lets privileged users update the severity ranges without touching migrations.
+
 ## Metadata
 
 - All models share the same SQLAlchemy metadata and are exposed via `scaffold.models` for Alembic autogeneration.

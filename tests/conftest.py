@@ -20,6 +20,8 @@ def app():
             "scaffold.apps.bia",
             "scaffold.apps.csa",
             "scaffold.apps.dpia",
+            "scaffold.apps.risk.api",
+            "scaffold.apps.risk.routes",
             "scaffold.apps.template",
         ],
         password_login_enabled=True,

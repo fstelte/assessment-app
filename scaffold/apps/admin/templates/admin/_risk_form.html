@@ -1,0 +1,110 @@
+{% macro render_risk_form(form, component_choices_available=True) -%}
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.title.label(class="form-label") }}
+    {{ form.title(class="form-control", placeholder=_('admin.risks.form.title_placeholder')) }}
+    {% for error in form.title.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+  </div>
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", placeholder=_('admin.risks.form.description_placeholder')) }}
+    {% for error in form.description.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+  </div>
+  <div class="row g-3">
+    <div class="col-sm-6">
+      {{ form.discovered_on.label(class="form-label") }}
+      {{ form.discovered_on(class="form-control", type="date") }}
+      {% for error in form.discovered_on.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-sm-6">
+      {{ form.treatment_owner_id.label(class="form-label") }}
+      {{ form.treatment_owner_id(class="form-select") }}
+      {% for error in form.treatment_owner_id.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="row g-3 mt-0">
+    <div class="col-sm-6">
+      {{ form.impact.label(class="form-label") }}
+      {{ form.impact(class="form-select") }}
+      {% for error in form.impact.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-sm-6">
+      {{ form.chance.label(class="form-label") }}
+      {{ form.chance(class="form-select") }}
+      {% for error in form.chance.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="row g-3 mt-0">
+    <div class="col-sm-6">
+      {{ form.impact_areas.label(class="form-label") }}
+      {{ form.impact_areas(class="form-select", multiple=True) }}
+      {% for error in form.impact_areas.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-sm-6">
+      {{ form.treatment.label(class="form-label") }}
+      {{ form.treatment(class="form-select", data_control_toggle="true") }}
+      {% for error in form.treatment.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="mb-3 mt-3" data-csa-control-wrapper>
+    {{ form.csa_control_ids.label(class="form-label") }}
+    {{ form.csa_control_ids(class="form-select", multiple=True) }}
+    <div class="form-text">{{ _('admin.risks.form.csa_help') }}</div>
+    {% for error in form.csa_control_ids.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+  </div>
+  <div class="mb-3">
+    {{ form.component_ids.label(class="form-label") }}
+    {% if not component_choices_available %}
+      <div class="alert alert-warning" role="alert">{{ _('admin.risks.form.no_components') }}</div>
+    {% endif %}
+    {% if component_choices_available %}
+      {{ form.component_ids(class="form-select", multiple=True) }}
+    {% else %}
+      {{ form.component_ids(class="form-select", multiple=True, disabled=True) }}
+    {% endif %}
+    {% for error in form.component_ids.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+  </div>
+  <div class="row g-3">
+    <div class="col-sm-6">
+      {{ form.treatment_due_date.label(class="form-label") }}
+      {{ form.treatment_due_date(class="form-control", type="date") }}
+      {% for error in form.treatment_due_date.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-sm-6">
+      {{ form.treatment_plan.label(class="form-label") }}
+      {{ form.treatment_plan(class="form-control") }}
+      {% for error in form.treatment_plan.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="d-grid mt-4">
+    {% if component_choices_available %}
+      {{ form.submit(class="btn btn-primary") }}
+    {% else %}
+      {{ form.submit(class="btn btn-primary", disabled=True) }}
+    {% endif %}
+  </div>
+{%- endmacro %}

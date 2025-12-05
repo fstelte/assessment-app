@@ -12,6 +12,8 @@ _DEFAULT_MODULES = [
     "scaffold.apps.bia",
     "scaffold.apps.csa",
     "scaffold.apps.dpia",
+    "scaffold.apps.risk",
+    "scaffold.apps.risk.api",
     "scaffold.apps.pages",
     "scaffold.apps.template",
 ]

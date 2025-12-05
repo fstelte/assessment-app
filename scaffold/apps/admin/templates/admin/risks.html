@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% from "admin/_risk_form.html" import render_risk_form %}
+{% block title %}{{ _('admin.risks.title') }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div>
+    <h1 class="mb-1">{{ _('admin.risks.heading') }}</h1>
+    <p class="text-secondary mb-0">{{ _('admin.risks.subtitle') }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-light" href="{{ url_for('admin.risk_thresholds') }}">{{ _('admin.risks.link_thresholds') }}</a>
+    <a class="btn btn-outline-light" href="{{ url_for('admin.list_users') }}">{{ _('admin.risks.link_admin_home') }}</a>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">{{ _('admin.risks.form.create_title') }}</h2>
+        <form method="post">
+          {{ render_risk_form(form, component_choices_available) }}
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">{{ _('admin.risks.list.title') }}</h2>
+          <span class="text-secondary small">{{ _('admin.risks.list.count', count=risk_rows|length) }}</span>
+        </div>
+        {% if risk_rows %}
+          <div class="table-responsive">
+            <table class="table table-dark table-striped align-middle">
+              <thead>
+                <tr>
+                  <th scope="col">{{ _('admin.risks.table.risk') }}</th>
+                  <th scope="col">{{ _('admin.risks.table.impact_chance') }}</th>
+                  <th scope="col">{{ _('admin.risks.table.score') }}</th>
+                  <th scope="col">{{ _('admin.risks.table.components') }}</th>
+                  <th scope="col">{{ _('admin.risks.table.treatment') }}</th>
+                  <th scope="col" class="text-end">{{ _('admin.risks.table.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in risk_rows %}
+                  {% set risk = row.record %}
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ risk.title }}</div>
+                      <div class="text-secondary small">{{ _('admin.risks.table.discovered_on', date=risk.discovered_on or _('admin.risks.labels.unknown_date')) }}</div>
+                      <div class="small mt-1 text-break">{{ risk.description }}</div>
+                      <div class="mt-2 d-flex flex-wrap gap-1">
+                        {% for link in risk.impact_area_links %}
+                          <span class="badge bg-secondary">{{ _('risk.impact_area.' ~ link.area.value) }}</span>
+                        {% endfor %}
+                      </div>
+                    </td>
+                    <td>
+                      <div>{{ impact_label_map.get(risk.impact.value, risk.impact.value.title()) }}</div>
+                      <div class="text-secondary small">{{ _('risk.chance.' ~ risk.chance.value) }}</div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold">{{ row.score }}</div>
+                      {% if row.severity %}
+                        <span class="badge bg-info text-dark">{{ _('risk.severity.' ~ row.severity.value) }}</span>
+                      {% else %}
+                        <span class="badge bg-secondary">{{ _('admin.risks.labels.unscored') }}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <ul class="list-unstyled mb-0 small">
+                        {% for component in risk.components %}
+                          <li>
+                            <div class="fw-semibold">{{ component.name }}</div>
+                            <div class="text-secondary">{{ component.context_scope.name if component.context_scope else _('admin.risks.labels.unknown_context') }}</div>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </td>
+                    <td>
+                      <div>{{ _('risk.treatment.' ~ risk.treatment.value) }}</div>
+                      {% if risk.controls %}
+                        <div class="text-secondary small">{{ _('admin.risks.table.csa_controls') }}</div>
+                        <ul class="list-unstyled mb-1 small">
+                          {% for control in risk.controls %}
+                            <li>{{ control.domain }} <span class="text-secondary">{{ control.section }}</span></li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                      {% if risk.treatment_plan %}
+                        <div class="small mt-1 text-break">{{ risk.treatment_plan }}</div>
+                      {% endif %}
+                      {% if risk.treatment_due_date %}
+                        <div class="text-secondary small">{{ _('admin.risks.table.due', date=risk.treatment_due_date) }}</div>
+                      {% endif %}
+                      {% if risk.treatment_owner %}
+                        <div class="text-secondary small">{{ _('admin.risks.table.owner', owner=risk.treatment_owner.full_name or risk.treatment_owner.email) }}</div>
+                      {% endif %}
+                    </td>
+                    <td class="text-end">
+                      <div class="d-flex flex-column gap-2">
+                        <a class="btn btn-sm btn-outline-light" href="{{ url_for('admin.edit_risk', risk_id=risk.id) }}">{{ _('admin.risks.actions.edit') }}</a>
+                        <form method="post" action="{{ url_for('admin.delete_risk', risk_id=risk.id) }}" data-confirm="{{ _('admin.risks.actions.confirm_delete')|e }}" onsubmit="return confirm(this.dataset.confirm);">
+                          {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+                          <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('admin.risks.actions.delete') }}</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-secondary" role="alert">{{ _('admin.risks.empty') }}</div>
+        {% endif %}
+        <hr class="my-4">
+        <h3 class="h6 text-uppercase text-secondary">{{ _('admin.risks.thresholds.title') }}</h3>
+        <div class="row g-3">
+          {% for threshold in thresholds %}
+            <div class="col-6 col-lg-3">
+              <div class="border rounded p-3 h-100">
+                <div class="fw-semibold">{{ _('risk.severity.' ~ threshold.severity.value) }}</div>
+                <div class="text-secondary small">{{ _('admin.risks.thresholds.range', minimum=threshold.min_score, maximum=threshold.max_score) }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var treatmentField = document.getElementById('{{ form.treatment.id }}');
+    var wrapper = document.querySelector('[data-csa-control-wrapper]');
+    var controlField = wrapper ? wrapper.querySelector('select') : null;
+    if (!treatmentField || !wrapper || !controlField) {
+      return;
+    }
+    function toggleControlField() {
+      var requires = treatmentField.value === '{{ RiskTreatmentOption.MITIGATE.value if RiskTreatmentOption is defined else "mitigate" }}';
+      if (requires) {
+        wrapper.classList.remove('d-none');
+      } else {
+        wrapper.classList.add('d-none');
+        Array.prototype.forEach.call(controlField.options, function (option) {
+          option.selected = false;
+        });
+      }
+    }
+    treatmentField.addEventListener('change', toggleControlField);
+    toggleControlField();
+  })();
+</script>
+{% endblock %}
