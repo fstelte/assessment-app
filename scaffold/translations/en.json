@@ -18,6 +18,7 @@
       "logout": "Logout",
       "login": "Login",
       "register": "Register",
+      "risk": "Risk workspace",
       "admin_import_controls": "Admin Import Controls",
       "admin_users": "Admin Users",
       "assessments_overview": "Assessments Overview",
@@ -104,6 +105,14 @@
         "title": "No BIAs recorded yet.",
         "body": "Create a new analysis or import an existing dataset to get started."
       }
+    },
+    "impacts": {
+      "very_low": "Very low",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "very_high": "Very high",
+      "unknown": "Unknown"
     },
     "context_form": {
       "title_edit": "Edit BIA",
@@ -682,8 +691,9 @@
       "subtitle": "Assign roles, manage activation, and administer MFA.",
       "link_csa_dashboard": "CSA dashboard",
       "link_bia_dashboard": "BIA dashboard",
-        "link_authentication_methods": "Authentication methods",
-        "link_audit_trail": "Audit trail",
+      "link_authentication_methods": "Authentication methods",
+      "link_risk_management": "Risk management",
+      "link_audit_trail": "Audit trail",
       "table": {
         "user": "User",
         "status": "Status",
@@ -853,6 +863,92 @@
         "deleted": "Authentication method {name} deleted."
       }
     },
+    "risks": {
+      "title": "Risk register",
+      "heading": "Risk register",
+      "subtitle": "Record identified risks, their treatments, and severity assignments across eligible BIA components.",
+      "link_thresholds": "Severity thresholds",
+      "link_admin_home": "User administration",
+      "link_back_to_list": "Back to risks",
+      "form": {
+        "create_title": "Add a new risk",
+        "title_placeholder": "e.g. Loss of payroll data",
+        "description_placeholder": "Describe the scenario, trigger, and potential effect.",
+        "csa_help": "Select at least one CSA control when the treatment strategy is Mitigate.",
+        "no_components": "No eligible components found. Enable risk assessments on a BIA context first.",
+        "ineligible_suffix": "no longer eligible",
+        "invalid_ticket_url": "Enter a valid URL.",
+        "submit_create": "Create risk",
+        "submit_update": "Save changes"
+      },
+      "list": {
+        "title": "Recorded risks",
+        "count": "{count} total"
+      },
+      "table": {
+        "risk": "Risk",
+        "impact_chance": "Impact / Likelihood",
+        "score": "Score",
+        "components": "Components",
+        "treatment": "Treatment",
+        "actions": "Actions",
+        "discovered_on": "Logged on {date}",
+        "discovered_on_label": "Discovered on",
+        "csa_controls": "CSA controls",
+        "due": "Due by {date}",
+        "owner": "Owner: {owner}"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "confirm_delete": "Delete this risk entry? This action cannot be undone."
+      },
+      "labels": {
+        "unknown_date": "Unknown date",
+        "unknown_context": "Unknown context",
+        "unscored": "No severity configured"
+      },
+      "flash": {
+        "created": "Risk '{title}' created.",
+        "updated": "Risk '{title}' updated.",
+        "deleted": "Risk '{title}' deleted."
+      },
+      "errors": {
+        "invalid_components": "Select components that allow risk tracking.",
+        "invalid_controls": "Select valid CSA controls before saving."
+      },
+      "thresholds": {
+        "title": "Severity matrix",
+        "heading": "Severity thresholds",
+        "subtitle": "Adjust the score ranges used to label risks as low, moderate, high, or critical.",
+        "range": "{minimum} - {maximum}",
+        "form": {
+          "min_label": "Minimum score",
+          "max_label": "Maximum score",
+          "submit": "Save range"
+        },
+        "errors": {
+          "overlap": "Thresholds cannot overlap. Adjust the ranges and try again.",
+          "invalid_range": "Maximum score must be greater than or equal to the minimum score.",
+          "no_selection": "Select a severity range to update."
+        },
+        "flash": {
+          "updated": "Severity range for {severity} updated."
+        },
+        "page_title": "Risk severity thresholds"
+      },
+      "edit": {
+        "title": "Edit risk · {title}",
+        "heading": "Edit {title}",
+        "subtitle": "Update fields and severity for this risk entry.",
+        "summary": {
+          "title": "Current score",
+          "severity": "Severity"
+        },
+        "form_title": "Update details"
+      },
+      "empty": "No risks recorded yet."
+    },
     "actions": {
       "view": "View",
       "delete": "Delete",
@@ -980,6 +1076,71 @@
     "edit": "Edit",
     "export": "Export",
     "view": "View"
+  },
+  "risk": {
+    "chance": {
+      "rare": "Rare",
+      "unlikely": "Unlikely",
+      "possible": "Possible",
+      "likely": "Likely",
+      "almost_certain": "Almost certain"
+    },
+    "impact": {
+      "insignificant": "Insignificant",
+      "minor": "Minor",
+      "moderate": "Moderate",
+      "major": "Major",
+      "catastrophic": "Catastrophic"
+    },
+    "impact_area": {
+      "operational": "Operational",
+      "financial": "Financial",
+      "regulatory": "Regulatory",
+      "human_safety": "Human & safety",
+      "privacy": "Privacy"
+    },
+    "treatment": {
+      "accept": "Accept",
+      "avoid": "Avoid",
+      "mitigate": "Mitigate",
+      "transfer": "Transfer"
+    },
+    "severity": {
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "archived": "Closed risk",
+      "closed_on": "Closed on {date}"
+    },
+    "ticket": {
+      "label": "Ticket link",
+      "open": "Open linked ticket",
+      "missing": "No ticket reference added yet.",
+      "placeholder": "Paste a link to the delivery ticket or incident record",
+      "help_text": "Optional. Attaches context for remediation work, e.g. Jira or ServiceNow."
+    },
+    "controls": {
+      "linked": "CSA controls linked",
+      "empty": "No CSA controls linked yet."
+    },
+    "actions": {
+      "view_ticket": "View ticket",
+      "close_archive": "Close & archive",
+      "reopen": "Reopen risk",
+      "delete": "Delete risk",
+      "delete_confirm": "Are you sure you want to delete this risk?"
+    },
+    "flash": {
+      "invalid_request": "Unable to validate the request.",
+      "archived": "Risk \"{title}\" archived.",
+      "already_archived": "Risk already archived.",
+      "reopened": "Risk \"{title}\" reopened.",
+      "already_open": "Risk is already open.",
+      "deleted": "Risk \"{title}\" deleted."
+    }
   },
   "assessments": {
     "assign": {

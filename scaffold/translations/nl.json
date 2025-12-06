@@ -18,6 +18,7 @@
       "logout": "Afmelden",
       "login": "Aanmelden",
       "register": "Registreren",
+        "risk": "Risicobeheer",
       "admin_import_controls": "Admin Import Controls",
       "admin_users": "Admin Users",
       "assessments_overview": "Assessments Overview",
@@ -36,6 +37,71 @@
         "en": "Engels",
         "nl": "Nederlands"
       }
+    }
+  },
+  "risk": {
+    "chance": {
+      "rare": "Zeldzaam",
+      "unlikely": "Onwaarschijnlijk",
+      "possible": "Mogelijk",
+      "likely": "Waarschijnlijk",
+      "almost_certain": "Bijna zeker"
+    },
+    "impact": {
+      "insignificant": "Verwaarloosbaar",
+      "minor": "Klein",
+      "moderate": "Gematigd",
+      "major": "Groot",
+      "catastrophic": "Catastrofaal"
+    },
+    "impact_area": {
+      "operational": "Operationeel",
+      "financial": "Financieel",
+      "regulatory": "Regelgevend",
+      "human_safety": "Mens & veiligheid",
+      "privacy": "Privacy"
+    },
+    "treatment": {
+      "accept": "Accepteren",
+      "avoid": "Vermijden",
+      "mitigate": "Mitigeren",
+      "transfer": "Overdragen"
+    },
+    "severity": {
+      "low": "Laag",
+      "moderate": "Gematigd",
+      "high": "Hoog",
+      "critical": "Kritiek"
+    },
+    "status": {
+      "archived": "Afgesloten risico",
+      "closed_on": "Gesloten op {date}"
+    },
+    "ticket": {
+      "label": "Ticketlink",
+      "open": "Gekoppeld ticket openen",
+      "missing": "Nog geen ticket gekoppeld.",
+      "placeholder": "Plak een link naar het werk- of incidentticket",
+      "help_text": "Optioneel. Geeft extra context voor opvolging, bijvoorbeeld Jira of ServiceNow."
+    },
+    "controls": {
+      "linked": "Gekoppelde CSA-controls",
+      "empty": "Nog geen CSA-controls gekoppeld."
+    },
+    "actions": {
+      "view_ticket": "Ticket bekijken",
+      "close_archive": "Sluiten en archiveren",
+      "reopen": "Risico heropenen",
+      "delete": "Risico verwijderen",
+      "delete_confirm": "Weet je zeker dat je dit risico wilt verwijderen?"
+    },
+    "flash": {
+      "invalid_request": "Kan het verzoek niet valideren.",
+      "archived": "Risico \"{title}\" is gearchiveerd.",
+      "already_archived": "Risico is al gearchiveerd.",
+      "reopened": "Risico \"{title}\" is heropend.",
+      "already_open": "Risico is al actief.",
+      "deleted": "Risico \"{title}\" is verwijderd."
     }
   },
   "bia": {
@@ -676,6 +742,18 @@
           }
         },
         "admin": {
+          "risks": {
+            "form": {
+              "invalid_ticket_url": "Voer een geldige URL in.",
+              "csa_help": "Selecteer minstens één CSA-control wanneer de strategie Mitigate is."
+            },
+            "table": {
+              "csa_controls": "CSA-controls"
+            },
+            "errors": {
+              "invalid_controls": "Selecteer geldige CSA-controls voordat je opslaat."
+            }
+          },
           "users": {
             "title": "Gebruikersbeheer",
             "heading": "Gebruikersbeheer",

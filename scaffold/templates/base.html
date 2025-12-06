@@ -42,7 +42,7 @@
     {% if not export_mode|default(false) %}
       {% include "partials/navigation.html" %}
     {% endif %}
-    <main class="container flex-grow-1 mb-5">
+    <main class="{% block main_container_class %}container{% endblock %} flex-grow-1 mb-5">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="mb-4">

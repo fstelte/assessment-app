@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.risks.thresholds.page_title') }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div>
+    <h1 class="mb-1">{{ _('admin.risks.thresholds.heading') }}</h1>
+    <p class="text-secondary mb-0">{{ _('admin.risks.thresholds.subtitle') }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-light" href="{{ url_for('admin.list_risks') }}">{{ _('admin.risks.link_back_to_list') }}</a>
+  </div>
+</div>
+<div class="row g-4">
+  {% for threshold in thresholds %}
+    {% set form = forms.get(threshold.id) %}
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 mb-1">{{ _('risk.severity.' ~ threshold.severity.value) }}</h2>
+          <p class="text-secondary small mb-3">{{ _('admin.risks.thresholds.range', minimum=threshold.min_score, maximum=threshold.max_score) }}</p>
+          <form method="post">
+            {% if form %}
+              {{ form.hidden_tag() }}
+              <div class="mb-3">
+                {{ form.min_score.label(class="form-label") }}
+                {{ form.min_score(class="form-control", min=0) }}
+                {% for error in form.min_score.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="mb-3">
+                {{ form.max_score.label(class="form-label") }}
+                {{ form.max_score(class="form-control", min=0) }}
+                {% for error in form.max_score.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+              <div class="d-grid">
+                {{ form.submit(class="btn btn-primary") }}
+              </div>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

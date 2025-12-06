@@ -41,6 +41,16 @@ from ..apps.csa.models import (
     AuditTrail,
     Control,
 )
+from ..apps.risk.models import (
+    Risk,
+    RiskChance,
+    RiskImpact,
+    RiskImpactArea,
+    RiskImpactAreaLink,
+    RiskSeverity,
+    RiskSeverityThreshold,
+    RiskTreatmentOption,
+)
 from .audit import AuditLog
 
 __all__ = [
@@ -65,6 +75,14 @@ __all__ = [
     "Control",
     "AuditTrail",
     "AuditLog",
+    "Risk",
+    "RiskChance",
+    "RiskImpact",
+    "RiskImpactArea",
+    "RiskImpactAreaLink",
+    "RiskSeverity",
+    "RiskSeverityThreshold",
+    "RiskTreatmentOption",
 ]
 
 MIGRATION_REQUIREMENTS: list[str] = [

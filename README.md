@@ -10,6 +10,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Bootstrap dark-mode layout, navigation partials, and reusable components.
 - Accessible, CSS-only form tooltips via a shared macro and `tooltip-wrapper` utility classes.
 - BIA component workflows capture environment-specific authentication methods, surface them in the UI, and provide exportable CSV/SQL payloads for audit teams.
+- Risk assessment workspace with dashboard cards, CSA-linked mitigation plans, and configurable severity thresholds.
 - DPIA / FRIA module linked to BIA components with editable risk registers, mitigating measures, colored risk severity badges, and a four-state workflow (in progress, in review, finished, abandoned).
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.
@@ -19,6 +20,14 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Risk register rows now include likelihood/impact badges that reuse the BIA color palette.
 - Users can edit or delete risks and mitigating measures inline via modal forms.
 - Assessment details include a status selector with colored badges (blue, amber, green, black) that track progress through "In progress", "In review", "Finished", and "Abandoned" states.
+
+## Risk Assessment Workspace
+
+- `/risk` exposes a dashboard for administrators and assessment managers showing weighted scores, severity pills, treatment owners, CSA control summaries, and component coverage across every recorded risk.
+- `/risk/new` and `/risk/<id>/edit` reuse the shared `RiskForm`, provide chance/impact selectors, and enforce at least one CSA control selection whenever "Mitigate" is chosen.
+- `/admin/risk-thresholds` lets administrators tune the severity matrix via guarded forms that prevent overlapping ranges.
+- `/api/risks` keeps automation in sync with the UI, returning the same serialized payloads (score, severity, linked components, and CSA control metadata).
+- See `docs/risk.md` for prerequisites, best practices when selecting CSA controls, and a troubleshooting checklist.
 
 ## Setup Guide
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import sqlalchemy as sa
 
@@ -29,6 +29,26 @@ from ..identity.models import MFASetting, Role, User, UserStatus
 from ..bia.localization import translate_authentication_label
 from ..bia.models import AuthenticationMethod, Component
 from ..bia.services.authentication import clear_authentication_cache
+from ..risk.forms import RiskForm, RiskThresholdForm
+from ..risk.models import (
+    Risk,
+    RiskChance,
+    RiskImpact,
+    RiskImpactArea,
+    RiskImpactAreaLink,
+    RiskSeverityThreshold,
+    RiskTreatmentOption,
+)
+from ..risk.services import (
+    configure_risk_form,
+    determine_severity as determine_risk_severity,
+    load_thresholds,
+    optional_int,
+    set_impact_areas,
+    thresholds_overlap,
+    validate_component_ids,
+    validate_control_ids,
+)
 from .forms import AuthenticationMethodDeleteForm, AuthenticationMethodForm, AuthenticationMethodToggleForm
 from ...core.audit import log_event
 
@@ -419,6 +439,258 @@ def delete_authentication_method(method_id: int):
         "success",
     )
     return redirect(url_for("admin.list_authentication_methods"))
+
+
+@bp.route("/risks", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def list_risks():
+    _require_admin()
+
+    form = RiskForm()
+    configure_risk_form(form, ineligible_suffix=_("admin.risks.form.ineligible_suffix"))
+    form.submit.label.text = _("admin.risks.form.submit_create")
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            try:
+                component_ids = [int(value) for value in form.component_ids.data]
+                components = validate_component_ids(component_ids)
+            except ValueError:
+                form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+            else:
+                try:
+                    controls = validate_control_ids(form.csa_control_ids.data or [])
+                except ValueError:
+                    form.csa_control_ids.errors.append(_("admin.risks.errors.invalid_controls"))
+                else:
+                    risk = Risk(
+                        title=(form.title.data or "").strip(),
+                        description=form.description.data,
+                        discovered_on=form.discovered_on.data,
+                        impact=RiskImpact(form.impact.data),
+                        chance=RiskChance(form.chance.data),
+                        treatment=RiskTreatmentOption(form.treatment.data),
+                        treatment_plan=form.treatment_plan.data,
+                        treatment_due_date=form.treatment_due_date.data,
+                        treatment_owner_id=optional_int(form.treatment_owner_id.data),
+                    )
+                    if risk.discovered_on is None:
+                        risk.discovered_on = date.today()
+                    risk.components = components
+                    risk.controls = controls or []
+                    set_impact_areas(risk, form.impact_areas.data or [])
+                    db.session.add(risk)
+                    db.session.flush()
+                    log_event(
+                        action="risk_created",
+                        entity_type="risk",
+                        entity_id=risk.id,
+                        details={
+                            "title": risk.title,
+                            "impact": risk.impact.value,
+                            "chance": risk.chance.value,
+                            "treatment": risk.treatment.value,
+                        },
+                    )
+                    db.session.commit()
+                    flash(_("admin.risks.flash.created", title=risk.title), "success")
+                    return redirect(url_for("admin.list_risks"))
+        else:
+            for errors in form.errors.values():
+                for error in errors:
+                    flash(error, "danger")
+
+    risks = (
+        Risk.query.options(
+            sa.orm.selectinload(Risk.components).selectinload(Component.context_scope),
+            sa.orm.selectinload(Risk.impact_area_links),
+            sa.orm.selectinload(Risk.controls),
+            sa.orm.selectinload(Risk.treatment_owner),
+        )
+        .order_by(Risk.created_at.desc())
+        .all()
+    )
+    thresholds = load_thresholds()
+    risk_rows = [
+        {
+            "record": risk,
+            "score": risk.score(),
+            "severity": determine_risk_severity(risk.score(), thresholds),
+        }
+        for risk in risks
+    ]
+
+    return render_template(
+        "admin/risks.html",
+        form=form,
+        risk_rows=risk_rows,
+        thresholds=thresholds,
+        impact_label_map=dict(form.impact.choices),
+        component_choices_available=bool(form.component_ids.choices),
+        RiskTreatmentOption=RiskTreatmentOption,
+    )
+
+
+@bp.route("/risks/<int:risk_id>", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def edit_risk(risk_id: int):
+    _require_admin()
+    risk = db.session.get(Risk, risk_id)
+    if risk is None:
+        abort(404)
+
+    form = RiskForm(obj=risk)
+    configure_risk_form(
+        form,
+        extra_components=list(risk.components),
+        ineligible_suffix=_("admin.risks.form.ineligible_suffix"),
+    )
+    form.submit.label.text = _("admin.risks.form.submit_update")
+
+    if request.method == "GET":
+        form.component_ids.data = [str(component.id) for component in risk.components]
+        form.impact_areas.data = [link.area.value for link in risk.impact_area_links]
+        form.treatment_owner_id.data = "" if risk.treatment_owner_id is None else str(risk.treatment_owner_id)
+        form.csa_control_ids.data = [str(control.id) for control in risk.controls]
+
+    if request.method == "POST" and form.validate_on_submit():
+        try:
+            component_ids = [int(value) for value in form.component_ids.data]
+            components = validate_component_ids(component_ids)
+        except ValueError:
+            form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+        else:
+            try:
+                controls = validate_control_ids(form.csa_control_ids.data or [])
+            except ValueError:
+                form.csa_control_ids.errors.append(_("admin.risks.errors.invalid_controls"))
+            else:
+                risk.title = (form.title.data or "").strip()
+                risk.description = form.description.data
+                risk.discovered_on = form.discovered_on.data or risk.discovered_on
+                risk.impact = RiskImpact(form.impact.data)
+                risk.chance = RiskChance(form.chance.data)
+                risk.treatment = RiskTreatmentOption(form.treatment.data)
+                risk.treatment_plan = form.treatment_plan.data
+                risk.treatment_due_date = form.treatment_due_date.data
+                risk.treatment_owner_id = optional_int(form.treatment_owner_id.data)
+                risk.components = components
+                risk.controls = controls or []
+                set_impact_areas(risk, form.impact_areas.data or [])
+                db.session.flush()
+                log_event(
+                    action="risk_updated",
+                    entity_type="risk",
+                    entity_id=risk.id,
+                    details={
+                        "title": risk.title,
+                        "impact": risk.impact.value,
+                        "chance": risk.chance.value,
+                        "treatment": risk.treatment.value,
+                    },
+                )
+                db.session.commit()
+                flash(_("admin.risks.flash.updated", title=risk.title), "success")
+                return redirect(url_for("admin.edit_risk", risk_id=risk.id))
+    elif request.method == "POST":
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    thresholds = load_thresholds()
+    score = risk.score()
+    severity = determine_risk_severity(score, thresholds)
+
+    return render_template(
+        "admin/risk_edit.html",
+        risk=risk,
+        form=form,
+        thresholds=thresholds,
+        score=score,
+        severity=severity,
+        impact_label_map=dict(form.impact.choices),
+        component_choices_available=bool(form.component_ids.choices),
+        RiskTreatmentOption=RiskTreatmentOption,
+    )
+
+
+@bp.post("/risks/<int:risk_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_risk(risk_id: int):
+    _require_admin()
+    risk = db.session.get(Risk, risk_id)
+    if risk is None:
+        abort(404)
+
+    db.session.delete(risk)
+    log_event(
+        action="risk_deleted",
+        entity_type="risk",
+        entity_id=risk.id,
+        details={"title": risk.title},
+    )
+    db.session.commit()
+    flash(_("admin.risks.flash.deleted", title=risk.title), "info")
+    return redirect(url_for("admin.list_risks"))
+
+
+@bp.route("/risk-thresholds", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def risk_thresholds():
+    _require_admin()
+    thresholds = load_thresholds()
+    forms: dict[int, RiskThresholdForm] = {}
+    submitted: tuple[RiskThresholdForm, RiskSeverityThreshold] | None = None
+
+    for threshold in thresholds:
+        prefix = f"threshold-{threshold.id}"
+        form = RiskThresholdForm(prefix=prefix)
+        form.severity.data = threshold.severity.value
+        form.submit.label.text = _("admin.risks.thresholds.form.submit")
+        form.min_score.label.text = _("admin.risks.thresholds.form.min_label")
+        form.max_score.label.text = _("admin.risks.thresholds.form.max_label")
+        if request.method == "GET":
+            form.min_score.data = threshold.min_score
+            form.max_score.data = threshold.max_score
+        forms[threshold.id] = form
+        if request.method == "POST" and form.submit.data:
+            submitted = (form, threshold)
+
+    if submitted:
+        form, threshold = submitted
+        if form.validate():
+            threshold.min_score = form.min_score.data or threshold.min_score
+            threshold.max_score = form.max_score.data or threshold.max_score
+            if thresholds_overlap(thresholds):
+                form.max_score.errors.append(_("admin.risks.thresholds.errors.overlap"))
+                db.session.rollback()
+            else:
+                db.session.commit()
+                flash(
+                    _(
+                        "admin.risks.thresholds.flash.updated",
+                        severity=_("risk.severity." + threshold.severity.value),
+                    ),
+                    "success",
+                )
+                return redirect(url_for("admin.risk_thresholds"))
+        else:
+            db.session.rollback()
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+    elif request.method == "POST":
+        flash(_("admin.risks.thresholds.errors.no_selection"), "warning")
+
+    return render_template(
+        "admin/risk_thresholds.html",
+        thresholds=thresholds,
+        forms=forms,
+    )
 
 
 @bp.get("/users")

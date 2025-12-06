@@ -15,6 +15,8 @@ from flask import current_app
 from flask_login import current_user
 from sqlalchemy import text
 
+from ...core.i18n import gettext as _
+
 from ...extensions import db
 from .models import (
     AIIdentificatie,
@@ -42,6 +44,16 @@ _IMPACT_LEVELS = {
     "moderate": 3,
     "major": 4,
     "catastrophic": 5,
+    "very_low": 1,
+    "very_high": 5,
+}
+
+_IMPACT_LABEL_KEYS = {
+    1: "bia.impacts.very_low",
+    2: "bia.impacts.low",
+    3: "bia.impacts.medium",
+    4: "bia.impacts.high",
+    5: "bia.impacts.very_high",
 }
 
 _SQL_TABLE_ALIASES = {
@@ -99,6 +111,21 @@ def get_impact_level(impact: object | None) -> int:
     if text.isdigit():
         return int(text)
     return _IMPACT_LEVELS.get(text.lower(), 0)
+
+
+def describe_impact_level(level: int) -> str:
+    """Return the translated label for a numeric impact level."""
+
+    key = _IMPACT_LABEL_KEYS.get(level)
+    if key is None:
+        return _("bia.impacts.unknown")
+    return _(key)
+
+
+def describe_impact_value(impact: object | None) -> str:
+    """Return the translated label for an arbitrary impact value."""
+
+    return describe_impact_level(get_impact_level(impact))
 
 
 def get_impact_color(impact: object | None) -> str:

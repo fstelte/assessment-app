@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2025.12.2"
+version = "2025.12.3"
 description = "Unified scaffold for applications"
 authors = ["Ferry Stelte"]
 readme = "README.md"
@@ -22,7 +22,7 @@ flask-sqlalchemy = "^3.1.1"
 flask-talisman = "^1.1.0"
 flask-wtf = "^1.2.1"
 wtforms = "^3.1.2"
-gunicorn = "^22.0.0"
+gunicorn = "^23.0.0"
 numpy = ">=1.22.2"
 pandas = "^2.2.0"
 psycopg = { extras = ["binary"], version = "^3.1.18" }
@@ -30,7 +30,7 @@ pyotp = "^2.9.0"
 python-dotenv = "^1.0.1"
 python3-saml = "^1.16.0"
 sqlalchemy = "^2.0.32"
-werkzeug = ">=3.0.6"
+werkzeug = ">=3.1.4"
 zipp = ">=3.19.1"
 
 [tool.poetry.extras]
