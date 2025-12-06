@@ -1,7 +1,7 @@
 """Support multiple CSA control links per risk.
 
-Revision ID: 20251205_0015_risk_multi_controls
-Revises: 20251205_0014_risk_archive_ticket
+Revision ID: 20251205_0015
+Revises: 20251205_0014
 Create Date: 2025-12-05 12:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "20251205_0015_risk_multi_controls"
-down_revision = "20251205_0014_risk_archive_ticket"
+revision = "20251205_0015"
+down_revision = "20251205_0014"
 branch_labels = None
 depends_on = None
 
