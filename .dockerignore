@@ -38,14 +38,6 @@ tailwind.config.cjs
 docker/example.compose*.yml
 docker/example.compose*.yaml
 docker/README.md
-docker/backup/
-docker/restore/
-docker/certbot/
-docker/crowdsec/
-docker/fail2ban/
-docker/templates/
-docker/backup-db.sh
-docker/healthcheck.sh
 
 # Misc local artifacts
 *.log
