@@ -1,0 +1,56 @@
+# Version control and metadata
+.git
+.gitignore
+
+# Editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment and secret files
+.env
+.env.*
+*.env
+*.pem
+
+# Project directories not needed for runtime image
+ansible/
+cleanup_script/
+docs/
+tests/
+tailwind.config.cjs
+
+# Docker helper assets not required in final image
+docker/example.compose*.yml
+docker/example.compose*.yaml
+docker/README.md
+docker/backup/
+docker/restore/
+docker/certbot/
+docker/crowdsec/
+docker/fail2ban/
+docker/templates/
+docker/backup-db.sh
+docker/render_maintenance.py
+docker/s3_upload.py
+docker/serve-status.py
+docker/wait_for_db.py
+docker/healthcheck.sh
+
+# Misc local artifacts
+*.log
+*.tmp

@@ -16,7 +16,7 @@ services:
       FLASK_ENV: production
     volumes:
       - ../instance:/app/instance
-      - ../migrations:/app/migrations
+      #- ../migrations:/app/migrations
       - maintenance-page:/maintenance
     restart: unless-stopped
 

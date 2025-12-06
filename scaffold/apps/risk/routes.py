@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime
+from typing import Sequence
 
 import sqlalchemy as sa
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
@@ -22,6 +24,7 @@ from .models import (
     RiskChance,
     RiskImpact,
     RiskSeverity,
+    RiskSeverityThreshold,
     RiskTreatmentOption,
 )
 from .services import (
@@ -128,11 +131,15 @@ def dashboard():
     risks = _risk_query().order_by(Risk.created_at.desc()).all()
     cards = _build_dashboard_cards(risks, thresholds)
     metrics = _dashboard_metrics(cards)
+    matrix = _build_risk_matrix(risks, thresholds)
+    severity_scale = _severity_scale(thresholds)
     action_form = RiskActionForm()
     return render_template(
         "risk/dashboard.html",
         risk_cards=cards,
         metrics=metrics,
+        risk_matrix=matrix,
+        severity_scale=severity_scale,
         api_endpoint_available="risk_api.get_risk" in current_app.view_functions,
         RiskTreatmentOption=RiskTreatmentOption,
         action_form=action_form,
@@ -484,3 +491,164 @@ def _dashboard_metrics(cards: list[dict[str, object]]) -> dict[str, object]:
             default=None,
         ),
     }
+
+
+_MATRIX_IMPACT_AXIS = [
+    RiskImpact.INSIGNIFICANT,
+    RiskImpact.MINOR,
+    RiskImpact.MODERATE,
+    RiskImpact.MAJOR,
+    RiskImpact.CATASTROPHIC,
+]
+
+_MATRIX_CHANCE_AXIS = [
+    RiskChance.ALMOST_CERTAIN,
+    RiskChance.LIKELY,
+    RiskChance.POSSIBLE,
+    RiskChance.UNLIKELY,
+    RiskChance.RARE,
+]
+
+_MATRIX_CELL_CLASSES = {
+    RiskSeverity.CRITICAL: "risk-matrix-cell--critical",
+    RiskSeverity.HIGH: "risk-matrix-cell--high",
+    RiskSeverity.MODERATE: "risk-matrix-cell--moderate",
+    RiskSeverity.LOW: "risk-matrix-cell--low",
+}
+
+_MATRIX_CHIP_CLASSES = {
+    RiskSeverity.CRITICAL: "risk-matrix-chip--critical",
+    RiskSeverity.HIGH: "risk-matrix-chip--high",
+    RiskSeverity.MODERATE: "risk-matrix-chip--moderate",
+    RiskSeverity.LOW: "risk-matrix-chip--low",
+}
+
+_MATRIX_PILL_CLASSES = {
+    RiskSeverity.CRITICAL: "risk-matrix-pill--critical",
+    RiskSeverity.HIGH: "risk-matrix-pill--high",
+    RiskSeverity.MODERATE: "risk-matrix-pill--moderate",
+    RiskSeverity.LOW: "risk-matrix-pill--low",
+}
+
+_DEFAULT_MATRIX_CELL_CLASS = "risk-matrix-cell--neutral"
+_DEFAULT_MATRIX_CHIP_CLASS = "risk-matrix-chip--neutral"
+_DEFAULT_MATRIX_PILL_CLASS = "risk-matrix-pill--neutral"
+
+
+@dataclass
+class MatrixRisk:
+    id: int
+    title: str
+    severity: RiskSeverity | None
+    score: int
+    url: str
+
+
+@dataclass
+class MatrixCell:
+    score: int
+    severity: RiskSeverity | None
+    risks: list[MatrixRisk]
+
+_SEVERITY_ORDER = [
+    RiskSeverity.LOW,
+    RiskSeverity.MODERATE,
+    RiskSeverity.HIGH,
+    RiskSeverity.CRITICAL,
+]
+
+
+def _matrix_cell_class(severity: RiskSeverity | None) -> str:
+    if severity is None:
+        return _DEFAULT_MATRIX_CELL_CLASS
+    return _MATRIX_CELL_CLASSES.get(severity, _DEFAULT_MATRIX_CELL_CLASS)
+
+
+def _matrix_chip_class(severity: RiskSeverity | None) -> str:
+    if severity is None:
+        return _DEFAULT_MATRIX_CHIP_CLASS
+    return _MATRIX_CHIP_CLASSES.get(severity, _DEFAULT_MATRIX_CHIP_CLASS)
+
+
+def _matrix_pill_class(severity: RiskSeverity) -> str:
+    return _MATRIX_PILL_CLASSES.get(severity, _DEFAULT_MATRIX_PILL_CLASS)
+
+
+def _build_risk_matrix(
+    risks: list[Risk],
+    thresholds: Sequence[RiskSeverityThreshold],
+) -> dict[str, object]:
+    lookup: dict[tuple[RiskChance, RiskImpact], MatrixCell] = {}
+    for chance in _MATRIX_CHANCE_AXIS:
+        for impact in _MATRIX_IMPACT_AXIS:
+            combo_score = IMPACT_WEIGHTS[impact] * CHANCE_WEIGHTS[chance]
+            lookup[(chance, impact)] = MatrixCell(
+                score=combo_score,
+                severity=determine_severity(combo_score, thresholds),
+                risks=[],
+            )
+
+    for risk in risks:
+        cell = lookup[(risk.chance, risk.impact)]
+        severity = determine_severity(risk.score(), thresholds)
+        cell.risks.append(
+            MatrixRisk(
+                id=risk.id,
+                title=risk.title,
+                severity=severity,
+                score=risk.score(),
+                url=url_for("risk.edit", risk_id=risk.id),
+            )
+        )
+
+    rows: list[dict[str, object]] = []
+    for chance in _MATRIX_CHANCE_AXIS:
+        cells: list[dict[str, object]] = []
+        for impact in _MATRIX_IMPACT_AXIS:
+            cell_data = lookup[(chance, impact)]
+            risks_sorted = sorted(cell_data.risks, key=lambda entry: entry.score, reverse=True)
+            cells.append(
+                {
+                    "impact": impact,
+                    "score": cell_data.score,
+                    "severity": cell_data.severity,
+                    "severity_class": _matrix_cell_class(cell_data.severity),
+                    "risks": [
+                        {
+                            "id": risk_entry.id,
+                            "title": risk_entry.title,
+                            "severity": risk_entry.severity,
+                            "score": risk_entry.score,
+                            "url": risk_entry.url,
+                            "severity_class": _matrix_chip_class(risk_entry.severity),
+                        }
+                        for risk_entry in risks_sorted[:3]
+                    ],
+                    "extra_count": max(len(risks_sorted) - 3, 0),
+                    "total": len(risks_sorted),
+                }
+            )
+        rows.append({"chance": chance, "cells": cells})
+
+    return {
+        "impact_axis": _MATRIX_IMPACT_AXIS,
+        "chance_axis": _MATRIX_CHANCE_AXIS,
+        "rows": rows,
+    }
+
+
+def _severity_scale(thresholds: Sequence[RiskSeverityThreshold]) -> list[dict[str, object]]:
+    ordered = sorted(
+        thresholds,
+        key=lambda entry: _SEVERITY_ORDER.index(entry.severity) if entry.severity in _SEVERITY_ORDER else len(_SEVERITY_ORDER),
+    )
+    return [
+        {
+            "severity": entry.severity,
+            "label": _(f"risk.severity.{entry.severity.value}"),
+            "min_score": entry.min_score,
+            "max_score": entry.max_score,
+            "class": _matrix_pill_class(entry.severity),
+        }
+        for entry in ordered
+    ]
