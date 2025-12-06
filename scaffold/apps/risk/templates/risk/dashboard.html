@@ -263,11 +263,252 @@ body[data-theme="dark"] .risk-control-card {
   text-align: center;
   background: rgba(13, 110, 253, 0.05);
 }
+.risk-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.08));
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+.risk-matrix__card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+.risk-matrix__legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.risk-matrix-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+.risk-matrix-pill__range {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+.risk-matrix-pill--low {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.05));
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #064e3b;
+}
+.risk-matrix-pill--moderate {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.05));
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #78350f;
+}
+.risk-matrix-pill--high {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(249, 115, 22, 0.08));
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #7c2d12;
+}
+.risk-matrix-pill--critical {
+  background: linear-gradient(135deg, rgba(190, 18, 60, 0.35), rgba(190, 18, 60, 0.08));
+  border-color: rgba(190, 18, 60, 0.45);
+  color: #fff;
+}
+.risk-matrix-pill--neutral {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: rgba(15, 23, 42, 0.7);
+}
+.risk-matrix__grid-wrapper {
+  background: rgba(15, 23, 42, 0.025);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.risk-matrix__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+.risk-matrix__grid-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.risk-matrix__grid-row--header {
+  min-height: 60px;
+}
+.risk-matrix__axis {
+  border-radius: 1rem;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  padding: 0.85rem;
+  background: rgba(15, 23, 42, 0.02);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.risk-matrix__axis--corner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-content: center;
+}
+.risk-matrix-cell {
+  border-radius: 1.25rem;
+  padding: 1rem;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.risk-matrix-cell--low {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.05));
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #064e3b;
+  box-shadow: 0 1rem 2.25rem rgba(16, 185, 129, 0.25);
+}
+.risk-matrix-cell--moderate {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.08));
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #92400e;
+  box-shadow: 0 1rem 2.25rem rgba(251, 191, 36, 0.25);
+}
+.risk-matrix-cell--high {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.35), rgba(249, 115, 22, 0.12));
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #7c2d12;
+  box-shadow: 0 1rem 2.25rem rgba(249, 115, 22, 0.3);
+}
+.risk-matrix-cell--critical {
+  background: linear-gradient(135deg, rgba(190, 18, 60, 0.4), rgba(190, 18, 60, 0.15));
+  border-color: rgba(190, 18, 60, 0.55);
+  color: #fff;
+  box-shadow: 0 1rem 2.5rem rgba(190, 18, 60, 0.35);
+}
+.risk-matrix-cell--neutral {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: rgba(15, 23, 42, 0.7);
+}
+.risk-matrix-cell:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1.5rem 2.5rem rgba(15, 23, 42, 0.18);
+}
+.risk-matrix-cell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.risk-matrix-cell__score {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.risk-matrix-cell__count {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  background: rgba(15, 23, 42, 0.1);
+}
+.risk-matrix-cell__body {
+  margin-top: 0.75rem;
+}
+.risk-matrix-cell__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.risk-matrix-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.risk-matrix-chip--low {
+  background: rgba(16, 185, 129, 0.9);
+  color: #ecfdf5;
+  box-shadow: 0 0.5rem 1.25rem rgba(16, 185, 129, 0.35);
+}
+.risk-matrix-chip--moderate {
+  background: rgba(251, 191, 36, 0.9);
+  color: #78350f;
+  box-shadow: 0 0.5rem 1.25rem rgba(251, 191, 36, 0.35);
+}
+.risk-matrix-chip--high {
+  background: rgba(249, 115, 22, 0.95);
+  color: #431407;
+  box-shadow: 0 0.5rem 1.25rem rgba(249, 115, 22, 0.35);
+}
+.risk-matrix-chip--critical {
+  background: rgba(190, 18, 60, 0.95);
+  color: #fff;
+  box-shadow: 0 0.5rem 1.25rem rgba(190, 18, 60, 0.4);
+}
+.risk-matrix-chip--neutral {
+  background: rgba(148, 163, 184, 0.25);
+  color: rgba(15, 23, 42, 0.7);
+}
+.risk-matrix-chip__title {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.risk-matrix-chip__score {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+}
+.risk-matrix-chip--muted {
+  background: rgba(15, 23, 42, 0.05);
+  color: rgba(15, 23, 42, 0.65);
+  border: 1px dashed rgba(15, 23, 42, 0.2);
+}
+.risk-matrix-cell__empty {
+  font-size: 0.8rem;
+  color: rgba(15, 23, 42, 0.6);
+  font-style: italic;
+}
+.risk-matrix__footnote {
+  margin-top: 1rem;
+}
+@media (max-width: 992px) {
+  .risk-matrix__grid-row {
+    grid-template-columns: 120px repeat(5, minmax(220px, 1fr));
+  }
+  .risk-matrix-chip__title {
+    max-width: 100px;
+  }
+}
 </style>
 {% endblock %}
 {% block content %}
 {% set metrics = metrics or {} %}
 {% set risk_cards = risk_cards or [] %}
+{% set risk_matrix = risk_matrix or {} %}
+{% set severity_scale = severity_scale or [] %}
 {% set status_labels = {
   'overdue': _('Overdue treatment'),
   'scheduled': _('Upcoming treatment'),
@@ -309,6 +550,86 @@ body[data-theme="dark"] .risk-control-card {
           </article>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="risk-matrix">
+    <div class="risk-matrix__card">
+      <div class="flex-grow-1">
+        <p class="text-uppercase small mb-2">{{ _('Likelihood vs impact matrix') }}</p>
+        <h2 class="h4 mb-2">{{ _('Risk heatmap') }}</h2>
+        <p class="text-secondary mb-0">{{ _('Plot every recorded risk across the configured severity spectrum to reveal concentration points before treatment review meetings.') }}</p>
+      </div>
+      <div>
+        <p class="text-uppercase small text-secondary mb-2">{{ _('Severity scale') }}</p>
+        <div class="risk-matrix__legend-list">
+          {% for entry in severity_scale %}
+          <span class="risk-matrix-pill {{ entry.class }}">
+            <span>{{ entry.label }}</span>
+            <span class="risk-matrix-pill__range">{{ entry.min_score }}&ndash;{{ entry.max_score }}</span>
+          </span>
+          {% else %}
+          <span class="text-secondary small">{{ _('Configure at least one severity threshold to populate the legend.') }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="risk-matrix__grid-wrapper">
+      <div class="risk-matrix__grid">
+        <div class="risk-matrix__grid-row risk-matrix__grid-row--header">
+          <div class="risk-matrix__axis risk-matrix__axis--corner">
+            <span>{{ _('Chance') }}</span>
+            <span>{{ _('Impact') }}</span>
+          </div>
+          {% for impact in risk_matrix.impact_axis %}
+          <div class="risk-matrix__axis risk-matrix__axis--impact">
+            <span>{{ _('risk.impact.' + impact.value) }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% for row in risk_matrix.rows %}
+        <div class="risk-matrix__grid-row">
+          <div class="risk-matrix__axis risk-matrix__axis--chance">
+            <span>{{ _('risk.chance.' + row.chance.value) }}</span>
+          </div>
+          {% for cell in row.cells %}
+          <div class="risk-matrix-cell {{ cell.severity_class }}">
+            <div class="risk-matrix-cell__header">
+              <span class="risk-matrix-cell__score">{{ cell.score }}</span>
+              <span class="risk-matrix-cell__label">
+                {% if cell.severity %}
+                {{ _('risk.severity.' + cell.severity.value) }}
+                {% else %}
+                {{ _('No severity') }}
+                {% endif %}
+              </span>
+              {% if cell.total %}
+              <span class="risk-matrix-cell__count">{{ cell.total }}</span>
+              {% endif %}
+            </div>
+            <div class="risk-matrix-cell__body">
+              {% if cell.risks %}
+              <div class="risk-matrix-cell__chips">
+                {% for risk in cell.risks %}
+                <a class="risk-matrix-chip {{ risk.severity_class }}" href="{{ risk.url }}">
+                  <span class="risk-matrix-chip__title">{{ risk.title }}</span>
+                  <span class="risk-matrix-chip__score">{{ risk.score }}</span>
+                </a>
+                {% endfor %}
+                {% if cell.extra_count > 0 %}
+                <span class="risk-matrix-chip risk-matrix-chip--muted">+{{ cell.extra_count }} {{ _('more') }}</span>
+                {% endif %}
+              </div>
+              {% else %}
+              <p class="risk-matrix-cell__empty">{{ _('No risks mapped here yet.') }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="risk-matrix__footnote text-secondary small mb-0">{{ _('Scores reflect the configured impact and chance weights; severity colors respect the thresholds set in the risk workspace.') }}</p>
     </div>
   </section>
 
