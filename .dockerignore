@@ -34,7 +34,7 @@ docs/
 tests/
 tailwind.config.cjs
 
-# Docker helper assets not required in final image
+# Docker helper assets not required in app image
 docker/example.compose*.yml
 docker/example.compose*.yaml
 docker/README.md
@@ -45,10 +45,6 @@ docker/crowdsec/
 docker/fail2ban/
 docker/templates/
 docker/backup-db.sh
-docker/render_maintenance.py
-docker/s3_upload.py
-docker/serve-status.py
-docker/wait_for_db.py
 docker/healthcheck.sh
 
 # Misc local artifacts
