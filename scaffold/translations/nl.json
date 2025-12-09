@@ -19,7 +19,6 @@
       "login": "Aanmelden",
       "register": "Registreren",
         "risk": "Risicobeheer",
-      "admin_import_controls": "Admin Import Controls",
       "admin_users": "Admin Users",
       "assessments_overview": "Assessments Overview",
       "assign_assessment": "Assign Assessment",
@@ -415,6 +414,7 @@
           "unacceptable": "Onacceptabel risico",
           "high": "Hoog risico",
           "limited": "Beperkt risico",
+          "back": "Terug",
           "minimal": "Minimaal risico"
         }
       },
@@ -726,7 +726,8 @@
                 }
               },
               "submit": "Controls importeren",
-              "import_builtin": "Meegeleverde dataset ISO 27002 importeren"
+              "import_builtin": "Meegeleverde dataset ISO 27002 importeren",
+              "import_nist": "Meegeleverde NIST SP 800-53 dataset importeren"
             }
           },
           "roles": {
@@ -738,10 +739,71 @@
             "remove": {
               "required": "Ontbrekend rol-ID.",
               "submit": "Verwijderen"
+            },
+            "names": {
+              "control_owner": "Control Owner",
+              "control_assigner": "Control Assigner"
             }
           }
         },
         "admin": {
+          "controls": {
+            "page": {
+              "title": "Beheer van controls",
+              "heading": "Beheer van de controlcatalogus",
+              "subtitle": "Maak of importeer controls zodat CSA-assessments aansluiten bij je framework.",
+              "role_hint": "Admin of Control Owner",
+              "dataset_hint": "Gebruik de meegeleverde ISO 27002 JSON of de NIST SP 800-53 dataset om de catalogus te vullen.",
+              "stats": {
+                "total": "Controls in de catalogus",
+                "total_help": "Handmatig aangemaakt of geïmporteerd",
+                "templates": "Gekoppelde templates",
+                "templates_help": "Templates die automatisch per control zijn aangemaakt",
+                "described": "Gedocumenteerde controls",
+                "described_help": "{pct}% bevat een omschrijving voor reviewers"
+              }
+            },
+            "manual": {
+              "title": "Control handmatig aanmaken",
+              "intro": "Definieer individuele controls zonder een JSON-catalogus te uploaden.",
+              "code_label": "Sectie / code",
+              "code_help": "Optionele identifier zoals \"AC-1\" of \"5.2\".",
+              "code_placeholder": "bijv. AC-1",
+              "name_label": "Controlnaam",
+              "name_help": "Weergegeven als de catalogustitel.",
+              "name_placeholder": "Naam die in assessments verschijnt",
+              "description_label": "Omschrijving",
+              "description_help": "Optionele context die bij deze control wordt getoond.",
+              "description_placeholder": "Optionele omschrijving voor reviewers.",
+              "submit": "Control aanmaken",
+              "update_submit": "Wijzigingen opslaan",
+              "delete_submit": "Control verwijderen"
+            },
+            "edit": {
+              "title": "Control bewerken",
+              "heading": "Control bewerken",
+              "subtitle": "Werk de metadata bij voor {name}."
+            },
+            "list": {
+              "title": "Controlcatalogus",
+              "code": "Code",
+              "name": "Naam",
+              "description": "Omschrijving",
+              "templates": "Templates",
+              "actions": "Acties",
+              "empty": "Nog geen controls beschikbaar.",
+              "no_description": "Geen omschrijving beschikbaar."
+            },
+            "flash": {
+              "created": "Control {domain} aangemaakt.",
+              "updated": "Control {domain} bijgewerkt.",
+              "deleted": "Control {domain} verwijderd.",
+              "duplicate": "Er bestaat al een control met de naam {domain}.",
+              "invalid_form": "Kan het verstuurde controlformulier niet verwerken.",
+              "dataset_missing": "Kan de meegeleverde controledataset niet vinden.",
+              "dataset_invalid": "Kan de geselecteerde dataset niet verwerken. {error}"
+            }
+          },
           "risks": {
             "form": {
               "invalid_ticket_url": "Voer een geldige URL in.",
@@ -762,6 +824,9 @@
             "link_bia_dashboard": "BIA-dashboard",
             "link_authentication_methods": "Authenticatiemethoden",
             "link_audit_trail": "Audittrail",
+            "button": {
+              "import_controls": "Controls importeren"
+            },
             "table": {
               "user": "Gebruiker",
               "status": "Status",

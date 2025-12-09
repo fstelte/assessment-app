@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.controls.edit.title') }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ _('admin.controls.edit.heading') }}</h1>
+    <p class="text-secondary mb-0">{{ _('admin.controls.edit.subtitle', name=control.domain) }}</p>
+  </div>
+  <a class="btn btn-outline-light" href="{{ url_for('admin.controls') }}">{{ _('actions.back') if _('actions.back') != 'actions.back' else _('admin.controls.list.title') }}</a>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.update_control', control_id=control.id) }}" novalidate>
+      {{ form.hidden_tag() }}
+      {{ form.control_id() }}
+      <div class="row g-4">
+        <div class="col-12 col-md-4">
+          {{ form.code.label(class="form-label text-uppercase small text-secondary") }}
+          {{ form.code(class="form-control bg-dark text-white border-secondary" if not form.code.errors else "form-control bg-dark text-white border-danger") }}
+          {% for error in form.code.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="col-12 col-md-8">
+          {{ form.name.label(class="form-label text-uppercase small text-secondary") }}
+          {{ form.name(class="form-control bg-dark text-white border-secondary" if not form.name.errors else "form-control bg-dark text-white border-danger") }}
+          {% for error in form.name.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="col-12">
+          {{ form.description.label(class="form-label text-uppercase small text-secondary") }}
+          {{ form.description(class="form-control bg-dark text-white border-secondary" if not form.description.errors else "form-control bg-dark text-white border-danger", rows=6) }}
+          {% for error in form.description.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="d-flex justify-content-between mt-4">
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.controls') }}">{{ _('actions.cancel') }}</a>
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

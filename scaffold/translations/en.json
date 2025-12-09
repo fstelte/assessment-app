@@ -19,7 +19,6 @@
       "login": "Login",
       "register": "Register",
       "risk": "Risk workspace",
-      "admin_import_controls": "Admin Import Controls",
       "admin_users": "Admin Users",
       "assessments_overview": "Assessments Overview",
       "assign_assessment": "Assign Assessment",
@@ -669,7 +668,8 @@
           }
         },
         "submit": "Import controls",
-        "import_builtin": "Import bundled ISO 27002 dataset"
+        "import_builtin": "Import bundled ISO 27002 dataset",
+        "import_nist": "Import bundled NIST SP 800-53 dataset"
       }
     },
     "roles": {
@@ -681,10 +681,71 @@
       "remove": {
         "required": "Missing role identifier.",
         "submit": "Remove"
+      },
+      "names": {
+        "control_owner": "Control Owner",
+        "control_assigner": "Control Assigner"
       }
     }
   },
   "admin": {
+    "controls": {
+      "page": {
+        "title": "Control administration",
+        "heading": "Control catalogue administration",
+        "subtitle": "Create or import controls to keep CSA assessments aligned with your frameworks.",
+        "role_hint": "Admin or Control Owner",
+        "dataset_hint": "Use the bundled ISO 27002 JSON or the parsed NIST SP 800-53 dataset to seed the catalogue.",
+        "stats": {
+          "total": "Controls in catalogue",
+          "total_help": "Manually created or imported entries",
+          "templates": "Linked templates",
+          "templates_help": "Assessment templates generated per control",
+          "described": "Documented controls",
+          "described_help": "{pct}% include reviewer-facing descriptions"
+        }
+      },
+      "manual": {
+        "title": "Create control manually",
+        "intro": "Define individual controls without uploading a JSON catalogue.",
+        "code_label": "Section / code",
+        "code_help": "Optional identifier such as \"AC-1\" or \"5.2\".",
+        "code_placeholder": "e.g. AC-1",
+        "name_label": "Control name",
+        "name_help": "Displayed as the catalog entry title.",
+        "name_placeholder": "Privileged access management",
+        "description_label": "Description",
+        "description_help": "Optional context shown alongside this control.",
+        "description_placeholder": "Optional description shown to reviewers.",
+        "submit": "Create control",
+        "update_submit": "Save changes",
+        "delete_submit": "Delete control"
+      },
+      "edit": {
+        "title": "Edit control",
+        "heading": "Edit control",
+        "subtitle": "Update metadata for {name}."
+      },
+      "list": {
+        "title": "Control catalogue",
+        "code": "Code",
+        "name": "Name",
+        "description": "Description",
+        "templates": "Templates",
+        "actions": "Actions",
+        "empty": "No controls available yet.",
+        "no_description": "No description available."
+      },
+      "flash": {
+        "created": "Control {domain} created.",
+        "updated": "Control {domain} updated.",
+        "deleted": "Control {domain} deleted.",
+        "duplicate": "A control with the name {domain} already exists.",
+        "invalid_form": "Unable to process the submitted control form.",
+        "dataset_missing": "Unable to locate the bundled control dataset on disk.",
+        "dataset_invalid": "Unable to process the selected dataset. {error}"
+      }
+    },
     "users": {
       "title": "User Administration",
       "heading": "User administration",
@@ -694,6 +755,9 @@
       "link_authentication_methods": "Authentication methods",
       "link_risk_management": "Risk management",
       "link_audit_trail": "Audit trail",
+      "button": {
+        "import_controls": "Import controls"
+      },
       "table": {
         "user": "User",
         "status": "Status",
@@ -1074,6 +1138,7 @@
     "close": "Close",
     "delete": "Delete",
     "edit": "Edit",
+    "back": "Back",
     "export": "Export",
     "view": "View"
   },

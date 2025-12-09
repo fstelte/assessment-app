@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .admin import ControlImportForm, UserRoleAssignForm, UserRoleRemoveForm
+from .admin import UserRoleAssignForm, UserRoleRemoveForm
 from .assessment import (
     AssessmentAssignForm,
     AssessmentReviewForm,
@@ -13,7 +13,6 @@ from .assessment import (
 )
 
 __all__ = [
-    "ControlImportForm",
     "UserRoleAssignForm",
     "UserRoleRemoveForm",
     "AssessmentAssignForm",

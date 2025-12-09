@@ -19,10 +19,14 @@ from sqlalchemy.orm import joinedload, validates
 
 ROLE_ADMIN = "admin"
 ROLE_ASSESSMENT_MANAGER = "manager"
+ROLE_CONTROL_OWNER = "control_owner"
+ROLE_CONTROL_ASSIGNER = "control_assigner"
 
 _DEFAULT_ROLES: dict[str, str] = {
     ROLE_ADMIN: "Platform administrator",
     ROLE_ASSESSMENT_MANAGER: "Assessment manager",
+    ROLE_CONTROL_OWNER: "Control catalog owner",
+    ROLE_CONTROL_ASSIGNER: "Control assigner",
 }
 
 

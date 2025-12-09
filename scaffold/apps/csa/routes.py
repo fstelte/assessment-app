@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import re
 import unicodedata
 from collections import defaultdict
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Iterable
 
 from flask import (
@@ -29,6 +27,7 @@ from ...core.i18n import gettext as _
 from ..identity.models import (
     ROLE_ADMIN,
     ROLE_ASSESSMENT_MANAGER,
+    ROLE_CONTROL_ASSIGNER,
     User,
     UserStatus,
 )
@@ -36,7 +35,6 @@ from .forms import (
     AssessmentAssignForm,
     AssessmentReviewForm,
     AssessmentStartForm,
-    ControlImportForm,
     build_assessment_response_form,
     localise_question_set,
 )
@@ -49,7 +47,6 @@ from .models import (
     AssessmentTemplate,
     Control,
 )
-from .services import import_controls_from_file, import_controls_from_mapping
 
 
 MONTH_LABEL_KEYS = {
@@ -105,7 +102,10 @@ def inject_status_helpers() -> dict[str, object]:
 
 
 def _has_assessment_management_role() -> bool:
-    return current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
+    return any(
+        current_user.has_role(role)
+        for role in (ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, ROLE_CONTROL_ASSIGNER)
+    )
 
 
 def _slugify_filename(value: str) -> str:
@@ -245,7 +245,7 @@ def start_assessment():
     if not templates:
         if current_user.has_role(ROLE_ADMIN):
             flash(_("csa.flash.no_templates_import_first"), "warning")
-            return redirect(url_for("csa.import_controls"))
+            return redirect(url_for("admin.controls"))
         flash(_("csa.flash.no_templates_contact_admin"), "warning")
         return redirect(url_for("template.index"))
 
@@ -299,7 +299,7 @@ def assign_assessment():
     if not templates:
         if current_user.has_role(ROLE_ADMIN):
             flash(_("csa.flash.no_templates_import_first"), "warning")
-            return redirect(url_for("csa.import_controls"))
+            return redirect(url_for("admin.controls"))
         flash(_("csa.flash.no_templates_contact_admin"), "warning")
         return redirect(url_for("template.index"))
 
@@ -623,49 +623,4 @@ def delete_assessment(assessment_id: int):
 @bp.route("/controls/import", methods=["GET", "POST"])
 @login_required
 def import_controls():
-    if not current_user.has_role(ROLE_ADMIN):
-        abort(403)
-
-    form = ControlImportForm()
-
-    if request.method == "POST" and request.form.get("action") == "import_builtin":
-        builtin_path = Path(current_app.root_path).parent / "csa_app" / "iso_27002_controls.json"
-        if not builtin_path.exists():
-            flash(_("csa.flash.catalog_missing"), "danger")
-        else:
-            stats = import_controls_from_file(builtin_path)
-            flash(
-                _(
-                    "csa.flash.import_result",
-                    created=stats.created,
-                    updated=stats.updated,
-                ),
-                "success" if not stats.errors else "warning",
-            )
-            for error in stats.errors:
-                flash(error, "warning")
-        return redirect(url_for("csa.import_controls"))
-
-    if form.validate_on_submit():
-        file_storage = form.data_file.data
-        try:
-            payload = json.load(file_storage)
-        except json.JSONDecodeError as exc:
-            flash(_("csa.flash.json_error", error=exc), "danger")
-            file_storage.close()
-            return redirect(url_for("csa.import_controls"))
-
-        stats = import_controls_from_mapping(payload)
-        flash(
-            _(
-                "csa.flash.import_result",
-                created=stats.created,
-                updated=stats.updated,
-            ),
-            "success" if not stats.errors else "warning",
-        )
-        for error in stats.errors:
-            flash(error, "warning")
-        return redirect(url_for("csa.import_controls"))
-
-    return render_template("csa/admin/import_controls.html", form=form)
+    return redirect(url_for("admin.controls"))
