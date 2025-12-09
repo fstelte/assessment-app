@@ -3,8 +3,70 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import HiddenField, StringField, SubmitField
-from wtforms.validators import DataRequired, Length, Regexp
+from flask_wtf.file import FileAllowed, FileField, FileRequired
+from wtforms import HiddenField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Length, Optional, Regexp
+
+from scaffold.core.i18n import lazy_gettext as _l
+
+
+def _label(key: str) -> str:
+    return _l(key)
+
+
+def _message(key: str) -> str:
+    return _l(key)
+
+
+class ControlImportForm(FlaskForm):
+    """Upload a JSON payload containing control metadata."""
+
+    data_file = FileField(
+        _label("csa.admin.import.fields.data_file.label"),
+        validators=[
+            FileRequired(message=_message("csa.admin.import.fields.data_file.required")),
+            FileAllowed(["json"], message=_message("csa.admin.import.fields.data_file.allowed")),
+        ],
+    )
+    submit = SubmitField(_label("csa.admin.import.submit"))
+
+
+class ControlCreateForm(FlaskForm):
+    """Manually create a control entry from the admin UI."""
+
+    code = StringField(
+        _label("admin.controls.manual.code_label"),
+        validators=[Length(max=120)],
+        render_kw={"placeholder": _l("admin.controls.manual.code_placeholder")},
+    )
+    name = StringField(
+        _label("admin.controls.manual.name_label"),
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={"placeholder": _l("admin.controls.manual.name_placeholder")},
+    )
+    description = TextAreaField(
+        _label("admin.controls.manual.description_label"),
+        validators=[Optional(), Length(max=5000)],
+        render_kw={
+            "placeholder": _l("admin.controls.manual.description_placeholder"),
+            "rows": 4,
+        },
+    )
+    submit = SubmitField(_label("admin.controls.manual.submit"))
+
+
+class ControlUpdateForm(ControlCreateForm):
+    """Update an existing control's metadata."""
+
+    control_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_label("admin.controls.manual.update_submit"))
+
+
+class ControlDeleteForm(FlaskForm):
+    """Delete an existing control entry."""
+
+    control_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_label("admin.controls.manual.delete_submit"))
 
 
 class AuthenticationMethodForm(FlaskForm):

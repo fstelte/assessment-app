@@ -41,6 +41,13 @@ Each module exposes a `register(app)` function or a `blueprints` collection so t
 - Reuse BIA session fingerprinting and CSA MFA utilities for stronger security posture.
 - Offer extension hooks for app-specific authorisation policies.
 
+## Control Catalogue Administration
+
+- The `Control Owner` role can access `/admin/controls` alongside full administrators. Owners curate the CSA catalogue by creating entries manually or ingesting bundled datasets.
+- The optional `Control Assigner` role is used when delegating assessment assignments without granting full catalogue access; it appears in the user administration UI with a localized label so administrators can reason about responsibilities quickly.
+- The admin controls page now surfaces contextual headings, helper text for the manual form, and richer flash feedback so non-technical users understand what each action does.
+- A new NIST SP 800-53 dataset option sits next to the ISO/IEC 27002 JSON import. The parser reads the upstream plain-text reference, groups bullet lines into descriptions, and feeds the shared importer. This lets teams seed US federal baselines without maintaining a JSON export.
+
 ## Database Strategy
 
 - Unified SQLAlchemy metadata backed by Flask-Migrate.

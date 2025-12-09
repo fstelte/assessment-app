@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+import json
 
 import sqlalchemy as sa
+from sqlalchemy.orm import selectinload
 
 from flask import (
     Blueprint,
@@ -24,8 +26,16 @@ from ...extensions import db
 from ..auth.flow import ensure_mfa_provisioning
 from ..auth.mfa import build_provisioning
 from ..csa.forms import UserRoleAssignForm, UserRoleRemoveForm
+from ..csa.models import Control
+from ..csa.services import (
+    build_control_metadata,
+    import_controls_from_builtin,
+    import_controls_from_mapping,
+    parse_nist_text,
+    upsert_control,
+)
 from ...models import AuditLog
-from ..identity.models import MFASetting, Role, User, UserStatus
+from ..identity.models import MFASetting, Role, User, UserStatus, ROLE_CONTROL_OWNER
 from ..bia.localization import translate_authentication_label
 from ..bia.models import AuthenticationMethod, Component
 from ..bia.services.authentication import clear_authentication_cache
@@ -49,7 +59,15 @@ from ..risk.services import (
     validate_component_ids,
     validate_control_ids,
 )
-from .forms import AuthenticationMethodDeleteForm, AuthenticationMethodForm, AuthenticationMethodToggleForm
+from .forms import (
+    AuthenticationMethodDeleteForm,
+    AuthenticationMethodForm,
+    AuthenticationMethodToggleForm,
+    ControlCreateForm,
+    ControlDeleteForm,
+    ControlImportForm,
+    ControlUpdateForm,
+)
 from ...core.audit import log_event
 
 bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="templates")
@@ -58,6 +76,21 @@ bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="template
 def _require_admin() -> None:
     if not current_user.is_authenticated or not current_user.has_role("admin"):
         abort(403)
+
+
+def _require_control_admin() -> None:
+    if not current_user.is_authenticated:
+        abort(403)
+    if not (current_user.has_role("admin") or current_user.has_role(ROLE_CONTROL_OWNER)):
+        abort(403)
+
+
+def _role_display_name(role: Role) -> str:
+    translation_key = f"csa.roles.names.{role.name}"
+    translated = _(translation_key)
+    if translated == translation_key:
+        return role.description or role.name.replace("_", " ").title()
+    return translated
 
 
 def _get_authentication_method(method_id: int) -> AuthenticationMethod:
@@ -82,6 +115,246 @@ def _refresh_method_labels(method: AuthenticationMethod) -> None:
 
 def _method_display_name(method: AuthenticationMethod, locale: str | None = None) -> str:
     return translate_authentication_label(method.slug, locale or get_locale(), _fallback_map(method))
+
+
+@bp.route("/controls", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def controls():
+    _require_control_admin()
+
+    controls = (
+        Control.query.options(selectinload(Control.templates))
+        .order_by(sa.func.coalesce(Control.section, ""), Control.domain.asc())
+        .all()
+    )
+
+    total_controls = len(controls)
+    total_templates = sum(len(control.templates) for control in controls)
+    described_controls = sum(1 for control in controls if (control.description or "").strip())
+    described_pct = int(round((described_controls / total_controls) * 100)) if total_controls else 0
+    control_stats = {
+        "total": total_controls,
+        "templates": total_templates,
+        "described": described_controls,
+        "described_pct": described_pct,
+    }
+
+    import_form = ControlImportForm()
+    create_form = ControlCreateForm()
+
+    delete_forms: dict[int, ControlDeleteForm] = {}
+    for control in controls:
+        delete_form = ControlDeleteForm(prefix=f"delete-{control.id}")
+        delete_form.control_id.data = str(control.id)
+        delete_forms[control.id] = delete_form
+
+    if request.method == "POST" and request.form.get("action") == "import_builtin":
+        dataset = (request.form.get("dataset") or "iso").strip().lower()
+        try:
+            stats = import_controls_from_builtin(dataset)
+        except FileNotFoundError:
+            flash(_("admin.controls.flash.dataset_missing"), "danger")
+        except ValueError as exc:
+            flash(_("admin.controls.flash.dataset_invalid", error=str(exc)), "warning")
+        else:
+            flash(
+                _(
+                    "csa.flash.import_result",
+                    created=stats.created,
+                    updated=stats.updated,
+                ),
+                "success" if not stats.errors else "warning",
+            )
+            for error in stats.errors:
+                flash(error, "warning")
+        return redirect(url_for("admin.controls"))
+
+    if import_form.validate_on_submit():
+        file_storage = import_form.data_file.data
+        raw_bytes = file_storage.read()
+        file_storage.close()
+
+        try:
+            payload = json.loads(raw_bytes)
+        except json.JSONDecodeError as exc:
+            try:
+                text_data = raw_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                flash(_("csa.flash.json_error", error=exc), "danger")
+                return redirect(url_for("admin.controls"))
+
+            try:
+                payload = parse_nist_text(text_data)
+            except ValueError as parse_exc:
+                flash(_("csa.flash.json_error", error=exc), "danger")
+                flash(_("admin.controls.flash.dataset_invalid", error=str(parse_exc)), "warning")
+                return redirect(url_for("admin.controls"))
+
+        stats = import_controls_from_mapping(payload)
+        flash(
+            _(
+                "csa.flash.import_result",
+                created=stats.created,
+                updated=stats.updated,
+            ),
+            "success" if not stats.errors else "warning",
+        )
+        for error in stats.errors:
+            flash(error, "warning")
+        return redirect(url_for("admin.controls"))
+
+    return render_template(
+        "admin/controls.html",
+        import_form=import_form,
+        create_form=create_form,
+        delete_forms=delete_forms,
+        controls=controls,
+        control_stats=control_stats,
+    )
+
+
+@bp.post("/controls/create")
+@login_required
+@require_fresh_login()
+def create_control():
+    _require_control_admin()
+    form = ControlCreateForm()
+
+    if form.validate_on_submit():
+        name = (form.name.data or "").strip()
+        code = (form.code.data or "").strip() or None
+        description = (form.description.data or "").strip() or None
+
+        duplicate = (
+            Control.query.filter(sa.func.lower(Control.domain) == name.lower()).first()
+            if name
+            else None
+        )
+        if duplicate:
+            flash(_("admin.controls.flash.duplicate", domain=name), "warning")
+            return redirect(url_for("admin.controls"))
+
+        try:
+            metadata = build_control_metadata(name=name, section=code, description=description)
+            outcome = upsert_control(metadata, allow_existing=False)
+        except ValueError as exc:
+            flash(str(exc), "warning")
+            db.session.rollback()
+        else:
+            db.session.commit()
+            flash(_("admin.controls.flash.created", domain=outcome.control.domain), "success")
+            return redirect(url_for("admin.controls"))
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    return redirect(url_for("admin.controls"))
+
+
+@bp.get("/controls/<int:control_id>/edit")
+@login_required
+@require_fresh_login()
+def edit_control(control_id: int):
+    _require_control_admin()
+    control = db.session.get(Control, control_id)
+    if control is None:
+        abort(404)
+
+    form = ControlUpdateForm()
+    form.control_id.data = str(control.id)
+    form.code.data = control.section or ""
+    form.name.data = control.domain
+    form.description.data = control.description or ""
+
+    return render_template(
+        "admin/control_edit.html",
+        control=control,
+        form=form,
+    )
+
+
+@bp.post("/controls/<int:control_id>/update")
+@login_required
+@require_fresh_login()
+def update_control(control_id: int):
+    _require_control_admin()
+    control = db.session.get(Control, control_id)
+    if control is None:
+        abort(404)
+
+    form = ControlUpdateForm()
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(url_for("admin.controls"))
+
+    try:
+        submitted_id = int(form.control_id.data)
+    except (TypeError, ValueError):
+        flash(_("admin.controls.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.controls"))
+
+    if submitted_id != control_id:
+        flash(_("admin.controls.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.controls"))
+
+    name = (form.name.data or "").strip()
+    code = (form.code.data or "").strip() or None
+    description = (form.description.data or "").strip() or None
+
+    duplicate = (
+        Control.query.filter(
+            sa.func.lower(Control.domain) == name.lower(),
+            Control.id != control.id,
+        ).first()
+        if name
+        else None
+    )
+    if duplicate:
+        flash(_("admin.controls.flash.duplicate", domain=name), "warning")
+        return redirect(url_for("admin.controls"))
+
+    metadata = build_control_metadata(name=name, section=code, description=description)
+    upsert_control(metadata, target=control)
+    db.session.commit()
+    flash(_("admin.controls.flash.updated", domain=control.domain), "success")
+    return redirect(url_for("admin.controls"))
+
+
+@bp.post("/controls/<int:control_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_control(control_id: int):
+    _require_control_admin()
+    control = db.session.get(Control, control_id)
+    if control is None:
+        abort(404)
+
+    form = ControlDeleteForm()
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(url_for("admin.controls"))
+
+    try:
+        submitted_id = int(form.control_id.data)
+    except (TypeError, ValueError):
+        flash(_("admin.controls.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.controls"))
+
+    if submitted_id != control_id:
+        flash(_("admin.controls.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.controls"))
+
+    domain_label = control.domain
+    db.session.delete(control)
+    db.session.commit()
+    flash(_("admin.controls.flash.deleted", domain=domain_label), "info")
+    return redirect(url_for("admin.controls"))
 
 
 @bp.get("/audit-trail")
@@ -701,6 +974,7 @@ def list_users():
 
     records = User.query.order_by(User.created_at.desc()).all()
     available_roles = Role.query.order_by(Role.name.asc()).all()
+    role_labels = {role.name: _role_display_name(role) for role in available_roles}
     admin_count = User.query.filter(User.roles.any(Role.name == "admin")).count()
     protected_admin_ids: set[int] = set()
     if admin_count <= 1:
@@ -712,7 +986,7 @@ def list_users():
     for user in records:
         assign_form = UserRoleAssignForm()
         role_choices = [
-            (role.name, role.description or role.name.title())
+            (role.name, role_labels.get(role.name, role.description or role.name.title()))
             for role in available_roles
             if role not in user.roles
         ]
@@ -746,6 +1020,7 @@ def list_users():
         assign_forms=assign_forms,
         remove_forms=remove_forms,
         protected_admin_ids=protected_admin_ids,
+        role_labels=role_labels,
     )
 
 
@@ -858,7 +1133,11 @@ def assign_user_role(user_id: int):
 
     form = UserRoleAssignForm()
     available_roles = Role.query.order_by(Role.name.asc()).all()
-    role_choices = [(role.name, role.description or role.name.title()) for role in available_roles]
+    role_labels = {role.name: _role_display_name(role) for role in available_roles}
+    role_choices = [
+        (role.name, role_labels.get(role.name, role.description or role.name.title()))
+        for role in available_roles
+    ]
     form.role.choices = (([("", _("admin.users.form.select_role"))] + role_choices) if role_choices else [])  # type: ignore[assignment]
 
     if not available_roles:

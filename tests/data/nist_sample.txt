@@ -1,0 +1,14 @@
+framework NIST sample controls
+id NIST.SP.800-53r5 AC-1
+section Policy and Procedures
+- Develop and disseminate policy guidance.
+- Review the controls annually.
+domain AC Access Control
+baselines 
+enhancements AC-1(1) AC-1(2)
+id NIST.SP.800-53r5 AT-2
+section Literacy Training and Awareness
+- Provide literacy training to all staff.
+domain AT Awareness and Training
+baselines
+enhancements

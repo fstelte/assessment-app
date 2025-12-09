@@ -12,6 +12,9 @@
   <a class="btn btn-outline-light" href="{{ url_for('admin.list_authentication_methods') }}">{{ _('admin.users.link_authentication_methods') }}</a>
   <a class="btn btn-outline-light" href="{{ url_for('admin.list_risks') }}">{{ _('admin.users.link_risk_management') }}</a>
   <a class="btn btn-outline-light" href="{{ url_for('admin.audit_trail') }}">{{ _('admin.users.link_audit_trail') }}</a>
+  <a class="btn btn-primary" href="{{ url_for('admin.controls') }}">
+    {{ _('admin.users.button.import_controls') }}
+  </a>
   </div>
 </div>
 
@@ -50,7 +53,7 @@
               {% for role in user.roles %}
                 {% set removal = removal_map.get(role.name) %}
                 <li class="d-flex align-items-center gap-2">
-                  <span class="badge bg-secondary text-uppercase">{{ role.name }}</span>
+                  <span class="badge bg-secondary">{{ role_labels.get(role.name, role.name) }}</span>
                   {% if removal and removal.form %}
                     <form method="post" action="{{ url_for('admin.remove_user_role', user_id=user.id) }}" class="d-inline">
                       {{ removal.form.hidden_tag() }}
@@ -115,4 +118,5 @@
     </tbody>
   </table>
 </div>
+
 {% endblock %}
