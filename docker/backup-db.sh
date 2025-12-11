@@ -102,8 +102,9 @@ fi
 
 # Retention: delete backups older than RETENTION_DAYS
 if [ -n "$RETENTION_DAYS" ] && [ "$RETENTION_DAYS" -gt 0 ] 2>/dev/null; then
-  printf '%s - backup-db: cleaning backups older than %s days in %s\n' "$(timestamp)" "$RETENTION_DAYS" "$BACKUP_DIR"
-  find "$BACKUP_DIR" -mindepth 1 -type f -mtime +$(expr "$RETENTION_DAYS" - 1) -print -exec rm -f -- {} + || true
+  RETENTION_MINUTES=$((RETENTION_DAYS * 1440))
+  printf '%s - backup-db: cleaning backups older than %s days (%s minutes) in %s\n' "$(timestamp)" "$RETENTION_DAYS" "$RETENTION_MINUTES" "$BACKUP_DIR"
+  find "$BACKUP_DIR" -mindepth 1 -type f -mmin +"$RETENTION_MINUTES" -print -exec rm -f -- {} + || true
   printf '%s - backup-db: retention pass complete\n' "$(timestamp)"
 fi
 
