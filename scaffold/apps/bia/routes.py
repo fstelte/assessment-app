@@ -1343,10 +1343,34 @@ def export_bia_sql(item_id: int):
         file_path = export_folder / filename
         file_path.write_text(sql_text, encoding="utf-8")
         return send_file(file_path, as_attachment=True, download_name=filename)
-    except Exception as exc:  # pragma: no cover - IO failures are surfaced to users
-        logging.exception("SQL export failed")
-        flash(_("bia.flash.sql_export_failed", details=exc), "danger")
-        return redirect(url_for("bia.view_item", item_id=item.id))
+    except Exception as e:
+        current_app.logger.exception("Failed to export BIA to SQL")
+        flash(_("An error occurred while exporting the BIA: %(error)s", error=str(e)), "danger")
+        return redirect(url_for("bia.view_item", item_id=item_id))
+
+
+@bp.route("/export_all_dependencies")
+@login_required
+def export_all_dependencies():
+    try:
+        bias = ContextScope.query.order_by(ContextScope.name).all()
+
+        html_content = render_template(
+            "bia/export_all_dependencies.html",
+            bias=bias,
+            generated_at=datetime.now(),
+        )
+
+        filename = f"BIA_Dependencies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        export_folder = ensure_export_folder()
+        file_path = export_folder / filename
+        file_path.write_text(html_content, encoding="utf-8")
+
+        return send_file(file_path, as_attachment=True, download_name=filename)
+    except Exception as exc:
+        current_app.logger.exception("Dependency export failed")
+        flash(_("An error occurred while exporting dependencies: %(error)s", error=str(exc)), "danger")
+        return redirect(url_for("bia.dashboard"))
 
 
 @bp.route("/import-sql", methods=["GET", "POST"])

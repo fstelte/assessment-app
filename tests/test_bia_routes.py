@@ -302,3 +302,27 @@ def test_manage_component_consequence_creates_multiple_entries(app, client, logi
         assert {row.consequence_category for row in stored} == {"financial", "operational"}
         for row in stored:
             assert row.security_property == "confidentiality"
+
+
+def test_export_all_dependencies_returns_html(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Global Dependency Test")
+        component = Component(
+            name="Global Component",
+            context_scope=context,
+            process_dependencies="Global Dep 1\nGlobal Dep 2",
+        )
+        db.session.add_all([context, component])
+        db.session.commit()
+
+    response = client.get("/bia/export_all_dependencies")
+    assert response.status_code == 200
+    assert response.headers["Content-Type"].startswith("text/html")
+    assert response.headers["Content-Disposition"].startswith("attachment; filename=BIA_Dependencies_")
+
+    content = response.data.decode("utf-8")
+    assert "Global Dependency Test" in content
+    assert "Global Component" in content
+    assert "Global Dep 1" in content
+    assert "Global Dep 2" in content
+

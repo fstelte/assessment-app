@@ -16,7 +16,8 @@ else
 fi
 # RETENTION default
 if [ -n "$BACKUP_RETENTION_DAYS" ]; then
-  RETENTION_DAYS="$BACKUP_RETENTION_DAYS"
+  # Sanitize: remove quotes and any non-digit characters (like \r from Windows env files)
+  RETENTION_DAYS=$(echo "$BACKUP_RETENTION_DAYS" | tr -d '"' | tr -cd '0-9')
 else
   RETENTION_DAYS=2
 fi
@@ -84,7 +85,7 @@ elif [ "$SCHEME" = "postgres" ] || [ "$SCHEME" = "postgresql" ]; then
   printf '%s - backup-db: running pg_dump for %s -> %s\n' "$(timestamp)" "$PG_URI" "$OUT_FILE_GZ"
   if pg_dump "$PG_URI" --format=plain --no-owner --no-privileges --file="$OUT_FILE_BASE"; then
     if gzip -9 "$OUT_FILE_BASE"; then
-      mv "$OUT_FILE_BASE.gz" "$OUT_FILE_GZ"
+      # gzip automatically appends .gz and removes the original
       printf '%s - backup-db: success: %s\n' "$(timestamp)" "$OUT_FILE_GZ"
       LAST_CREATED="$OUT_FILE_GZ"
     else
@@ -101,7 +102,10 @@ else
 fi
 
 # Retention: delete backups older than RETENTION_DAYS
-if [ -n "$RETENTION_DAYS" ] && [ "$RETENTION_DAYS" -gt 0 ] 2>/dev/null; then
+# Debug retention value
+printf '%s - backup-db: DEBUG: RETENTION_DAYS=%s\n' "$(timestamp)" "$RETENTION_DAYS"
+
+if [ -n "$RETENTION_DAYS" ] && [ "$RETENTION_DAYS" -gt 0 ]; then
   RETENTION_MINUTES=$((RETENTION_DAYS * 1440))
   printf '%s - backup-db: cleaning backups older than %s days (%s minutes) in %s\n' "$(timestamp)" "$RETENTION_DAYS" "$RETENTION_MINUTES" "$BACKUP_DIR"
   find "$BACKUP_DIR" -mindepth 1 -type f -mmin +"$RETENTION_MINUTES" -print -exec rm -f -- {} + || true
@@ -110,12 +114,41 @@ fi
 
 # Write status file
 STATUS_FILE="$BACKUP_DIR/backup-status.json"
-cat > "$STATUS_FILE" <<JSON || true
-{
-  "last_backup": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
-  "last_file": "${LAST_CREATED:-null}"
+export STATUS_GEN_BACKUP_DIR="$BACKUP_DIR"
+export STATUS_GEN_FILE="$STATUS_FILE"
+export STATUS_GEN_LAST_TS="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+export STATUS_GEN_LAST_FILE="${LAST_CREATED:-null}"
+
+python -c "
+import json
+import os
+
+backup_dir = os.environ['STATUS_GEN_BACKUP_DIR']
+status_file = os.environ['STATUS_GEN_FILE']
+last_backup = os.environ['STATUS_GEN_LAST_TS']
+last_file = os.environ['STATUS_GEN_LAST_FILE']
+
+files = []
+try:
+    if os.path.exists(backup_dir):
+        # List files, exclude status file, sort by mtime desc
+        all_files = [f for f in os.listdir(backup_dir) 
+                     if os.path.isfile(os.path.join(backup_dir, f)) 
+                     and f != 'backup-status.json']
+        files = sorted(all_files, key=lambda x: os.path.getmtime(os.path.join(backup_dir, x)), reverse=True)
+except Exception as e:
+    print(f'Error listing backups: {e}')
+
+data = {
+    'last_backup': last_backup,
+    'last_file': last_file,
+    'backups': files
 }
-JSON
+
+with open(status_file, 'w') as f:
+    json.dump(data, f, indent=2)
+" || true
+
 printf '%s - backup-db: wrote status to %s\n' "$(timestamp)" "$STATUS_FILE"
 
 # Optional S3 upload
