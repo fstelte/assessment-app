@@ -51,6 +51,9 @@
         <div class="table-responsive">
           <table class="table table-dark table-striped align-middle mb-0">
             <thead>
+              <tr>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.component') }}</th>
+                <th scope="col">{{ _('dpia.dashboard.table.headers.bia') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.owner') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.authentication') }}</th>
                 <th scope="col">{{ _('dpia.dashboard.table.headers.dpia_status') }}</th>
@@ -130,7 +133,7 @@
           <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 px-3 py-2 border-top border-secondary">
             <small class="text-secondary mb-0">{{ _('dpia.dashboard.table.pagination', start=page_start, end=page_end, total=pagination.total) }}</small>
             <nav aria-label="Component pagination">
-              <ul class="pagination pagination-sm mb-0">
+              <ul class="pagination pagination-sm mb-0 d-flex flex-nowrap gap-1">
                 <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
                   <a class="page-link" href="{{ url_for('dpia.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) }}" aria-label="Previous">&laquo;</a>
                 </li>

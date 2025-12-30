@@ -1424,12 +1424,12 @@
       "table": {
         "title": "Available components",
         "headers": {
-          "component": "Component",
+          "component": "Component name",
           "bia": "BIA",
-          "owner": "Owner",
-          "authentication": "Authentication",
-          "dpia_status": "DPIA status",
-          "actions": "Actions"
+          "owner": "Risk Owner",
+          "authentication": "",
+          "dpia_status": "DPIA Status",
+          "actions": "Action"
         },
         "not_linked": "Not linked",
         "not_set": "Not set",
