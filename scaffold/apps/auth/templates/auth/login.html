@@ -1,83 +1,100 @@
 {% extends "base.html" %}
 {% block title %}{{ _('auth.login.title') }}{% endblock %}
-{% block content %}
-{% if available_locales %}
-    <div class="d-flex justify-content-end mb-3">
-        <form method="get" class="d-inline-flex align-items-center gap-2">
-            {% for key, value in request.args.items() %}
-                {% if key != 'lang' %}
-                    <input type="hidden" name="{{ key }}" value="{{ value }}">
-                {% endif %}
-            {% endfor %}
-            <label class="form-label mb-0 small text-uppercase" for="login-language-select">{{ _('app.language.label') }}</label>
-            <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto min-w-7rem {{ 'bg-dark text-light border-secondary' if theme != 'light' else '' }}" aria-label="{{ _('app.language.label') }}">
-                {% for locale in available_locales %}
-                    <option value="{{ locale }}" {% if locale == current_locale %}selected{% endif %}>{{ _('app.language.option.' ~ locale) }}</option>
-                {% endfor %}
-            </select>
-        </form>
-    </div>
-{% endif %}
-<h1 class="mb-4">{{ _('auth.login.heading') }}</h1>
-{% set show_password = password_login_enabled and form is not none %}
-{% if not saml_login_enabled and not show_password %}
-    <div class="alert alert-danger" role="status">
-        {{ _('auth.login.saml_unavailable') }}
-    </div>
-{% endif %}
+{% block main_container_class %}container-fluid p-0{% endblock %}
 
-{% if show_password %}
-    <div class="mt-4 mx-auto max-w-24rem">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title h5 mb-3">{{ _('auth.login.password_heading') }}</h2>
-                <form method="post" novalidate>
-                    {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control", autocomplete="username") }}
-                        {% for error in form.email.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: var(--bs-tertiary-bg);">
+    <div class="w-100" style="max-width: 420px;">
+        
+        {# Language Selector #}
+        {% if available_locales %}
+            <div class="d-flex justify-content-end mb-3 px-3">
+                <form method="get" class="d-inline-flex align-items-center gap-2">
+                    {% for key, value in request.args.items() %}
+                        {% if key != 'lang' %}
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto border-0 bg-transparent text-secondary shadow-none cursor-pointer" aria-label="{{ _('app.language.label') }}">
+                        {% for locale in available_locales %}
+                            <option value="{{ locale }}" {% if locale == current_locale %}selected{% endif %}>{{ _('app.language.option.' ~ locale) }}</option>
                         {% endfor %}
-                    </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control", autocomplete="current-password") }}
-                        {% for error in form.password.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-check mb-3">
-                        {{ form.remember_me(class="form-check-input", id="remember-me") }}
-                        {{ form.remember_me.label(class="form-check-label", for="remember-me") }}
-                    </div>
-                    {{ form.submit(class="btn btn-primary w-100") }}
+                    </select>
                 </form>
             </div>
-        </div>
-    </div>
-{% endif %}
+        {% endif %}
 
-{% if saml_login_enabled %}
-    <div class="text-center mt-4 mx-auto max-w-24rem">
-        <div class="alert alert-info" role="status">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <h1 class="h3 fw-bold mb-1">{{ _('auth.login.heading') }}</h1>
+                    <p class="text-muted small">{{ _('app.home.subtitle') }}</p>
+                </div>
+
+                {% set show_password = password_login_enabled and form is not none %}
+                
+                {% if not saml_login_enabled and not show_password %}
+                    <div class="alert alert-danger rounded-3 text-sm" role="status">
+                        {{ _('auth.login.saml_unavailable') }}
+                    </div>
+                {% endif %}
+
+                {% if show_password %}
+                    <form method="post" novalidate>
+                        {{ form.hidden_tag() }}
+                        {% from "partials/forms.html" import render_field_with_help %}
+                        
+                        {{ render_field_with_help(form.email, class="form-control form-control-lg bg-body-tertiary border-0", placeholder=_('auth.login.fields.email'), autocomplete="username") }}
+                        
+                        {{ render_field_with_help(form.password, class="form-control form-control-lg bg-body-tertiary border-0", placeholder=_('auth.login.fields.password'), autocomplete="current-password") }}
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                {{ form.remember_me(class="form-check-input", id="remember-me") }}
+                                {{ form.remember_me.label(class="form-check-label small text-secondary", for="remember-me") }}
+                            </div>
+                        </div>
+
+                        {{ form.submit(class="btn btn-primary btn-lg w-100 fw-semibold shadow-sm") }}
+                    </form>
+                {% endif %}
+
+                {% if saml_login_enabled %}
+                    {% if show_password %}
+                        <div class="position-relative my-4">
+                            <hr class="text-secondary opacity-25">
+                            <span class="position-absolute top-50 start-50 translate-middle px-2 bg-body text-muted small text-uppercase">Or</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-outline-secondary btn-lg d-flex align-items-center justify-content-center gap-2" href="{{ url_for('auth.login_saml') }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-primary">
+                                <path d="M4 3h9.5l6.5 9-6.5 9H4l4.5-9L4 3zm5.3 2-3.1 7 3.1 7h3.8l5-7-5-7H9.3z"/>
+                            </svg>
+                            <span>{{ _('auth.login.saml_enterprise_button') }}</span>
+                        </a>
+                    </div>
+                    
+                    {% if not show_password %}
+                         <div class="alert alert-light border-0 bg-body-tertiary mt-3 mb-0 text-center small text-muted">
+                            {{ _('auth.login.saml_only_notice') }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
             {% if show_password %}
-                {{ _('auth.login.saml_hint') }}
-            {% else %}
-                {{ _('auth.login.saml_only_notice') }}
+            <div class="card-footer bg-body-tertiary border-0 py-3 text-center">
+                <p class="mb-0 small text-muted">
+                    {{ _('auth.login.register_prompt') }} 
+                    <a href="{{ url_for('auth.register_user') }}" class="text-decoration-none fw-semibold">{{ _('auth.login.register_link') }}</a>
+                </p>
+            </div>
             {% endif %}
         </div>
-        <a class="btn btn-outline-primary px-4 py-2 d-inline-flex align-items-center justify-content-center gap-2" href="{{ url_for('auth.login_saml') }}">
-            <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
-                <path d="M4 3h9.5l6.5 9-6.5 9H4l4.5-9L4 3zm5.3 2-3.1 7 3.1 7h3.8l5-7-5-7H9.3z" fill="currentColor" />
-            </svg>
-            <span>{{ _('auth.login.saml_enterprise_button') }}</span>
-        </a>
-        <p class="text-muted small mt-2 mb-0">
-            {{ _('auth.login.saml_mfa_notice') }}
-        </p>
     </div>
-{% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}

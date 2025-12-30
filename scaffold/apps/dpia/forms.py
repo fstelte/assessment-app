@@ -9,12 +9,17 @@ from __future__ import annotations
 from flask_wtf import FlaskForm
 from wtforms import SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length
+from scaffold.core.i18n import lazy_gettext as _l
 
 
 class StartDPIAForm(FlaskForm):
     """Minimal form to start a DPIA from a BIA component."""
 
-    title = StringField("Title", validators=[DataRequired(), Length(max=255)])
+    title = StringField(
+        "Title",
+        validators=[DataRequired(), Length(max=255)],
+        description=_l("dpia.start.help.title"),
+    )
     project_lead = StringField("Project lead", validators=[Length(max=255)])
     responsible_name = StringField("Responsible", validators=[Length(max=255)])
     submit = SubmitField("Create DPIA")

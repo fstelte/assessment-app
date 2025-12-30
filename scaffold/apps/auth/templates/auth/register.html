@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
 {% block title %}Register{% endblock %}
 {% block content %}
 <h1 class="mb-4">Create account</h1>
@@ -6,28 +7,22 @@
     {{ form.hidden_tag() }}
     <div class="row g-3">
         <div class="col-md-6">
-            {{ form.email.label(class="form-label") }}
-            {{ form.email(class="form-control") }}
+            {{ render_field_with_help(form.email, class="form-control") }}
         </div>
         <div class="col-md-6">
-            {{ form.username.label(class="form-label") }}
-            {{ form.username(class="form-control") }}
+            {{ render_field_with_help(form.username, class="form-control") }}
         </div>
         <div class="col-md-6">
-            {{ form.first_name.label(class="form-label") }}
-            {{ form.first_name(class="form-control") }}
+            {{ render_field_with_help(form.first_name, class="form-control") }}
         </div>
         <div class="col-md-6">
-            {{ form.last_name.label(class="form-label") }}
-            {{ form.last_name(class="form-control") }}
+            {{ render_field_with_help(form.last_name, class="form-control") }}
         </div>
         <div class="col-md-6">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control") }}
+            {{ render_field_with_help(form.password, class="form-control") }}
         </div>
         <div class="col-md-6">
-            {{ form.confirm_password.label(class="form-label") }}
-            {{ form.confirm_password(class="form-control") }}
+            {{ render_field_with_help(form.confirm_password, class="form-control") }}
         </div>
     </div>
     <div class="mt-4">

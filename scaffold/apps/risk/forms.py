@@ -9,7 +9,7 @@ from wtforms import DateField, HiddenField, IntegerField, SelectField, SelectMul
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, URL, ValidationError
 
 from .models import RiskTreatmentOption
-from ...core.i18n import gettext as _
+from ...core.i18n import gettext as _, lazy_gettext as _l
 
 
 class RiskForm(FlaskForm):
@@ -33,12 +33,14 @@ class RiskForm(FlaskForm):
         validators=[DataRequired()],
         choices=[],
         render_kw={"size": 6},
+        description=_l('risk.help.impact_areas'),
     )
     component_ids = SelectMultipleField(
         "Components",
         validators=[DataRequired()],
         choices=[],
         render_kw={"size": 8},
+        description=_l('risk.help.component_ids'),
     )
     treatment = SelectField("Treatment", validators=[DataRequired()], choices=[])
     treatment_plan = TextAreaField("Treatment plan", validators=[Optional()], render_kw={"rows": 3})

@@ -24,3 +24,29 @@
     {{ field(**attr_dict) }}
   </div>
 {%- endmacro %}
+
+{% macro render_field_with_help(field) -%}
+  <div class="mb-4">
+    {{ field.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+    {% set input_classes = "form-input w-full mt-1 dark:bg-gray-800 dark:border-gray-600 dark:text-white" %}
+    {% if kwargs.get('class') %}
+        {% set input_classes = input_classes ~ " " ~ kwargs.pop('class') %}
+    {% endif %}
+    {{ field(class=input_classes, **kwargs) }}
+    {% if field.errors %}
+      <div class="text-red-600 dark:text-red-400 text-sm mt-1">
+        {% for error in field.errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if field.description %}
+      <details class="mt-1">
+        <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+          {{ field.description }}
+        </div>
+      </details>
+    {% endif %}
+  </div>
+{%- endmacro %}

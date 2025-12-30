@@ -7,6 +7,7 @@ from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, DateField, FieldList, FormField, HiddenField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
+from scaffold.core.i18n import lazy_gettext as _l
 
 
 # Keep in sync with ENVIRONMENT_TYPES in .models.__init__
@@ -25,7 +26,11 @@ def _optional_int(value: object) -> int | None:
 class ContextScopeForm(FlaskForm):
     """Capture or update the core attributes of a BIA context."""
 
-    name = StringField("Service or product name", validators=[DataRequired(), Length(max=255)])
+    name = StringField(
+        _l("bia.context_form.fields.name.label"),
+        validators=[DataRequired(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.name"),
+    )
     responsible = StringField("End responsible", validators=[Optional(), Length(max=255)])
     coordinator = StringField("Coordinator", validators=[Optional(), Length(max=255)])
     start_date = DateField("Start date", format="%Y-%m-%d", validators=[Optional()])

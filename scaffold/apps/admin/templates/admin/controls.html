@@ -56,29 +56,15 @@
           <p class="text-secondary mb-4">{{ _('admin.controls.manual.intro') }}</p>
           <form method="post" action="{{ url_for('admin.create_control') }}" novalidate>
             {{ create_form.hidden_tag() }}
+            {% from "partials/forms.html" import render_field_with_help %}
             <div class="mb-3">
-              {{ create_form.code.label(class="form-label") }}
-              {{ create_form.code(class="form-control" if not create_form.code.errors else "form-control is-invalid") }}
-              {% for error in create_form.code.errors %}
-                <div class="invalid-feedback d-block">{{ error }}</div>
-              {% endfor %}
-              <div class="form-text">{{ _('admin.controls.manual.code_help') }}</div>
+              {{ render_field_with_help(create_form.code, class="form-control") }}
             </div>
             <div class="mb-3">
-              {{ create_form.name.label(class="form-label") }}
-              {{ create_form.name(class="form-control" if not create_form.name.errors else "form-control is-invalid") }}
-              {% for error in create_form.name.errors %}
-                <div class="invalid-feedback d-block">{{ error }}</div>
-              {% endfor %}
-              <div class="form-text">{{ _('admin.controls.manual.name_help') }}</div>
+              {{ render_field_with_help(create_form.name, class="form-control") }}
             </div>
             <div class="mb-3">
-              {{ create_form.description.label(class="form-label") }}
-              {{ create_form.description(class="form-control" if not create_form.description.errors else "form-control is-invalid") }}
-              {% for error in create_form.description.errors %}
-                <div class="invalid-feedback d-block">{{ error }}</div>
-              {% endfor %}
-              <div class="form-text">{{ _('admin.controls.manual.description_help') }}</div>
+              {{ render_field_with_help(create_form.description, class="form-control") }}
             </div>
             <div class="text-end">
               {{ create_form.submit(class="btn btn-primary") }}
