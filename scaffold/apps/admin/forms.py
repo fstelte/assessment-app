@@ -38,11 +38,13 @@ class ControlCreateForm(FlaskForm):
         _label("admin.controls.manual.code_label"),
         validators=[Length(max=120)],
         render_kw={"placeholder": _l("admin.controls.manual.code_placeholder")},
+        description=_l("admin.controls.manual.help.code"),
     )
     name = StringField(
         _label("admin.controls.manual.name_label"),
         validators=[DataRequired(), Length(max=255)],
         render_kw={"placeholder": _l("admin.controls.manual.name_placeholder")},
+        description=_l("admin.controls.manual.help.name"),
     )
     description = TextAreaField(
         _label("admin.controls.manual.description_label"),

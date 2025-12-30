@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
 {% block title %}
 {% if form_mode == 'edit' %}
   {{ _('Edit risk') }}
@@ -207,30 +208,20 @@ body[data-theme="dark"] .risk-control-preview {
       <section class="risk-form-card">
         <h2 class="h5">{{ _('Impact & chance') }}</h2>
         <div class="mb-3">
-          {{ form.impact.label(class_="form-label") }}
-          {{ form.impact(class_="form-select") }}
-          {{ field_errors(form.impact) }}
+          {{ render_field_with_help(form.impact, class="form-select") }}
         </div>
         <div class="mb-3">
-          {{ form.chance.label(class_="form-label") }}
-          {{ form.chance(class_="form-select") }}
-          {{ field_errors(form.chance) }}
+          {{ render_field_with_help(form.chance, class="form-select") }}
         </div>
         <div class="mb-3">
-          {{ form.impact_areas.label(class_="form-label") }}
-          {{ form.impact_areas(class_="form-select", multiple=True) }}
-          <div class="form-text">{{ _('Select every domain that experiences disruption when this risk materialises.') }}</div>
-          {{ field_errors(form.impact_areas) }}
+          {{ render_field_with_help(form.impact_areas, class="form-select", multiple=True) }}
         </div>
       </section>
 
       <section class="risk-form-card">
         <h2 class="h5">{{ _('Related components') }}</h2>
         <div class="mb-3">
-          {{ form.component_ids.label(class_="form-label") }}
-          {{ form.component_ids(class_="form-select", multiple=True) }}
-          <div class="form-text">{{ _('Only components with risk tracking enabled inside a BIA appear here.') }}</div>
-          {{ field_errors(form.component_ids) }}
+          {{ render_field_with_help(form.component_ids, class="form-select", multiple=True) }}
         </div>
         <div class="mb-3">
           {{ form.treatment_owner_id.label(class_="form-label") }}

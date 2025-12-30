@@ -21,7 +21,11 @@ from ..identity.models import User
 class RegistrationForm(FlaskForm):
     """Registration form supporting BIA and CSA fields."""
 
-    email = StringField(_label("auth.register.fields.email"), validators=[DataRequired(), Email(), Length(max=255)])
+    email = StringField(
+        _label("auth.register.fields.email"),
+        validators=[DataRequired(), Email(), Length(max=255)],
+        description=_label("auth.register.help.email"),
+    )
     username = StringField(_label("auth.register.fields.username"), validators=[Optional(), Length(min=3, max=64)])
     first_name = StringField(_label("auth.register.fields.first_name"), validators=[Optional(), Length(max=120)])
     last_name = StringField(_label("auth.register.fields.last_name"), validators=[Optional(), Length(max=120)])
@@ -31,6 +35,7 @@ class RegistrationForm(FlaskForm):
             DataRequired(),
             Length(min=8, max=255, message=_("auth.register.errors.password_length")),
         ],
+        description=_label("auth.register.help.password"),
     )
     confirm_password = PasswordField(
         _label("auth.register.fields.confirm_password"),

@@ -38,6 +38,14 @@
       }
     }
   },
+  "auth": {
+    "register": {
+      "help": {
+        "email": "We sturen een bevestigingslink naar dit adres.",
+        "password": "Moet minimaal 8 tekens lang zijn en een mix van letters en cijfers bevatten."
+      }
+    }
+  },
   "risk": {
     "chance": {
       "rare": "Zeldzaam",
@@ -101,6 +109,10 @@
       "reopened": "Risico \"{title}\" is heropend.",
       "already_open": "Risico is al actief.",
       "deleted": "Risico \"{title}\" is verwijderd."
+    },
+    "help": {
+      "impact_areas": "Selecteer elk domein dat verstoring ondervindt wanneer dit risico zich voordoet.",
+      "component_ids": "Alleen componenten waarbij risicotracking is ingeschakeld in een BIA verschijnen hier."
     }
   },
   "bia": {
@@ -777,7 +789,11 @@
               "description_placeholder": "Optionele omschrijving voor reviewers.",
               "submit": "Control aanmaken",
               "update_submit": "Wijzigingen opslaan",
-              "delete_submit": "Control verwijderen"
+              "delete_submit": "Control verwijderen",
+              "help": {
+                "code": "Een unieke identificatie voor deze beheersmaatregel (bijv. ISO-27001-5.1).",
+                "name": "Een korte, beschrijvende naam voor de beheersmaatregel."
+              }
             },
             "edit": {
               "title": "Control bewerken",
@@ -1451,6 +1467,11 @@
             "measure_update_failed": "Maatregel kon niet worden bijgewerkt. Controleer de velden en probeer opnieuw.",
             "assessment_deleted": "DPIA verwijderd.",
             "assessment_exists": "Dit component heeft al een DPIA. De bestaande assessment wordt geopend."
+          },
+          "start": {
+            "help": {
+              "title": "Geef de DPIA een beschrijvende titel."
+            }
           },
           "status": {
             "in_progress": "In behandeling",

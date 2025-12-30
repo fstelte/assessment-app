@@ -719,7 +719,11 @@
         "description_placeholder": "Optional description shown to reviewers.",
         "submit": "Create control",
         "update_submit": "Save changes",
-        "delete_submit": "Delete control"
+        "delete_submit": "Delete control",
+        "help": {
+          "code": "A unique identifier for this control (e.g. ISO-27001-5.1).",
+          "name": "A short, descriptive name for the control."
+        }
       },
       "edit": {
         "title": "Edit control",
@@ -1205,6 +1209,10 @@
       "reopened": "Risk \"{title}\" reopened.",
       "already_open": "Risk is already open.",
       "deleted": "Risk \"{title}\" deleted."
+    },
+    "help": {
+      "impact_areas": "Select every domain that experiences disruption when this risk materialises.",
+      "component_ids": "Only components with risk tracking enabled inside a BIA appear here."
     }
   },
   "assessments": {
@@ -1324,6 +1332,10 @@
         "last_name": "Last Name",
         "password": "Password",
         "username": "Username"
+      },
+      "help": {
+        "email": "This will be your login identifier.",
+        "password": "Must be at least 8 characters long and contain a mix of letters and numbers."
       },
       "login_link": "Login Link",
       "login_prompt": "Login Prompt",
@@ -1501,7 +1513,10 @@
       "placeholders": {
         "title": "Service or system name"
       },
-      "submit": "Create assessment"
+      "submit": "Create assessment",
+      "help": {
+        "title": "Give the DPIA a descriptive title."
+      }
     },
     "assessment": {
       "back_link": "Back to DPIA overview",
