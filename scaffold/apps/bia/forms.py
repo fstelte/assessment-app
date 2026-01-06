@@ -13,6 +13,14 @@ from scaffold.core.i18n import lazy_gettext as _l
 # Keep in sync with ENVIRONMENT_TYPES in .models.__init__
 _COMPONENT_ENVIRONMENT_TYPES = ("development", "test", "acceptance", "production")
 
+_AI_CATEGORY_CHOICES = (
+    ("No AI", _l("bia.components.ai.options.no_ai")),
+    ("Unacceptable risk", _l("bia.components.ai.options.unacceptable")),
+    ("High risk", _l("bia.components.ai.options.high")),
+    ("Limited risk", _l("bia.components.ai.options.limited")),
+    ("Minimal risk", _l("bia.components.ai.options.minimal")),
+)
+
 
 def _optional_int(value: object) -> int | None:
     if value in (None, "", "None"):
@@ -147,6 +155,47 @@ class AvailabilityForm(FlaskForm):
     rpo = StringField("Recovery point objective", validators=[Optional(), Length(max=255)])
     masl = StringField("Minimum acceptable service level", validators=[Optional(), Length(max=255)])
     submit = SubmitField("Save availability requirements")
+
+
+class BIAAvailabilityForm(AvailabilityForm):
+    """Allow availability edits scoped to a BIA via component selection."""
+
+    component_id = SelectField(
+        _l("bia.context_form.component_fields.name.label"),
+        coerce=int,
+        validators=[DataRequired()],
+    )
+
+
+class BIAConsequenceManagerForm(ConsequenceForm):
+    """Manage CIA consequences for any component within a BIA."""
+
+    component_id = SelectField(
+        _l("bia.context_form.component_fields.name.label"),
+        coerce=int,
+        validators=[DataRequired()],
+    )
+    consequence_id = HiddenField()
+
+
+class ComponentAIForm(FlaskForm):
+    """Capture AI classification details for a component within a BIA."""
+
+    component_id = SelectField(
+        _l("bia.context_form.component_fields.name.label"),
+        coerce=int,
+        validators=[DataRequired()],
+    )
+    category = SelectField(
+        _l("bia.context_detail.ai_risks.category"),
+        choices=_AI_CATEGORY_CHOICES,
+        validators=[DataRequired()],
+    )
+    motivatie = TextAreaField(
+        _l("bia.context_detail.ai_risks.motivation"),
+        validators=[Optional()],
+    )
+    submit = SubmitField(_l("bia.components.modal.buttons.save"))
 
 
 class SummaryForm(FlaskForm):

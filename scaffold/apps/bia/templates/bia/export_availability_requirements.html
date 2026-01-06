@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Availability Requirements Detailed</title>
+    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style nonce="{{ csp_nonce }}">
+      body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
+        <header class="border-b border-slate-800 px-6 py-5">
+          <h1 class="text-2xl font-semibold tracking-tight">Availability Requirements Detailed</h1>
+          <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </header>
+        <div class="space-y-6 px-6 py-5">
+          <div class="overflow-hidden rounded-2xl border border-slate-800">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
+              <thead class="bg-slate-900/80 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th scope="col" class="px-4 py-3">BIA</th>
+                  <th scope="col" class="px-4 py-3">Component</th>
+                  <th scope="col" class="px-4 py-3">MTD</th>
+                  <th scope="col" class="px-4 py-3">RPO</th>
+                  <th scope="col" class="px-4 py-3">RTO</th>
+                  <th scope="col" class="px-4 py-3">MASL</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-900/70 bg-slate-950/40">
+                {% for entry in requirements %}
+                {% set req = entry.requirement %}
+                <tr class="even:bg-slate-900/40">
+                  <td class="px-4 py-3 font-medium text-slate-100">{{ entry.bia.name }}</td>
+                  <td class="px-4 py-3 text-slate-200">{{ entry.component.name }}</td>
+                  <td class="px-4 py-3">{{ req.mtd or 'N/A' }}</td>
+                  <td class="px-4 py-3">{{ req.rpo or 'N/A' }}</td>
+                  <td class="px-4 py-3">{{ req.rto or 'N/A' }}</td>
+                  <td class="px-4 py-3">{{ req.masl or 'N/A' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-400">No availability requirements found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}AI risks | {{ item.name }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span>AI classification</span>
+        <span class="badge bg-secondary">{{ selected_component.name }}</span>
+      </div>
+      <div class="card-body">
+        <form method="post" class="vstack gap-3">
+          {{ form.hidden_tag() }}
+          <div>
+            {{ form.component_id.label(class="form-label") }}
+            {{ form.component_id(class="form-select", data_component_switch=url_for('bia.manage_item_ai', item_id=item.id)) }}
+            <div class="form-text text-secondary">Switch components to review their current AI posture.</div>
+            {% if form.component_id.errors %}
+              <div class="form-text text-danger">{{ form.component_id.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.category.label(class="form-label") }}
+            {{ form.category(class="form-select") }}
+            {% if form.category.errors %}
+              <div class="form-text text-danger">{{ form.category.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.motivatie.label(class="form-label") }}
+            {{ form.motivatie(class="form-control", rows=4, placeholder="Explain the rationale for this classification") }}
+            {% if form.motivatie.errors %}
+              <div class="form-text text-danger">{{ form.motivatie.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">AI overview</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">Category</th>
+                <th scope="col">Motivation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in ai_rows %}
+              <tr>
+                <td>{{ row.component.name }}</td>
+                <td>{{ row.ai.category if row.ai else _('bia.components.ai.options.no_ai') }}</td>
+                <td>{{ row.ai.motivatie if row.ai and row.ai.motivatie else _('bia.context_detail.ai_risks.motivation_missing') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const select = document.querySelector('[data-component-switch]');
+  if (!select) {
+    return;
+  }
+  select.addEventListener('change', () => {
+    const baseUrl = select.getAttribute('data-component-switch');
+    if (!baseUrl || !select.value) {
+      return;
+    }
+    const target = new URL(baseUrl, window.location.origin);
+    target.searchParams.set('component_id', select.value);
+    window.location = target.toString();
+  });
+})();
+</script>
+{% endblock %}
