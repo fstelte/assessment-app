@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/forms.html" import render_field_with_help %}
+{% from "partials/forms.html" import render_field_with_help, render_field_with_tooltip %}
 {% block title %}{% if item %}{{ _('bia.context_form.title_edit') }}{% else %}{{ _('bia.context_form.title_new') }}{% endif %}{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}

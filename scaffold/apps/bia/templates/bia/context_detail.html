@@ -147,7 +147,12 @@
       </div>
     </div>
     <div class="card {{ card_surface }} mt-4">
-      <div class="card-header {{ border_class }}">Availability requirements</div>
+      <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
+        <span>Availability requirements</span>
+        {% if can_edit_context|default(False) and not export_mode|default(False) %}
+        <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+        {% endif %}
+      </div>
       <div class="card-body p-0">
         {% if item.components %}
         <div class="table-responsive">
@@ -248,7 +253,12 @@
 </div>
 
 <div class="card {{ card_surface }}">
-  <div class="card-header {{ border_class }}">Consequences</div>
+  <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
+    <span>Consequences</span>
+    {% if can_edit_context|default(False) and not export_mode|default(False) %}
+    <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+    {% endif %}
+  </div>
   <div class="card-body p-0">
     {% if consequences %}
     <div class="table-responsive">
@@ -284,7 +294,12 @@
 </div>
 
 <div class="card {{ card_surface }} mt-4">
-  <div class="card-header {{ border_class }}">{{ _('bia.context_detail.ai_risks.title') }}</div>
+  <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
+    <span>{{ _('bia.context_detail.ai_risks.title') }}</span>
+    {% if can_edit_context|default(False) and not export_mode|default(False) %}
+    <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+    {% endif %}
+  </div>
   <div class="card-body p-0">
     {% if ai_identifications %}
     <div class="table-responsive">

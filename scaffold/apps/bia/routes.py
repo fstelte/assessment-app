@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import re
 from collections import defaultdict
 from datetime import date, datetime
 
@@ -33,7 +34,10 @@ from ...extensions import db
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, User, UserStatus
 from .forms import (
     AvailabilityForm,
+    BIAAvailabilityForm,
+    BIAConsequenceManagerForm,
     ChangePasswordForm,
+    ComponentAIForm,
     ComponentForm,
     ConsequenceForm,
     ContextScopeForm,
@@ -1036,6 +1040,217 @@ def delete_summary(item_id: int):
     return redirect(url_for("bia.view_item", item_id=item.id))
 
 
+@bp.route("/item/<int:item_id>/availability", methods=["GET", "POST"])
+@login_required
+def manage_item_availability(item_id: int):
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components).joinedload(Component.availability_requirement)
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
+    if not _can_edit_context(item):
+        abort(403)
+    components = sorted(item.components, key=lambda comp: (comp.name or "").lower())
+    if not components:
+        flash(_("bia.flash.components_required"), "warning")
+        return redirect(url_for("bia.view_item", item_id=item.id))
+    form = BIAAvailabilityForm()
+    form.component_id.choices = [(component.id, component.name) for component in components]
+    selected_component_id = request.args.get("component_id", type=int)
+    if form.is_submitted():
+        selected_component_id = form.component_id.data
+    if selected_component_id is None:
+        selected_component_id = components[0].id
+    selected_component = next((comp for comp in components if comp.id == selected_component_id), None)
+    if selected_component is None:
+        abort(404)
+    if not form.is_submitted():
+        form.component_id.data = selected_component.id
+        requirement = selected_component.availability_requirement
+        form.mtd.data = requirement.mtd if requirement else ""
+        form.rto.data = requirement.rto if requirement else ""
+        form.rpo.data = requirement.rpo if requirement else ""
+        form.masl.data = requirement.masl if requirement else ""
+    if form.validate_on_submit():
+        requirement = selected_component.availability_requirement
+        if requirement is None:
+            requirement = AvailabilityRequirements(component=selected_component)
+            db.session.add(requirement)
+        requirement.mtd = form.mtd.data
+        requirement.rto = form.rto.data
+        requirement.rpo = form.rpo.data
+        requirement.masl = form.masl.data
+        db.session.commit()
+        flash(_("bia.flash.availability_updated"), "success")
+        return redirect(url_for("bia.manage_item_availability", item_id=item.id, component_id=selected_component.id))
+    availability_rows = [
+        {
+            "component": component,
+            "requirement": component.availability_requirement,
+        }
+        for component in components
+    ]
+    return render_template(
+        "bia/manage_item_availability.html",
+        item=item,
+        form=form,
+        selected_component=selected_component,
+        availability_rows=availability_rows,
+    )
+
+
+@bp.route("/item/<int:item_id>/consequences", methods=["GET", "POST"])
+@login_required
+def manage_item_consequences(item_id: int):
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components).joinedload(Component.consequences)
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
+    if not _can_edit_context(item):
+        abort(403)
+    components = sorted(item.components, key=lambda comp: (comp.name or "").lower())
+    if not components:
+        flash(_("bia.flash.components_required"), "warning")
+        return redirect(url_for("bia.view_item", item_id=item.id))
+    component_map = {component.id: component for component in components}
+    form = BIAConsequenceManagerForm()
+    form.component_id.choices = [(component.id, component.name) for component in components]
+    editing_id = request.args.get("consequence_id", type=int)
+    editing_consequence: Consequences | None = None
+    if form.is_submitted():
+        raw_id = (form.consequence_id.data or "").strip()
+        editing_id = int(raw_id) if raw_id else None
+    elif editing_id:
+        editing_consequence = Consequences.query.get_or_404(editing_id)
+        if editing_consequence.component.context_scope_id != item.id:
+            abort(404)
+        form.consequence_id.data = str(editing_consequence.id)
+        form.component_id.data = editing_consequence.component_id
+        form.consequence_category.data = [editing_consequence.consequence_category] if editing_consequence.consequence_category else []
+        form.security_property.data = editing_consequence.security_property
+        form.consequence_worstcase.data = editing_consequence.consequence_worstcase
+        form.justification_worstcase.data = editing_consequence.justification_worstcase
+        form.consequence_realisticcase.data = editing_consequence.consequence_realisticcase
+        form.justification_realisticcase.data = editing_consequence.justification_realisticcase
+    if form.is_submitted() and editing_id and editing_consequence is None:
+        editing_consequence = Consequences.query.get_or_404(editing_id)
+        if editing_consequence.component.context_scope_id != item.id:
+            abort(404)
+    if form.validate_on_submit():
+        component = component_map.get(form.component_id.data)
+        if component is None:
+            abort(404)
+        categories = form.consequence_category.data or []
+        if editing_id:
+            if len(categories) != 1:
+                form.consequence_category.errors.append(_("bia.consequence_form.validation.single_category"))
+            else:
+                editing_consequence.component = component
+                editing_consequence.consequence_category = categories[0]
+                editing_consequence.security_property = form.security_property.data
+                editing_consequence.consequence_worstcase = form.consequence_worstcase.data
+                editing_consequence.justification_worstcase = form.justification_worstcase.data
+                editing_consequence.consequence_realisticcase = form.consequence_realisticcase.data
+                editing_consequence.justification_realisticcase = form.justification_realisticcase.data
+                db.session.commit()
+                flash(_("bia.flash.consequence_updated"), "success")
+                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+        else:
+            if not categories:
+                form.consequence_category.errors.append(_("bia.consequence_form.validation.at_least_one"))
+            else:
+                for category in categories:
+                    consequence = Consequences(
+                        component=component,
+                        consequence_category=category,
+                        security_property=form.security_property.data,
+                        consequence_worstcase=form.consequence_worstcase.data,
+                        justification_worstcase=form.justification_worstcase.data,
+                        consequence_realisticcase=form.consequence_realisticcase.data,
+                        justification_realisticcase=form.justification_realisticcase.data,
+                    )
+                    db.session.add(consequence)
+                db.session.commit()
+                flash(_("bia.flash.consequence_created", count=len(categories)), "success")
+                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+    consequence_rows = []
+    for component in components:
+        for consequence in component.consequences:
+            consequence_rows.append({"component": component, "consequence": consequence})
+    return render_template(
+        "bia/manage_item_consequences.html",
+        item=item,
+        form=form,
+        consequence_rows=consequence_rows,
+        editing_consequence=editing_consequence,
+    )
+
+
+@bp.route("/item/<int:item_id>/ai", methods=["GET", "POST"])
+@login_required
+def manage_item_ai(item_id: int):
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components).joinedload(Component.ai_identificaties)
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
+    if not _can_edit_context(item):
+        abort(403)
+    components = sorted(item.components, key=lambda comp: (comp.name or "").lower())
+    if not components:
+        flash(_("bia.flash.components_required"), "warning")
+        return redirect(url_for("bia.view_item", item_id=item.id))
+    form = ComponentAIForm()
+    form.component_id.choices = [(component.id, component.name) for component in components]
+    selected_component_id = request.args.get("component_id", type=int)
+    if form.is_submitted():
+        selected_component_id = form.component_id.data
+    if selected_component_id is None:
+        selected_component_id = components[0].id
+    selected_component = next((comp for comp in components if comp.id == selected_component_id), None)
+    if selected_component is None:
+        abort(404)
+    if not form.is_submitted():
+        form.component_id.data = selected_component.id
+        ai_record = AIIdentificatie.query.filter_by(component_id=selected_component.id).first()
+        form.category.data = ai_record.category if ai_record and ai_record.category else "No AI"
+        form.motivatie.data = ai_record.motivatie if ai_record else ""
+    if form.validate_on_submit():
+        ai_record = AIIdentificatie.query.filter_by(component_id=selected_component.id).first()
+        if ai_record is None:
+            ai_record = AIIdentificatie(component=selected_component)
+            db.session.add(ai_record)
+        ai_record.category = form.category.data
+        ai_record.motivatie = form.motivatie.data
+        db.session.commit()
+        flash(_("bia.flash.ai_saved"), "success")
+        return redirect(url_for("bia.manage_item_ai", item_id=item.id, component_id=selected_component.id))
+    ai_rows = []
+    for component in components:
+        ai_record = component.ai_identificaties[0] if component.ai_identificaties else None
+        ai_rows.append({"component": component, "ai": ai_record})
+    return render_template(
+        "bia/manage_item_ai.html",
+        item=item,
+        form=form,
+        selected_component=selected_component,
+        ai_rows=ai_rows,
+    )
+
+
 @bp.route("/item/<int:item_id>/export")
 @login_required
 def export_item(item_id: int):
@@ -1295,6 +1510,121 @@ def export_all_consequences():
             generated_at=datetime.now(),
         )
         filename = f"All_CIA_Consequences_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+
+    export_folder = ensure_export_folder()
+    file_path = export_folder / filename
+    file_path.write_text(html_content, encoding="utf-8")
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+
+@bp.route("/export_availability_requirements")
+@login_required
+def export_availability_requirements():
+    def _parse_duration(value: str | None) -> float:
+        if not value:
+            return float('inf')
+        val = value.lower().strip()
+        if val in ('immediate', '0', 'none', '-'):
+            return 0.0
+        try:
+            match = re.match(r'^([\d\.]+)\s*([a-z]*)', val)
+            if match:
+                num = float(match.group(1))
+                unit = match.group(2)
+                if not unit:
+                    return float('inf')
+                if unit.startswith('m'): return num
+                if unit.startswith('h'): return num * 60
+                if unit.startswith('d'): return num * 60 * 24
+                if unit.startswith('w'): return num * 60 * 24 * 7
+                if unit.startswith('y'): return num * 60 * 24 * 365
+        except (ValueError, AttributeError):
+            pass
+        return float('inf')
+
+    export_type = request.args.get("type", "detailed")
+    bias = ContextScope.query.all()
+
+    if export_type == "summary":
+        summaries = []
+        for bia in bias:
+            components = bia.components
+            if not components:
+                continue
+
+            req_list = []
+            for component in components:
+                if component.availability_requirement:
+                    req_list.append(component.availability_requirement)
+
+            if len(components) == 0 and not req_list:
+                continue
+
+            # Calculate minimum (lowest) values for summary
+            aggr = {
+                "mtd": (float('inf'), None),
+                "rto": (float('inf'), None),
+                "rpo": (float('inf'), None),
+                "masl": (float('inf'), None),
+            }
+            unique_masl = set()
+
+            for req in req_list:
+                for field in ["mtd", "rto", "rpo", "masl"]:
+                    val_str = getattr(req, field)
+                    if field == "masl" and val_str:
+                        unique_masl.add(val_str)
+                    
+                    dur = _parse_duration(val_str)
+                    if dur < aggr[field][0]:
+                        aggr[field] = (dur, val_str)
+
+            final_aggr = {}
+            for field in ["mtd", "rto", "rpo"]:
+                final_aggr[field] = aggr[field][1]
+            
+            # MASL logic: if we parsed a duration/number, use the lowest one. 
+            # Otherwise, or if infinity, fallback to listing unique text values.
+            if aggr["masl"][0] != float('inf'):
+                final_aggr["masl"] = aggr["masl"][1]
+            else:
+                 final_aggr["masl"] = "; ".join(sorted(unique_masl)) if unique_masl else None
+
+            summaries.append(
+                {
+                    "bia": bia,
+                    "component_count": len(components),
+                    "requirement_count": len(req_list),
+                    "requirements": req_list,
+                    "aggregated": final_aggr,
+                }
+            )
+
+        html_content = render_template(
+            "bia/export_availability_summary.html",
+            bia_summaries=summaries,
+            generated_at=datetime.now(),
+        )
+        filename = f"Availability_Requirements_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+    else:
+        all_requirements = []
+        for bia in bias:
+            for component in bia.components:
+                if component.availability_requirement:
+                    all_requirements.append(
+                        {
+                            "bia": bia,
+                            "component": component,
+                            "requirement": component.availability_requirement,
+                        }
+                    )
+
+        html_content = render_template(
+            "bia/export_availability_requirements.html",
+            requirements=all_requirements,
+            generated_at=datetime.now(),
+        )
+        filename = f"Availability_Requirements_Detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
     export_folder = ensure_export_folder()
     file_path = export_folder / filename

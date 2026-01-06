@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Availability requirements | {{ item.name }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span>Edit availability</span>
+        <span class="badge bg-secondary">{{ selected_component.name }}</span>
+      </div>
+      <div class="card-body">
+        <form method="post" class="vstack gap-3">
+          {{ form.hidden_tag() }}
+          <div>
+            {{ form.component_id.label(class="form-label") }}
+            {{ form.component_id(class="form-select", data_component_switch=url_for('bia.manage_item_availability', item_id=item.id)) }}
+            <div class="form-text text-secondary">Switching components reloads this page with their current targets.</div>
+            {% if form.component_id.errors %}
+              <div class="form-text text-danger">{{ form.component_id.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.mtd.label(class="form-label") }}
+            {{ form.mtd(class="form-control", placeholder="e.g. 24 hours") }}
+            {% if form.mtd.errors %}
+              <div class="form-text text-danger">{{ form.mtd.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.rto.label(class="form-label") }}
+            {{ form.rto(class="form-control", placeholder="e.g. 8 hours") }}
+            {% if form.rto.errors %}
+              <div class="form-text text-danger">{{ form.rto.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.rpo.label(class="form-label") }}
+            {{ form.rpo(class="form-control", placeholder="e.g. 30 minutes") }}
+            {% if form.rpo.errors %}
+              <div class="form-text text-danger">{{ form.rpo.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div>
+            {{ form.masl.label(class="form-label") }}
+            {{ form.masl(class="form-control", placeholder="Describe the minimum acceptable service level") }}
+            {% if form.masl.errors %}
+              <div class="form-text text-danger">{{ form.masl.errors | join(', ') }}</div>
+            {% endif %}
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">Current availability targets</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">MTD</th>
+                <th scope="col">RTO</th>
+                <th scope="col">RPO</th>
+                <th scope="col">MASL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in availability_rows %}
+              <tr>
+                <td>{{ row.component.name }}</td>
+                <td>{{ row.requirement.mtd if row.requirement else 'Not set' }}</td>
+                <td>{{ row.requirement.rto if row.requirement else 'Not set' }}</td>
+                <td>{{ row.requirement.rpo if row.requirement else 'Not set' }}</td>
+                <td>{{ row.requirement.masl if row.requirement else 'Not set' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const select = document.querySelector('[data-component-switch]');
+  if (!select) {
+    return;
+  }
+  select.addEventListener('change', () => {
+    const baseUrl = select.getAttribute('data-component-switch');
+    if (!baseUrl || !select.value) {
+      return;
+    }
+    const target = new URL(baseUrl, window.location.origin);
+    target.searchParams.set('component_id', select.value);
+    window.location = target.toString();
+  });
+})();
+</script>
+{% endblock %}

@@ -28,7 +28,7 @@
       "start_assessment": "Start Assessment"
     },
     "home": {
-      "subtitle": "Eén omgeving voor Business Impact Analysis en Control Self Assessment modules."
+      "subtitle": "Eén omgeving voor assessments."
     },
     "language": {
       "label": "Taal",
@@ -129,6 +129,11 @@
       "owner_set": "Eigenaar ingesteld op {name}.",
       "summary_updated": "Samenvatting bijgewerkt.",
       "summary_deleted": "Samenvatting verwijderd.",
+      "availability_updated": "Beschikbaarheidseisen bijgewerkt.",
+      "consequence_created": "{count} gevolgen toegevoegd.",
+      "consequence_updated": "Gevolg bijgewerkt.",
+      "ai_saved": "AI-classificatie opgeslagen.",
+      "components_required": "Voeg eerst componenten toe aan deze BIA voordat je deze sectie beheert.",
       "csv_export_created": "CSV-export aangemaakt.",
       "file_not_found": "Het opgevraagde bestand is niet gevonden.",
       "csv_required": "Het BIA-CSV-bestand is verplicht.",
@@ -155,6 +160,8 @@
         "export_inventory": "Data-inventaris exporteren (CSV)",
         "export_cia_detailed": "CIA-gevolgen exporteren (gedetailleerd)",
         "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)",
+        "export_availability_detailed": "Beschikbaarheid exporteren (gedetailleerd)",
+        "export_availability_summary": "Beschikbaarheid exporteren (samenvatting)",
         "export_authentication": "Authenticatieoverzicht exporteren"
       },
       "header": {
@@ -339,6 +346,12 @@
         "motivation": "Motivatie",
         "motivation_missing": "Niet opgegeven",
         "empty": "Geen AI-risico's vastgesteld voor de gekoppelde componenten."
+      }
+    },
+    "consequence_form": {
+      "validation": {
+        "single_category": "Selecteer precies één categorie bij het bijwerken van een gevolg.",
+        "at_least_one": "Selecteer minimaal één categorie."
       }
     },
     "components": {
@@ -678,12 +691,7 @@
                 "button": "Assessment verwijderen",
                 "confirm": "Weet je zeker dat je deze assessment wilt verwijderen?"
               },
-              "review": {
-                "heading": "Review",
-                "comment_label": "Reviewopmerking",
-                "comment_placeholder": "Voeg context toe bij goedkeuren of redenen bij terugsturen.",
-                "return_to_assignee": "Terugsturen naar verantwoordelijke",
-                "approve": "Goedkeuren",
+              "approve": "Goedkeuren",
                 "latest_comment": "Laatste reviewopmerking:"
               }
             },

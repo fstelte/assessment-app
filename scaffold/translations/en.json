@@ -28,7 +28,7 @@
       "start_assessment": "Start Assessment"
     },
     "home": {
-      "subtitle": "Unified workspace for Business Impact Analysis and Control Self Assessment modules."
+      "subtitle": "Unified workspace for assessments."
     },
     "language": {
       "label": "Language",
@@ -52,6 +52,11 @@
       "owner_set": "Owner set to {name}.",
       "summary_updated": "Summary updated.",
       "summary_deleted": "Summary deleted.",
+      "availability_updated": "Availability requirements updated.",
+      "consequence_created": "Added {count} consequence entries.",
+      "consequence_updated": "Consequence updated.",
+      "ai_saved": "AI classification saved.",
+      "components_required": "Add components to this BIA before managing this section.",
       "csv_export_created": "CSV export created.",
       "file_not_found": "Requested file was not found.",
       "csv_required": "The BIA CSV file is required.",
@@ -78,6 +83,8 @@
         "export_inventory": "Export data inventory (CSV)",
         "export_cia_detailed": "Export CIA consequences (detailed)",
         "export_cia_summary": "Export CIA consequences (summary)",
+        "export_availability_detailed": "Export availability (detailed)",
+        "export_availability_summary": "Export availability (summary)",
         "export_authentication": "Export authentication overview"
       },
       "header": {
@@ -270,6 +277,12 @@
         "motivation": "Motivation",
         "motivation_missing": "Not provided",
         "empty": "No AI risks identified for the linked components."
+      }
+    },
+    "consequence_form": {
+      "validation": {
+        "single_category": "Select exactly one category when updating a consequence.",
+        "at_least_one": "Select at least one category."
       }
     },
     "components": {
