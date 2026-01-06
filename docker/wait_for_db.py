@@ -17,6 +17,17 @@ def _log(message: str) -> None:
     print(f"[wait-for-db] {message}", flush=True)
 
 
+def _database_exists(conn, backend: str, database_name: str) -> bool:
+    """Check whether the target database already exists before CREATE."""
+    if backend in {"postgresql", "postgres"}:
+        result = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname=:dbname"),
+            {"dbname": database_name},
+        )
+        return bool(result.scalar())
+    return False
+
+
 def _ensure_database(url: URL, deadline: float) -> None:
     backend = url.get_backend_name()
     database_name = url.database
@@ -38,6 +49,9 @@ def _ensure_database(url: URL, deadline: float) -> None:
             try:
                 with engine.connect() as conn:
                     conn.execution_options(isolation_level="AUTOCOMMIT")
+                    if _database_exists(conn, backend, database_name):
+                        _log(f"database '{database_name}' already exists")
+                        break
                     conn.execute(text(create_statement))
                 _log(f"database '{database_name}' ensured on {backend}")
                 break
