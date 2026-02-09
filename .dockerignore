@@ -39,6 +39,9 @@ docker/example.compose*.yml
 docker/example.compose*.yaml
 docker/README.md
 
+# Build artifacts
+.tailwind/
+
 # Misc local artifacts
 *.log
 *.tmp
