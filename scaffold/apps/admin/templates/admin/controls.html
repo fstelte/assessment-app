@@ -73,18 +73,60 @@
         </div>
       </div>
     </div>
+    <div class="col-12 col-xl-6">
+      <div class="card bg-dark border-secondary h-100">
+        <div class="card-body">
+          <h1 class="h4 mb-2">{{ _('admin.import.heading') }}</h1>
+          <p class="text-secondary mb-4">{{ _('admin.import.intro') }}</p>
+          <form method="post" enctype="multipart/form-data" class="mb-4">
+            {{ import_form.hidden_tag() }}
+            <div class="mb-3">
+              {{ render_field_with_help(import_form.data_file, class="form-control") }}
+            </div>
+            <div class="text-end">
+              {{ import_form.submit(class="btn btn-primary") }}
+            </div>
+          </form>
+          <hr class="border-secondary my-4">
+          <form method="post">
+            <input type="hidden" name="action" value="import_builtin">
+            <div class="d-flex flex-column gap-2">
+              <button type="submit" name="dataset" value="iso" class="btn btn-outline-light w-100 text-start">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                {{ _('admin.import.import_builtin') }}
+              </button>
+              <button type="submit" name="dataset" value="nist" class="btn btn-outline-light w-100 text-start">
+                <i class="bi bi-shield-check me-2"></i>
+                {{ _('admin.import.import_nist') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
     <div class="col-12">
       <div class="card bg-dark border-secondary h-100">
         <div class="card-header border-secondary d-flex justify-content-between align-items-center">
           <span>{{ _('admin.controls.list.title') }}</span>
-          <span class="badge bg-secondary">{{ controls|length }}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-secondary">{{ controls|length }}</span>
+            <button type="submit" form="bulk-delete-controls-form" 
+                    onclick="return confirm('{{ _('admin.controls.delete_bulk.confirm') }}')"
+                    class="btn btn-sm btn-outline-danger">
+              {{ _('admin.controls.delete_bulk.button') }}
+            </button>
+          </div>
         </div>
         <div class="card-body p-0">
+          <form id="bulk-delete-controls-form" method="post" action="{{ url_for('admin.delete_bulk_controls') }}">
           {% if controls %}
             <div class="table-responsive">
               <table class="table table-dark table-striped align-middle mb-0">
                 <thead>
                   <tr>
+                    <th scope="col" style="width: 40px;" class="text-center">
+                      <input type="checkbox" id="select-all-controls" class="form-check-input">
+                    </th>
                     <th scope="col">{{ _('admin.controls.list.code') }}</th>
                     <th scope="col">{{ _('admin.controls.list.name') }}</th>
                     <th scope="col">{{ _('admin.controls.list.description') }}</th>
@@ -96,6 +138,9 @@
                   {% for control in controls %}
                     {% set delete_form = delete_forms.get(control.id) %}
                     <tr>
+                      <td class="text-center">
+                        <input type="checkbox" name="control_ids" value="{{ control.id }}" class="form-check-input control-checkbox">
+                      </td>
                       <td class="text-nowrap">{{ control.section or _('csa.common.unknown') }}</td>
                       <td><strong>{{ control.domain }}</strong></td>
                       <td class="text-secondary small">{{ control.description or _('admin.controls.list.no_description') }}</td>
@@ -106,11 +151,9 @@
                             {{ _('actions.edit') }}
                           </a>
                           {% if delete_form %}
-                          <form method="post" action="{{ url_for('admin.delete_control', control_id=control.id) }}" class="d-inline">
-                            {{ delete_form.hidden_tag() }}
-                            {{ delete_form.control_id() }}
-                            {{ delete_form.submit(class="btn btn-sm btn-outline-danger") }}
-                          </form>
+                            <button type="submit" form="delete-control-{{ control.id }}" class="btn btn-sm btn-outline-danger">
+                              {{ _('actions.delete') }}
+                            </button>
                           {% endif %}
                         </div>
                       </td>
@@ -122,9 +165,34 @@
           {% else %}
             <div class="p-4 text-secondary">{{ _('admin.controls.list.empty') }}</div>
           {% endif %}
+          </form>
+
+          {% for control in controls %}
+            {% set delete_form = delete_forms.get(control.id) %}
+            {% if delete_form %}
+            <form id="delete-control-{{ control.id }}" method="post" action="{{ url_for('admin.delete_control', control_id=control.id) }}" class="d-none">
+              {{ delete_form.hidden_tag() }}
+            </form>
+            {% endif %}
+          {% endfor %}
         </div>
       </div>
     </div>
 
   </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all-controls');
+    if (selectAll) {
+      selectAll.addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('.control-checkbox');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+      });
+    }
+  });
+</script>
 {% endblock %}

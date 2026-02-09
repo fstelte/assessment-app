@@ -764,7 +764,8 @@
               "control_owner": "Control Owner",
               "control_assigner": "Control Assigner"
             }
-          },
+          }
+        },
         "admin": {
           "controls": {
             "page": {
@@ -1704,7 +1705,8 @@
             "new_assessment": "Nieuwe assessment",
             "basic_information_to_start": "Geef basis informatie om een assessment te starten"
           }
-        },
+        }
+      },
   "maturity": {
     "nav": {
       "label": "Volwassenheid"

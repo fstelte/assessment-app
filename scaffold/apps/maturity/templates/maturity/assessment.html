@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("maturity.title") }}: {{ control.domain }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+  <!-- Header -->
+  <div class="md:flex md:items-center md:justify-between mb-6">
+    <div class="min-w-0 flex-1">
+      <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+        {{ _("maturity.title") }}
+      </h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+         {{ _("maturity.index.table.control") }} {{ control.domain }}: {{ control.section or control.id }}
+      </p>
+    </div>
+    <div class="mt-4 flex md:ml-4 md:mt-0">
+      <a href="{{ url_for('maturity.index') }}" class="inline-flex items-center rounded-md bg-white dark:!bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+        {{ _("maturity.back_to_list") }}
+      </a>
+    </div>
+  </div>
+
+  <form method="POST" class="space-y-8 divide-y divide-gray-200 dark:divide-gray-700">
+    <div class="bg-white dark:!bg-gray-800 shadow sm:rounded-lg overflow-hidden">
+      <!-- Control Details -->
+      <div class="px-4 py-5 sm:px-6 bg-gray-50 dark:!bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ _("maturity.control_description") }}</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-300">
+          {{ control.description }}
+        </p>
+      </div>
+
+      <div class="px-4 py-5 sm:p-6 space-y-8">
+        <!-- Global Assessment Notes -->
+        <div>
+          <label for="assessment_notes" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">{{ _("maturity.assessment_notes") }}</label>
+          <div class="mt-2">
+            <textarea id="assessment_notes" name="assessment_notes" rows="3" class="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 sm:text-sm sm:leading-6">{{ assessment.notes or '' }}</textarea>
+          </div>
+        </div>
+        
+        <!-- Levels Loop -->
+        {% for level, reqs in levels.items() %}
+        <div class="border rounded-md border-gray-200 dark:border-gray-700 p-4">
+          <h4 class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+            {{ _("maturity.level_prefix") }} {{ level }}
+          </h4>
+          
+          <div class="space-y-6">
+            {% for req in reqs %}
+              {% set answer = answers.get(req.id) %}
+              <div class="flex flex-col space-y-3 pb-4 {% if not loop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+                
+                <!-- Requirement Text & Checkbox -->
+                <div class="relative flex items-start">
+                  <div class="flex h-6 items-center">
+                    <input id="compliant_{{ req.id }}" 
+                           name="compliant_{{ req.id }}" 
+                           type="checkbox" 
+                           {% if answer and answer.compliant %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:border-gray-600 dark:bg-gray-700">
+                  </div>
+                  <div class="ml-3 text-sm leading-6">
+                    <label for="compliant_{{ req.id }}" class="font-medium text-gray-900 dark:text-gray-200">
+                      {{ _(req.text) }}
+                    </label>
+                    <p id="compliant_{{ req.id }}-description" class="text-gray-500 dark:text-gray-400 font-italic">
+                      {{ _(req.help_text) }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Evidence Text -->
+                <div class="ml-7">
+                  <label for="evidence_{{ req.id }}" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    {{ _("maturity.evidence_label") }}
+                  </label>
+                  <textarea id="evidence_{{ req.id }}" 
+                            name="evidence_{{ req.id }}" 
+                            rows="2" 
+                            class="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 sm:text-sm sm:leading-6"
+                            placeholder="{{ _('maturity.evidence_placeholder') }}">{{ answer.evidence if answer else '' }}</textarea>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+
+      </div>
+      
+      <!-- Footer Actions -->
+      <div class="bg-gray-50 dark:!bg-gray-700 px-4 py-3 sm:px-6 flex items-center justify-between">
+        <button type="submit" 
+                formaction="{{ url_for('maturity.reset_assessment', control_id=control.id) }}"
+                onclick="return confirm('{{ _('maturity.reset_confirm') }}')"
+                class="inline-flex justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+          {{ _("maturity.reset_button") }}
+        </button>
+        <button type="submit" class="inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+          {{ _("maturity.save_button") }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -51,6 +51,7 @@ from ..apps.risk.models import (
     RiskSeverityThreshold,
     RiskTreatmentOption,
 )
+from ..apps.maturity.models import MaturityAnswer, MaturityAssessment, MaturityLevel
 from .audit import AuditLog
 
 __all__ = [
@@ -83,6 +84,9 @@ __all__ = [
     "RiskSeverity",
     "RiskSeverityThreshold",
     "RiskTreatmentOption",
+    "MaturityLevel",
+    "MaturityAssessment",
+    "MaturityAnswer",
 ]
 
 MIGRATION_REQUIREMENTS: list[str] = [
