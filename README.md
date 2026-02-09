@@ -11,6 +11,7 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - Accessible, CSS-only form tooltips via a shared macro and `tooltip-wrapper` utility classes.
 - BIA component workflows capture environment-specific authentication methods, surface them in the UI, and provide exportable CSV/SQL payloads for audit teams.
 - Risk assessment workspace with dashboard cards, CSA-linked mitigation plans, and configurable severity thresholds.
+- CMMI Maturity Assessment module for scoring controls against standard maturity levels (Initial to Optimizing) with evidence tracking.
 - DPIA / FRIA module linked to BIA components with editable risk registers, mitigating measures, colored risk severity badges, and a four-state workflow (in progress, in review, finished, abandoned).
 - Dynamic registry for discovering and wiring additional app blueprints.
 - Alembic migrations, pytest suite, and lint scripts ready for CI pipelines.

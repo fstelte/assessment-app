@@ -214,6 +214,46 @@ def controls():
     )
 
 
+@bp.route("/controls/delete-bulk", methods=["POST"])
+def delete_bulk_controls():
+    _require_control_admin()
+    """Bulk delete selected controls."""
+    control_ids = request.form.getlist("control_ids")
+    if not control_ids:
+        flash(_("admin.controls.delete_bulk.none_selected"), "warning")
+        return redirect(url_for("admin.controls"))
+    
+    # Cast IDs to integers to satisfy PostgreSQL type checking against integer ID column
+    try:
+        control_ids = [int(cid) for cid in control_ids]
+    except (ValueError, TypeError):
+        flash(_("admin.controls.delete_bulk.invalid_ids"), "danger")
+        return redirect(url_for("admin.controls"))
+
+    controls = db.session.query(Control).filter(Control.id.in_(control_ids)).all()
+    count = len(controls)
+    
+    if count == 0:
+        flash(_("admin.controls.delete_bulk.none_found"), "info")
+    else:
+        for control in controls:
+            db.session.delete(control)
+        db.session.commit()
+        log_event(
+            action="delete_bulk",
+            entity_type="control",
+            user=current_user,
+            details={
+                "ids": control_ids,
+                "count": count,
+                "description": f"Bulk deleted {count} controls",
+            },
+        )
+        flash(_("admin.controls.delete_bulk.success", count=count), "success")
+        
+    return redirect(url_for("admin.controls"))
+
+
 @bp.post("/controls/create")
 @login_required
 @require_fresh_login()

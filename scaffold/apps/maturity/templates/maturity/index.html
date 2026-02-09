@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("maturity.index.title") }}{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ _("maturity.index.title") }}</h1>
+      <p class="mt-2 text-sm text-gray-700 dark:text-gray-400">
+        {{ _("maturity.index.subtitle") }}
+      </p>
+    </div>
+  </div>
+  
+  <div class="mt-8 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:!bg-gray-800">
+              <tr>
+                <th scope="col" class="relative w-12 px-6 sm:w-16 sm:px-8">
+                  <input type="checkbox" id="select-all" class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 sm:left-6">
+                </th>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-200 sm:pl-6">
+                  {{ _("admin.controls.list.code") }}
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-200">
+                  {{ _("maturity.index.table.control") }}
+                </th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-200">
+                  {{ _("maturity.index.table.level") }}
+                </th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span class="sr-only">{{ _("maturity.assess.button") }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:!bg-gray-900">
+              {% for control, assessment in controls %}
+              <tr>
+                <td class="relative w-12 px-6 sm:w-16 sm:px-8">
+                  <input type="checkbox" name="control_ids" value="{{ control.id }}" class="assessment-checkbox absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 sm:left-6">
+                </td>
+                <td class="px-3 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                  {{ control.section or control.id }}
+                </td>
+                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                  <div class="font-medium text-gray-900 dark:text-white">{{ control.domain }}</div>
+                  <div class="truncate max-w-xs">{{ (control.description or '')|truncate(80) }}</div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                  {% if assessment %}
+                    <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-100">
+                      {{ _("maturity.level_prefix") }} {{ assessment.current_level.value }} - {{ assessment.current_level.name|replace('_', ' ')|title }}
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-300">
+                       {{ _("maturity.index.not_assessed") }}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  <a href="{{ url_for('maturity.assess', control_id=control.id) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
+                     {{ _("maturity.assess.button") }}<span class="sr-only">, {{ control.section }}</span>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+      selectAll.addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('.assessment-checkbox');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+      });
+    }
+  });
+</script>
+{% endblock %}

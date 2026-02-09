@@ -35,6 +35,37 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 - `RiskSeverityThreshold`: administrator-managed ranges that map numeric scores to severities (`low`, `moderate`, `high`, `critical`). Defaults seed values that cover the 1-25 score space but can be adjusted without code changes.
 - Admin panel routes under `/admin/risks` provide CRUD management for risks, while `/admin/risk-thresholds` lets privileged users update the severity ranges without touching migrations.
 
+## Maturity Domain
+
+- `MaturityAssessment`: links a standard CSA `Control` to a CMMI maturity level (1-5) assessed by a `User`. Stores the calculated current level and target level.
+- `MaturityAnswer`: captures the compliance status (`compliant`/`non-compliant`) and evidence for specific CMMI requirements within an assessment.
+- `MaturityLevel`: an IntEnum defining the 5 CMMI levels (Initial, Managed, Defined, Quantitatively Managed, Optimizing).
+
+```mermaid
+erDiagram
+    User ||--o{ MaturityAssessment : conducts
+    Control ||--o{ MaturityAssessment : targets
+    MaturityAssessment ||--o{ MaturityAnswer : contains
+
+    MaturityAssessment {
+        int id
+        int control_id
+        int assessor_id
+        enum current_level
+        enum target_level
+        text notes
+    }
+
+    MaturityAnswer {
+        int id
+        int assessment_id
+        enum level
+        varchar requirement_key
+        boolean compliant
+        text evidence
+    }
+```
+
 ## Metadata
 
 - All models share the same SQLAlchemy metadata and are exposed via `scaffold.models` for Alembic autogeneration.

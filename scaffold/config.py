@@ -15,6 +15,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.risk",
     "scaffold.apps.risk.api",
     "scaffold.apps.pages",
+    "scaffold.apps.maturity",
     "scaffold.apps.template",
 ]
 

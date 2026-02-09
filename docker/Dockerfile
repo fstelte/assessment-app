@@ -17,6 +17,9 @@ RUN poetry install --only main --no-interaction --no-ansi --no-root
 
 COPY . /app
 
+# Generate CSS during build so the image contains the latest styles
+RUN python3 scaffold/tailwind_cli.py -i scaffold/static/css/tailwind.css -o scaffold/static/css/app.css
+
 COPY docker/entrypoint.sh /entrypoint.sh
 # Ensure entrypoint uses LF endings inside the image (strip CRLF if present on host)
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
