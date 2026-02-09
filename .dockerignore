@@ -32,7 +32,6 @@ ansible/
 cleanup_script/
 docs/
 tests/
-tailwind.config.cjs
 
 # Docker helper assets not required in app image
 docker/example.compose*.yml
