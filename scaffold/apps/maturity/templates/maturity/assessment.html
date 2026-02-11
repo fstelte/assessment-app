@@ -14,7 +14,10 @@
          {{ _("maturity.index.table.control") }} {{ control.domain }}: {{ control.section or control.id }}
       </p>
     </div>
-    <div class="mt-4 flex md:ml-4 md:mt-0">
+    <div class="mt-4 flex md:ml-4 md:mt-0 space-x-3">
+      <a href="{{ url_for('maturity.history', control_id=control.id) }}" class="inline-flex items-center rounded-md bg-white dark:!bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+        {{ _("maturity.history_button") }}
+      </a>
       <a href="{{ url_for('maturity.index') }}" class="inline-flex items-center rounded-md bg-white dark:!bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
         {{ _("maturity.back_to_list") }}
       </a>
@@ -32,6 +35,27 @@
       </div>
 
       <div class="px-4 py-5 sm:p-6 space-y-8">
+        <!-- Target Level Selector -->
+        <div class="max-w-xs">
+          <label for="target_level" class="block text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ _("maturity.target_level_label") }}</label>
+          <div class="mt-2 flex rounded-md shadow-sm">
+            <select id="target_level" 
+                    name="target_level" 
+                    class="block w-full rounded-none rounded-l-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
+              <option value="">Select a target level...</option>
+              {% for lvl in [1, 2, 3, 4, 5] %}
+              <option value="{{ lvl }}" {% if assessment.target_level and assessment.target_level.value == lvl %}selected{% endif %}>
+                {{ _("maturity.level_prefix") }} {{ lvl }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" name="action" value="set_target" class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+              {{ _("maturity.set_target_button") or "Set" }}
+            </button>
+          </div>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ _("maturity.target_level_help") }}</p>
+        </div>
+
         <!-- Global Assessment Notes -->
         <div>
           <label for="assessment_notes" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">{{ _("maturity.assessment_notes") }}</label>
@@ -42,7 +66,7 @@
         
         <!-- Levels Loop -->
         {% for level, reqs in levels.items() %}
-        <div class="border rounded-md border-gray-200 dark:border-gray-700 p-4">
+        <div id="level-section-{{ level }}" class="level-section border rounded-md border-gray-200 dark:border-gray-700 p-4 transition-opacity duration-300" data-level="{{ level }}">
           <h4 class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
             {{ _("maturity.level_prefix") }} {{ level }}
           </h4>
@@ -52,34 +76,24 @@
               {% set answer = answers.get(req.id) %}
               <div class="flex flex-col space-y-3 pb-4 {% if not loop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
                 
-                <!-- Requirement Text & Checkbox -->
+                <!-- Requirement Text -->
                 <div class="relative flex items-start">
-                  <div class="flex h-6 items-center">
-                    <input id="compliant_{{ req.id }}" 
-                           name="compliant_{{ req.id }}" 
-                           type="checkbox" 
-                           {% if answer and answer.compliant %}checked{% endif %}
-                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 dark:border-gray-600 dark:bg-gray-700">
-                  </div>
-                  <div class="ml-3 text-sm leading-6">
-                    <label for="compliant_{{ req.id }}" class="font-medium text-gray-900 dark:text-gray-200">
-                      {{ _(req.text) }}
+                  <div class="text-sm leading-6">
+                    <label for="evidence_{{ req.id }}" class="font-medium text-gray-900 dark:text-gray-200 block">
+                      {{ _(req.text) }} <span class="text-red-500">*</span>
                     </label>
-                    <p id="compliant_{{ req.id }}-description" class="text-gray-500 dark:text-gray-400 font-italic">
+                    <p class="text-gray-500 dark:text-gray-400 font-italic">
                       {{ _(req.help_text) }}
                     </p>
                   </div>
                 </div>
 
                 <!-- Evidence Text -->
-                <div class="ml-7">
-                  <label for="evidence_{{ req.id }}" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    {{ _("maturity.evidence_label") }}
-                  </label>
+                <div class="">
                   <textarea id="evidence_{{ req.id }}" 
                             name="evidence_{{ req.id }}" 
                             rows="2" 
-                            class="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 sm:text-sm sm:leading-6"
+                            class="evidence-textarea block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 sm:text-sm sm:leading-6"
                             placeholder="{{ _('maturity.evidence_placeholder') }}">{{ answer.evidence if answer else '' }}</textarea>
                 </div>
               </div>
@@ -98,11 +112,66 @@
                 class="inline-flex justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
           {{ _("maturity.reset_button") }}
         </button>
-        <button type="submit" class="inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-          {{ _("maturity.save_button") }}
-        </button>
+        
+        <div class="flex space-x-3">
+          {% if assessment.status == AssessmentStatus.BEING_ASSESSED %}
+          <button type="submit" name="action" value="submit" class="inline-flex justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+            {{ _("maturity.submit_button") }}
+          </button>
+          {% endif %}
+
+          {% if assessment.status == AssessmentStatus.SUBMITTED and (control.owner_id == current_user.id or current_user.has_role('control_owner') or current_user.has_role('admin')) %}
+          <button type="submit" name="action" value="approve" class="inline-flex justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600">
+            {{ _("maturity.approve_button") }}
+          </button>
+          <button type="submit" name="action" value="decline" class="inline-flex justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-600">
+            {{ _("maturity.decline_button") }}
+          </button>
+          {% endif %}
+
+          <button type="submit" class="inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            {{ _("maturity.save_button") }}
+          </button>
+        </div>
       </div>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+function updateLevelVisibility() {
+    const selector = document.getElementById('target_level');
+    // If selector is missing or value is empty, targetLevel is 0.
+    const targetLevel = (selector && selector.value) ? parseInt(selector.value) : 0;
+    const sections = document.querySelectorAll('.level-section');
+    
+    sections.forEach(section => {
+        const level = parseInt(section.getAttribute('data-level'));
+        const textareas = section.querySelectorAll('.evidence-textarea');
+        
+        // Only show sections up to the target level. 
+        // If targetLevel is 0 (none selected), everything is hidden.
+        if (targetLevel > 0 && level <= targetLevel) {
+            section.style.display = 'block';
+             // Enable inputs in visible sections
+            textareas.forEach(el => {
+                el.disabled = false;
+            });
+        } else {
+            section.style.display = 'none';
+            // Disable inputs so they are not submitted
+            textareas.forEach(el => {
+                el.disabled = true;
+                el.required = false; 
+            });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateLevelVisibility();
+});
+</script>
 {% endblock %}

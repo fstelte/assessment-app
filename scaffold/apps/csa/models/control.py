@@ -47,11 +47,15 @@ class Control(TimestampMixin, db.Model):
     domain = db.Column(db.String(255), unique=True, nullable=False, index=True)
     description = db.Column(db.Text)
 
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
     templates = db.relationship(
         "AssessmentTemplate",
         back_populates="control",
         cascade="all, delete-orphan",
     )
+
+    owner = db.relationship("User", foreign_keys=[owner_id])
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Control domain={self.domain!r} section={self.section!r}>"
