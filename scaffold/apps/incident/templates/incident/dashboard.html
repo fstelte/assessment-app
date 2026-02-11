@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ _('incident.dashboard.title') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 margin-0">{{ _('incident.dashboard.title') }}</h1>
+</div>
+
+<form class="row g-3 align-items-end mb-4" method="get" action="{{ url_for('incident.dashboard') }}">
+  <div class="col-md-6">
+    <label for="incident-search" class="form-label">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
+    <div class="input-group">
+      <span class="input-group-text bg-dark border-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+        </svg>
+      </span>
+      <input type="search" name="q" id="incident-search" class="form-control bg-dark border-secondary text-light" placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}" value="{{ search_query }}">
+    </div>
+  </div>
+  <div class="col-md-4">
+    <label for="incident-scope" class="form-label">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
+    <select name="scope" id="incident-scope" class="form-select bg-dark border-secondary text-light">
+      <option value="all" {% if selected_scope == 'all' %}selected{% endif %}>{{ _('incident.dashboard.all_scopes', default='All Scopes') }}</option>
+      {% for context in contexts %}
+      <option value="{{ context.name }}" {% if selected_scope == context.name %}selected{% endif %}>{{ context.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2 d-grid">
+    <button type="submit" class="btn btn-primary">{{ _('actions.filter', default='Filter') }}</button>
+  </div>
+</form>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary">{{ _('incident.dashboard.components_list') }}</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>{{ _('incident.labels.component_name') }}</th>
+            <th>{{ _('incident.labels.context') }}</th>
+            <th class="text-end">{{ _('actions.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for component in components %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ component.name }}</div>
+              {% if component.description %}
+              <div class="text-secondary small text-truncate" style="max-width: 300px;">{{ component.description }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% if component.context_scope %}
+              <span class="badge bg-secondary">{{ component.context_scope.name }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="btn btn-sm btn-primary">
+                {{ _('incident.actions.manage_plans') }}
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-secondary py-4">
+              {{ _('incident.dashboard.no_components') }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if pagination.pages > 1 %}
+  <div class="card-footer border-secondary">
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) if pagination.has_prev else '#' }}">&laquo;</a>
+        </li>
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if page_num %}
+            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('incident.dashboard', page=page_num, q=search_query, scope=selected_scope) }}">{{ page_num }}</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) if pagination.has_next else '#' }}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

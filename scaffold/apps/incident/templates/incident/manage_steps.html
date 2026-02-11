@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field %}
+
+{% block title %}{{ _('incident.steps.title') }} | {{ scenario.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="text-secondary text-decoration-none">&larr; {{ _('incident.scenarios.back') }}</a>
+</div>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ _('incident.steps.heading') }}</h1>
+    <p class="text-secondary mb-0">Scenario: <span class="text-white">{{ scenario.name }}</span></p>
+  </div>
+</div>
+
+<form method="post" class="row g-4">
+  {{ form.hidden_tag() }}
+  
+  <div class="col-lg-8 d-flex flex-column gap-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.actions") }}</div>
+      <div class="card-body">
+        <div>
+          {{ form.actions_first_hour.label(class="form-label fw-bold") }}
+          <p class="small text-secondary mb-1">What needs to happen immediately?</p>
+          {{ form.actions_first_hour(class="form-control", rows="5") }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.recovery") }}</div>
+      <div class="card-body">
+         <div class="vstack gap-3">
+           <div>
+              {{ form.alternatives.label(class="form-label fw-bold") }}
+              <p class="small text-secondary mb-1">Fallback options or redundancies?</p>
+              {{ form.alternatives(class="form-control", rows="4") }}
+           </div>
+           <div>
+              {{ form.manual_procedures.label(class="form-label fw-bold") }}
+              <p class="small text-secondary mb-1">Can we operate offline? How?</p>
+              {{ form.manual_procedures(class="form-control", rows="4") }}
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4 d-flex flex-column gap-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.targets") }}</div>
+      <div class="card-body vstack gap-3">
+        <div>
+          {{ form.rto.label(class="form-label fw-bold") }}
+          {{ form.rto(class="form-control") }}
+          <div class="form-text">{{ form.rto.description }}</div>
+        </div>
+        <div>
+          {{ form.rpo.label(class="form-label fw-bold") }}
+          {{ form.rpo(class="form-control") }}
+           <div class="form-text">{{ form.rpo.description }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary fw-bold">{{ _("bia.context_form.section.contacts") }}</div>
+      <div class="card-body">
+        <div>
+          {{ form.contact_list.label(class="form-label fw-bold") }}
+          <p class="small text-secondary mb-1">Who needs to be informed or activated?</p>
+          {{ form.contact_list(class="form-control", rows="8") }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 d-flex justify-content-end gap-2 mb-5">
+    <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="btn btn-outline-secondary">{{ _('actions.cancel') }}</a>
+    {{ form.submit(class="btn btn-primary") }}
+  </div>
+</form>
+{% endblock %}

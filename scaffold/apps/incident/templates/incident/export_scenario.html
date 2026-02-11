@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ scenario.name }} | Export{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">{{ scenario.name }}</h1>
+            <p class="text-secondary mb-0">Component: <strong>{{ component.name }}</strong></p>
+        </div>
+        {% if not export_mode %}
+        <div class="d-print-none">
+            <button onclick="window.print()" class="btn btn-outline-light">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-printer me-1" viewBox="0 0 16 16">
+                  <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                  <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1"/>
+                </svg> Print / Save as PDF
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if scenario.description %}
+    <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary fw-bold text-uppercase small">Scenario Description</div>
+        <div class="card-body">
+            {{ scenario.description }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Immediate Actions -->
+        <div class="col-12">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-headers border-secondary p-3 fw-bold border-bottom">
+                    {{ _("incident.steps.section.actions") }}
+                </div>
+                <div class="card-body">
+                    {% if steps and steps.actions_first_hour %}
+                        <div class="preserve-whitespace">{{ steps.actions_first_hour }}</div>
+                    {% else %}
+                        <span class="text-secondary fst-italic">No immediate actions defined.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact List -->
+        <div class="col-md-8">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary fw-bold">
+                    {{ _("bia.context_form.section.contacts") }}
+                </div>
+                <div class="card-body">
+                    {% if steps and steps.contact_list %}
+                        <div class="preserve-whitespace">{{ steps.contact_list }}</div>
+                    {% else %}
+                        <span class="text-secondary fst-italic">No contacts defined.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recovery Targets -->
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header border-secondary fw-bold">
+                    {{ _("incident.steps.section.targets") }}
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt class="text-secondary small text-uppercase">RTO</dt>
+                        <dd class="fs-5 mb-3">{{ steps.rto if steps and steps.rto else 'N/A' }}</dd>
+                        
+                        <dt class="text-secondary small text-uppercase">RPO</dt>
+                        <dd class="fs-5 mb-0">{{ steps.rpo if steps and steps.rpo else 'N/A' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recovery Procedures -->
+        <div class="col-12">
+            <div class="card bg-dark border-secondary mb-4">
+                 <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.recovery") }}</div>
+                 <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h5 class="h6 text-uppercase text-secondary mb-3">Alternatives / Fallback</h5>
+                            {% if steps and steps.alternatives %}
+                                <div class="preserve-whitespace">{{ steps.alternatives }}</div>
+                            {% else %}
+                                <span class="text-secondary fst-italic">None defined.</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 border-start-md border-secondary">
+                             <h5 class="h6 text-uppercase text-secondary mb-3">Manual Procedures</h5>
+                             {% if steps and steps.manual_procedures %}
+                                <div class="preserve-whitespace">{{ steps.manual_procedures }}</div>
+                            {% else %}
+                                <span class="text-secondary fst-italic">None defined.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center text-secondary small mt-4 d-print-none">
+        Generated on {{ current_date }}
+    </div>
+</div>
+
+<style>
+    .preserve-whitespace {
+        white-space: pre-wrap;
+    }
+    @media print {
+        body { background-color: white !important; color: black !important; }
+        a { text-decoration: none !important; color: black !important; }
+    }
+</style>
+{% endblock %}
