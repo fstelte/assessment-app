@@ -1450,7 +1450,8 @@
     "edit": "Bewerken",
     "export": "Exporteren",
     "view": "Bekijken",
-    "back": "Terug"
+    "back": "Terug",
+    "filter": "Filteren"
   },
   "assessments": {
     "assign": {
@@ -1962,6 +1963,52 @@
       "req3": {
         "text": "Worden de effecten van procesverbeteringen gemeten en geëvalueerd?",
         "help": "Controleer of na toepassing van een verbetering de impact wordt gemeten ten opzichte van de nulmeting."
+      }
+    }
+  },
+  "incident": {
+    "navigation": {
+      "label": "Incident Respons"
+    },
+    "dashboard": {
+      "title": "Incident Respons Plannen",
+      "search_label": "Zoek Componenten",
+      "search_placeholder": "Zoek op naam...",
+      "scope_label": "Context",
+      "all_scopes": "Alle Scopes",
+      "components_list": "Componenten",
+      "no_components": "Geen componenten gevonden. Start eerst een BIA.",
+      "back": "Terug naar Dashboard"
+    },
+    "labels": {
+      "component_name": "Componentnaam",
+      "context": "Context"
+    },
+    "actions": {
+      "manage_plans": "Plannen beheren",
+      "create_scenario": "Scenario maken",
+      "manage_steps": "Stappen beheren",
+      "edit_scenario": "Scenario bewerken",
+      "export_html": "Exporteren HTML / Afdrukken",
+      "confirm_delete": "Weet u zeker dat u dit scenario wilt verwijderen? Hiermee wordt ook het bijbehorende responsplan verwijderd."
+    },
+    "scenarios": {
+      "title": "Scenarios · {component}",
+      "heading": "Incident Scenarios",
+      "empty": "Geen scenarios gedefinieerd. Maak een incidentscenario om te beginnen.",
+      "back": "Terug naar Scenarios"
+    },
+    "status": {
+      "steps_defined": "Plan gedefinieerd",
+      "steps_missing": "Plan ontbreekt"
+    },
+    "steps": {
+      "title": "Responsstappen",
+      "heading": "Definieer Respons",
+      "section": {
+        "actions": "Directe Acties",
+        "targets": "Hersteldoelen",
+        "recovery": "Herstelprocedures"
       }
     }
   }

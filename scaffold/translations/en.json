@@ -1162,7 +1162,8 @@
     "edit": "Edit",
     "back": "Back",
     "export": "Export",
-    "view": "View"
+    "view": "View",
+    "filter": "Filter"
   },
   "risk": {
     "chance": {
@@ -1876,6 +1877,52 @@
       "req3": {
         "text": "Are the effects of process improvements measured and evaluated?",
         "help": "Verify that after an improvement is applied, its impact is measured against the baseline."
+      }
+    }
+  },
+  "incident": {
+    "navigation": {
+      "label": "Incident Response"
+    },
+    "dashboard": {
+      "title": "Incident Response Plans",
+      "search_label": "Search Components",
+      "search_placeholder": "Search by name...",
+      "scope_label": "Context Scope",
+      "all_scopes": "All Scopes",
+      "components_list": "Components",
+      "no_components": "No components found. Please start a BIA first.",
+      "back": "Back to Dashboard"
+    },
+    "labels": {
+      "component_name": "Component Name",
+      "context": "Context"
+    },
+    "actions": {
+      "manage_plans": "Manage Plans",
+      "create_scenario": "Create Scenario",
+      "manage_steps": "Manage Steps",
+      "edit_scenario": "Edit Scenario",
+      "export_html": "Export HTML / Print",
+      "confirm_delete": "Are you sure you want to delete this scenario? This will also delete the associated response plan."
+    },
+    "scenarios": {
+      "title": "Scenarios · {component}",
+      "heading": "Incident Scenarios",
+      "empty": "No scenarios defined. Create an incident scenario to start.",
+      "back": "Back to Scenarios"
+    },
+    "status": {
+      "steps_defined": "Plan defined",
+      "steps_missing": "Plan missing"
+    },
+    "steps": {
+      "title": "Response Steps",
+      "heading": "Define Response",
+      "section": {
+        "actions": "Immediate Actions",
+        "targets": "Recovery Targets",
+        "recovery": "Recovery Procedures"
       }
     }
   }

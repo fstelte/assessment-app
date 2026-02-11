@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ _('incident.scenarios.title', component=component.name) }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{{ url_for('incident.dashboard') }}" class="text-secondary text-decoration-none">&larr; {{ _('incident.dashboard.back') }}</a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ _('incident.scenarios.heading') }}</h1>
+    <p class="text-secondary mb-0">{{ component.name }}</p>
+  </div>
+  <a href="{{ url_for('incident.create_scenario', component_id=component.id) }}" class="btn btn-primary">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+    </svg>{{ _('incident.actions.create_scenario') }}
+  </a>
+</div>
+
+<div class="row g-4">
+  {% for scenario in scenarios %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card bg-dark border-secondary h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ scenario.name }}</h5>
+        {% if scenario.description %}
+        <p class="card-text text-secondary small">{{ scenario.description }}</p>
+        {% endif %}
+        
+        <div class="mt-4 vstack gap-3">
+           <div class="d-flex gap-2">
+              <a href="{{ url_for('incident.manage_steps', scenario_id=scenario.id) }}" class="btn btn-primary btn-sm flex-grow-1">
+                {{ _('incident.actions.manage_steps') }}
+              </a>
+              <a href="{{ url_for('incident.export_scenario_html', scenario_id=scenario.id) }}" target="_blank" class="btn btn-outline-light btn-sm btn-icon" title="{{ _('incident.actions.export_html') }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
+                  <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                  <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1"/>
+                </svg>
+              </a>
+           </div>
+           <div class="d-flex gap-2">
+             <a href="{{ url_for('incident.edit_scenario', scenario_id=scenario.id) }}" class="btn btn-outline-secondary btn-sm flex-grow-1">
+               {{ _('incident.actions.edit_scenario') }}
+             </a>
+             <form method="post" action="{{ url_for('incident.delete_scenario', scenario_id=scenario.id) }}" onsubmit="return confirm('{{ _('incident.actions.confirm_delete') }}');">
+                {{ delete_form.hidden_tag() }}
+                <button type="submit" class="btn btn-outline-danger btn-sm btn-icon" aria-label="{{ _('actions.delete') }}">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                      <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                      <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                   </svg>
+                </button>
+             </form>
+           </div>
+        </div>
+      </div>
+      <div class="card-footer border-secondary text-center small text-secondary">
+        {% if scenario.steps %}
+           {{ _('incident.status.steps_defined') }}
+        {% else %}
+           {{ _('incident.status.steps_missing') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="alert alert-secondary text-center">
+      {{ _('incident.scenarios.empty') }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
