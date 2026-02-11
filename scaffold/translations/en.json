@@ -25,7 +25,8 @@
       "manage_dropdown": "Manage Dropdown",
       "mfa_reset": "Mfa Reset",
       "mfa_setup": "Mfa Setup",
-      "start_assessment": "Start Assessment"
+      "start_assessment": "Start Assessment",
+      "admin_import_controls": "Import Controls"
     },
     "home": {
       "subtitle": "Unified workspace for assessments."
@@ -314,8 +315,8 @@
         },
         "not_linked": "Not linked",
         "not_set": "Not set",
-        "pagination": "Showing {start}\u2013{end} of {total}",
-        "pagination_with_pages": "Showing {start}\u2013{end} of {total} (page {page} of {pages})",
+        "pagination": "Showing {start}–{end} of {total}",
+        "pagination_with_pages": "Showing {start}–{end} of {total} (page {page} of {pages})",
         "empty": "No components found for this selection.",
         "confirm_delete": "Delete this component?"
       },
@@ -1057,8 +1058,8 @@
         "remember_me": "Remember me",
         "submit": "Sign in",
         "saml": "Sign in with SAML",
-  "saml_hint": "Use your organisation's identity provider account to continue.",
-  "saml_enterprise_button": "Sign in with Microsoft Entra ID",
+        "saml_hint": "Use your organisation's identity provider account to continue.",
+        "saml_enterprise_button": "Sign in with Microsoft Entra ID",
         "saml_unavailable": "SAML login is not configured. Contact an administrator.",
         "password_heading": "Sign in with a local account",
         "errors": {
@@ -1373,28 +1374,28 @@
       "title": "Title"
     }
   },
-    "profile": {
-      "actions": {
-        "submit": "Save changes"
-      },
-      "errors": {
-        "password_length": "Must be at least 8 characters.",
-        "password_mismatch": "Passwords do not match."
-      },
-      "fields": {
-        "confirm_password": "Confirm new password",
-        "current_password": "Current password",
-        "first_name": "First name",
-        "language": "Language",
-        "last_name": "Last name",
-        "new_password": "New password",
-        "theme": "Theme"
-      },
-      "theme": {
-        "dark": "Dark",
-        "light": "Light"
-      }
+  "profile": {
+    "actions": {
+      "submit": "Save changes"
     },
+    "errors": {
+      "password_length": "Must be at least 8 characters.",
+      "password_mismatch": "Passwords do not match."
+    },
+    "fields": {
+      "confirm_password": "Confirm new password",
+      "current_password": "Current password",
+      "first_name": "First name",
+      "language": "Language",
+      "last_name": "Last name",
+      "new_password": "New password",
+      "theme": "Theme"
+    },
+    "theme": {
+      "dark": "Dark",
+      "light": "Light"
+    }
+  },
   "public": {
     "index": {
       "cta_login": "Cta Login",
@@ -1465,7 +1466,7 @@
         "start_blocked": "Delete the existing DPIA to create a new one.",
         "start_disabled": "Link this component to a BIA first",
         "empty": "No components match your filters.",
-        "pagination": "Showing {start}\u2013{end} of {total} components"
+        "pagination": "Showing {start}–{end} of {total} components"
       },
       "help": {
         "title": "Need to update component data?",
@@ -1576,24 +1577,24 @@
           "very_high": "Very high"
         }
       },
-        "actions": {
-          "edit": "Edit",
-          "delete": "Delete",
-          "cancel": "Cancel",
-          "close": "Close"
-        },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
       "measures": {
         "title": "Mitigating measures",
         "subtitle": "Document the actions that reduce likelihood or impact",
         "headers": {
           "description": "Description",
-            "effects": "Effects (L/I)",
-            "related": "Related risk",
-            "actions": "Actions"
+          "effects": "Effects (L/I)",
+          "related": "Related risk",
+          "actions": "Actions"
         },
         "empty": "No measures recorded yet.",
-          "no_risk_option": "Not linked to a risk",
-          "delete_confirm": "Delete this measure?"
+        "no_risk_option": "Not linked to a risk",
+        "delete_confirm": "Delete this measure?"
       },
       "summary": {
         "title": "Summary",
@@ -1660,7 +1661,9 @@
       "tag_login": "Login",
       "tag_repeat_password": "Repeat password",
       "tag_register": "Register",
-      "user_already_exists.": "This username already exists.",
+      "user_already_exists": {
+        "": "This username already exists."
+      },
       "name_system_project_process": "Give the name of the system, project or process.",
       "project_responsible": "Project responsible",
       "start_assessment": "Start assessment",
@@ -1674,13 +1677,21 @@
       "effect_on_change": "Effect on change",
       "effect_on_impact": "Effect on impact",
       "save_measure": "Save measure",
-      "invalid_combination_or_bad_password.": "This combination of username and password is not valid or the password is invalid.",
+      "invalid_combination_or_bad_password": {
+        "": "This combination of username and password is not valid or the password is invalid."
+      },
       "account_created_needs_to_be_activated": "Account is created, it needs to be activated by an administrator.",
       "progress_saved": "Progress saved!!",
       "not_related_to_risk": "Not related to risk yet!",
-      "assessment_removed_succesfull.": "Assessment removed succesfully!",
-      "new_risk_added_succesfull.": "New risk addedd succesfully!",
-      "something_went_wrong_when_adding_risk.": "Something went wrong when adding a new risk",
+      "assessment_removed_succesfull": {
+        "": "Assessment removed succesfully!"
+      },
+      "new_risk_added_succesfull": {
+        "": "New risk addedd succesfully!"
+      },
+      "something_went_wrong_when_adding_risk": {
+        "": "Something went wrong when adding a new risk"
+      },
       "DPIA/FRIA Tool": "",
       "welcome_message": "Welcome",
       "usr_mgmt": "User management",
@@ -1703,7 +1714,9 @@
       "related_to_risk": "Related to risk",
       "Actie": "Action",
       "general": "General",
-      "notify_no_measures_added.": "No measures added yet.",
+      "notify_no_measures_added": {
+        "": "No measures added yet."
+      },
       "to_report": "Report",
       "button_cancel": "Cancel",
       "effectivness_measure": "Effectiveness measure",
@@ -1726,12 +1739,54 @@
       "title": "CMMI Maturity Assessment",
       "subtitle": "Assess your controls against CMMI maturity levels (2-5).",
       "not_assessed": "Not Assessed",
+      "stats": {
+        "average_maturity": "Average Maturity",
+        "finished": "Assessments Completed"
+      },
       "table": {
         "level": "Maturity Level",
         "control": "Control",
         "domain": "Domain"
       },
       "bulk_delete_button": "Delete Selected"
+    },
+    "history": {
+      "title": "Assessment History",
+      "description": "Historical snapshots for",
+      "approved_at": "Approved At",
+      "approved_by": "Approved By",
+      "level": "Level",
+      "actions": "Actions",
+      "view": "View",
+      "no_versions": "No history available.",
+      "delete_confirm": "Are you sure you want to delete this historical version? This action cannot be undone."
+    },
+    "version_deleted": "Assessment version deleted.",
+    "export": {
+      "title": "Maturity Export",
+      "generated_on": "Generated on"
+    },
+    "details": {
+      "status": "Status",
+      "current_level": "Current Level"
+    },
+    "version": {
+      "title": "Version Details"
+    },
+    "level": {
+      "INITIAL": "1 - Initial",
+      "MANAGED": "2 - Managed",
+      "DEFINED": "3 - Defined",
+      "QUANTITATIVELY_MANAGED": "4 - Quantitatively Managed",
+      "OPTIMIZING": "5 - Optimizing"
+    },
+    "status": {
+      "UNASSESSED": "Unassessed",
+      "BEING_ASSESSED": "In Progress",
+      "ASSESSED": "Assessed",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved",
+      "unassessed": "Unassessed"
     },
     "assess": {
       "button": "Assess"
@@ -1749,6 +1804,24 @@
     "assessment_saved": "Assessment saved successfully.",
     "assessment_reset": "Assessment reset successfully.",
     "assessment_not_found": "Assessment not found.",
+    "assessment_permission_denied": "You do not have permission to perform this action.",
+    "assessment_finished": "Assessment marked as finished.",
+    "assessment_declined": "Assessment declined and reset.",
+    "target_level_updated": "Target level updated.",
+    "target_level_label": "Target Maturity Level",
+    "target_level_help": "Select the intended maturity level to filter relevant requirements.",
+    "set_target_button": "Set",
+    "finish_button": "Finish Assessment",
+    "decline_button": "Decline / Reset",
+    "submit_button": "Submit for Approval",
+    "approve_button": "Approve",
+    "history_button": "History",
+    "back_to_assessment": "Back to Assessment",
+    "back_to_history": "Back to History",
+    "compliant": "Compliant",
+    "not_compliant": "Not Compliant",
+    "assessment_submitted": "Assessment submitted for approval.",
+    "assessment_approved": "Assessment approved.",
     "level2": {
       "req1": {
         "text": "Is the process planned and executed in accordance with policy?",

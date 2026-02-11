@@ -15,6 +15,18 @@ class MaturityLevel(IntEnum):
     OPTIMIZING = 5
 
 
+@unique
+class AssessmentStatus(IntEnum):
+    """Workflow status for Maturity Assessments."""
+
+    UNASSESSED = 1
+    BEING_ASSESSED = 2
+    ASSESSED = 3
+    SUBMITTED = 4
+    APPROVED = 5
+
+
+
 class MaturityAssessment(TimestampMixin, db.Model):
     """Maturity assessment instance for a specific Control."""
 
@@ -24,9 +36,13 @@ class MaturityAssessment(TimestampMixin, db.Model):
     control_id = db.Column(
         db.Integer, db.ForeignKey("csa_controls.id"), nullable=False, index=True
     )
-    assessor_id = db.Column(
-        db.Integer, db.ForeignKey("users.id"), nullable=False, index=True
+
+    # Workflow tracking
+    status = db.Column(
+        db.Enum(AssessmentStatus), default=AssessmentStatus.UNASSESSED, nullable=False
     )
+    last_updated_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    submitted_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     current_level = db.Column(
         db.Enum(MaturityLevel), default=MaturityLevel.INITIAL, nullable=False
@@ -39,7 +55,9 @@ class MaturityAssessment(TimestampMixin, db.Model):
         "Control",
         backref=db.backref("maturity_assessments", cascade="all, delete-orphan", lazy=True),
     )
-    assessor = db.relationship("User", backref=db.backref("maturity_assessments", lazy=True))
+    last_updated_by = db.relationship("User", foreign_keys=[last_updated_by_id])
+    submitted_by = db.relationship("User", foreign_keys=[submitted_by_id])
+
     answers = db.relationship(
         "MaturityAnswer",
         backref="assessment",
@@ -70,3 +88,27 @@ class MaturityAnswer(db.Model):
             f"<MaturityAnswer id={self.id} level={self.level.name} "
             f"key={self.requirement_key} compliant={self.compliant}>"
         )
+
+
+class MaturityAssessmentVersion(db.Model):
+    """Snapshot of an approved maturity assessment."""
+
+    __tablename__ = "maturity_assessment_versions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    control_id = db.Column(
+        db.Integer, db.ForeignKey("csa_controls.id"), nullable=False, index=True
+    )
+    approved_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
+    approved_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    maturity_level = db.Column(db.Enum(MaturityLevel), nullable=False)
+    data = db.Column(db.JSON)
+    notes = db.Column(db.Text)
+
+    # Relationships
+    control = db.relationship(
+        "Control",
+        backref=db.backref("maturity_versions", cascade="all, delete-orphan", lazy=True),
+    )
+    approved_by = db.relationship("User", foreign_keys=[approved_by_id])
