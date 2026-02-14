@@ -486,7 +486,12 @@
         "information_type": "Informatietype",
         "user_type": "Gebruikerstype",
         "authentication": "Authenticatie",
-        "process_dependencies": "Procesafhankelijkheden",
+        "dependencies_it_systems_applications": "Afhankelijkheden: IT-systemen en applicaties",
+        "dependencies_equipment": "Afhankelijkheden: Apparatuur",
+        "dependencies_suppliers": "Afhankelijkheden: Leveranciers",
+        "dependencies_people": "Afhankelijkheden: Mensen",
+        "dependencies_facilities": "Afhankelijkheden: Faciliteiten",
+        "dependencies_others": "Afhankelijkheden: Overige",
         "description": "Omschrijving"
       },
       "modal": {

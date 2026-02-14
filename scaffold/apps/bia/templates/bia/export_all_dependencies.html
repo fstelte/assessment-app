@@ -34,7 +34,26 @@
                 {% for component in bia.components %}
                 <tr class="hover:bg-slate-800/50 transition-colors">
                   <td class="px-5 py-3 font-medium text-slate-300 align-top">{{ component.name }}</td>
-                  <td class="px-5 py-3 text-slate-400 whitespace-pre-wrap">{{ component.process_dependencies or '-' }}</td>
+                  <td class="px-5 py-3 text-slate-400 space-y-2">
+                    {% if component.dependencies_it_systems_applications %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">IT Systems</strong><div class="whitespace-pre-wrap">{{ component.dependencies_it_systems_applications }}</div></div>
+                    {% endif %}
+                    {% if component.dependencies_equipment %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Equipment</strong><div class="whitespace-pre-wrap">{{ component.dependencies_equipment }}</div></div>
+                    {% endif %}
+                    {% if component.dependencies_suppliers %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Suppliers</strong><div class="whitespace-pre-wrap">{{ component.dependencies_suppliers }}</div></div>
+                    {% endif %}
+                    {% if component.dependencies_people %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">People</strong><div class="whitespace-pre-wrap">{{ component.dependencies_people }}</div></div>
+                    {% endif %}
+                    {% if component.dependencies_facilities %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Facilities</strong><div class="whitespace-pre-wrap">{{ component.dependencies_facilities }}</div></div>
+                    {% endif %}
+                    {% if component.dependencies_others %}
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Others</strong><div class="whitespace-pre-wrap">{{ component.dependencies_others }}</div></div>
+                    {% endif %}
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>

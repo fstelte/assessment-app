@@ -79,8 +79,13 @@ class Component(db.Model):
     info_type = db.Column(Text)
     info_owner = db.Column(Text)
     user_type = db.Column(Text)
-    process_dependencies = db.Column(Text)
     description = db.Column(Text)
+    dependencies_it_systems_applications = db.Column(Text)
+    dependencies_equipment = db.Column(Text)
+    dependencies_suppliers = db.Column(Text)
+    dependencies_people = db.Column(Text)
+    dependencies_facilities = db.Column(Text)
+    dependencies_others = db.Column(Text)
     authentication_method_id = db.Column(
         db.Integer,
         db.ForeignKey("bia_authentication_methods.id"),

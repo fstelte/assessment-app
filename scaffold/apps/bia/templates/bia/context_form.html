@@ -177,8 +177,18 @@
               <dd class="col-sm-8" id="bia-view-component-user-type"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.environments') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-environments"></dd>
-              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.dependencies') }}</dt>
-              <dd class="col-sm-8" id="bia-view-component-process"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_it_systems_applications') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-it-systems-applications"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_equipment') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-equipment"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_suppliers') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-suppliers"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_people') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-people"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_facilities') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-facilities"></dd>
+              <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.components.labels.dependencies_others') }}</dt>
+              <dd class="col-sm-8" id="bia-view-component-dependencies-others"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.description') }}</dt>
               <dd class="col-sm-8" id="bia-view-component-description"></dd>
               <dt class="col-sm-4 {{ text_muted }}">{{ _('bia.context_form.modals.view.consequences') }}</dt>
@@ -223,8 +233,28 @@
                 {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
-                {{ component_form.process_dependencies(class="form-control", id="bia-component-process-dependencies", rows=3) }}
+                {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
+                {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-component-dependencies-it-systems-applications", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
+                {{ component_form.dependencies_equipment(class="form-control", id="bia-component-dependencies-equipment", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
+                {{ component_form.dependencies_suppliers(class="form-control", id="bia-component-dependencies-suppliers", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
+                {{ component_form.dependencies_people(class="form-control", id="bia-component-dependencies-people", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
+                {{ component_form.dependencies_facilities(class="form-control", id="bia-component-dependencies-facilities", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
+                {{ component_form.dependencies_others(class="form-control", id="bia-component-dependencies-others", rows=3) }}
               </div>
               <fieldset class="border rounded p-3 mb-3">
                 <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
@@ -306,8 +336,28 @@
                 {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
               </div>
               <div class="mb-3">
-                {{ component_form.process_dependencies.label(_('bia.context_form.component_fields.process_dependencies.label'), class="form-label") }}
-                {{ component_form.process_dependencies(class="form-control", id="bia-edit-component-process-dependencies", rows=3) }}
+                {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
+                {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-edit-component-dependencies-it-systems-applications", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
+                {{ component_form.dependencies_equipment(class="form-control", id="bia-edit-component-dependencies-equipment", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
+                {{ component_form.dependencies_suppliers(class="form-control", id="bia-edit-component-dependencies-suppliers", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
+                {{ component_form.dependencies_people(class="form-control", id="bia-edit-component-dependencies-people", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
+                {{ component_form.dependencies_facilities(class="form-control", id="bia-edit-component-dependencies-facilities", rows=3) }}
+              </div>
+              <div class="mb-3">
+                {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
+                {{ component_form.dependencies_others(class="form-control", id="bia-edit-component-dependencies-others", rows=3) }}
               </div>
               <fieldset class="border rounded p-3 mb-3">
                 <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
@@ -460,7 +510,12 @@
         info_type: document.getElementById('bia-view-component-info-type'),
         info_owner: document.getElementById('bia-view-component-info-owner'),
         user_type: document.getElementById('bia-view-component-user-type'),
-        process_dependencies: document.getElementById('bia-view-component-process'),
+        dependencies_it_systems_applications: document.getElementById('bia-view-component-dependencies-it-systems-applications'),
+        dependencies_equipment: document.getElementById('bia-view-component-dependencies-equipment'),
+        dependencies_suppliers: document.getElementById('bia-view-component-dependencies-suppliers'),
+        dependencies_people: document.getElementById('bia-view-component-dependencies-people'),
+        dependencies_facilities: document.getElementById('bia-view-component-dependencies-facilities'),
+        dependencies_others: document.getElementById('bia-view-component-dependencies-others'),
         description: document.getElementById('bia-view-component-description'),
         consequences: document.getElementById('bia-view-component-consequences'),
         consequencesLink: document.getElementById('bia-view-consequences-link'),
@@ -539,8 +594,13 @@
         detailFields.info_type.textContent = fallback(data.info_type || '');
         detailFields.info_owner.textContent = fallback(data.info_owner || '');
         detailFields.user_type.textContent = fallback(data.user_type || '');
-          applyEnvironmentBadges(detailFields.environments, data.environments || []);
-        detailFields.process_dependencies.textContent = fallback(data.process_dependencies || '');
+        applyEnvironmentBadges(detailFields.environments, data.environments || []);
+        detailFields.dependencies_it_systems_applications.textContent = fallback(data.dependencies_it_systems_applications || '');
+        detailFields.dependencies_equipment.textContent = fallback(data.dependencies_equipment || '');
+        detailFields.dependencies_suppliers.textContent = fallback(data.dependencies_suppliers || '');
+        detailFields.dependencies_people.textContent = fallback(data.dependencies_people || '');
+        detailFields.dependencies_facilities.textContent = fallback(data.dependencies_facilities || '');
+        detailFields.dependencies_others.textContent = fallback(data.dependencies_others || '');
         detailFields.description.textContent = fallback(data.description || '');
         detailFields.consequences.textContent = data.consequences_count ?? 0;
         detailFields.consequencesLink.href = buildUrl(routes.consequences, data.id);
@@ -554,7 +614,12 @@
         editForm.querySelector('#bia-edit-component-info-type').value = data.info_type || '';
         editForm.querySelector('#bia-edit-component-info-owner').value = data.info_owner || '';
         editForm.querySelector('#bia-edit-component-user-type').value = data.user_type || '';
-        editForm.querySelector('#bia-edit-component-process-dependencies').value = data.process_dependencies || '';
+        editForm.querySelector('#bia-edit-component-dependencies-it-systems-applications').value = data.dependencies_it_systems_applications || '';
+        editForm.querySelector('#bia-edit-component-dependencies-equipment').value = data.dependencies_equipment || '';
+        editForm.querySelector('#bia-edit-component-dependencies-suppliers').value = data.dependencies_suppliers || '';
+        editForm.querySelector('#bia-edit-component-dependencies-people').value = data.dependencies_people || '';
+        editForm.querySelector('#bia-edit-component-dependencies-facilities').value = data.dependencies_facilities || '';
+        editForm.querySelector('#bia-edit-component-dependencies-others').value = data.dependencies_others || '';
         editForm.querySelector('#bia-edit-component-description').value = data.description || '';
         updateEnvironmentForm(editForm, 'bia-edit', data.environments || []);
         if (editCsrfField) {

@@ -535,7 +535,12 @@ def add_component():
             info_type=form.info_type.data,
             info_owner=form.info_owner.data,
             user_type=form.user_type.data,
-            process_dependencies=form.process_dependencies.data,
+            dependencies_it_systems_applications=form.dependencies_it_systems_applications.data,
+            dependencies_equipment=form.dependencies_equipment.data,
+            dependencies_suppliers=form.dependencies_suppliers.data,
+            dependencies_people=form.dependencies_people.data,
+            dependencies_facilities=form.dependencies_facilities.data,
+            dependencies_others=form.dependencies_others.data,
             description=form.description.data,
             context_scope=context,
         )
@@ -573,7 +578,12 @@ def update_component(component_id: int):
         component.info_type = form.info_type.data
         component.info_owner = form.info_owner.data
         component.user_type = form.user_type.data
-        component.process_dependencies = form.process_dependencies.data
+        component.dependencies_it_systems_applications = form.dependencies_it_systems_applications.data
+        component.dependencies_equipment = form.dependencies_equipment.data
+        component.dependencies_suppliers = form.dependencies_suppliers.data
+        component.dependencies_people = form.dependencies_people.data
+        component.dependencies_facilities = form.dependencies_facilities.data
+        component.dependencies_others = form.dependencies_others.data
         component.description = form.description.data
         component.authentication_method_id = None
         _sync_component_environments(component, form)
@@ -626,7 +636,12 @@ def edit_component_form(component_id: int):
             component.info_type = form.info_type.data
             component.info_owner = form.info_owner.data
             component.user_type = form.user_type.data
-            component.process_dependencies = form.process_dependencies.data
+            component.dependencies_it_systems_applications = form.dependencies_it_systems_applications.data
+            component.dependencies_equipment = form.dependencies_equipment.data
+            component.dependencies_suppliers = form.dependencies_suppliers.data
+            component.dependencies_people = form.dependencies_people.data
+            component.dependencies_facilities = form.dependencies_facilities.data
+            component.dependencies_others = form.dependencies_others.data
             component.description = form.description.data
             component.authentication_method_id = None
             _sync_component_environments(component, form)
@@ -793,7 +808,12 @@ def get_component(component_id: int):
             "info_owner": component.info_owner,
             "user_type": component.user_type,
             "description": component.description,
-            "process_dependencies": component.process_dependencies,
+            "dependencies_it_systems_applications": component.dependencies_it_systems_applications,
+            "dependencies_equipment": component.dependencies_equipment,
+            "dependencies_suppliers": component.dependencies_suppliers,
+            "dependencies_people": component.dependencies_people,
+            "dependencies_facilities": component.dependencies_facilities,
+            "dependencies_others": component.dependencies_others,
             "bia_name": component.context_scope.name if component.context_scope else None,
             "consequences_count": len(component.consequences),
             "authentication_method_id": component.authentication_method_id,
