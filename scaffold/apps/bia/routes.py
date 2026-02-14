@@ -48,6 +48,7 @@ from .forms import (
 from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
+    BiaTier,
     Component,
     ComponentEnvironment,
     Consequences,
@@ -1723,6 +1724,30 @@ def export_all_dependencies():
         return redirect(url_for("bia.dashboard"))
 
 
+@bp.route("/export_all_tiers")
+@login_required
+def export_all_tiers():
+    try:
+        bias = ContextScope.query.outerjoin(ContextScope.tier).order_by(BiaTier.level, ContextScope.name).all()
+
+        html_content = render_template(
+            "bia/export_all_tiers.html",
+            bias=bias,
+            generated_at=datetime.now(),
+        )
+
+        filename = f"BIA_Tiers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        export_folder = ensure_export_folder()
+        file_path = export_folder / filename
+        file_path.write_text(html_content, encoding="utf-8")
+
+        return send_file(file_path, as_attachment=True, download_name=filename)
+    except Exception as exc:
+        current_app.logger.exception("Tiers export failed")
+        flash(_("An error occurred while exporting tiers: %(error)s", error=str(exc)), "danger")
+        return redirect(url_for("bia.dashboard"))
+
+
 @bp.route("/import-sql", methods=["GET", "POST"])
 @login_required
 def import_sql_form():
@@ -1747,6 +1772,7 @@ def _apply_context_form(
     allow_owner_assignment: bool = True,
 ) -> None:
     context.name = form.name.data
+    context.tier_id = form.tier.data
     if allow_owner_assignment:
         context.responsible = form.responsible.data
     context.coordinator = form.coordinator.data

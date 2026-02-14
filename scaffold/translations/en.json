@@ -121,6 +121,15 @@
       "very_high": "Very high",
       "unknown": "Unknown"
     },
+    "tiers": {
+      "names": {
+        "0": "Critical Infrastructure",
+        "1": "Mission Critical",
+        "2": "Business Critical",
+        "3": "Important",
+        "4": "Deferrable"
+      }
+    },
     "context_form": {
       "title_edit": "Edit BIA",
       "title_new": "New BIA",
@@ -134,6 +143,9 @@
         "risk": "Risk posture"
       },
       "fields": {
+        "tier": {
+          "label": "Tier"
+        },
         "name": {
           "label": "Service or product name"
         },
@@ -708,6 +720,30 @@
     }
   },
   "admin": {
+    "bia_tiers": {
+      "list": {
+        "title": "BIA Tier Management",
+        "subtitle": "Edit the mapping of criticality levels. (Names are managed in translation files)",
+        "columns": {
+          "level": "Level",
+          "name": "Translated Name"
+        },
+        "empty": "No tiers defined yet."
+      },
+      "edit": {
+        "title": "Edit BIA Tier",
+        "heading": "Edit Tier {level}"
+      },
+      "fields": {
+        "level": "Level"
+      },
+      "form": {
+        "name_in_translation": "The name of this tier is managed via the localization files (en.json, nl.json)."
+      },
+      "flash": {
+        "updated": "Tier updated successfully."
+      }
+    },
     "controls": {
       "delete_bulk": {
         "button": "Delete selected",

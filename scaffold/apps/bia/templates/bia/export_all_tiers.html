@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BIA Tiers Overview</title>
+    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style nonce="{{ csp_nonce }}">
+      body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
+        <header class="border-b border-slate-800 px-6 py-5">
+          <h1 class="text-2xl font-semibold tracking-tight">BIA Tiers Overview</h1>
+          <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </header>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
+              <thead class="bg-slate-900/50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th scope="col" class="px-6 py-4">BIA Context</th>
+                  <th scope="col" class="px-6 py-4">Tier</th>
+                  <th scope="col" class="px-6 py-4">Risk Owner</th>
+                  <th scope="col" class="px-6 py-4">Components</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800 bg-slate-900/30">
+                {% for bia in bias %}
+                <tr class="hover:bg-slate-800/50 transition-colors">
+                  <td class="px-6 py-4 font-medium text-slate-200">{{ bia.name }}</td>
+                  <td class="px-6 py-4">
+                    {% if bia.tier %}
+                    <span class="inline-flex items-center rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-400/30">
+                        {{ bia.tier.get_label() }}
+                    </span>
+                    {% else %}
+                    <span class="text-slate-500">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-6 py-4 text-slate-400">{{ bia.risk_owner or '-' }}</td>
+                  <td class="px-6 py-4 text-slate-400">{{ bia.components|length }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

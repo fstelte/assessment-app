@@ -7,6 +7,7 @@ from datetime import date
 from sqlalchemy import Enum, Text, event, inspect
 
 from ....extensions import db
+from ....core.i18n import gettext as _
 from ...identity.models import User
 from ..localization import translate_authentication_label
 
@@ -15,6 +16,24 @@ from ...dpia import models as dpia_models  # noqa: F401  pylint: disable=unused-
 
 
 ENVIRONMENT_TYPES = ("development", "test", "acceptance", "production")
+
+
+class BiaTier(db.Model):
+    """Classification tier for a BIA context."""
+
+    __tablename__ = "bia_tiers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    level = db.Column(db.Integer, unique=True, nullable=False)
+    name_en = db.Column(db.String(255), nullable=False)
+    name_nl = db.Column(db.String(255), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<BiaTier {self.level}>"
+
+    def get_label(self, locale: str | None = None) -> str:
+        name = _(f"bia.tiers.names.{self.level}")
+        return f"TIER {self.level} > {name}"
 
 
 class ContextScope(db.Model):
@@ -37,6 +56,9 @@ class ContextScope(db.Model):
     security_supplier = db.Column(Text)
     user_amount = db.Column(db.Integer)
     scope_description = db.Column(Text)
+
+    tier_id = db.Column(db.Integer, db.ForeignKey("bia_tiers.id"), nullable=True)
+    tier = db.relationship("BiaTier")
 
     risk_assessment_human = db.Column(db.Boolean, default=False)
     risk_assessment_process = db.Column(db.Boolean, default=False)
@@ -283,6 +305,7 @@ class AuthenticationMethod(db.Model):
 
 
 _TRACKED_MODELS = [
+    BiaTier,
     ContextScope,
     Component,
     ComponentEnvironment,

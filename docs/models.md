@@ -11,6 +11,7 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 ## BIA Domain
 
 - `ContextScope`: top-level BIA context with ownership metadata and change tracking.
+- `BiaTier`: classification levels (0-4) for context criticality (e.g. Critical Infrastructure -> Deferrable) with localized labels.
 - `Component`: assets linked to a context; connects to consequences and availability targets.
 - `Consequences`: CIA impact definitions with helper methods for category parsing.
 - `AvailabilityRequirements`: RTO/RPO/MTD/MASL metrics per component.

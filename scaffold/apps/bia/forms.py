@@ -7,7 +7,10 @@ from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, DateField, FieldList, FormField, HiddenField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
 from wtforms.form import Form
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
-from scaffold.core.i18n import lazy_gettext as _l
+import sqlalchemy as sa
+from ...extensions import db
+from .models import BiaTier
+from scaffold.core.i18n import lazy_gettext as _l, get_locale
 
 
 # Keep in sync with ENVIRONMENT_TYPES in .models.__init__
@@ -39,6 +42,7 @@ class ContextScopeForm(FlaskForm):
         validators=[DataRequired(), Length(max=255)],
         description=_l("bia.context_form.tooltips.name"),
     )
+    tier = SelectField(_l("bia.context_form.fields.tier.label"), validators=[Optional()], coerce=_optional_int)
     responsible = StringField("End responsible", validators=[Optional(), Length(max=255)])
     coordinator = StringField("Coordinator", validators=[Optional(), Length(max=255)])
     start_date = DateField("Start date", format="%Y-%m-%d", validators=[Optional()])
@@ -62,6 +66,13 @@ class ContextScopeForm(FlaskForm):
     security_manager = StringField("Security manager", validators=[Optional(), Length(max=255)])
     incident_contact = StringField("Incident contact", validators=[Optional(), Length(max=255)])
     submit = SubmitField("Save context")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        locale = get_locale()
+        tiers = db.session.scalars(sa.select(BiaTier).order_by(BiaTier.level)).all()
+        self.tier.choices = [(t.id, t.get_label(locale)) for t in tiers]
+        self.tier.choices.insert(0, (None, "-"))
 
 class ComponentEnvironmentForm(Form):
     """Capture whether a component uses a specific environment."""
