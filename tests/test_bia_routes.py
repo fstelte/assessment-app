@@ -209,7 +209,7 @@ def test_edit_component_view_updates_component(app, client, login):
         "info_type": "PII",
         "info_owner": "Security",
         "user_type": "External",
-        "process_dependencies": "CRM",
+        "dependencies_others": "CRM",
         "description": "Updated description",
     }
     environment_order = ("development", "test", "acceptance", "production")
@@ -310,7 +310,7 @@ def test_export_all_dependencies_returns_html(app, client, login):
         component = Component(
             name="Global Component",
             context_scope=context,
-            process_dependencies="Global Dep 1\nGlobal Dep 2",
+            dependencies_others="Global Dep 1\nGlobal Dep 2",
         )
         db.session.add_all([context, component])
         db.session.commit()

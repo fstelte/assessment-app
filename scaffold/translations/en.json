@@ -338,7 +338,12 @@
         "information_type": "Information type",
         "user_type": "User type",
         "authentication": "Authentication",
-        "process_dependencies": "Process dependencies",
+        "dependencies_it_systems_applications": "Dependencies: IT systems and applications",
+        "dependencies_equipment": "Dependencies: Equipment",
+        "dependencies_suppliers": "Dependencies: Suppliers",
+        "dependencies_people": "Dependencies: People",
+        "dependencies_facilities": "Dependencies: Facilities",
+        "dependencies_others": "Dependencies: Others",
         "description": "Description"
       },
       "tooltips": {

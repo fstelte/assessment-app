@@ -85,9 +85,22 @@ class ComponentForm(FlaskForm):
     name = StringField("Component name", validators=[DataRequired(), Length(max=255)])
     info_type = StringField("Information type", validators=[Optional(), Length(max=255)])
     info_owner = StringField("Information owner", validators=[Optional(), Length(max=255)])
-    user_type = StringField("User type", validators=[Optional(), Length(max=255)])
-    process_dependencies = TextAreaField("Process dependencies", validators=[Optional()])
-    description = TextAreaField("Description", validators=[Optional()])
+    user_type = StringField(_l("bia.components.labels.user_type"), validators=[Optional(), Length(max=255)])
+    dependencies_it_systems_applications = TextAreaField(
+        _l("bia.components.labels.dependencies_it_systems_applications"), validators=[Optional()]
+    )
+    dependencies_equipment = TextAreaField(
+        _l("bia.components.labels.dependencies_equipment"), validators=[Optional()]
+    )
+    dependencies_suppliers = TextAreaField(
+        _l("bia.components.labels.dependencies_suppliers"), validators=[Optional()]
+    )
+    dependencies_people = TextAreaField(_l("bia.components.labels.dependencies_people"), validators=[Optional()])
+    dependencies_facilities = TextAreaField(
+        _l("bia.components.labels.dependencies_facilities"), validators=[Optional()]
+    )
+    dependencies_others = TextAreaField(_l("bia.components.labels.dependencies_others"), validators=[Optional()])
+    description = TextAreaField(_l("bia.components.labels.description"), validators=[Optional()])
     environments = FieldList(
         FormField(ComponentEnvironmentForm),
         min_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
