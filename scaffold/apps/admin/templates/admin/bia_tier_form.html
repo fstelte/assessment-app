@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.bia_tiers.edit.title') }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ _('admin.bia_tiers.edit.heading', level=tier.level) }}</h1>
+  </div>
+  <a class="btn btn-outline-light" href="{{ url_for('admin.list_bia_tiers') }}">{{ _('actions.cancel') }}</a>
+</div>
+
+<div class="card bg-dark border-secondary" style="max-width: 600px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      
+      <div class="mb-3">
+        <label class="form-label text-uppercase small text-secondary">{{ _('admin.bia_tiers.fields.level') }}</label>
+        <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ tier.level }}" disabled readonly>
+      </div>
+
+      <p class="text-white">{{ _('admin.bia_tiers.form.name_in_translation') }}</p>
+
+      <div class="text-end">
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

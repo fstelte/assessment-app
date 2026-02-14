@@ -93,3 +93,9 @@ class AuthenticationMethodDeleteForm(FlaskForm):
 
     method_id = HiddenField(validators=[DataRequired()])
     submit = SubmitField("Delete method")
+
+
+class BiaTierForm(FlaskForm):
+    """Update a BIA tier's name."""
+
+    submit = SubmitField(_label("actions.save"))

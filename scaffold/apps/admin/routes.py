@@ -37,7 +37,7 @@ from ..csa.services import (
 from ...models import AuditLog
 from ..identity.models import MFASetting, Role, User, UserStatus, ROLE_CONTROL_OWNER
 from ..bia.localization import translate_authentication_label
-from ..bia.models import AuthenticationMethod, Component
+from ..bia.models import AuthenticationMethod, BiaTier, Component
 from ..bia.services.authentication import clear_authentication_cache
 from ..risk.forms import RiskForm, RiskThresholdForm
 from ..risk.models import (
@@ -63,6 +63,7 @@ from .forms import (
     AuthenticationMethodDeleteForm,
     AuthenticationMethodForm,
     AuthenticationMethodToggleForm,
+    BiaTierForm,
     ControlCreateForm,
     ControlDeleteForm,
     ControlImportForm,
@@ -373,7 +374,7 @@ def delete_control(control_id: int):
     if control is None:
         abort(404)
 
-    form = ControlDeleteForm()
+    form = ControlDeleteForm(prefix=f"delete-{control.id}")
     if not form.validate_on_submit():
         for errors in form.errors.values():
             for error in errors:
@@ -1334,3 +1335,35 @@ def user_mfa(user_id: int):
         target_user=user,
         provisioning=provisioning,
     )
+
+
+@bp.route("/bia/tiers")
+@login_required
+def list_bia_tiers():
+    _require_admin()
+    tiers = db.session.scalars(sa.select(BiaTier).order_by(BiaTier.level)).all()
+    return render_template("admin/bia_tiers_list.html", tiers=tiers)
+
+
+@bp.route("/bia/tiers/<int:tier_id>", methods=["GET", "POST"])
+@login_required
+def edit_bia_tier(tier_id: int):
+    _require_admin()
+    tier = db.session.get(BiaTier, tier_id)
+    if tier is None:
+        abort(404)
+
+    form = BiaTierForm(obj=tier)
+    if form.validate_on_submit():
+        form.populate_obj(tier)
+        db.session.commit()
+        log_event(
+            action="bia_tier_updated",
+            entity_type="bia_tier",
+            entity_id=tier.id,
+            details={"level": tier.level},
+        )
+        flash(_("admin.bia_tiers.flash.updated"), "success")
+        return redirect(url_for("admin.list_bia_tiers"))
+
+    return render_template("admin/bia_tier_form.html", form=form, tier=tier)

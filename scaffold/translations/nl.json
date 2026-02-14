@@ -265,6 +265,15 @@
         "body": "Maak een nieuwe analyse aan of importeer een bestaande dataset om te starten."
       }
     },
+    "tiers": {
+      "names": {
+        "0": "Kritieke Infrastructuur",
+        "1": "Bedrijfskritisch",
+        "2": "Zakelijk Kritisch",
+        "3": "Belangrijk",
+        "4": "Uitstelbaar"
+      }
+    },
     "context_form": {
       "title_edit": "BIA bewerken",
       "title_new": "Nieuwe BIA",
@@ -278,6 +287,9 @@
         "risk": "Risicoprofiel"
       },
       "fields": {
+        "tier": {
+          "label": "Niveau"
+        },
         "name": {
           "label": "Naam van dienst of product"
         },
@@ -903,6 +915,30 @@
     }
   },
   "admin": {
+    "bia_tiers": {
+      "list": {
+        "title": "BIA Niveau Beheer",
+        "subtitle": "Bewerk de toewijzing van kritikaliteitsniveaus. (Namen worden beheerd in vertaalbestanden)",
+        "columns": {
+          "level": "Niveau",
+          "name": "Vertaalde Naam"
+        },
+        "empty": "Nog geen niveaus gedefinieerd."
+      },
+      "edit": {
+        "title": "Bewerk BIA Niveau",
+        "heading": "Bewerk Niveau {level}"
+      },
+      "fields": {
+        "level": "Niveau"
+      },
+      "form": {
+        "name_in_translation": "De naam van dit niveau wordt beheerd via de lokalisatiebestanden (en.json, nl.json)."
+      },
+      "flash": {
+        "updated": "Niveau succesvol bijgewerkt."
+      }
+    },
     "controls": {
       "page": {
         "title": "Beheer van controls",

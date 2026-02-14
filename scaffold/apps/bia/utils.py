@@ -210,6 +210,7 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
     context_writer.writerow(
         [
             "BIA Name",
+            "BIA Tier",
             "BIA Responsible",
             "BIA Coordinator",
             "BIA Start Date",
@@ -238,6 +239,7 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
     context_writer.writerow(
         [
             stringify(context.name),
+            stringify(context.tier.get_label() if context.tier else ""),
             stringify(context.responsible),
             stringify(context.coordinator),
             stringify(context.start_date),
@@ -701,6 +703,7 @@ def export_to_sql(context: ContextScope) -> str:
                 "security_manager": context.security_manager,
                 "incident_contact": context.incident_contact,
                 "author_id": context.author_id,
+                "tier_id": context.tier_id,
             },
         )
     )
