@@ -201,9 +201,9 @@
           </div>
           <div class="modal-footer {{ border_class }}">
             <a class="btn {{ outline_inverse }}" id="bia-view-consequences-link" target="_blank" rel="noopener">{{ _('bia.context_form.modals.view.consequence_link') }}</a>
-            <button type="button" class="btn btn-primary" id="bia-edit-component-launch" data-component-id="">
+            <a class="btn btn-primary" id="bia-edit-component-launch" href="#">
               <i class="fas fa-edit me-1"></i>{{ _('actions.edit') }}
-            </button>
+            </a>
             <button type="button" class="btn btn-danger" id="bia-delete-component-launch" data-component-id="">
               <i class="fas fa-trash me-1"></i>{{ _('actions.delete') }}
             </button>
@@ -214,95 +214,110 @@
 
     <!-- Add component modal -->
     <div class="modal" id="biaAddComponentModal" tabindex="-1" aria-labelledby="biaAddComponentModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaAddComponentModalLabel">{{ _('bia.context_form.modals.add.title') }}</h2>
             <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
-            <form id="bia-component-form">
+            <form id="bia-component-form" class="row g-3">
               {{ component_form.hidden_tag() }}
-              {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='mb-3', input_class='form-control', id='bia-component-name') }}
-              <div class="mb-3">
-                {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
-                {{ component_form.info_type(class="form-control", id="bia-component-info-type") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
-                {{ component_form.info_owner(class="form-control", id="bia-component-info-owner") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
-                {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
-                {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-component-dependencies-it-systems-applications", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
-                {{ component_form.dependencies_equipment(class="form-control", id="bia-component-dependencies-equipment", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
-                {{ component_form.dependencies_suppliers(class="form-control", id="bia-component-dependencies-suppliers", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
-                {{ component_form.dependencies_people(class="form-control", id="bia-component-dependencies-people", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
-                {{ component_form.dependencies_facilities(class="form-control", id="bia-component-dependencies-facilities", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
-                {{ component_form.dependencies_others(class="form-control", id="bia-component-dependencies-others", rows=3) }}
-              </div>
-              <fieldset class="border rounded p-3 mb-3">
-                <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
-                <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
-                <div class="table-responsive">
-                  <table class="table table-sm table-dark align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
-                        <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
-                        <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for environment_type in bia_environment_types %}
-                        {% set checkbox_id = 'bia-component-environment-enabled-' ~ loop.index0 %}
-                        {% set select_id = 'bia-component-environment-auth-' ~ loop.index0 %}
-                        <tr>
-                          <td class="text-nowrap">
-                            <input type="hidden" id="bia-component-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
-                            {{ bia_environment_label(environment_type) }}
-                          </td>
-                          <td>
-                            <div class="form-check">
-                              <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
-                              <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
-                            </div>
-                          </td>
-                          <td>
-                            <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
-                              {% for value, label in component_form.environment_authentication_choices %}
-                                <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
-                              {% endfor %}
-                            </select>
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
+              
+              <div class="col-lg-6">
+                <h5 class="mb-3">{{ _('General Information') }}</h5>
+                <div class="vstack gap-3">
+                  {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='', input_class='form-control', id='bia-component-name') }}
+                  <div>
+                    {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
+                    {{ component_form.info_type(class="form-control", id="bia-component-info-type") }}
+                  </div>
+                  <div>
+                    {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
+                    {{ component_form.info_owner(class="form-control", id="bia-component-info-owner") }}
+                  </div>
+                  <div>
+                    {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
+                    {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
+                  </div>
+                  <div>
+                    {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
+                    {{ component_form.description(class="form-control", id="bia-component-description", rows=4) }}
+                  </div>
                 </div>
-              </fieldset>
-              <div class="mb-3">
-                {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
-                {{ component_form.description(class="form-control", id="bia-component-description", rows=3) }}
+              </div>
+
+              <div class="col-lg-6">
+                <h5 class="mb-3">{{ _('Dependencies') }}</h5>
+                <div class="vstack gap-3">
+                  <div>
+                    {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
+                    {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-component-dependencies-it-systems-applications", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
+                    {{ component_form.dependencies_equipment(class="form-control", id="bia-component-dependencies-equipment", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
+                    {{ component_form.dependencies_suppliers(class="form-control", id="bia-component-dependencies-suppliers", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
+                    {{ component_form.dependencies_people(class="form-control", id="bia-component-dependencies-people", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
+                    {{ component_form.dependencies_facilities(class="form-control", id="bia-component-dependencies-facilities", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
+                    {{ component_form.dependencies_others(class="form-control", id="bia-component-dependencies-others", rows=2) }}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-12">
+                <fieldset class="border rounded p-3 mb-3">
+                  <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+                  <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-dark align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                          <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                          <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for environment_type in bia_environment_types %}
+                          {% set checkbox_id = 'bia-component-environment-enabled-' ~ loop.index0 %}
+                          {% set select_id = 'bia-component-environment-auth-' ~ loop.index0 %}
+                          <tr>
+                            <td class="text-nowrap">
+                              <input type="hidden" id="bia-component-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
+                              {{ bia_environment_label(environment_type) }}
+                            </td>
+                            <td>
+                              <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
+                                <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                              </div>
+                            </td>
+                            <td>
+                              <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
+                                {% for value, label in component_form.environment_authentication_choices %}
+                                  <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                              </select>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </fieldset>
               </div>
             </form>
           </div>
@@ -316,96 +331,111 @@
 
     <!-- Edit component modal -->
     <div class="modal" id="biaEditComponentModal" tabindex="-1" aria-labelledby="biaEditComponentModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content {{ card_surface }}">
           <div class="modal-header {{ border_class }}">
             <h2 class="modal-title h5" id="biaEditComponentModalLabel">{{ _('bia.context_form.modals.edit.title') }}</h2>
             <button type="button" class="btn-close{% if is_dark %} btn-close-white{% endif %}" data-modal-close aria-label="{{ _('actions.close') }}"></button>
           </div>
           <div class="modal-body">
-            <form id="bia-edit-component-form">
+            <form id="bia-edit-component-form" class="row g-3">
               {{ component_form.hidden_tag() }}
               <input type="hidden" name="component_id" id="bia-edit-component-id">
-              {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='mb-3', input_class='form-control', id='bia-edit-component-name') }}
-              <div class="mb-3">
-                {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
-                {{ component_form.info_type(class="form-control", id="bia-edit-component-info-type") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
-                {{ component_form.info_owner(class="form-control", id="bia-edit-component-info-owner") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
-                {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
-                {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-edit-component-dependencies-it-systems-applications", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
-                {{ component_form.dependencies_equipment(class="form-control", id="bia-edit-component-dependencies-equipment", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
-                {{ component_form.dependencies_suppliers(class="form-control", id="bia-edit-component-dependencies-suppliers", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
-                {{ component_form.dependencies_people(class="form-control", id="bia-edit-component-dependencies-people", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
-                {{ component_form.dependencies_facilities(class="form-control", id="bia-edit-component-dependencies-facilities", rows=3) }}
-              </div>
-              <div class="mb-3">
-                {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
-                {{ component_form.dependencies_others(class="form-control", id="bia-edit-component-dependencies-others", rows=3) }}
-              </div>
-              <fieldset class="border rounded p-3 mb-3">
-                <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
-                <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
-                <div class="table-responsive">
-                  <table class="table table-sm table-dark align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
-                        <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
-                        <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for environment_type in bia_environment_types %}
-                        {% set checkbox_id = 'bia-edit-environment-enabled-' ~ loop.index0 %}
-                        {% set select_id = 'bia-edit-environment-auth-' ~ loop.index0 %}
-                        <tr>
-                          <td class="text-nowrap">
-                            <input type="hidden" id="bia-edit-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
-                            {{ bia_environment_label(environment_type) }}
-                          </td>
-                          <td>
-                            <div class="form-check">
-                              <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
-                              <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
-                            </div>
-                          </td>
-                          <td>
-                            <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
-                              {% for value, label in component_form.environment_authentication_choices %}
-                                <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
-                              {% endfor %}
-                            </select>
-                          </td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
+              
+              <div class="col-sm-6">
+                <h5 class="mb-3">{{ _('General Information') }}</h5>
+                <div class="vstack gap-3">
+                  {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='', input_class='form-control', id='bia-edit-component-name') }}
+                  <div>
+                    {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
+                    {{ component_form.info_type(class="form-control", id="bia-edit-component-info-type") }}
+                  </div>
+                  <div>
+                    {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
+                    {{ component_form.info_owner(class="form-control", id="bia-edit-component-info-owner") }}
+                  </div>
+                  <div>
+                    {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
+                    {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
+                  </div>
+                  <div>
+                    {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
+                    {{ component_form.description(class="form-control", id="bia-edit-component-description", rows=4) }}
+                  </div>
                 </div>
-              </fieldset>
-              <div class="mb-3">
-                {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
-                {{ component_form.description(class="form-control", id="bia-edit-component-description", rows=3) }}
+              </div>
+
+              <div class="col-sm-6">
+                <h5 class="mb-3">{{ _('Dependencies') }}</h5>
+                <div class="vstack gap-3">
+                  <div>
+                    {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
+                    {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-edit-component-dependencies-it-systems-applications", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
+                    {{ component_form.dependencies_equipment(class="form-control", id="bia-edit-component-dependencies-equipment", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
+                    {{ component_form.dependencies_suppliers(class="form-control", id="bia-edit-component-dependencies-suppliers", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
+                    {{ component_form.dependencies_people(class="form-control", id="bia-edit-component-dependencies-people", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
+                    {{ component_form.dependencies_facilities(class="form-control", id="bia-edit-component-dependencies-facilities", rows=2) }}
+                  </div>
+                  <div>
+                    {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
+                    {{ component_form.dependencies_others(class="form-control", id="bia-edit-component-dependencies-others", rows=2) }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <fieldset class="border rounded p-3 mb-3">
+                  <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
+                  <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-dark align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
+                          <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
+                          <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for environment_type in bia_environment_types %}
+                          {% set checkbox_id = 'bia-edit-environment-enabled-' ~ loop.index0 %}
+                          {% set select_id = 'bia-edit-environment-auth-' ~ loop.index0 %}
+                          <tr>
+                            <td class="text-nowrap">
+                              <input type="hidden" id="bia-edit-environment-type-{{ loop.index0 }}" name="environments-{{ loop.index0 }}-environment_type" value="{{ environment_type }}">
+                              {{ bia_environment_label(environment_type) }}
+                            </td>
+                            <td>
+                              <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="{{ checkbox_id }}" name="environments-{{ loop.index0 }}-is_enabled">
+                                <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
+                              </div>
+                            </td>
+                            <td>
+                              <select class="form-select" id="{{ select_id }}" name="environments-{{ loop.index0 }}-authentication_method">
+                                {% for value, label in component_form.environment_authentication_choices %}
+                                  <option value="{{ value }}"{% if loop.first %} selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                              </select>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </fieldset>
               </div>
             </form>
           </div>
@@ -498,6 +528,7 @@
       const routes = {
         add: '{{ url_for("bia.add_component") }}',
         detail: '{{ url_for("bia.get_component", component_id=0)[:-1] }}',
+        edit_page: '{{ url_for("bia.edit_component_form", component_id=0) }}',
         update: '{{ url_for("bia.update_component", component_id=0)[:-1] }}',
         remove: '{{ url_for("bia.delete_component", component_id=0)[:-1] }}',
         consequences: '{{ url_for("bia.view_consequences", component_id=0)[:-1] }}'
@@ -608,7 +639,7 @@
         detailFields.description.textContent = fallback(data.description || '');
         detailFields.consequences.textContent = data.consequences_count ?? 0;
         detailFields.consequencesLink.href = buildUrl(routes.consequences, data.id);
-        detailFields.editTrigger.dataset.componentId = data.id;
+        detailFields.editTrigger.href = routes.edit_page.replace('/0/', `/${data.id}/`);
         detailFields.deleteTrigger.dataset.componentId = data.id;
       };
 
@@ -769,14 +800,14 @@
           });
       });
 
-      detailFields.editTrigger.addEventListener('click', () => {
-        if (!activeComponent) {
-          return;
-        }
-        populateEditForm(activeComponent);
-        closeModal(viewModalEl);
-        openModal(editModalEl);
-      });
+      // detailFields.editTrigger.addEventListener('click', () => {
+      //   if (!activeComponent) {
+      //     return;
+      //   }
+      //   populateEditForm(activeComponent);
+      //   closeModal(viewModalEl);
+      //   openModal(editModalEl);
+      // });
 
       detailFields.deleteTrigger.addEventListener('click', () => {
         if (activeComponent) {

@@ -34,11 +34,14 @@ def init_security_headers(app: Flask) -> None:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         script_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
-        # Allow inline style elements from trusted sources and nonce-protected inline styles.
-        # Note: adding 'unsafe-inline' for style elements relaxes CSP for styles; consider
-        # replacing this with a library-specific fix (injecting nonce into created <style>
-        # tags) for stronger security if you can.
+        # Browser behavior varies on style-src vs style-src-elem/attr when nonces are present.
+        # To strictly allow inline styles via attributes but require nonces for <style> tags:
+        # style-src-elem 'self' ... 'nonce-...'; style-src-attr 'unsafe-inline';
+        # However, to silence the warning about 'unsafe-inline' being ignored in the presence
+        # of a nonce for elements, we should just rely on the nonce for elements.
+        style_elem_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'"))
         style_sources = " ".join(("'self'", "https://cdn.jsdelivr.net", f"'nonce-{nonce}'", "'unsafe-inline'"))
+
         policy = (
             "default-src 'self'; "
             "base-uri 'self'; "
@@ -46,9 +49,9 @@ def init_security_headers(app: Flask) -> None:
             "frame-ancestors 'none'; "
             "object-src 'none'; "
             f"script-src {script_sources}; "
-            f"style-src {style_sources}; "
-            f"style-src-elem {style_sources}; "
-            "style-src-attr 'unsafe-inline'; "
+            f"style-src {style_sources}; "  # Fallback for older browsers
+            f"style-src-elem {style_elem_sources}; " # Newer browsers: element styles require nonce
+            "style-src-attr 'unsafe-inline'; "       # Attributes allow unsafe-inline
             "font-src 'self' https://cdn.jsdelivr.net; "
             "img-src 'self' data:; "
             "connect-src 'self'"

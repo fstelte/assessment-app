@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_tooltip %}
 {% block title %}{{ _('Edit component') }} · {{ component.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Force scrollability on this page to override any potential lock from modals */
+  html, body {
+    overflow: auto !important;
+    height: auto !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="mb-3">
   <a href="{{ url_for('bia.view_components') }}" class="text-secondary text-decoration-none">&larr; {{ _('bia.components.back') }}</a>
@@ -21,25 +32,42 @@
   <div class="card-body">
     <form method="post" class="row g-3">
       {{ form.hidden_tag() }}
-      <div class="col-md-4">
-        <label for="bia_id" class="form-label">{{ _('bia.components.add.bia_label') }}</label>
-        <select id="bia_id" name="bia_id" class="form-select" required>
-          {% for context in contexts %}
-            <option value="{{ context.id }}" {% if component.context_scope and component.context_scope.id == context.id %}selected{% endif %}>{{ context.name }}</option>
-          {% endfor %}
-        </select>
+      
+      <!-- General Info: Left Column -->
+      <div class="col-lg-6">
+        <h5 class="mb-3">{{ _('General Information') }}</h5>
+        <div class="vstack gap-3">
+          <div>
+            <label for="bia_id" class="form-label">{{ _('bia.components.add.bia_label') }}</label>
+            <select id="bia_id" name="bia_id" class="form-select" required>
+              {% for context in contexts %}
+                <option value="{{ context.id }}" {% if component.context_scope and component.context_scope.id == context.id %}selected{% endif %}>{{ context.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {{ render_field_with_tooltip(form.name, _('bia.components.labels.name'), _('bia.components.tooltips.name'), container_class='', input_class='form-control') }}
+          <div>{{ form.info_owner.label(_('bia.components.labels.owner'), class="form-label") }}{{ form.info_owner(class="form-control") }}</div>
+          <div>{{ form.info_type.label(_('bia.components.labels.information_type'), class="form-label") }}{{ form.info_type(class="form-control") }}</div>
+          <div>{{ form.user_type.label(_('bia.components.labels.user_type'), class="form-label") }}{{ form.user_type(class="form-control") }}</div>
+          <div>{{ form.description.label(_('bia.components.labels.description'), class="form-label") }}{{ form.description(class="form-control", rows=4) }}</div>
+        </div>
       </div>
-      {{ render_field_with_tooltip(form.name, _('bia.components.labels.name'), _('bia.components.tooltips.name'), container_class='col-md-4', input_class='form-control') }}
-      <div class="col-md-4">{{ form.info_owner.label(_('bia.components.labels.owner'), class="form-label") }}{{ form.info_owner(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.info_type.label(_('bia.components.labels.information_type'), class="form-label") }}{{ form.info_type(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.user_type.label(_('bia.components.labels.user_type'), class="form-label") }}{{ form.user_type(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}{{ form.dependencies_it_systems_applications(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}{{ form.dependencies_equipment(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}{{ form.dependencies_suppliers(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}{{ form.dependencies_people(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}{{ form.dependencies_facilities(class="form-control") }}</div>
-      <div class="col-md-4">{{ form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}{{ form.dependencies_others(class="form-control") }}</div>
-      <div class="col-12">
+
+      <!-- Dependencies: Right Column -->
+      <div class="col-lg-6">
+        <h5 class="mb-3">{{ _('Dependencies') }}</h5>
+        <div class="row g-3">
+          <div class="col-12">{{ form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}{{ form.dependencies_it_systems_applications(class="form-control") }}</div>
+          <div class="col-12">{{ form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}{{ form.dependencies_equipment(class="form-control") }}</div>
+          <div class="col-12">{{ form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}{{ form.dependencies_suppliers(class="form-control") }}</div>
+          <div class="col-12">{{ form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}{{ form.dependencies_people(class="form-control") }}</div>
+          <div class="col-12">{{ form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}{{ form.dependencies_facilities(class="form-control") }}</div>
+          <div class="col-12">{{ form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}{{ form.dependencies_others(class="form-control") }}</div>
+        </div>
+      </div>
+
+      <!-- Environments: Full Width (Bottom) -->
+      <div class="col-12 mt-4">
         <fieldset class="border rounded p-3">
           <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
           <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
@@ -79,8 +107,8 @@
           </div>
         </fieldset>
       </div>
-      <div class="col-12">{{ form.description.label(_('bia.components.labels.description'), class="form-label") }}{{ form.description(class="form-control", rows=3) }}</div>
-      <div class="col-12 d-flex justify-content-between">
+      
+      <div class="col-12 d-flex justify-content-between mt-4">
         <a href="{{ url_for('bia.view_components') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
         <button type="submit" class="btn btn-primary">{{ _('bia.components.buttons.save_changes') }}</button>
       </div>

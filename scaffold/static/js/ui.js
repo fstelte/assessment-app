@@ -123,6 +123,9 @@
   };
 
   document.addEventListener("DOMContentLoaded", () => {
+    // Ensure scroll lock is cleared on page load
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
     bindCollapseToggles();
     bindModalTriggers();
   });
