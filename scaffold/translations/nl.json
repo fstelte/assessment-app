@@ -361,7 +361,30 @@
         }
       },
       "tooltips": {
-        "name": "Vul de officiële naam van de dienst of het product in, zoals die binnen de organisatie bekend is."
+        "name": "Vul de officiële naam van de dienst of het product in, zoals die binnen de organisatie bekend is.",
+        "tier": "Selecteer het kritikaliteitsniveau voor deze dienst.",
+        "responsible": "De persoon die eindverantwoordelijk is voor de dienst.",
+        "coordinator": "De persoon die het BIA-proces coördineert.",
+        "start_date": "De datum waarop deze dienst actief werd.",
+        "end_date": "De verwachte einddatum voor deze dienst (indien van toepassing).",
+        "service_description": "Een gedetailleerde beschrijving van de dienst en het doel ervan.",
+        "knowledge": "Beschrijving van vereiste kennis binnen de organisatie.",
+        "interfaces": "Systemen en applicaties waarmee deze dienst communiceert.",
+        "mission_critical": "Afhankelijkheden die kritiek zijn voor de missie.",
+        "support_contracts": "Details van ondersteuningscontracten en SLA's.",
+        "security_supplier": "Details van betrokken beveiligingsleveranciers.",
+        "user_amount": "Geschat aantal gebruikers voor deze dienst.",
+        "scope_description": "Beschrijving van de scope van deze BIA.",
+        "risk_assessment_human": "Vink aan als een risicoanalyse op menselijk vlak vereist is.",
+        "risk_assessment_process": "Vink aan als een risicoanalyse op procesvlak vereist is.",
+        "risk_assessment_technological": "Vink aan als een risicoanalyse op technisch vlak vereist is.",
+        "ai_model": "Geef aan of deze dienst AI-modellen gebruikt.",
+        "project_leader": "De projectleider voor deze dienst.",
+        "risk_owner": "De eigenaar van risico's verbonden aan deze dienst.",
+        "product_owner": "De producteigenaar voor deze dienst.",
+        "technical_administrator": "De technisch beheerder voor deze dienst.",
+        "security_manager": "De security manager voor deze dienst.",
+        "incident_contact": "Contactpersoon in geval van incidenten."
       },
       "component_fields": {
         "name": {
@@ -560,7 +583,17 @@
       },
       "tooltips": {
         "name": "Geef een beknopte, beschrijvende naam van het component zodat teamgenoten het snel herkennen.",
-        "scope": "Selecteer de BIA waartoe dit component behoort voordat u andere details invoert."
+        "scope": "Selecteer de BIA waartoe dit component behoort voordat u andere details invoert.",
+        "info_type": "Het type informatie dat wordt verwerkt (bijv. PII, financieel, technisch).",
+        "info_owner": "De persoon die verantwoordelijk is voor de informatieclassificatie.",
+        "user_type": "De primaire gebruikersgroep (bijv. medewerkers, klanten, systeem).",
+        "dependencies_it_systems_applications": "IT-systemen of applicaties waar dit component van afhankelijk is.",
+        "dependencies_equipment": "Fysieke apparatuur vereist (bijv. servers, laptops).",
+        "dependencies_suppliers": "Externe leveranciers of verkopers die betrokken zijn.",
+        "dependencies_people": "Belangrijke rollen of personeel vereist.",
+        "dependencies_facilities": "Fysieke locaties of faciliteiten die nodig zijn.",
+        "dependencies_others": "Alle andere afhankelijkheden die hierboven niet vermeld staan.",
+        "description": "Extra context of details over dit component."
       }
     },
     "authentication_methods": {

@@ -217,7 +217,30 @@
         }
       },
       "tooltips": {
-        "name": "Enter the official service or product name that stakeholders recognise."
+        "name": "Enter the official service or product name that stakeholders recognise.",
+        "tier": "Select the criticality tier for this service.",
+        "responsible": "The person ultimately responsible for the service.",
+        "coordinator": "The person coordinating the BIA process.",
+        "start_date": "The date this service became active.",
+        "end_date": "The expected end date for this service (if any).",
+        "service_description": "A detailed description of the service and its purpose.",
+        "knowledge": "Description of required knowledge within the organization.",
+        "interfaces": "Systems and applications this service interfaces with.",
+        "mission_critical": "Dependencies effectively critical for the mission.",
+        "support_contracts": "Details of support contracts and SLAs.",
+        "security_supplier": "Details of security suppliers involved.",
+        "user_amount": "Estimated number of users for this service.",
+        "scope_description": "Description of the scope of this BIA.",
+        "risk_assessment_human": "Check if a people-focused risk assessment is required.",
+        "risk_assessment_process": "Check if a process-focused risk assessment is required.",
+        "risk_assessment_technological": "Check if a technology-focused risk assessment is required.",
+        "ai_model": "Indicate if this service uses AI models.",
+        "project_leader": "The project leader for this service.",
+        "risk_owner": "The owner of risks associated with this service.",
+        "product_owner": "The product owner for this service.",
+        "technical_administrator": "The technical administrator for this service.",
+        "security_manager": "The security manager for this service.",
+        "incident_contact": "Contact person in case of incidents."
       },
       "component_fields": {
         "name": {
@@ -360,7 +383,17 @@
       },
       "tooltips": {
         "scope": "Select the BIA this component belongs to before entering other details.",
-        "name": "Provide a concise, descriptive component name so teammates can recognise it quickly."
+        "name": "Provide a concise, descriptive component name so teammates can recognise it quickly.",
+        "info_type": "The type of information processed (e.g. PII, financial, technical).",
+        "info_owner": "The person accountable for the information classification.",
+        "user_type": "The primary user group (e.g. employees, customers, system).",
+        "dependencies_it_systems_applications": "IT systems or applications this component depends on.",
+        "dependencies_equipment": "Physical equipment required (e.g. servers, laptops).",
+        "dependencies_suppliers": "External suppliers or vendors involved.",
+        "dependencies_people": "Key roles or personnel required.",
+        "dependencies_facilities": "Physical locations or facilities needed.",
+        "dependencies_others": "Any other dependencies not listed above.",
+        "description": "Additional context or details about this component."
       },
       "modal": {
         "title": "AI identification",

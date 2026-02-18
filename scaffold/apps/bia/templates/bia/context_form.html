@@ -25,44 +25,76 @@
               {{ render_field_with_help(form.name, class='form-control') }}
             </div>
             <div class="col-md-4">
-              {{ form.tier.label(_('bia.context_form.fields.tier.label'), class="form-label") }}
-              {{ form.tier(class="form-select") }}
+              {{ render_field_with_help(form.tier, class='form-select') }}
             </div>
           </div>
           <div class="row g-3 mt-1">
-            <div class="col-md-4">{{ form.user_amount.label(_('bia.context_form.fields.user_amount.label'), class="form-label") }}{{ form.user_amount(class="form-control") }}</div>
-            <div class="col-md-4">{{ form.start_date.label(_('bia.context_form.fields.start_date.label'), class="form-label") }}{{ form.start_date(class="form-control", type="date") }}</div>
-            <div class="col-md-4">{{ form.end_date.label(_('bia.context_form.fields.end_date.label'), class="form-label") }}{{ form.end_date(class="form-control", type="date") }}</div>
+            <div class="col-md-4">
+              {{ render_field_with_help(form.user_amount, class='form-control') }}
+            </div>
+            <div class="col-md-4">
+              {{ render_field_with_help(form.start_date, class='form-control', type='date') }}
+            </div>
+            <div class="col-md-4">
+              {{ render_field_with_help(form.end_date, class='form-control', type='date') }}
+            </div>
           </div>
-          <div class="mt-3">{{ form.service_description.label(_('bia.context_form.fields.service_description.label'), class="form-label") }}{{ form.service_description(class="form-control", rows=3) }}</div>
-          <div class="mt-3">{{ form.scope_description.label(_('bia.context_form.fields.scope_description.label'), class="form-label") }}{{ form.scope_description(class="form-control", rows=3) }}</div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.service_description, class='form-control', rows=3) }}
+          </div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.scope_description, class='form-control', rows=3) }}
+          </div>
 
           <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.contacts') }}</h2>
           <div class="row g-3">
             <div class="col-md-6">
-              {{ form.responsible.label(_('bia.context_form.fields.responsible.label'), class="form-label") }}
               {% if can_assign_owner|default(False) %}
-                {{ form.responsible(class="form-control") }}
+                {{ render_field_with_help(form.responsible, class='form-control') }}
               {% else %}
-                {{ form.responsible(class="form-control", readonly=True) }}
+                {{ render_field_with_help(form.responsible, class='form-control', readonly=True) }}
                 <div class="form-text {{ text_muted }}">{{ _('bia.context_form.responsible_hint') }}</div>
               {% endif %}
             </div>
-            <div class="col-md-6">{{ form.coordinator.label(_('bia.context_form.fields.coordinator.label'), class="form-label") }}{{ form.coordinator(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.project_leader.label(_('bia.context_form.fields.project_leader.label'), class="form-label") }}{{ form.project_leader(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.product_owner.label(_('bia.context_form.fields.product_owner.label'), class="form-label") }}{{ form.product_owner(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.risk_owner.label(_('bia.context_form.fields.risk_owner.label'), class="form-label") }}{{ form.risk_owner(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.technical_administrator.label(_('bia.context_form.fields.technical_administrator.label'), class="form-label") }}{{ form.technical_administrator(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.security_manager.label(_('bia.context_form.fields.security_manager.label'), class="form-label") }}{{ form.security_manager(class="form-control") }}</div>
-            <div class="col-md-6">{{ form.incident_contact.label(_('bia.context_form.fields.incident_contact.label'), class="form-label") }}{{ form.incident_contact(class="form-control") }}</div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.coordinator, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.project_leader, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.product_owner, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.risk_owner, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.technical_administrator, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.security_manager, class='form-control') }}
+            </div>
+            <div class="col-md-6">
+              {{ render_field_with_help(form.incident_contact, class='form-control') }}
+            </div>
           </div>
 
           <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.dependencies') }}</h2>
-          <div class="mt-3">{{ form.mission_critical.label(_('bia.context_form.fields.mission_critical.label'), class="form-label") }}{{ form.mission_critical(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.knowledge.label(_('bia.context_form.fields.knowledge.label'), class="form-label") }}{{ form.knowledge(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.interfaces.label(_('bia.context_form.fields.interfaces.label'), class="form-label") }}{{ form.interfaces(class="form-control", rows=2) }}</div>
-          <div class="mt-3">{{ form.support_contracts.label(_('bia.context_form.fields.support_contracts.label'), class="form-label") }}{{ form.support_contracts(class="form-control") }}</div>
-          <div class="mt-3">{{ form.security_supplier.label(_('bia.context_form.fields.security_supplier.label'), class="form-label") }}{{ form.security_supplier(class="form-control") }}</div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.mission_critical, class='form-control', rows=2) }}
+          </div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.knowledge, class='form-control', rows=2) }}
+          </div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.interfaces, class='form-control', rows=2) }}
+          </div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.support_contracts, class='form-control') }}
+          </div>
+          <div class="mt-3">
+            {{ render_field_with_help(form.security_supplier, class='form-control') }}
+          </div>
 
           <h2 class="h5 text-uppercase {{ text_muted }} mt-4 mb-3">{{ _('bia.context_form.section.risk') }}</h2>
           <div class="row g-3">
@@ -70,24 +102,56 @@
               <div class="form-check form-switch">
                 {{ form.risk_assessment_human(class="form-check-input", role="switch") }}
                 {{ form.risk_assessment_human.label(_('bia.context_form.fields.risk_assessment_human.label'), class="form-check-label") }}
+                {% if form.risk_assessment_human.description %}
+                  <details class="mt-1">
+                    <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {{ form.risk_assessment_human.description }}
+                    </div>
+                  </details>
+                {% endif %}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.risk_assessment_process(class="form-check-input", role="switch") }}
                 {{ form.risk_assessment_process.label(_('bia.context_form.fields.risk_assessment_process.label'), class="form-check-label") }}
+                {% if form.risk_assessment_process.description %}
+                  <details class="mt-1">
+                    <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {{ form.risk_assessment_process.description }}
+                    </div>
+                  </details>
+                {% endif %}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.risk_assessment_technological(class="form-check-input", role="switch") }}
                 {{ form.risk_assessment_technological.label(_('bia.context_form.fields.risk_assessment_technological.label'), class="form-check-label") }}
+                {% if form.risk_assessment_technological.description %}
+                  <details class="mt-1">
+                    <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {{ form.risk_assessment_technological.description }}
+                    </div>
+                  </details>
+                {% endif %}
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-check form-switch">
                 {{ form.ai_model(class="form-check-input", role="switch") }}
                 {{ form.ai_model.label(_('bia.context_form.fields.ai_model.label'), class="form-check-label") }}
+                {% if form.ai_model.description %}
+                  <details class="mt-1">
+                    <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      {{ form.ai_model.description }}
+                    </div>
+                  </details>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -227,53 +291,23 @@
               <div class="col-lg-6">
                 <h5 class="mb-3">{{ _('General Information') }}</h5>
                 <div class="vstack gap-3">
-                  {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='', input_class='form-control', id='bia-component-name') }}
-                  <div>
-                    {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
-                    {{ component_form.info_type(class="form-control", id="bia-component-info-type") }}
-                  </div>
-                  <div>
-                    {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
-                    {{ component_form.info_owner(class="form-control", id="bia-component-info-owner") }}
-                  </div>
-                  <div>
-                    {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
-                    {{ component_form.user_type(class="form-control", id="bia-component-user-type") }}
-                  </div>
-                  <div>
-                    {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
-                    {{ component_form.description(class="form-control", id="bia-component-description", rows=4) }}
-                  </div>
+                  {{ render_field_with_help(component_form.name, class='form-control', id='bia-component-name') }}
+                  {{ render_field_with_help(component_form.info_type, class='form-control', id='bia-component-info-type') }}
+                  {{ render_field_with_help(component_form.info_owner, class='form-control', id='bia-component-info-owner') }}
+                  {{ render_field_with_help(component_form.user_type, class='form-control', id='bia-component-user-type') }}
+                  {{ render_field_with_help(component_form.description, class='form-control', id='bia-component-description', rows=4) }}
                 </div>
               </div>
 
               <div class="col-lg-6">
                 <h5 class="mb-3">{{ _('Dependencies') }}</h5>
                 <div class="vstack gap-3">
-                  <div>
-                    {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
-                    {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-component-dependencies-it-systems-applications", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
-                    {{ component_form.dependencies_equipment(class="form-control", id="bia-component-dependencies-equipment", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
-                    {{ component_form.dependencies_suppliers(class="form-control", id="bia-component-dependencies-suppliers", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
-                    {{ component_form.dependencies_people(class="form-control", id="bia-component-dependencies-people", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
-                    {{ component_form.dependencies_facilities(class="form-control", id="bia-component-dependencies-facilities", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
-                    {{ component_form.dependencies_others(class="form-control", id="bia-component-dependencies-others", rows=2) }}
-                  </div>
+                  {{ render_field_with_help(component_form.dependencies_it_systems_applications, class='form-control', id='bia-component-dependencies-it-systems-applications', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_equipment, class='form-control', id='bia-component-dependencies-equipment', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_suppliers, class='form-control', id='bia-component-dependencies-suppliers', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_people, class='form-control', id='bia-component-dependencies-people', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_facilities, class='form-control', id='bia-component-dependencies-facilities', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_others, class='form-control', id='bia-component-dependencies-others', rows=2) }}
                 </div>
               </div>
               
@@ -345,53 +379,23 @@
               <div class="col-sm-6">
                 <h5 class="mb-3">{{ _('General Information') }}</h5>
                 <div class="vstack gap-3">
-                  {{ render_field_with_tooltip(component_form.name, _('bia.context_form.component_fields.name.label'), _('bia.components.tooltips.name'), container_class='', input_class='form-control', id='bia-edit-component-name') }}
-                  <div>
-                    {{ component_form.info_type.label(_('bia.context_form.component_fields.info_type.label'), class="form-label") }}
-                    {{ component_form.info_type(class="form-control", id="bia-edit-component-info-type") }}
-                  </div>
-                  <div>
-                    {{ component_form.info_owner.label(_('bia.context_form.component_fields.info_owner.label'), class="form-label") }}
-                    {{ component_form.info_owner(class="form-control", id="bia-edit-component-info-owner") }}
-                  </div>
-                  <div>
-                    {{ component_form.user_type.label(_('bia.context_form.component_fields.user_type.label'), class="form-label") }}
-                    {{ component_form.user_type(class="form-control", id="bia-edit-component-user-type") }}
-                  </div>
-                  <div>
-                    {{ component_form.description.label(_('bia.context_form.component_fields.description.label'), class="form-label") }}
-                    {{ component_form.description(class="form-control", id="bia-edit-component-description", rows=4) }}
-                  </div>
+                  {{ render_field_with_help(component_form.name, class='form-control', id='bia-edit-component-name') }}
+                  {{ render_field_with_help(component_form.info_type, class='form-control', id='bia-edit-component-info-type') }}
+                  {{ render_field_with_help(component_form.info_owner, class='form-control', id='bia-edit-component-info-owner') }}
+                  {{ render_field_with_help(component_form.user_type, class='form-control', id='bia-edit-component-user-type') }}
+                  {{ render_field_with_help(component_form.description, class='form-control', id='bia-edit-component-description', rows=4) }}
                 </div>
               </div>
 
               <div class="col-sm-6">
                 <h5 class="mb-3">{{ _('Dependencies') }}</h5>
                 <div class="vstack gap-3">
-                  <div>
-                    {{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}
-                    {{ component_form.dependencies_it_systems_applications(class="form-control", id="bia-edit-component-dependencies-it-systems-applications", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}
-                    {{ component_form.dependencies_equipment(class="form-control", id="bia-edit-component-dependencies-equipment", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}
-                    {{ component_form.dependencies_suppliers(class="form-control", id="bia-edit-component-dependencies-suppliers", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}
-                    {{ component_form.dependencies_people(class="form-control", id="bia-edit-component-dependencies-people", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}
-                    {{ component_form.dependencies_facilities(class="form-control", id="bia-edit-component-dependencies-facilities", rows=2) }}
-                  </div>
-                  <div>
-                    {{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}
-                    {{ component_form.dependencies_others(class="form-control", id="bia-edit-component-dependencies-others", rows=2) }}
-                  </div>
+                  {{ render_field_with_help(component_form.dependencies_it_systems_applications, class='form-control', id='bia-edit-component-dependencies-it-systems-applications', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_equipment, class='form-control', id='bia-edit-component-dependencies-equipment', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_suppliers, class='form-control', id='bia-edit-component-dependencies-suppliers', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_people, class='form-control', id='bia-edit-component-dependencies-people', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_facilities, class='form-control', id='bia-edit-component-dependencies-facilities', rows=2) }}
+                  {{ render_field_with_help(component_form.dependencies_others, class='form-control', id='bia-edit-component-dependencies-others', rows=2) }}
                 </div>
               </div>
 

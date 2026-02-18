@@ -204,6 +204,43 @@
         {% endif %}
       </div>
     </div>
+    <div class="card {{ card_surface }} mt-4">
+      <div class="card-header {{ border_class }}">Dependencies</div>
+      <div class="card-body p-0">
+        {% if item.components %}
+        <div class="table-responsive">
+          <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">IT Systems</th>
+                <th scope="col">Equipment</th>
+                <th scope="col">Suppliers</th>
+                <th scope="col">People</th>
+                <th scope="col">Facilities</th>
+                <th scope="col">Others</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for component in item.components %}
+              <tr>
+                <td>{{ component.name }}</td>
+                <td>{{ component.dependencies_it_systems_applications or '-' }}</td>
+                <td>{{ component.dependencies_equipment or '-' }}</td>
+                <td>{{ component.dependencies_suppliers or '-' }}</td>
+                <td>{{ component.dependencies_people or '-' }}</td>
+                <td>{{ component.dependencies_facilities or '-' }}</td>
+                <td>{{ component.dependencies_others or '-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="p-4 {{ text_muted }} mb-0">No components to show dependencies for.</div>
+        {% endif %}
+      </div>
+    </div>
   </div>
   <div class="flex-shrink-0 w-100 w-lg-auto" style="min-width: 220px; max-width: 320px;">
     <div class="card {{ card_surface }} mb-4">
