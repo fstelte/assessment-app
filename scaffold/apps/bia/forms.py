@@ -42,29 +42,120 @@ class ContextScopeForm(FlaskForm):
         validators=[DataRequired(), Length(max=255)],
         description=_l("bia.context_form.tooltips.name"),
     )
-    tier = SelectField(_l("bia.context_form.fields.tier.label"), validators=[Optional()], coerce=_optional_int)
-    responsible = StringField("End responsible", validators=[Optional(), Length(max=255)])
-    coordinator = StringField("Coordinator", validators=[Optional(), Length(max=255)])
-    start_date = DateField("Start date", format="%Y-%m-%d", validators=[Optional()])
-    end_date = DateField("End date", format="%Y-%m-%d", validators=[Optional()])
-    service_description = TextAreaField("Service description", validators=[Optional()])
-    knowledge = TextAreaField("Knowledge within the organisation", validators=[Optional()])
-    interfaces = TextAreaField("Interfaces with systems", validators=[Optional()])
-    mission_critical = TextAreaField("Mission critical dependencies", validators=[Optional()])
-    support_contracts = TextAreaField("Support contracts", validators=[Optional()])
-    security_supplier = TextAreaField("Security supplier", validators=[Optional()])
-    user_amount = IntegerField("Number of users", validators=[Optional()])
-    scope_description = TextAreaField("Scope description", validators=[Optional()])
-    risk_assessment_human = BooleanField("Requires people risk assessment")
-    risk_assessment_process = BooleanField("Requires process risk assessment")
-    risk_assessment_technological = BooleanField("Requires technology risk assessment")
-    ai_model = BooleanField("Uses AI components")
-    project_leader = StringField("Project leader", validators=[Optional(), Length(max=255)])
-    risk_owner = StringField("Risk owner", validators=[Optional(), Length(max=255)])
-    product_owner = StringField("Product owner", validators=[Optional(), Length(max=255)])
-    technical_administrator = StringField("Technical administrator", validators=[Optional(), Length(max=255)])
-    security_manager = StringField("Security manager", validators=[Optional(), Length(max=255)])
-    incident_contact = StringField("Incident contact", validators=[Optional(), Length(max=255)])
+    tier = SelectField(
+        _l("bia.context_form.fields.tier.label"),
+        validators=[Optional()],
+        coerce=_optional_int,
+        description=_l("bia.context_form.tooltips.tier"),
+    )
+    responsible = StringField(
+        _l("bia.context_form.fields.responsible.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.responsible"),
+    )
+    coordinator = StringField(
+        _l("bia.context_form.fields.coordinator.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.coordinator"),
+    )
+    start_date = DateField(
+        _l("bia.context_form.fields.start_date.label"),
+        format="%Y-%m-%d",
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.start_date"),
+    )
+    end_date = DateField(
+        _l("bia.context_form.fields.end_date.label"),
+        format="%Y-%m-%d",
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.end_date"),
+    )
+    service_description = TextAreaField(
+        _l("bia.context_form.fields.service_description.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.service_description"),
+    )
+    knowledge = TextAreaField(
+        _l("bia.context_form.fields.knowledge.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.knowledge"),
+    )
+    interfaces = TextAreaField(
+        _l("bia.context_form.fields.interfaces.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.interfaces"),
+    )
+    mission_critical = TextAreaField(
+        _l("bia.context_form.fields.mission_critical.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.mission_critical"),
+    )
+    support_contracts = TextAreaField(
+        _l("bia.context_form.fields.support_contracts.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.support_contracts"),
+    )
+    security_supplier = TextAreaField(
+        _l("bia.context_form.fields.security_supplier.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.security_supplier"),
+    )
+    user_amount = IntegerField(
+        _l("bia.context_form.fields.user_amount.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.user_amount"),
+    )
+    scope_description = TextAreaField(
+        _l("bia.context_form.fields.scope_description.label"),
+        validators=[Optional()],
+        description=_l("bia.context_form.tooltips.scope_description"),
+    )
+    risk_assessment_human = BooleanField(
+        _l("bia.context_form.fields.risk_assessment_human.label"),
+        description=_l("bia.context_form.tooltips.risk_assessment_human"),
+    )
+    risk_assessment_process = BooleanField(
+        _l("bia.context_form.fields.risk_assessment_process.label"),
+        description=_l("bia.context_form.tooltips.risk_assessment_process"),
+    )
+    risk_assessment_technological = BooleanField(
+        _l("bia.context_form.fields.risk_assessment_technological.label"),
+        description=_l("bia.context_form.tooltips.risk_assessment_technological"),
+    )
+    ai_model = BooleanField(
+        _l("bia.context_form.fields.ai_model.label"),
+        description=_l("bia.context_form.tooltips.ai_model"),
+    )
+    project_leader = StringField(
+        _l("bia.context_form.fields.project_leader.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.project_leader"),
+    )
+    risk_owner = StringField(
+        _l("bia.context_form.fields.risk_owner.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.risk_owner"),
+    )
+    product_owner = StringField(
+        _l("bia.context_form.fields.product_owner.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.product_owner"),
+    )
+    technical_administrator = StringField(
+        _l("bia.context_form.fields.technical_administrator.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.technical_administrator"),
+    )
+    security_manager = StringField(
+        _l("bia.context_form.fields.security_manager.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.security_manager"),
+    )
+    incident_contact = StringField(
+        _l("bia.context_form.fields.incident_contact.label"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.context_form.tooltips.incident_contact"),
+    )
     submit = SubmitField("Save context")
 
     def __init__(self, *args, **kwargs):
@@ -93,25 +184,61 @@ class ComponentEnvironmentForm(Form):
 class ComponentForm(FlaskForm):
     """Create or update a component linked to a BIA context."""
 
-    name = StringField("Component name", validators=[DataRequired(), Length(max=255)])
-    info_type = StringField("Information type", validators=[Optional(), Length(max=255)])
-    info_owner = StringField("Information owner", validators=[Optional(), Length(max=255)])
-    user_type = StringField(_l("bia.components.labels.user_type"), validators=[Optional(), Length(max=255)])
+    name = StringField(
+        _l("bia.components.labels.name"),
+        validators=[DataRequired(), Length(max=255)],
+        description=_l("bia.components.tooltips.name"),
+    )
+    info_type = StringField(
+        _l("bia.components.labels.information_type"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.components.tooltips.info_type"),
+    )
+    info_owner = StringField(
+        _l("bia.components.labels.owner"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.components.tooltips.info_owner"),
+    )
+    user_type = StringField(
+        _l("bia.components.labels.user_type"),
+        validators=[Optional(), Length(max=255)],
+        description=_l("bia.components.tooltips.user_type"),
+    )
     dependencies_it_systems_applications = TextAreaField(
-        _l("bia.components.labels.dependencies_it_systems_applications"), validators=[Optional()]
+        _l("bia.components.labels.dependencies_it_systems_applications"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_it_systems_applications"),
     )
     dependencies_equipment = TextAreaField(
-        _l("bia.components.labels.dependencies_equipment"), validators=[Optional()]
+        _l("bia.components.labels.dependencies_equipment"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_equipment"),
     )
     dependencies_suppliers = TextAreaField(
-        _l("bia.components.labels.dependencies_suppliers"), validators=[Optional()]
+        _l("bia.components.labels.dependencies_suppliers"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_suppliers"),
     )
-    dependencies_people = TextAreaField(_l("bia.components.labels.dependencies_people"), validators=[Optional()])
+    dependencies_people = TextAreaField(
+        _l("bia.components.labels.dependencies_people"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_people"),
+    )
     dependencies_facilities = TextAreaField(
-        _l("bia.components.labels.dependencies_facilities"), validators=[Optional()]
+        _l("bia.components.labels.dependencies_facilities"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_facilities"),
     )
-    dependencies_others = TextAreaField(_l("bia.components.labels.dependencies_others"), validators=[Optional()])
-    description = TextAreaField(_l("bia.components.labels.description"), validators=[Optional()])
+    dependencies_others = TextAreaField(
+        _l("bia.components.labels.dependencies_others"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.dependencies_others"),
+    )
+    description = TextAreaField(
+        _l("bia.components.labels.description"),
+        validators=[Optional()],
+        description=_l("bia.components.tooltips.description"),
+    )
     environments = FieldList(
         FormField(ComponentEnvironmentForm),
         min_entries=len(_COMPONENT_ENVIRONMENT_TYPES),

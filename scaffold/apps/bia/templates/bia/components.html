@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/forms.html" import render_field_with_tooltip %}
+{% from "partials/forms.html" import render_field_with_tooltip, render_field_with_help %}
 {% block extra_css %}
   {{ super() }}
   {% include "bia/_badge_styles.html" %}
@@ -139,16 +139,36 @@
           {% endfor %}
         </select>
       </div>
-      {{ render_field_with_tooltip(component_form.name, _('bia.components.labels.name'), _('bia.components.tooltips.name'), container_class='col-md-4', input_class='form-control') }}
-      <div class="col-md-4">{{ component_form.info_owner.label(_('bia.components.labels.owner'), class="form-label") }}{{ component_form.info_owner(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.info_type.label(_('bia.components.labels.information_type'), class="form-label") }}{{ component_form.info_type(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.user_type.label(_('bia.components.labels.user_type'), class="form-label") }}{{ component_form.user_type(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_it_systems_applications.label(_('bia.components.labels.dependencies_it_systems_applications'), class="form-label") }}{{ component_form.dependencies_it_systems_applications(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_equipment.label(_('bia.components.labels.dependencies_equipment'), class="form-label") }}{{ component_form.dependencies_equipment(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_suppliers.label(_('bia.components.labels.dependencies_suppliers'), class="form-label") }}{{ component_form.dependencies_suppliers(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_people.label(_('bia.components.labels.dependencies_people'), class="form-label") }}{{ component_form.dependencies_people(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_facilities.label(_('bia.components.labels.dependencies_facilities'), class="form-label") }}{{ component_form.dependencies_facilities(class="form-control") }}</div>
-      <div class="col-md-4">{{ component_form.dependencies_others.label(_('bia.components.labels.dependencies_others'), class="form-label") }}{{ component_form.dependencies_others(class="form-control") }}</div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.name, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.info_owner, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.info_type, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.user_type, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_it_systems_applications, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_equipment, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_suppliers, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_people, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_facilities, class='form-control') }}
+      </div>
+      <div class="col-md-4">
+        {{ render_field_with_help(component_form.dependencies_others, class='form-control') }}
+      </div>
       <div class="col-12">
         <fieldset class="border rounded p-3">
           <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
@@ -188,7 +208,9 @@
           </div>
         </fieldset>
       </div>
-      <div class="col-12">{{ component_form.description.label(_('bia.components.labels.description'), class="form-label") }}{{ component_form.description(class="form-control", rows=2) }}</div>
+      <div class="col-12">
+        {{ render_field_with_help(component_form.description, class='form-control', rows=2) }}
+      </div>
         <div class="col-12 text-end">
           <button type="submit" class="btn btn-primary">{{ _('bia.components.add.submit') }}</button>
         </div>
