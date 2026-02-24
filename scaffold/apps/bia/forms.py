@@ -6,7 +6,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, DateField, FieldList, FormField, HiddenField, IntegerField, PasswordField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
 from wtforms.form import Form
-from wtforms.validators import DataRequired, EqualTo, Length, Optional
+from wtforms.validators import DataRequired, EqualTo, Length, Optional, NumberRange, ValidationError
 import sqlalchemy as sa
 from ...extensions import db
 from .models import BiaTier
@@ -72,42 +72,42 @@ class ContextScopeForm(FlaskForm):
     )
     service_description = TextAreaField(
         _l("bia.context_form.fields.service_description.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.service_description"),
     )
     knowledge = TextAreaField(
         _l("bia.context_form.fields.knowledge.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.knowledge"),
     )
     interfaces = TextAreaField(
         _l("bia.context_form.fields.interfaces.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.interfaces"),
     )
     mission_critical = TextAreaField(
         _l("bia.context_form.fields.mission_critical.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.mission_critical"),
     )
     support_contracts = TextAreaField(
         _l("bia.context_form.fields.support_contracts.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.support_contracts"),
     )
     security_supplier = TextAreaField(
         _l("bia.context_form.fields.security_supplier.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.security_supplier"),
     )
     user_amount = IntegerField(
         _l("bia.context_form.fields.user_amount.label"),
-        validators=[Optional()],
+        validators=[Optional(), NumberRange(min=0)],
         description=_l("bia.context_form.tooltips.user_amount"),
     )
     scope_description = TextAreaField(
         _l("bia.context_form.fields.scope_description.label"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.context_form.tooltips.scope_description"),
     )
     risk_assessment_human = BooleanField(
@@ -158,6 +158,11 @@ class ContextScopeForm(FlaskForm):
     )
     submit = SubmitField("Save context")
 
+    def validate_end_date(self, field):
+        if self.start_date.data and field.data:
+            if field.data < self.start_date.data:
+                raise ValidationError(_l("bia.context_form.errors.end_date_before_start"))
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         locale = get_locale()
@@ -206,37 +211,37 @@ class ComponentForm(FlaskForm):
     )
     dependencies_it_systems_applications = TextAreaField(
         _l("bia.components.labels.dependencies_it_systems_applications"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_it_systems_applications"),
     )
     dependencies_equipment = TextAreaField(
         _l("bia.components.labels.dependencies_equipment"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_equipment"),
     )
     dependencies_suppliers = TextAreaField(
         _l("bia.components.labels.dependencies_suppliers"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_suppliers"),
     )
     dependencies_people = TextAreaField(
         _l("bia.components.labels.dependencies_people"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_people"),
     )
     dependencies_facilities = TextAreaField(
         _l("bia.components.labels.dependencies_facilities"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_facilities"),
     )
     dependencies_others = TextAreaField(
         _l("bia.components.labels.dependencies_others"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.dependencies_others"),
     )
     description = TextAreaField(
         _l("bia.components.labels.description"),
-        validators=[Optional()],
+        validators=[Optional(), Length(max=5000)],
         description=_l("bia.components.tooltips.description"),
     )
     environments = FieldList(

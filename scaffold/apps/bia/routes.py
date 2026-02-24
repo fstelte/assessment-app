@@ -680,6 +680,7 @@ def delete_component(component_id: int):
 def view_components():
     scope_filter = request.args.get("scope", "all").strip()
     search_term = request.args.get("q", "").strip()
+    selected_bia_id = request.args.get("bia_id", type=int)
     page = request.args.get("page", 1, type=int)
     if page < 1:
         page = 1
@@ -730,6 +731,7 @@ def view_components():
         dpia_enabled=dpia_enabled,
         search_term=search_term,
         current_view_url=current_view_url,
+        selected_bia_id=selected_bia_id,
     )
 
 

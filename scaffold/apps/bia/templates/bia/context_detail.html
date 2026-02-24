@@ -108,7 +108,7 @@
       <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
         <span>Components</span>
         {% if not export_mode|default(false) %}
-        <a href="{{ url_for('bia.view_components') }}?scope={{ item.name | urlencode }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
         {% endif %}
       </div>
       <div class="card-body p-0">
@@ -276,9 +276,9 @@
       <div class="card-header {{ border_class }}">Overview</div>
       <div class="card-body">
         <dl class="row mb-0">
-          <dt class="col-sm-5">Responsible</dt>
-          <dd class="col-sm-7">{{ item.author.full_name if item.author else item.responsible or 'Not set' }}</dd>
-          <dt class="col-sm-5">Coordinator</dt>
+          <dt class="col-sm-5">{{ _('bia.context_form.fields.responsible.label') }}</dt>
+          <dd class="col-sm-7">{{ item.responsible or 'Not set' }}</dd>
+          <dt class="col-sm-5">{{ _('bia.context_form.fields.coordinator.label') }}</dt>
           <dd class="col-sm-7">{{ item.coordinator or 'Not set' }}</dd>
           <dt class="col-sm-5">Project leader</dt>
           <dd class="col-sm-7">{{ item.project_leader or 'Not set' }}</dd>

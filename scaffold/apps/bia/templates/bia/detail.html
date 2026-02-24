@@ -47,7 +47,12 @@
 <div class="d-flex flex-column flex-lg-row align-items-start gap-4">
 	<div class="flex-grow-1">
 		<div class="card bg-dark border-secondary h-100">
-			<div class="card-header border-secondary">Components</div>
+			<div class="card-header border-secondary d-flex justify-content-between align-items-center">
+				<span>Components</span>
+				<a href="{{ url_for('bia.view_components', scope=context.name, bia_id=context.id) }}#add-component-panel" class="btn btn-primary btn-sm">
+					<i class="fas fa-plus me-1"></i>{{ _('bia.context_form.components.add') }}
+				</a>
+			</div>
 			<div class="card-body p-0">
 				{% if components %}
 				<div class="table-responsive">

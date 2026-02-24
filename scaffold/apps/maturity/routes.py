@@ -14,6 +14,7 @@ from scaffold.models import (
     MaturityAnswer,
     MaturityAssessment,
     MaturityLevel,
+    MaturityScore,
 )
 from .models import AssessmentStatus, MaturityAssessmentVersion
 from .utils import export_to_sql
@@ -169,13 +170,20 @@ def assess(control_id):
                 req_key = req["id"]
                 
                 if ignore_level:
+                    score_val = 0
+                    jira_ticket = ""
+                    description = ""
+                    evidence_url = ""
                     is_compliant = False
-                    evidence_text = ""
                 else:
-                    # Extract form data
-                    evidence_text = request.form.get(f"evidence_{req_key}", "").strip()
-                    # Compliance is determined by whether evidence is provided
-                    is_compliant = bool(evidence_text)
+                    # Extract structured form data
+                    score_val = int(request.form.get(f"score_{req_key}", 0))
+                    jira_ticket = request.form.get(f"jira_{req_key}", "").strip()
+                    description = request.form.get(f"desc_{req_key}", "").strip()
+                    evidence_url = request.form.get(f"url_{req_key}", "").strip()
+                    
+                    # Logic: Score 3 (Implemented) and 4 (Best Practice) count as compliant
+                    is_compliant = score_val >= 3
                 
                 # Find or create answer record
                 answer = MaturityAnswer.query.filter_by(
@@ -190,8 +198,16 @@ def assess(control_id):
                     )
                     db.session.add(answer)
                 
+                # Update fields
+                try:
+                    answer.score = MaturityScore(score_val)
+                except ValueError:
+                    answer.score = MaturityScore.NOT_APPLICABLE
+
+                answer.jira_ticket = jira_ticket
+                answer.description = description
+                answer.evidence_url = evidence_url
                 answer.compliant = is_compliant
-                answer.evidence = evidence_text
                 
                 compliance_map[req_key] = is_compliant
 
@@ -234,6 +250,7 @@ def assess(control_id):
         levels=CMMI_REQUIREMENTS,
         answers=existing_answers,
         MaturityLevel=MaturityLevel,
+        MaturityScore=MaturityScore,
         AssessmentStatus=AssessmentStatus,
     )
 

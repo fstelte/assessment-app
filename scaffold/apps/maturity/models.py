@@ -16,6 +16,17 @@ class MaturityLevel(IntEnum):
 
 
 @unique
+class MaturityScore(IntEnum):
+    """Specific compliance score for a requirement."""
+
+    NOT_APPLICABLE = 0
+    NOT_AVAILABLE = 1  # Major gap
+    PARTIALLY_IMPLEMENTED = 2  # Minor gap
+    IMPLEMENTED_NEEDS_IMPROVEMENT = 3
+    BEST_PRACTICE = 4
+
+
+@unique
 class AssessmentStatus(IntEnum):
     """Workflow status for Maturity Assessments."""
 
@@ -80,7 +91,17 @@ class MaturityAnswer(db.Model):
     )
     level = db.Column(db.Enum(MaturityLevel), nullable=False)
     requirement_key = db.Column(db.String(50), nullable=False)
+    
+    # Legacy field - calculated from score
     compliant = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # New Fields
+    score = db.Column(db.Enum(MaturityScore), default=MaturityScore.NOT_APPLICABLE)
+    jira_ticket = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    evidence_url = db.Column(db.String(1024))
+    
+    # Legacy evidence text (can be used as description backup)
     evidence = db.Column(db.Text)
 
     def __repr__(self):
