@@ -51,7 +51,7 @@ from ..apps.risk.models import (
     RiskSeverityThreshold,
     RiskTreatmentOption,
 )
-from ..apps.maturity.models import MaturityAnswer, MaturityAssessment, MaturityLevel
+from ..apps.maturity.models import MaturityAnswer, MaturityAssessment, MaturityLevel, MaturityScore
 from .audit import AuditLog
 
 __all__ = [
@@ -85,6 +85,7 @@ __all__ = [
     "RiskSeverityThreshold",
     "RiskTreatmentOption",
     "MaturityLevel",
+    "MaturityScore",
     "MaturityAssessment",
     "MaturityAnswer",
 ]

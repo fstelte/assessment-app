@@ -74,27 +74,83 @@
           <div class="space-y-6">
             {% for req in reqs %}
               {% set answer = answers.get(req.id) %}
-              <div class="flex flex-col space-y-3 pb-4 {% if not loop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+              <div class="flex flex-col space-y-4 pb-6 {% if not loop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
                 
                 <!-- Requirement Text -->
-                <div class="relative flex items-start">
-                  <div class="text-sm leading-6">
-                    <label for="evidence_{{ req.id }}" class="font-medium text-gray-900 dark:text-gray-200 block">
-                      {{ _(req.text) }} <span class="text-red-500">*</span>
-                    </label>
-                    <p class="text-gray-500 dark:text-gray-400 font-italic">
-                      {{ _(req.help_text) }}
-                    </p>
-                  </div>
+                <div class="relative">
+                  <label class="text-base font-semibold text-gray-900 dark:text-white block">
+                    {{ _(req.text) }}
+                  </label>
+                  {% if req.help_text %}
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ _(req.help_text) }}
+                  </p>
+                  {% endif %}
                 </div>
 
-                <!-- Evidence Text -->
-                <div class="">
-                  <textarea id="evidence_{{ req.id }}" 
-                            name="evidence_{{ req.id }}" 
-                            rows="2" 
-                            class="evidence-textarea block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:bg-gray-900 sm:text-sm sm:leading-6"
-                            placeholder="{{ _('maturity.evidence_placeholder') }}">{{ answer.evidence if answer else '' }}</textarea>
+                <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
+                  <!-- Score -->
+                  <div class="sm:col-span-3">
+                    <label for="score_{{ req.id }}" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                      {{ _("maturity.score_label") or "Maturity Score" }}
+                    </label>
+                    <div class="mt-1">
+                      <select id="score_{{ req.id }}" 
+                              name="score_{{ req.id }}" 
+                              onchange="toggleJira(this, '{{ req.id }}')"
+                              class="maturity-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
+                        <option value="0" {% if not answer or answer.score.value == 0 %}selected{% endif %}>N/A - Not Applicable</option>
+                        <option value="1" {% if answer and answer.score.value == 1 %}selected{% endif %}>1 - Not available (major gap)</option>
+                        <option value="2" {% if answer and answer.score.value == 2 %}selected{% endif %}>2 - Partially implemented (minor gap)</option>
+                        <option value="3" {% if answer and answer.score.value == 3 %}selected{% endif %}>3 - Implemented but needs improvement</option>
+                        <option value="4" {% if answer and answer.score.value == 4 %}selected{% endif %}>4 - Best practice</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Jira Ticket (Conditional) -->
+                  <div class="sm:col-span-3" id="jira_container_{{ req.id }}" style="{% if not answer or answer.score.value not in [1, 2, 3] %}display: none;{% endif %}">
+                     <label for="jira_{{ req.id }}" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                      {{ _("maturity.jira_label") or "Jira Ticket / Tracking Issue" }}
+                    </label>
+                    <div class="mt-1">
+                      <input type="text" 
+                             name="jira_{{ req.id }}" 
+                             id="jira_{{ req.id }}" 
+                             value="{{ answer.jira_ticket if answer and answer.jira_ticket else '' }}"
+                             class="maturity-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                             placeholder="PROJECT-123">
+                    </div>
+                  </div>
+
+                  <!-- Evidence URL -->
+                  <div class="sm:col-span-6">
+                    <label for="url_{{ req.id }}" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                      {{ _("maturity.evidence_url_label") or "Evidence Link / Attachment URL" }}
+                    </label>
+                    <div class="mt-1">
+                      <input type="url" 
+                             name="url_{{ req.id }}" 
+                             id="url_{{ req.id }}" 
+                             value="{{ answer.evidence_url if answer and answer.evidence_url else '' }}"
+                             class="maturity-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                             placeholder="https://sharepoint.com/...">
+                    </div>
+                  </div>
+
+                  <!-- Description -->
+                  <div class="sm:col-span-6">
+                    <label for="desc_{{ req.id }}" class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200">
+                      {{ _("maturity.description_label") or "Context / Description" }}
+                    </label>
+                    <div class="mt-1">
+                      <textarea id="desc_{{ req.id }}" 
+                                name="desc_{{ req.id }}" 
+                                rows="3" 
+                                class="maturity-input block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700"
+                                placeholder="{{ _('maturity.evidence_placeholder') }}">{{ answer.description if answer and answer.description else (answer.evidence if answer else '') }}</textarea>
+                    </div>
+                  </div>
                 </div>
               </div>
             {% endfor %}
@@ -149,29 +205,46 @@ function updateLevelVisibility() {
     
     sections.forEach(section => {
         const level = parseInt(section.getAttribute('data-level'));
-        const textareas = section.querySelectorAll('.evidence-textarea');
+        const inputs = section.querySelectorAll('.maturity-input');
         
         // Only show sections up to the target level. 
         // If targetLevel is 0 (none selected), everything is hidden.
         if (targetLevel > 0 && level <= targetLevel) {
             section.style.display = 'block';
              // Enable inputs in visible sections
-            textareas.forEach(el => {
+            inputs.forEach(el => {
                 el.disabled = false;
             });
         } else {
             section.style.display = 'none';
             // Disable inputs so they are not submitted
-            textareas.forEach(el => {
+            inputs.forEach(el => {
                 el.disabled = true;
-                el.required = false; 
             });
         }
     });
 }
 
+function toggleJira(selectElement, reqId) {
+    const val = parseInt(selectElement.value);
+    const container = document.getElementById('jira_container_' + reqId);
+    if (!container) return;
+    
+    // Show Jira field for options 1, 2, 3. Hide for 0 (N/A) and 4 (Best Practice)
+    if (val >= 1 && val <= 3) {
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     updateLevelVisibility();
+    
+    const targetSelector = document.getElementById('target_level');
+    if (targetSelector) {
+        targetSelector.addEventListener('change', updateLevelVisibility);
+    }
 });
 </script>
 {% endblock %}

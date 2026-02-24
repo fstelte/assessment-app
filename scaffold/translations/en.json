@@ -165,7 +165,7 @@
           "label": "Scope description"
         },
         "responsible": {
-          "label": "End responsible"
+          "label": "End Responsible"
         },
         "coordinator": {
           "label": "Coordinator"
@@ -1885,6 +1885,10 @@
     "target_level_updated": "Target level updated.",
     "target_level_label": "Target Maturity Level",
     "target_level_help": "Select the intended maturity level to filter relevant requirements.",
+    "score_label": "Maturity Score",
+    "jira_label": "Jira Ticket / Tracking Issue",
+    "evidence_url_label": "Evidence Link / Attachment URL",
+    "description_label": "Context / Description",
     "set_target_button": "Set",
     "finish_button": "Finish Assessment",
     "decline_button": "Decline / Reset",

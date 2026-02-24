@@ -133,9 +133,9 @@
         <label for="bia-id" class="form-label tooltip-trigger">{{ _('bia.components.add.bia_label') }}</label>
         <span id="bia-id-tooltip" class="visually-hidden">{{ _('bia.components.tooltips.scope') }}</span>
         <select id="bia-id" name="bia_id" class="form-select" required aria-describedby="bia-id-tooltip">
-          <option value="" disabled selected>{{ _('bia.components.add.bia_placeholder') }}</option>
+          <option value="" disabled {% if not selected_bia_id %}selected{% endif %}>{{ _('bia.components.add.bia_placeholder') }}</option>
           {% for context in contexts %}
-            <option value="{{ context.id }}">{{ context.name }}</option>
+            <option value="{{ context.id }}" {% if selected_bia_id and context.id == selected_bia_id %}selected{% endif %}>{{ context.name }}</option>
           {% endfor %}
         </select>
       </div>
