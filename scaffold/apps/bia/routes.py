@@ -352,7 +352,7 @@ def new_item():
     if form.validate_on_submit():
         context = ContextScope(author=_resolve_user())
         if context.author:
-            context.responsible = context.author.full_name
+            context.coordinator = context.author.full_name
             context.risk_owner = context.author.full_name
         _apply_context_form(form, context, allow_owner_assignment=can_assign_owner)
         context.last_update = date.today()
@@ -409,6 +409,9 @@ def edit_item(item_id: int):
         return redirect(url_for("bia.view_item", item_id=item.id))
 
     form = ContextScopeForm(obj=item)
+    if request.method == "GET" and item.tier_id is not None:
+        form.tier.data = item.tier_id
+
     component_form = ComponentForm()
     _configure_component_form(component_form)
     can_assign_owner = _can_manage_bia_owner()
@@ -454,7 +457,7 @@ def update_owner(item_id: int):
     previous_state = {
         "author_id": context.author_id,
         "author_name": getattr(context.author, "full_name", None) if context.author else None,
-        "responsible": context.responsible,
+        "coordinator": context.coordinator,
         "security_manager": context.security_manager,
     }
 
@@ -462,7 +465,7 @@ def update_owner(item_id: int):
     message: str
     if not owner_raw:
         context.author = None
-        context.responsible = None
+        context.coordinator = None
         message = _("bia.flash.owner_cleared")
         assigned_owner = None
     else:
@@ -476,7 +479,7 @@ def update_owner(item_id: int):
             flash(_("bia.flash.unavailable_owner"), "danger")
             return redirect(url_for("bia.dashboard"))
         context.author = owner
-        context.responsible = owner.full_name
+        context.coordinator = owner.full_name
         message = _("bia.flash.owner_set", name=owner.full_name)
         assigned_owner = owner
     context._suppress_last_update = True
@@ -484,7 +487,7 @@ def update_owner(item_id: int):
     current_state = {
         "author_id": context.author_id,
         "author_name": getattr(context.author, "full_name", None) if context.author else None,
-        "responsible": context.responsible,
+        "coordinator": context.coordinator,
         "security_manager": context.security_manager,
     }
 
@@ -1797,7 +1800,7 @@ def _apply_context_form(
     context.security_manager = form.security_manager.data
     context.incident_contact = form.incident_contact.data
     if context.author:
-        context.responsible = context.author.full_name
+        context.coordinator = context.author.full_name
 
 
 def _collect_ai_identifications(context: ContextScope) -> dict[int, AIIdentificatie]:
