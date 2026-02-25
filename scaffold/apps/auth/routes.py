@@ -10,7 +10,7 @@ from flask import Blueprint, current_app, flash, make_response, redirect, render
 from flask_login import current_user, login_required, logout_user
 from onelogin.saml2.errors import OneLogin_Saml2_Error
 
-from ...extensions import db
+from ...extensions import db, csrf
 from ..identity.models import User, UserStatus
 from ...core.i18n import get_locale, session_storage_key, set_locale, gettext as _
 from .flow import (
@@ -177,6 +177,7 @@ def login_saml():
 
 
 @bp.route("/login/saml/acs", methods=["POST"])
+@csrf.exempt
 def login_saml_acs():
     settings = _get_saml_settings()
     if settings is None:
@@ -310,6 +311,7 @@ def login_saml_metadata():
 
 
 @bp.route("/login/saml/sls", methods=["GET", "POST"])
+@csrf.exempt
 def login_saml_sls():
     settings = _get_saml_settings()
     if settings is None:

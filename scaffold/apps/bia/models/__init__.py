@@ -72,6 +72,14 @@ class ContextScope(db.Model):
     security_manager = db.Column(Text)
     incident_contact = db.Column(Text)
 
+    is_archived = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        server_default="false",
+    )
+    archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     author = db.relationship(User, back_populates="bia_contexts")
@@ -327,7 +335,13 @@ def _update_last_modified(mapper, connection, target) -> None:
             return
         state = inspect(target)
         changed_attrs = {attr.key for attr in state.attrs if attr.history.has_changes()}
-        ignored_attrs = {"author_id", "author", "last_update"}
+        ignored_attrs = {
+            "author_id",
+            "author",
+            "last_update",
+            "is_archived",
+            "archived_at",
+        }
 
         if not (changed_attrs - ignored_attrs):
             return
@@ -343,6 +357,8 @@ def _update_last_modified(mapper, connection, target) -> None:
         context_scope = target.context_scope
 
     if context_scope is not None:
+        if getattr(context_scope, "_suppress_last_update", False):
+            return
         context_scope.last_update = date.today()
 
 
