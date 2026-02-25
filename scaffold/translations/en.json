@@ -67,7 +67,29 @@
       "current_password_invalid": "Current password was invalid.",
       "sql_export_failed": "Failed to export SQL: {details}",
       "sql_import_success": "SQL file imported successfully.",
-      "sql_import_unexpected": "Unexpected error while importing SQL."
+      "sql_import_unexpected": "Unexpected error while importing SQL.",
+      "archived": "BIA has been archived.",
+      "unarchived": "BIA has been unarchived.",
+      "archived_readonly": "This BIA is archived and cannot be modified.",
+      "archive_forbidden": "You do not have permission to archive this BIA.",
+      "copied": "BIA copied successfully."
+    },
+    "actions": {
+      "archive": "Archive",
+      "unarchive": "Unarchive",
+      "confirm_archive": "Are you sure you want to archive this BIA? It will become read-only.",
+      "copy": "Copy",
+      "confirm_copy": "Duplicate this BIA?"
+    },
+    "archived": {
+      "title": "Archived BIAs",
+      "empty": "No archived BIAs found.",
+      "empty_subtitle": "Archived items will appear here.",
+      "banner": "This BIA is archived and cannot be modified.",
+      "date_label": "Archived on",
+      "back_to_list": "Back to archived list",
+      "unarchive": "Unarchive",
+      "confirm_unarchive": "Are you sure you want to unarchive this BIA?"
     },
     "dashboard": {
       "title": "BIA Dashboard",
@@ -81,6 +103,7 @@
         "new_bia": "New BIA",
         "import_csv": "Import CSV",
         "import_sql": "Import SQL",
+        "archived": "View Archived",
         "export_inventory": "Export data inventory (CSV)",
         "export_cia_detailed": "Export CIA consequences (detailed)",
         "export_cia_summary": "Export CIA consequences (summary)",

@@ -39,7 +39,7 @@ from .core.i18n import (
     session_storage_key,
     set_locale,
 )
-from .extensions import db, login_manager, migrate
+from .extensions import db, login_manager, migrate, csrf
 from .apps.identity.models import ROLE_ADMIN, ensure_default_roles
 
 
@@ -170,6 +170,7 @@ def _init_extensions(app: Flask) -> None:
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
 
 def _register_apps(app: Flask, settings: Settings) -> None:

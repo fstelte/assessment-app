@@ -219,7 +219,29 @@
       "current_password_invalid": "Huidig wachtwoord ongeldig.",
       "sql_export_failed": "SQL-export mislukt: {details}",
       "sql_import_success": "SQL-bestand succesvol geïmporteerd.",
-      "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL."
+      "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL.",
+      "archived": "BIA is gearchiveerd.",
+      "unarchived": "BIA is gedearchiveerd.",
+      "archived_readonly": "Deze BIA is gearchiveerd en kan niet worden gewijzigd.",
+      "archive_forbidden": "Je hebt geen toestemming om deze BIA te archiveren.",
+      "copied": "BIA succesvol gekopieerd."
+    },
+    "actions": {
+      "archive": "Archiveren",
+      "unarchive": "Dearchiveren",
+      "confirm_archive": "Weet u zeker dat u deze BIA wilt archiveren? Het wordt alleen-lezen.",
+      "copy": "Kopiëren",
+      "confirm_copy": "Deze BIA dupliceren?"
+    },
+    "archived": {
+      "title": "Gearchiveerde BIA's",
+      "empty": "Geen gearchiveerde BIA's gevonden.",
+      "empty_subtitle": "Gearchiveerde items verschijnen hier.",
+      "banner": "Deze BIA is gearchiveerd en kan niet worden gewijzigd.",
+      "date_label": "Gearchiveerd op",
+      "back_to_list": "Terug naar gearchiveerde lijst",
+      "unarchive": "Dearchiveren",
+      "confirm_unarchive": "Weet u zeker dat u deze BIA wilt dearchiveren?"
     },
     "dashboard": {
       "title": "BIA-dashboard",
@@ -233,6 +255,7 @@
         "new_bia": "Nieuwe BIA",
         "import_csv": "CSV importeren",
         "import_sql": "SQL importeren",
+        "archived": "Bekijk Gearchiveerd",
         "export_inventory": "Data-inventaris exporteren (CSV)",
         "export_cia_detailed": "CIA-gevolgen exporteren (gedetailleerd)",
         "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)",

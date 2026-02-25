@@ -7,7 +7,7 @@ import io
 import logging
 import re
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from pathlib import Path
 
@@ -71,6 +71,8 @@ from .utils import (
     import_from_csv,
     import_sql_file,
 )
+
+
 def get_impact_color(impact):
     impact_colors = {
         'catastrophic': 'badge bg-danger',
@@ -295,6 +297,8 @@ def _can_manage_bia_owner() -> bool:
 
 
 def _can_edit_context(context: ContextScope) -> bool:
+    if context.is_archived:
+        return False
     if context.author:
         return context.author == current_user
     return current_user.has_role(ROLE_ADMIN)
@@ -321,7 +325,7 @@ def _safe_return_target(target: str | None) -> str | None:
 @bp.route("/index")
 @login_required
 def dashboard():
-    contexts = ContextScope.query.order_by(ContextScope.last_update.desc()).all()
+    contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.last_update.desc()).all()
     can_manage_owner = _can_manage_bia_owner()
     owner_choices: list[User] = []
     if can_manage_owner:
@@ -444,6 +448,47 @@ def delete_item(item_id: int):
     db.session.commit()
     flash(_("bia.flash.deleted"), "success")
     return redirect(url_for("bia.dashboard"))
+
+
+@bp.route("/item/<int:item_id>/archive", methods=["POST"])
+@login_required
+def archive_item(item_id: int):
+    item = ContextScope.query.get_or_404(item_id)
+    
+    can_archive = False
+    if item.author:
+        if item.author == current_user:
+            can_archive = True
+    if current_user.has_role(ROLE_ADMIN):
+        can_archive = True
+        
+    if not can_archive:
+        flash(_("bia.flash.archive_forbidden"), "danger")
+        return redirect(url_for("bia.view_item", item_id=item.id))
+        
+    if item.is_archived:
+        item.is_archived = False
+        item.archived_at = None
+        flash(_("bia.flash.unarchived"), "success")
+    else:
+        item.is_archived = True
+        item.archived_at = datetime.now(timezone.utc)
+        flash(_("bia.flash.archived"), "success")
+        
+    db.session.commit()
+    return redirect(url_for("bia.view_item", item_id=item.id))
+
+
+@bp.route("/archived")
+@login_required
+def archived_list():
+    contexts = (
+        ContextScope.query.filter_by(is_archived=True)
+        .order_by(ContextScope.archived_at.desc())
+        .all()
+    )
+    return render_template("bia/archived.html", contexts=contexts)
+
 
 
 @bp.route("/item/<int:item_id>/owner", methods=["POST"])
@@ -624,7 +669,7 @@ def edit_component_form(component_id: int):
 
     form = ComponentForm(obj=component)
     _configure_component_form(form, component=component)
-    contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
+    contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
 
     if form.validate_on_submit():
         context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
@@ -694,6 +739,7 @@ def view_components():
             joinedload(Component.dpia_assessments),
         )
         .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
     )
     if scope_filter and scope_filter.lower() != "all":
         query = query.filter(ContextScope.name.ilike(f"%{scope_filter}%"))
@@ -703,7 +749,7 @@ def view_components():
     if pagination.total and page > pagination.pages:
         return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter, q=search_term))
     components = pagination.items
-    contexts = ContextScope.query.order_by(ContextScope.name.asc()).all()
+    contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()
     _configure_component_form(component_form)
     view_functions = current_app.view_functions
@@ -1407,6 +1453,7 @@ def export_data_inventory():
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
         .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
         .all()
     )
     csv_buffer = io.StringIO()
@@ -1441,6 +1488,8 @@ def export_authentication_overview():
             joinedload(Component.authentication_method),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
         .order_by(Component.name.asc())
         .all()
     )
@@ -1492,7 +1541,7 @@ def export_authentication_overview():
 @login_required
 def export_all_consequences():
     export_type = request.args.get("type", "detailed")
-    bias = ContextScope.query.all()
+    bias = ContextScope.query.filter(ContextScope.is_archived == False).all()
     # Summary export: produce a compact per-BIA summary of counts and max impacts
     if export_type == "summary":
         summaries = []
@@ -1569,7 +1618,7 @@ def export_availability_requirements():
         return float('inf')
 
     export_type = request.args.get("type", "detailed")
-    bias = ContextScope.query.all()
+    bias = ContextScope.query.filter(ContextScope.is_archived == False).all()
 
     if export_type == "summary":
         summaries = []
@@ -1662,7 +1711,7 @@ def export_availability_requirements():
 @login_required
 def debug_consequences():
     payload = []
-    for bia in ContextScope.query.all():
+    for bia in ContextScope.query.filter(ContextScope.is_archived == False).all():
         entry = {
             "bia_name": bia.name,
             "bia_id": bia.id,
@@ -1709,7 +1758,7 @@ def export_bia_sql(item_id: int):
 @login_required
 def export_all_dependencies():
     try:
-        bias = ContextScope.query.order_by(ContextScope.name).all()
+        bias = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name).all()
 
         html_content = render_template(
             "bia/export_all_dependencies.html",
@@ -1733,7 +1782,7 @@ def export_all_dependencies():
 @login_required
 def export_all_tiers():
     try:
-        bias = ContextScope.query.outerjoin(ContextScope.tier).order_by(BiaTier.level, ContextScope.name).all()
+        bias = ContextScope.query.outerjoin(ContextScope.tier).filter(ContextScope.is_archived == False).order_by(BiaTier.level, ContextScope.name).all()
 
         html_content = render_template(
             "bia/export_all_tiers.html",
@@ -1848,3 +1897,119 @@ def _safe_filename(value: str | None) -> str:
         return "bia"
     cleaned = "".join(ch for ch in value if ch.isalnum() or ch in {"_", "-", " "}).strip()
     return cleaned.replace(" ", "_") or "bia"
+@bp.route("/item/<int:item_id>/copy", methods=["POST"])
+@login_required
+def copy_item(item_id: int):
+    original = ContextScope.query.get_or_404(item_id)
+    
+    # Create new context scope
+    new_context = ContextScope(
+        name=f"Copy of {original.name}"[:255], # Truncate if needed
+        responsible=original.responsible,
+        coordinator=original.coordinator,
+        start_date=date.today(),
+        end_date=original.end_date,
+        last_update=date.today(),
+        service_description=original.service_description,
+        knowledge=original.knowledge,
+        interfaces=original.interfaces,
+        mission_critical=original.mission_critical,
+        support_contracts=original.support_contracts,
+        security_supplier=original.security_supplier,
+        user_amount=original.user_amount,
+        scope_description=original.scope_description,
+        tier_id=original.tier_id,
+        risk_assessment_human=original.risk_assessment_human,
+        risk_assessment_process=original.risk_assessment_process,
+        risk_assessment_technological=original.risk_assessment_technological,
+        ai_model=original.ai_model,
+        project_leader=original.project_leader,
+        risk_owner=original.risk_owner,
+        product_owner=original.product_owner,
+        technical_administrator=original.technical_administrator,
+        security_manager=original.security_manager,
+        incident_contact=original.incident_contact,
+        author=current_user, # Assign to current user
+        is_archived=False,
+        archived_at=None
+    )
+    new_context._suppress_last_update = True
+    db.session.add(new_context)
+    db.session.flush() # Get ID for relationships
+
+    # Copy Summary
+    if original.summary:
+        new_summary = Summary(
+            content=original.summary.content,
+            context_scope=new_context
+        )
+        db.session.add(new_summary)
+
+    # Copy Components and their children
+    for comp in original.components:
+        new_comp = Component(
+            name=f"Copy of {comp.name}" if len(f"Copy of {comp.name}") < 255 else f"Copy of {comp.name}"[:255],
+            info_type=comp.info_type,
+            info_owner=comp.info_owner,
+            user_type=comp.user_type,
+            description=comp.description,
+            dependencies_it_systems_applications=comp.dependencies_it_systems_applications,
+            dependencies_equipment=comp.dependencies_equipment,
+            dependencies_suppliers=comp.dependencies_suppliers,
+            dependencies_people=comp.dependencies_people,
+            dependencies_facilities=comp.dependencies_facilities,
+            dependencies_others=comp.dependencies_others,
+            authentication_method_id=comp.authentication_method_id,
+            context_scope=new_context
+        )
+        db.session.add(new_comp)
+        db.session.flush() # Get component ID
+
+        # Copy Component Environments
+        for env in comp.environments:
+            new_env = ComponentEnvironment(
+                component=new_comp,
+                environment_type=env.environment_type,
+                is_enabled=env.is_enabled,
+                authentication_method_id=env.authentication_method_id
+            )
+            db.session.add(new_env)
+
+        # Copy Consequences
+        for cons in comp.consequences:
+            new_cons = Consequences(
+                component=new_comp,
+                consequence_category=cons.consequence_category,
+                security_property=cons.security_property,
+                consequence_worstcase=cons.consequence_worstcase,
+                justification_worstcase=cons.justification_worstcase,
+                consequence_realisticcase=cons.consequence_realisticcase,
+                justification_realisticcase=cons.justification_realisticcase
+            )
+            db.session.add(new_cons)
+
+        # Copy Availability Requirements
+        if comp.availability_requirement:
+            av = comp.availability_requirement
+            new_av = AvailabilityRequirements(
+                component=new_comp,
+                mtd=av.mtd,
+                rto=av.rto,
+                rpo=av.rpo,
+                masl=av.masl
+            )
+            db.session.add(new_av)
+
+        # Copy AI Identificaties
+        for ai in comp.ai_identificaties:
+            new_ai = AIIdentificatie(
+                component=new_comp,
+                category=ai.category,
+                motivatie=ai.motivatie
+            )
+            db.session.add(new_ai)
+
+    db.session.commit()
+    flash(_('bia.flash.copied'), 'success')
+    return redirect(url_for('bia.view_item', item_id=new_context.id))
+

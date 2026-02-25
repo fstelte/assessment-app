@@ -30,8 +30,30 @@
 {% set text_muted = 'text-secondary' if is_dark else 'text-muted' %}
 {% if not export_mode|default(false) %}
   <div class="mb-3">
-    <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; Back to dashboard</a>
+    {% if item.is_archived %}
+      <a href="{{ url_for('bia.archived_list') }}" class="{{ text_muted }} text-decoration-none">&larr; {{ _('bia.archived.back_to_list') }}</a>
+    {% else %}
+      <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; Back to dashboard</a>
+    {% endif %}
   </div>
+{% endif %}
+
+{% if item.is_archived %}
+<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+  <i class="fas fa-lock me-3 fa-lg"></i>
+  <div class="flex-grow-1">
+    <strong>{{ _('bia.archived.banner') }}</strong>
+    <div>{{ _('bia.archived.archived_on', date=item.archived_at.strftime('%Y-%m-%d %H:%M') if item.archived_at else '-') }}</div>
+  </div>
+  {% if can_edit_context|default(False) %}
+  <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="ms-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-warning" onclick="return confirm('{{ _('bia.archived.confirm_unarchive') }}');">
+      {{ _('bia.archived.unarchive') }}
+    </button>
+  </form>
+  {% endif %}
+</div>
 {% endif %}
 
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4 {% if export_mode %}pt-3{% endif %}">
@@ -41,20 +63,36 @@
       {% if item.tier %}
       <span class="badge text-bg-secondary fs-6 align-middle ms-2">{{ item.tier.get_label() }}</span>
       {% endif %}
+      {% if item.is_archived %}
+      <span class="badge bg-warning text-dark fs-6 align-middle ms-2"><i class="fas fa-lock me-1"></i> {{ _('bia.archived.badge') }}</span>
+      {% endif %}
     </h1>
     <p class="{{ text_muted }} mb-0">Last updated {{ item.last_update or 'never' }}</p>
   </div>
   {% if not export_mode|default(false) %}
     <div class="d-flex flex-wrap gap-2">
-      {% if can_edit_context|default(False) %}
+      {% if can_edit_context|default(False) and not item.is_archived %}
         <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Edit</a>
         <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Summary</a>
       {% endif %}
       <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export HTML</a>
       <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
       <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
-      {% if can_edit_context|default(False) %}
+      {% if can_edit_context|default(False) and not item.is_archived %}
+      <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn {{ outline_inverse }} btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
+          <i class="fas fa-copy me-1"></i> {{ _('bia.actions.copy') }}
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
+          <i class="fas fa-archive me-1"></i> {{ _('bia.actions.archive') }}
+        </button>
+      </form>
       <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this BIA?');">Delete</button>
       </form>
       {% endif %}
@@ -107,7 +145,7 @@
     <div class="card {{ card_surface }} h-100">
       <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
         <span>Components</span>
-        {% if not export_mode|default(false) %}
+        {% if not export_mode|default(false) and not item.is_archived %}
         <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
         {% endif %}
       </div>
@@ -168,7 +206,7 @@
     <div class="card {{ card_surface }} mt-4">
       <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
         <span>Availability requirements</span>
-        {% if can_edit_context|default(False) and not export_mode|default(False) %}
+        {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
         <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
         {% endif %}
       </div>
@@ -311,7 +349,7 @@
 <div class="card {{ card_surface }}">
   <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
     <span>Consequences</span>
-    {% if can_edit_context|default(False) and not export_mode|default(False) %}
+    {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
     <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
     {% endif %}
   </div>
@@ -352,7 +390,7 @@
 <div class="card {{ card_surface }} mt-4">
   <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
     <span>{{ _('bia.context_detail.ai_risks.title') }}</span>
-    {% if can_edit_context|default(False) and not export_mode|default(False) %}
+    {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
     <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
     {% endif %}
   </div>
