@@ -70,7 +70,7 @@
     <p class="{{ text_muted }} mb-0">Last updated {{ item.last_update or 'never' }}</p>
   </div>
   {% if not export_mode|default(false) %}
-    <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
       {% if can_edit_context|default(False) and not item.is_archived %}
         <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Edit</a>
         <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Summary</a>
@@ -79,21 +79,21 @@
       <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
       <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
       {% if can_edit_context|default(False) and not item.is_archived %}
-      <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" class="d-inline">
+      <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn {{ outline_inverse }} btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
           <i class="fas fa-copy me-1"></i> {{ _('bia.actions.copy') }}
         </button>
       </form>
-      <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="d-inline">
+      <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
           <i class="fas fa-archive me-1"></i> {{ _('bia.actions.archive') }}
         </button>
       </form>
-      <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" class="d-inline">
+      <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this BIA?');">Delete</button>
+        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">Delete</button>
       </form>
       {% endif %}
     </div>
