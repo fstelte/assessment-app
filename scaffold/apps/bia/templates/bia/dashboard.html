@@ -319,13 +319,21 @@ body[data-theme="dark"] .bia-chip {
 							{{ _('bia.dashboard.card.no_description') }}
 						{% endif %}
 					</div>
-					<div class="d-flex flex-wrap gap-2">
+					<div class="d-flex flex-wrap gap-2 align-items-center">
 						<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.dashboard.card.action_view') }}</a>
 						<a href="{{ url_for('bia.export_item', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_html') }}</a>
 						<a href="{{ url_for('bia.export_csv', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_csv') }}</a>
 						<a href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_sql') }}</a>
 						{% if editable_context_ids and context.id in editable_context_ids %}
 						<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="btn btn-outline-primary btn-sm">{{ _('bia.dashboard.card.action_edit') }}</a>
+						<form method="post" action="{{ url_for('bia.copy_item', item_id=context.id) }}" style="display: contents;">
+							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+							<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">{{ _('bia.actions.copy') }}</button>
+						</form>
+						<form method="post" action="{{ url_for('bia.archive_item', item_id=context.id) }}" style="display: contents;">
+							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+							<button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">{{ _('bia.actions.archive') }}</button>
+						</form>
 						{% endif %}
 					</div>
 					<div class="text-secondary small">
