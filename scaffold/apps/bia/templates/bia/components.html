@@ -1,384 +1,431 @@
 {% extends "base.html" %}
-{% from "partials/forms.html" import render_field_with_tooltip, render_field_with_help %}
+{% from "partials/forms.html" import render_field_with_help %}
+
+{% block title %}{{ _('bia.components.heading') }}{% endblock %}
+
 {% block extra_css %}
-  {{ super() }}
-  {% include "bia/_badge_styles.html" %}
-  <style nonce="{{ csp_nonce }}">
-    .bia-toolbar {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .btn-icon {
-      padding: 0.35rem 0.6rem;
-      font-size: 0.8rem;
-      line-height: 1;
-      border-radius: 0.4rem;
-    }
-    .table-components th {
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
-    }
-    .table-components td {
-      vertical-align: middle;
-    }
-    .table-components td:first-child,
-    .table-components th:first-child {
-      min-width: 18rem;
-    }
-    body.page-bia-components main.container {
-      max-width: 100%;
-      width: 100%;
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-    .bia-pagination-footer {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      align-items: center;
-      justify-content: center;
-    }
-    .bia-pagination-footer small {
-      text-align: center;
-    }
-    .bia-pagination-footer nav {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-    .bia-pagination-footer .pagination {
-      display: inline-flex;
-      flex-wrap: nowrap;
-      gap: 0.25rem;
-      justify-content: center;
-    }
-    .bia-pagination-footer .page-item {
-      display: inline-flex;
-    }
-    @media (max-width: 767px) {
-      .btn-icon {
-        width: 100%;
-      }
-    }
-    @media (min-width: 768px) {
-      .bia-pagination-footer {
-        flex-direction: row;
-      }
-      .bia-pagination-footer small {
-        text-align: left;
-      }
-      .bia-pagination-footer nav {
-        width: auto;
-      }
-    }
-  </style>
+{% include "bia/_badge_styles.html" %}
 {% endblock %}
-{% block title %}{{ _('bia.components.page_title') }}{% endblock %}
+
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; {{ _('bia.components.back') }}</a>
-</div>
+<div class="space-y-6">
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-10 shadow-xl text-white">
+    <!-- Decorative background element -->
+    <div class="absolute -right-20 -top-16 h-80 w-80 rounded-full bg-white/20 blur-xl"></div>
+    
+    <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <nav aria-label="breadcrumb" class="mb-4">
+          <ol class="flex items-center gap-2 text-sm text-blue-100">
+            <li>
+              <a href="{{ url_for('bia.dashboard') }}" class="flex items-center hover:text-white transition-colors no-underline text-inherit">
+                <span>&larr;</span> <span class="ml-1">{{ _('bia.dashboard.header.title') }}</span>
+              </a>
+            </li>
+            <li class="text-blue-300 select-none">/</li>
+            <li class="font-medium text-white" aria-current="page">{{ _('bia.components.heading') }}</li>
+          </ol>
+        </nav>
+        <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ _('bia.components.heading') }}</h1>
+        <p class="text-blue-100 text-lg max-w-2xl">
+          {% if pagination.total %}
+            {{ _('bia.components.showing_count', start=page_start, end=page_end, total=pagination.total) }}
+          {% else %}
+            {{ _('bia.components.no_components') }}
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button type="button" 
+                data-collapse-target="#add-component-panel"
+                aria-expanded="false" 
+                aria-controls="add-component-panel"
+                class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-white text-blue-700 hover:bg-blue-50 shadow-sm">
+          <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          {{ _('bia.components.add_button') }}
+        </button>
+        <a href="{{ url_for('bia.export_data_inventory') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-white/30 bg-blue-800/20 text-white hover:bg-blue-800/40 backdrop-blur-sm">
+          <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {{ _('bia.components.export_inventory') }}
+        </a>
+      </div>
+    </div>
+  </section>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
-  <div>
-    <h1 class="mb-1">{{ _('bia.components.heading') }}</h1>
-    <p class="text-secondary mb-0">{{ _('Showing %(start)d-%(end)d of %(total)d components', start=page_start, end=page_end, total=pagination.total) }}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <button class="btn btn-primary" type="button" data-collapse-target="add-component-panel" aria-expanded="true" aria-controls="add-component-panel">
-      {{ _('bia.components.add.title') }}
-    </button>
-    <a href="{{ url_for('bia.export_data_inventory') }}" class="btn btn-outline-light">{{ _('Export inventory') }}</a>
-  </div>
-</div>
-
-<div class="card bg-dark border-secondary mb-4 bia-toolbar" data-toolbar>
-  <div class="card-body">
-    <form class="row g-3 align-items-end" method="get" action="{{ url_for('bia.view_components') }}">
+  <!-- Filter Toolbar -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-4">
+    <form action="{{ url_for('bia.view_components') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
       <input type="hidden" name="page" value="1">
-      <div class="col-md-4">
-        <label for="scope-filter" class="form-label text-uppercase small">{{ _('Scope') }}</label>
-        <select class="form-select" id="scope-filter" name="scope">
-          <option value="all" {% if selected_scope|lower == 'all' %}selected{% endif %}>{{ _('bia.components.filters.all') }}</option>
+
+      <div class="w-full md:w-1/2">
+        <label for="bia-select" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.dashboard.header.title') }}</label>
+        <select name="bia_id" id="bia-select" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <option value="">{{ _('bia.common.all_items') }}</option>
           {% for context in contexts %}
-            <option value="{{ context.name }}" {% if context.name == selected_scope %}selected{% endif %}>{{ context.name }}</option>
+            <option value="{{ context.id }}" {% if selected_bia_id == context.id %}selected{% endif %}>{{ context.name }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4">
-        <label for="component-query" class="form-label text-uppercase small">{{ _('Search components') }}</label>
-        <input type="search" id="component-query" name="q" value="{{ search_term }}" class="form-control" placeholder="{{ _('Filter by name...') }}">
+
+      <div class="w-full md:w-1/2">
+        <label for="search-input" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.components.filter.component') }}</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="text" name="q" id="search-input" value="{{ search_term }}" placeholder="{{ _('bia.components.filter.search_placeholder') }}" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+        </div>
       </div>
-      <div class="col-md-4 d-flex gap-2 justify-content-md-end">
-        <button type="submit" class="btn btn-primary flex-grow-1 flex-md-grow-0">{{ _('Apply filters') }}</button>
-        {% if search_term or selected_scope|lower != 'all' %}
-          <a href="{{ url_for('bia.view_components') }}" class="btn btn-outline-secondary flex-grow-1 flex-md-grow-0">{{ _('Reset') }}</a>
+
+      <div class="flex gap-2 shrink-0">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm h-[42px]">
+          {{ _('bia.components.filter.apply') }}
+        </button>
+        {% if search_term or selected_bia_id %}
+          <a href="{{ url_for('bia.view_components') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 h-[42px]">
+            {{ _('bia.components.filter.reset') }}
+          </a>
         {% endif %}
       </div>
     </form>
   </div>
-</div>
 
-<div id="add-component-panel" class="collapse show mb-4">
-  <div class="card bg-dark border-secondary">
-    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-      <span>{{ _('bia.components.add.title') }}</span>
-      <small class="text-secondary">Capture ownership, environments, and authentication details for a new component.</small>
-    </div>
-    <div class="card-body">
-      <form id="add-component-form" action="{{ url_for('bia.add_component') }}" method="post" class="row g-3 align-items-end">
-      {{ component_form.hidden_tag() }}
-      <div class="col-md-4 tooltip-wrapper" data-tooltip="{{ _('bia.components.tooltips.scope') }}">
-        <label for="bia-id" class="form-label tooltip-trigger">{{ _('bia.components.add.bia_label') }}</label>
-        <span id="bia-id-tooltip" class="visually-hidden">{{ _('bia.components.tooltips.scope') }}</span>
-        <select id="bia-id" name="bia_id" class="form-select" required aria-describedby="bia-id-tooltip">
-          <option value="" disabled {% if not selected_bia_id %}selected{% endif %}>{{ _('bia.components.add.bia_placeholder') }}</option>
-          {% for context in contexts %}
-            <option value="{{ context.id }}" {% if selected_bia_id and context.id == selected_bia_id %}selected{% endif %}>{{ context.name }}</option>
-          {% endfor %}
-        </select>
+  <div class="flex flex-col gap-4">
+  <!-- Add Component Panel -->
+  <div class="hidden" id="add-component-panel">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] rounded-t-xl font-semibold text-[var(--color-text)]">
+        {{ _('bia.components.add_title') }}
       </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.name, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.info_owner, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.info_type, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.user_type, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_it_systems_applications, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_equipment, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_suppliers, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_people, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_facilities, class='form-control') }}
-      </div>
-      <div class="col-md-4">
-        {{ render_field_with_help(component_form.dependencies_others, class='form-control') }}
-      </div>
-      <div class="col-12">
-        <fieldset class="border rounded p-3">
-          <legend class="float-none w-auto px-2 h6 mb-0">{{ _('bia.components.environments.section_title') }}</legend>
-          <p class="text-secondary small mb-3">{{ _('bia.components.environments.section_help') }}</p>
-          <div class="table-responsive">
-            <table class="table table-sm table-dark align-middle mb-0">
-              <thead>
-                <tr>
-                  <th scope="col">{{ _('bia.components.environments.columns.environment') }}</th>
-                  <th scope="col">{{ _('bia.components.environments.columns.used') }}</th>
-                  <th scope="col">{{ _('bia.components.environments.columns.authentication') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for environment_field in component_form.environments %}
-                  {% set environment_form = environment_field.form %}
-                  <tr>
-                    <td class="text-nowrap">
-                      {{ environment_form.environment_type() }}
-                      {{ bia_environment_label(environment_form.environment_type.data) }}
-                    </td>
-                    <td>
-                      {% set checkbox_id = 'environment-enabled-add-' ~ loop.index0 %}
-                      <div class="form-check">
-                        {{ environment_form.is_enabled(class="form-check-input", id=checkbox_id) }}
-                        <label class="form-check-label" for="{{ checkbox_id }}">{{ _('bia.components.environments.toggle_label') }}</label>
-                      </div>
-                    </td>
-                    <td>
-                      {% set select_id = 'environment-auth-add-' ~ loop.index0 %}
-                      {{ environment_form.authentication_method(class="form-select", id=select_id) }}
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+      <div class="p-6">
+        <form action="{{ url_for('bia.add_component') }}" method="POST">
+          {{ component_form.hidden_tag() }}
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+             <!-- Name -->
+            <div>
+              {{ render_field_with_help(component_form.name, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+
+             <!-- Scope/BIA -->
+            <div>
+               <label for="component-bia-id" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.context_form.title') }}</label>
+               <select name="bia_id" id="component-bia-id" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" required>
+                 {% if selected_bia_id %}
+                    <option value="">{{ _('bia.common.select_context') }}</option>
+                 {% else %}
+                    <option value="" selected disabled>{{ _('bia.common.select_context') }}</option>
+                 {% endif %}
+                 
+                 {% for context in contexts %}
+                   <option value="{{ context.id }}" {% if selected_bia_id == context.id %}selected{% endif %}>{{ context.name }}</option>
+                 {% endfor %}
+               </select>
+            </div>
+
+            <!-- Description -->
+            <div class="md:col-span-2">
+               {{ render_field_with_help(component_form.description, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3) }}
+            </div>
+
+            <!-- Info Type -->
+            <div>
+               {{ render_field_with_help(component_form.info_type, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+
+             <!-- User Type -->
+            <div>
+               {{ render_field_with_help(component_form.user_type, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+            
+             <!-- Owner -->
+            <div>
+               {{ render_field_with_help(component_form.info_owner, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
           </div>
-        </fieldset>
+
+          <!-- Environments Fieldset -->
+          <div class="mb-6">
+            <h4 class="text-base font-semibold text-[var(--color-text)] mb-3">{{ _('bia.components.environments.title') }}</h4>
+            <div class="overflow-hidden rounded-lg border border-[var(--color-border)]">
+              <table class="min-w-full divide-y divide-[var(--color-border)]">
+                <thead class="bg-[var(--color-surface)]">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{{ _('bia.components.environments.type') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{{ _('bia.components.environments.enabled') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">{{ _('bia.components.environments.auth_method') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  {% for environment_field in component_form.environments %}
+                    <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--color-text)]">
+                        {{ environment_field.form.environment_type }}
+                        {{ environment_field.form.environment_label }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text)]">
+                        {{ environment_field.form.is_enabled(class="rounded border-[var(--color-border)] text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50") }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text)]">
+                         {{ environment_field.form.authentication_method(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-sm px-2 py-1") }}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-4 border-t border-[var(--color-border)]">
+              <button type="button" data-collapse-target="#add-component-panel" class="mr-3 inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
+                {{ _('bia.actions.cancel') }}
+              </button>
+              <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
+                {{ _('bia.components.submit_add') }}
+              </button>
+          </div>
+        </form>
       </div>
-      <div class="col-12">
-        {{ render_field_with_help(component_form.description, class='form-control', rows=2) }}
-      </div>
-        <div class="col-12 text-end">
-          <button type="submit" class="btn btn-primary">{{ _('bia.components.add.submit') }}</button>
-        </div>
-      </form>
     </div>
   </div>
-</div>
 
-<div class="card bg-dark border-secondary" id="consequences">
-  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-    <span>{{ _('bia.components.table.title') }}</span>
-    <span class="text-secondary small">{{ _('Updated %(count)d records', count=pagination.total) }}</span>
-  </div>
-  <div class="card-body p-0">
-    {% if components %}
-    <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle mb-0 table-components">
-        <thead>
+  <!-- Components List -->
+  <div id="consequences" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+      <h2 class="text-base font-semibold text-[var(--color-text)]">{{ _('bia.components.list_title') }}</h2>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">
+        {{ pagination.total }} {{ _('bia.components.count_suffix') }}
+      </span>
+    </div>
+    
+    <div>
+      <table class="w-full text-sm text-left align-middle">
+        <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
           <tr>
-            <th scope="col">{{ _('Component') }}</th>
-            <th scope="col">{{ _('Context') }}</th>
-            <th scope="col">{{ _('Owner / Users') }}</th>
-            <th scope="col">{{ _('Environments') }}</th>
-            <th scope="col">{{ _('Availability') }}</th>
-            <th scope="col">{{ _('Consequences') }}</th>
-            <th scope="col">{{ _('Intelligence') }}</th>
-            <th scope="col" class="text-end">{{ _('Actions') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.components.table.component') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.components.table.context') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.components.table.owner_type') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.components.table.environments') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.components.table.availability') }}</th>
+            <th scope="col" class="px-3 py-3 text-center">{{ _('bia.components.table.consequences') }}</th>
+            <th scope="col" class="px-3 py-3 text-center">{{ _('bia.components.table.intelligence') }}</th>
+            <th scope="col" class="px-3 py-3 text-right">{{ _('bia.common.actions') }}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-[var(--color-border)]">
           {% for component in components %}
-          {% set availability = component.availability_requirement %}
-          {% set ai_record = component.ai_identificaties[-1] if component.ai_identificaties else None %}
-          {% set dpia_count = component.dpia_assessments | length %}
-          <tr>
-            <td>
-              <div class="fw-semibold">{{ component.name }}</div>
-              {% if component.info_type %}
-                <div class="text-secondary small">{{ component.info_type }}</div>
-              {% endif %}
-            </td>
-            <td>
-              {% if component.context_scope %}
-                <span class="badge bg-secondary component-badge">{{ component.context_scope.name }}</span>
-              {% else %}
-                <span class="text-secondary">{{ _('bia.components.table.not_linked') }}</span>
-              {% endif %}
-            </td>
-            <td>
-              <div>{{ component.info_owner or _('bia.components.table.not_set') }}</div>
-              <div class="text-secondary small">{{ component.user_type or _('bia.components.table.not_set') }}</div>
-            </td>
-            <td>
-              <div class="d-flex flex-wrap gap-1">
-                {% for environment_type in bia_environment_types %}
-                  {% set env_assignment = bia_component_environment(component, environment_type) %}
-                  {% set environment_label = bia_environment_label(environment_type) %}
-                  {% if env_assignment and env_assignment.is_enabled %}
-                    {% set env_auth = bia_environment_authentication(env_assignment) %}
-                    <span class="env-badge env-badge-enabled">
-                      {{ environment_label }} · {{ env_auth or _('bia.components.environments.badge_no_auth') }}
-                    </span>
-                  {% else %}
-                    <span class="env-badge env-badge-disabled">
-                      {{ environment_label }} · {{ _('bia.components.environments.badge_not_used') }}
-                    </span>
-                  {% endif %}
-                {% endfor %}
-              </div>
-            </td>
-            <td>
-              {% set metrics = [('MTD', availability.mtd if availability else None), ('RTO', availability.rto if availability else None), ('RPO', availability.rpo if availability else None), ('MAMSL', availability.masl if availability else None)] %}
-              <div class="d-flex flex-wrap gap-1">
-                {% for label, value in metrics %}
-                  <span class="badge availability-badge">
-                    <strong>{{ label }}</strong>
-                    <span class="ms-1">{{ value or '—' }}</span>
-                  </span>
-                {% endfor %}
-              </div>
-            </td>
-            <td>
-              <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="badge bg-info text-dark text-decoration-none">
-                {{ component.consequences | length }} {{ _('records') }}
-              </a>
-            </td>
-            <td>
-              <div class="d-flex flex-column gap-2">
-                <div class="d-flex align-items-center gap-2">
-                  {% if ai_record %}
-                    {% set ai_label = ai_record.category or _('No AI profile') %}
-                    <span class="bia-ai-badge" data-ai="{{ ai_label | lower }}">{{ ai_label }}</span>
-                  {% else %}
-                    <span class="bia-ai-badge text-secondary small" data-ai="no ai">{{ _('No AI profile') }}</span>
-                  {% endif %}
-                  <button class="btn btn-outline-light btn-icon" type="button" data-ai-manage data-component-id="{{ component.id }}" title="{{ _('Manage AI classification') }}" aria-label="{{ _('Manage AI classification') }}">AI</button>
+            <tr class="hover:bg-[var(--color-surface)]/50 transition-colors group">
+              <td class="px-3 py-3">
+                <div class="font-medium text-[var(--color-text)]">{{ component.name }}</div>
+                {% if component.information_type %}
+                  <div class="text-xs text-[var(--color-muted)] mt-0.5">{{ component.information_type }}</div>
+                {% endif %}
+              </td>
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
+                  {{ component.context_scope.name }}
+                </span>
+              </td>
+              <td class="px-3 py-3">
+                <div class="text-[var(--color-text)] text-xs">{{ component.info_owner or '-' }}</div>
+                <div class="text-[var(--color-muted)] text-xs mt-0.5">{{ component.info_type or '-' }}</div>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex flex-wrap gap-1">
+                  {% for env_data in bia_serialize_environments(component) %}
+                     <span class="env-badge env-badge-{{ env_data.environment_type }} {% if not env_data.is_enabled %}opacity-40{% endif %}"
+                           title="{{ bia_environment_label(env_data.environment_type) }} - {{ env_data.authentication_method_label or 'No Auth' }}">
+                        {{ env_data.environment_type[:3] }}
+                     </span>
+                  {% endfor %}
                 </div>
-                {% if dpia_enabled %}
-                  {% if dpia_count %}
-                    <span class="badge bg-success text-dark">{{ _('DPIA active: %(count)d', count=dpia_count) }}</span>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex flex-col gap-1">
+                  {% if component.availability_requirement %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
+                      {{ _('bia.components.mtd_prefix') }}: {{ component.availability_requirement.mtd or '-' }}
+                    </span>
+                     <span class="text-xs text-[var(--color-muted)]">
+                      {{ _('bia.components.rto_prefix') }}: {{ component.availability_requirement.rto or '-' }} / {{ _('bia.components.rpo_prefix') }}: {{ component.availability_requirement.rpo or '-' }}
+                    </span>
                   {% else %}
-                    <span class="badge bg-secondary">{{ _('DPIA pending') }}</span>
+                    <span class="text-[var(--color-muted)] italic text-xs">{{ _('bia.components.not_set') }}</span>
                   {% endif %}
-                {% else %}
-                  <span class="text-secondary small">{{ _('bia.components.dpia.unavailable') }}</span>
-                {% endif %}
-              </div>
-            </td>
-            <td class="text-end">
-              <div class="d-flex flex-wrap gap-2 justify-content-end">
-                <a href="{{ url_for('bia.edit_component_form', component_id=component.id) }}" class="btn btn-outline-light btn-icon" title="{{ _('Edit component') }}" aria-label="{{ _('Edit component') }}">{{ _('Edit') }}</a>
-                <a href="{{ url_for('bia.manage_component_availability', component_id=component.id, return_to=current_view_url) }}" class="btn btn-outline-primary btn-icon" title="{{ _('Availability requirements') }}" aria-label="{{ _('Availability requirements') }}">{{ _('Avail') }}</a>
-                <a href="{{ url_for('bia.add_component_consequence_view', component_id=component.id, return_to=current_view_url) }}" class="btn btn-outline-secondary btn-icon" title="{{ _('Add consequences') }}" aria-label="{{ _('Add consequences') }}">{{ _('Cons') }}</a>
-                {% if dpia_enabled %}
-                  {% if dpia_count %}
-                    <a href="{{ url_for('dpia.dashboard') }}" class="btn btn-outline-light btn-icon" data-dpia-action="view" title="{{ _('View DPIA assessments') }}" aria-label="{{ _('View DPIA assessments') }}">{{ _('DPIA') }}</a>
-                  {% else %}
-                    <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}" class="btn btn-outline-light btn-icon" data-dpia-action="start" title="{{ _('Start DPIA') }}" aria-label="{{ _('Start DPIA') }}">{{ _('DPIA') }}</a>
-                  {% endif %}
-                {% endif %}
-                <button class="btn btn-outline-danger btn-icon" type="button" data-delete-url="{{ url_for('bia.delete_component', component_id=component.id) }}" title="{{ _('Delete component') }}" aria-label="{{ _('Delete component') }}">{{ _('Delete') }}</button>
-              </div>
-            </td>
-          </tr>
+                </div>
+              </td>
+              <td class="px-3 py-3 text-center">
+                <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface)] hover:text-primary-600">
+                  {{ component.consequences|length }}
+                </a>
+              </td>
+              <td class="px-3 py-3 text-center">
+                 <div class="flex justify-center gap-1">
+                    {# AI Badge #}
+                    {% if component.ai_identificaties|length > 0 %}
+                      <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300" title="AI Used">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      </span>
+                    {% endif %}
+
+                    {# DPIA #}
+                    {% if dpia_enabled %}
+                         {% set dpia_count = component.dpia_assessments|length %}
+                         {% if dpia_count > 0 %}
+                           <a href="{{ url_for('dpia.dashboard', q=component.name) }}" class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 hover:ring-2 ring-blue-500/50 transition-all" title="{{ _('bia.components.dpia_count_tooltip', count=dpia_count) }}">
+                             D
+                           </a>
+                         {% else %}
+                           <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:text-gray-500" title="{{ _('bia.components.no_dpia_tooltip') }}">
+                             D
+                           </span>
+                         {% endif %}
+                    {% endif %}
+                 </div>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                   {# Edit #}
+                   <a href="{{ url_for('bia.edit_component_form', component_id=component.id) }}"
+                           class="text-[var(--color-muted)] hover:text-primary-600 transition-colors p-1"
+                           title="{{ _('bia.actions.edit') }}">
+                       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                   </a>
+                   
+                   {# Availability #}
+                   <a href="{{ url_for('bia.manage_component_availability', component_id=component.id) }}" 
+                      class="text-[var(--color-muted)] hover:text-green-600 transition-colors p-1"
+                      title="{{ _('bia.components.actions.availability') }}">
+                      <span class="font-bold text-xs uppercase tracking-tighter">{{ _('bia.components.actions.avail_short') }}</span>
+                   </a>
+                   
+                   {# Consequences #}
+                   <a href="{{ url_for('bia.add_component_consequence_view', component_id=component.id) }}"
+                      class="text-[var(--color-muted)] hover:text-orange-600 transition-colors p-1"
+                      title="{{ _('bia.components.actions.add_consequence') }}">
+                        <span class="font-bold text-xs uppercase tracking-tighter">{{ _('bia.components.actions.cons_short') }}</span>
+                   </a>
+
+                    {# DPIA Start #}
+                    {% if dpia_enabled %}
+                    <form action="{{ url_for('dpia.start_from_component', component_id=component.id) }}" method="POST" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="text-[var(--color-muted)] hover:text-blue-600 transition-colors p-1" title="{{ _('bia.components.actions.start_dpia') }}">
+                            <span class="font-bold text-xs uppercase tracking-tighter">{{ _('bia.components.actions.dpia_short') }}</span>
+                        </button>
+                    </form>
+                    {% endif %}
+
+                   {# Delete #}
+                    <button type="button"
+                            class="text-[var(--color-muted)] hover:text-red-600 transition-colors p-1"
+                            data-delete-url="{{ url_for('bia.delete_component', component_id=component.id) }}"
+                            data-confirm-message="{{ _('bia.components.delete_confirm', name=component.name) }}"
+                            title="{{ _('bia.actions.delete') }}">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </div>
+              </td>
+            </tr>
           {% endfor %}
+          {% if not components %}
+             <tr>
+               <td colspan="8" class="px-3 py-12 text-center text-[var(--color-muted)]">
+                 <svg class="h-12 w-12 mx-auto mb-3 text-[var(--color-border)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                 {{ _('bia.components.no_results') }}
+               </td>
+             </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
-    <div class="bia-pagination-footer px-3 py-2 border-top border-secondary">
-      <small class="text-secondary mb-0">
-        {% if pagination.pages > 1 %}
-          {{ _('bia.components.table.pagination_with_pages', start=page_start, end=page_end, total=pagination.total, page=pagination.page, pages=pagination.pages) }}
-        {% else %}
-          {{ _('bia.components.table.pagination', start=page_start, end=page_end, total=pagination.total) }}
-        {% endif %}
-      </small>
-      {% if pagination.pages > 1 %}
-      <nav aria-label="Component pagination">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('bia.view_components', page=pagination.prev_num, scope=selected_scope) }}" aria-label="Previous" tabindex="-1">&laquo;</a>
-          </li>
-          {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
-            {% if p %}
-              <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('bia.view_components', page=p, scope=selected_scope) }}">{{ p }}</a>
-              </li>
-            {% else %}
-              <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-            {% endif %}
-          {% endfor %}
-          <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('bia.view_components', page=pagination.next_num, scope=selected_scope) }}" aria-label="Next">&raquo;</a>
-          </li>
-        </ul>
-      </nav>
-      {% endif %}
-    </div>
-    {% else %}
-      <div class="p-4 text-secondary">{{ _('bia.components.table.empty') }}</div>
-    {% endif %}
-  </div>
   </div>
 
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div class="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+    <div class="flex flex-1 justify-between sm:hidden">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('bia.view_components', page=pagination.prev_num, scope=selected_scope, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)]/80">{{ _('bia.pagination.previous') }}</a>
+      {% else %}
+        <span class="relative inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] cursor-not-allowed opacity-50">{{ _('bia.pagination.previous') }}</span>
+      {% endif %}
+      
+      {% if pagination.has_next %}
+        <a href="{{ url_for('bia.view_components', page=pagination.next_num, scope=selected_scope, q=search_term, bia_id=selected_bia_id) }}" class="relative ml-3 inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)]/80">{{ _('bia.pagination.next') }}</a>
+      {% else %}
+        <span class="relative ml-3 inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] cursor-not-allowed opacity-50">{{ _('bia.pagination.next') }}</span>
+      {% endif %}
+    </div>
+    
+    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-[var(--color-muted)]">
+          {{ _('bia.pagination.showing') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_start }}</span>
+          {{ _('bia.pagination.to') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_end }}</span>
+          {{ _('bia.pagination.of') }}
+          <span class="font-medium text-[var(--color-text)]">{{ pagination.total }}</span>
+          {{ _('bia.pagination.results') }}
+        </p>
+      </div>
+      <div>
+        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('bia.view_components', page=pagination.prev_num, scope=selected_scope, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+                    <span class="sr-only">{{ _('bia.pagination.previous') }}</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                </a>
+            {% else %}
+                <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+                    <span class="sr-only">{{ _('bia.pagination.previous') }}</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                </span>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <span aria-current="page" class="relative z-10 inline-flex items-center bg-primary-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for('bia.view_components', page=page_num, scope=selected_scope, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-text)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] focus:outline-offset-0">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+                <a href="{{ url_for('bia.view_components', page=pagination.next_num, scope=selected_scope, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+                    <span class="sr-only">{{ _('bia.pagination.next') }}</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                </a>
+            {% else %}
+                <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+                     <span class="sr-only">{{ _('bia.pagination.next') }}</span>
+                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                </span>
+            {% endif %}
+        </nav>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  </div>
+</div>
+
 {% include "bia/_component_action_modals.html" %}
+
 <script nonce="{{ csp_nonce }}">
-if (document?.body) {
-  document.body.classList.add('page-bia-components');
-}
+    document.body.classList.add('page-bia-components');
 </script>
+
 {% endblock %}

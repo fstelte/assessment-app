@@ -2,12 +2,12 @@
 {% block title %}{{ _('app.title') }}{% endblock %}
 {% block content %}
 <div class="text-center py-5">
-  <h1 class="display-5 fw-bold">{{ _('app.title') }}</h1>
-  <p class="lead mt-3">{{ _('app.home.subtitle') }}</p>
-  <div class="row g-3 mt-4 justify-content-center">
+  <h1 class="text-5xl font-bold font-bold">{{ _('app.title') }}</h1>
+  <p class="text-[var(--color-muted)] text-lg mt-3">{{ _('app.home.subtitle') }}</p>
+  <div class="flex flex-wrap -mx-3 g-3 mt-4 justify-center">
     {% for entry in nav_entries() if entry.endpoint not in ['auth.login', 'auth.register_user'] %}
-      <div class="col-auto">
-        <a class="btn btn-outline-light" href="{{ entry.url }}">{{ _(entry.label) }}</a>
+      <div class="flex-none px-3">
+        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8" href="{{ entry.url }}">{{ _(entry.label) }}</a>
       </div>
     {% endfor %}
   </div>

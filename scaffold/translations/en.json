@@ -75,11 +75,15 @@
       "copied": "BIA copied successfully."
     },
     "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm_delete": "Delete this BIA?",
       "archive": "Archive",
       "unarchive": "Unarchive",
       "confirm_archive": "Are you sure you want to archive this BIA? It will become read-only.",
       "copy": "Copy",
-      "confirm_copy": "Duplicate this BIA?"
+      "confirm_copy": "Duplicate this BIA?",
+      "cancel": "Cancel"
     },
     "archived": {
       "title": "Archived BIAs",
@@ -116,11 +120,12 @@
         "subtitle": "Track, update and export your organisation's BIAs from a single workspace."
       },
       "card": {
-        "risk_owner": "Risk owner",
+        "risk_owner": "Coordinators",
         "not_assigned": "Not assigned",
         "owner_aria": "Select owner",
         "owner_unassigned": "Unassigned",
         "owner_save": "Save",
+        "action_save": "Save",
         "components": "{count} components",
         "no_description": "No service description captured yet.",
         "action_view": "View",
@@ -154,6 +159,7 @@
       }
     },
     "context_form": {
+      "title": "BIA",
       "title_edit": "Edit BIA",
       "title_new": "New BIA",
       "back": "Back to dashboard",
@@ -329,6 +335,35 @@
       }
     },
     "context_detail": {
+      "back": "Back to dashboard",
+      "tabs": {
+        "summary": "Summary"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "manage": "Manage"
+      },
+      "sections": {
+        "roles": "Contact persons & roles",
+        "components": "Components",
+        "availability": "Availability",
+        "dependencies": "Dependencies",
+        "consequences": "Consequences"
+      },
+      "roles": {
+        "responsible": "End Responsible",
+        "coordinator": "Coordinator",
+        "project_leader": "Project Leader",
+        "product_owner": "Product Owner",
+        "risk_owner": "Risk Owner",
+        "technical_administrator": "Technical Administrator",
+        "security_manager": "Security Manager",
+        "incident_contact": "Incident Contact"
+      },
+      "table": {
+        "owner": "Owner"
+      },
       "ai_risks": {
         "title": "AI Risks",
         "component": "Component",
@@ -360,6 +395,14 @@
       },
       "table": {
         "title": "Existing components",
+        "component": "Component",
+        "context": "Context",
+        "owner_users": "Owner / Users",
+        "owner_type": "Owner / Info type",
+        "environments": "Environments",
+        "availability": "Availability",
+        "consequences": "Consequences",
+        "intelligence": "Intelligence",
         "headers": {
           "component": "Component",
           "bia": "BIA",
@@ -467,7 +510,79 @@
           "production": "Production"
         },
         "badge_not_used": "Not used",
-        "badge_no_auth": "Authentication not set"
+        "badge_no_auth": "Authentication not set",
+        "title": "Environments",
+        "type": "Type",
+        "enabled": "Enabled",
+        "auth_method": "Authentication method"
+      },
+      "filter": {
+        "scope": "Scope",
+        "search": "Search",
+        "component": "Component",
+        "search_placeholder": "Search components\u2026",
+        "apply": "Apply",
+        "reset": "Reset"
+      },
+      "actions": {
+        "availability": "Manage availability",
+        "avail_short": "Avail",
+        "add_consequence": "Add consequence",
+        "cons_short": "Cons",
+        "start_dpia": "Start DPIA",
+        "dpia_short": "DPIA"
+      },
+      "showing_count": "Showing {start}\u2013{end} of {total} components",
+      "no_components": "No components registered yet.",
+      "add_button": "Add component",
+      "export_inventory": "Export inventory",
+      "add_title": "Add a component",
+      "submit_add": "Add component",
+      "list_title": "Component library",
+      "count_suffix": "components",
+      "edit": {
+        "title": "Edit {name}",
+        "heading": "Edit {name}"
+      },
+      "users_label": "users",
+      "mtd_prefix": "MTD",
+      "rto_prefix": "RTO",
+      "rpo_prefix": "RPO",
+      "not_set": "Not set",
+      "no_results": "No components match this filter.",
+      "dpia_count_tooltip": "{count} active DPIA",
+      "no_dpia_tooltip": "No active DPIA",
+      "delete_confirm": "Delete \u2018{name}\u2019?"
+    },
+    "manage_consequences": {
+      "title": "Manage Consequences",
+      "subtitle": "Consequences",
+      "description": "Identify and assess the potential consequences of disruption for each component.",
+      "instructions": "Select a component, choose a consequence category and security property, then estimate the impact.",
+      "category_help": "Categories help classify the type of impact (e.g. financial, reputational).",
+      "actions": {
+        "reset": "Reset form"
+      },
+      "sections": {
+        "recorded": "Recorded consequences",
+        "recorded_subtitle": "Existing consequence assessments for this BIA."
+      },
+      "table": {
+        "component": "Component",
+        "categories": "Category",
+        "security_property": "Security Property",
+        "realistic": "Realistic Case",
+        "worst_case": "Worst Case"
+      },
+      "empty": {
+        "not_set": "Not set",
+        "list": "No consequences recorded yet."
+      }
+    },
+    "view_consequences": {
+      "table": {
+        "worst_case": "Worst Case",
+        "realistic_case": "Realistic Case"
       }
     },
     "authentication_methods": {
@@ -475,6 +590,12 @@
         "application-integrated": "Application integrated",
         "centrally-managed": "Centrally managed (IdP)"
       }
+    },
+    "common": {
+      "all_scopes": "All scopes",
+      "all_items": "All items",
+      "select_context": "Select a BIA",
+      "actions": "Actions"
     },
     "export": {
       "authentication_overview": {

@@ -1,69 +1,88 @@
 {% extends "base.html" %}
-{% block title %}AI risks | {{ item.name }}{% endblock %}
+{% block title %}{{ _('bia.manage_ai.title') }} | {{ item.name }}{% endblock %}
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
+<div class="mb-4">
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
+    <span>&larr;</span> {{ _('bia.manage_ai.back') }}
+  </a>
 </div>
 
-<div class="row g-4">
-  <div class="col-lg-4">
-    <div class="card bg-dark border-secondary h-100">
-      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-        <span>AI classification</span>
-        <span class="badge bg-secondary">{{ selected_component.name }}</span>
+<div class="flex flex-wrap -mx-3 items-start">
+  <div class="w-full lg:w-1/3 px-3 mb-6 lg:mb-0">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)] rounded-t-xl">
+        <span class="font-bold text-sm uppercase tracking-wide text-[var(--color-muted)]">{{ _('bia.manage_ai.title') }}</span>
+        <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">{{ selected_component.name }}</span>
       </div>
-      <div class="card-body">
-        <form method="post" class="vstack gap-3">
+      <div class="p-5">
+        <p class="text-sm text-[var(--color-muted)] mb-4">Assess whether this component processes data using Artificial Intelligence models or services.</p>
+        <form method="post" class="flex flex-col gap-4">
           {{ form.hidden_tag() }}
           <div>
-            {{ form.component_id.label(class="form-label") }}
-            {{ form.component_id(class="form-select", data_component_switch=url_for('bia.manage_item_ai', item_id=item.id)) }}
-            <div class="form-text text-secondary">Switch components to review their current AI posture.</div>
+            {{ form.component_id.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.component_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", data_component_switch=url_for('bia.manage_item_ai', item_id=item.id)) }}
+            <div class="text-xs text-[var(--color-muted)] mt-1 flex items-start gap-1">
+              <i class="fas fa-random mt-0.5"></i>
+              <span>Switch components to review their current AI posture.</span>
+            </div>
             {% if form.component_id.errors %}
-              <div class="form-text text-danger">{{ form.component_id.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.component_id.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
-            {{ form.category.label(class="form-label") }}
-            {{ form.category(class="form-select") }}
+            {{ form.category.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.category(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
             {% if form.category.errors %}
-              <div class="form-text text-danger">{{ form.category.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.category.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
-            {{ form.motivatie.label(class="form-label") }}
-            {{ form.motivatie(class="form-control", rows=4, placeholder="Explain the rationale for this classification") }}
+            {{ form.motivatie.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.motivatie(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=4, placeholder="Explain the rationale for this classification") }}
             {% if form.motivatie.errors %}
-              <div class="form-text text-danger">{{ form.motivatie.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.motivatie.errors | join(', ') }}</div>
             {% endif %}
           </div>
-          <div class="d-flex justify-content-end gap-2">
-            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
-            {{ form.submit(class="btn btn-primary") }}
+          <div class="flex justify-end gap-3 pt-2 mt-2 border-t border-[var(--color-border)]">
+            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.actions.cancel') }}</a>
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer") }}
           </div>
         </form>
       </div>
     </div>
   </div>
-  <div class="col-lg-8">
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary">AI overview</div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-dark table-striped align-middle mb-0">
-            <thead>
+  <div class="w-full lg:w-2/3 px-3">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] rounded-t-xl">
+        <h3 class="font-bold text-sm uppercase tracking-wide text-[var(--color-muted)] mb-0">{{ _('bia.manage_ai.sections.overview') }}</h3>
+      </div>
+      <div class="p-0">
+        <div class="overflow-x-auto w-full rounded-b-xl">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
+            <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
-                <th scope="col">Component</th>
-                <th scope="col">Category</th>
-                <th scope="col">Motivation</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)] w-1/4">{{ _('bia.manage_ai.table.component') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)] w-1/4">{{ _('bia.manage_ai.table.category') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_ai.table.motivation') }}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-[var(--color-border)]">
               {% for row in ai_rows %}
-              <tr>
-                <td>{{ row.component.name }}</td>
-                <td>{{ row.ai.category if row.ai else _('bia.components.ai.options.no_ai') }}</td>
-                <td>{{ row.ai.motivatie if row.ai and row.ai.motivatie else _('bia.context_detail.ai_risks.motivation_missing') }}</td>
+              <tr class="hover:bg-[var(--color-surface-hover)] transition-colors {{ 'bg-[var(--color-surface)]/50' if row.component.id == selected_component.id }}">
+                <td class="px-4 py-3 font-medium text-[var(--color-text)]">
+                  {{ row.component.name }}
+                  {% if row.component.id == selected_component.id %}
+                    <span class="ml-2 inline-block w-2 h-2 rounded-full bg-primary-500"></span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3">
+                   {% if row.ai and row.ai.category %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">{{ row.ai.category }}</span>
+                   {% else %}
+                    <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.components.ai.options.no_ai') }}</span>
+                   {% endif %}
+                </td>
+                <td class="px-4 py-3 text-[var(--color-muted)] line-clamp-2">{{ row.ai.motivatie if row.ai and row.ai.motivatie else _('bia.context_detail.ai_risks.motivation_missing') }}</td>
               </tr>
               {% endfor %}
             </tbody>

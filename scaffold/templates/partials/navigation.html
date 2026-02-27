@@ -2,34 +2,34 @@
 {% set nav_theme = theme if theme is defined else 'dark' %}
 {% set is_dark = nav_theme != 'light' %}
 {% macro render_nav_item(item) -%}
-  <li class="nav-item">
-    <a class="nav-link{% if request.endpoint == item.endpoint %} active{% endif %}" href="{{ item.url }}">{{ _(item.label) }}</a>
+  <li class="list-none">
+    <a class="nav-link{% if request.endpoint == item.endpoint %} active{% endif %} text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors{% if request.endpoint == item.endpoint %} text-[var(--color-text)]{% endif %}" href="{{ item.url }}">{{ _(item.label) }}</a>
   </li>
 {%- endmacro %}
-<nav class="navbar navbar-expand-lg {% if is_dark %}navbar-dark bg-black{% else %}navbar-light bg-light{% endif %} border-bottom border-secondary mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url_for('template.index') }}">{{ _('app.navigation.brand') }}</a>
-    <button class="navbar-toggler d-lg-none" type="button" data-collapse-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="bg-[var(--color-surface)] border-b border-[var(--color-border)] px-4 py-3 mb-4">
+  <div class="w-full px-4 sm:px-6 flex flex-wrap items-center justify-between">
+    <a class="font-semibold text-[var(--color-text)]" href="{{ url_for('template.index') }}">{{ _('app.navigation.brand') }}</a>
+    <button class="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-[var(--color-text)] hover:bg-slate-500/10 border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]" type="button" data-collapse-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <div class="hidden lg:flex w-full lg:w-auto items-center" id="navbarNav">
+      <ul class="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-3 mr-auto mb-2 lg:mb-0">
         {% for entry in entries %}
           {{ render_nav_item(entry) }}
         {% endfor %}
       </ul>
-      <div class="d-flex gap-2">
+      <div class="flex gap-2">
         {% if current_user.is_authenticated %}
-          <a class="btn btn-outline-{{ 'light' if is_dark else 'dark' }} btn-sm" href="{{ url_for('auth.profile') }}">{{ _('app.navigation.profile') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 px-2.5 py-1 text-xs" href="{{ url_for('auth.profile') }}">{{ _('app.navigation.profile') }}</a>
           {% if current_user.has_role('admin') %}
-            <a class="btn btn-outline-warning btn-sm" href="{{ url_for('admin.list_users') }}">{{ _('app.navigation.admin') }}</a>
+            <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400/10 px-2.5 py-1 text-xs" href="{{ url_for('admin.list_users') }}">{{ _('app.navigation.admin') }}</a>
           {% endif %}
-          <a class="btn btn-danger btn-sm" href="{{ url_for('auth.logout') }}">{{ _('app.navigation.logout') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-red-600 text-white hover:bg-red-700 px-2.5 py-1 text-xs" href="{{ url_for('auth.logout') }}">{{ _('app.navigation.logout') }}</a>
         {% else %}
-          <a class="btn btn-outline-{{ 'light' if is_dark else 'dark' }} btn-sm" href="{{ url_for('auth.login') }}">{{ _('app.navigation.login') }}</a>
-          <a class="btn btn-primary btn-sm" href="{{ url_for('auth.register_user') }}">{{ _('app.navigation.register') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 px-2.5 py-1 text-xs" href="{{ url_for('auth.login') }}">{{ _('app.navigation.login') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 px-2.5 py-1 text-xs" href="{{ url_for('auth.register_user') }}">{{ _('app.navigation.register') }}</a>
         {% endif %}
         </div>
       </div>

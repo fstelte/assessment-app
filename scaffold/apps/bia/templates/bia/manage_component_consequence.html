@@ -1,80 +1,81 @@
 {% extends "base.html" %}
 {% set back_url = return_to or url_for('bia.view_components') %}
-{% block title %}{{ _('Add consequences · %(component)s', component=component.name) }}{% endblock %}
+{% block title %}{{ _('bia.manage_component_consequence.title', component=component.name) }}{% endblock %}
 {% block content %}
-<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-  <a href="{{ back_url }}" class="text-secondary text-decoration-none">&larr; {{ _('Back to components') }}</a>
-  <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="text-secondary text-decoration-none">{{ _('View existing consequences') }}</a>
+<div class="mb-3 flex flex-wrap gap-2 items-center">
+  <a href="{{ back_url }}" class="text-[var(--color-muted)] no-underline hover:text-[var(--color-text)]">&larr; {{ _('bia.manage_component_consequence.back') }}</a>
+  <span class="text-[var(--color-border)]">|</span>
+  <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}" class="text-[var(--color-muted)] no-underline hover:text-[var(--color-text)]">{{ _('bia.manage_component_consequence.view_existing') }}</a>
 </div>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+  <div class="px-5 py-4 border-b border-[var(--color-border)] flex flex-col md:flex-row justify-between md:items-center gap-2 bg-[var(--color-surface)] rounded-t-xl">
     <div>
-      <div class="fw-semibold">{{ component.name }}</div>
-      <div class="text-secondary small">
+      <div class="font-semibold text-[var(--color-text)]">{{ component.name }}</div>
+      <div class="text-[var(--color-muted)] text-sm">
         {% if component.context_scope %}
           {{ component.context_scope.name }}
         {% else %}
-          {{ _('No BIA context linked') }}
+          {{ _('bia.manage_component_consequence.no_context') }}
         {% endif %}
       </div>
     </div>
-    <span class="badge bg-info text-dark text-uppercase">{{ _('CIA consequences') }}</span>
+    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ _('bia.manage_component_consequence.cia_badge') }}</span>
   </div>
-  <div class="card-body">
-    <form method="post" class="vstack gap-4">
+  <div class="p-5">
+    <form method="post" class="flex flex-col gap-4">
       {{ form.hidden_tag() }}
       <div>
-        {{ form.consequence_category.label(class="form-label") }}
-        {{ form.consequence_category(class="form-select", multiple=True) }}
+        {{ form.consequence_category.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.consequence_category(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=True) }}
         {% if form.consequence_category.errors %}
-          <div class="form-text text-danger">{{ form.consequence_category.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.consequence_category.errors | join(', ') }}</div>
         {% else %}
-          <div class="form-text text-secondary">{{ _('Select one or more impact categories to populate individual consequence entries.') }}</div>
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_component_consequence.category_help') }}</div>
         {% endif %}
       </div>
-      <div class="row g-3">
-        <div class="col-md-6">
-          {{ form.security_property.label(class="form-label") }}
-          {{ form.security_property(class="form-select") }}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          {{ form.security_property.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          {{ form.security_property(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           {% if form.security_property.errors %}
-            <div class="form-text text-danger">{{ form.security_property.errors | join(', ') }}</div>
+            <div class="text-xs mt-1 text-red-500">{{ form.security_property.errors | join(', ') }}</div>
           {% endif %}
         </div>
-        <div class="col-md-6">
-          {{ form.consequence_worstcase.label(class="form-label") }}
-          {{ form.consequence_worstcase(class="form-select") }}
+        <div>
+          {{ form.consequence_worstcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          {{ form.consequence_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           {% if form.consequence_worstcase.errors %}
-            <div class="form-text text-danger">{{ form.consequence_worstcase.errors | join(', ') }}</div>
+            <div class="text-xs mt-1 text-red-500">{{ form.consequence_worstcase.errors | join(', ') }}</div>
           {% endif %}
         </div>
       </div>
       <div>
-        {{ form.justification_worstcase.label(class="form-label") }}
-        {{ form.justification_worstcase(class="form-control", rows=3, placeholder=_('Describe the rationale behind the worst case impact.')) }}
+        {{ form.justification_worstcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.justification_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3, placeholder=_('bia.manage_component_consequence.justification_worst_placeholder')) }}
         {% if form.justification_worstcase.errors %}
-          <div class="form-text text-danger">{{ form.justification_worstcase.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.justification_worstcase.errors | join(', ') }}</div>
         {% endif %}
       </div>
-      <div class="row g-3">
-        <div class="col-md-6">
-          {{ form.consequence_realisticcase.label(class="form-label") }}
-          {{ form.consequence_realisticcase(class="form-select") }}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          {{ form.consequence_realisticcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          {{ form.consequence_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           {% if form.consequence_realisticcase.errors %}
-            <div class="form-text text-danger">{{ form.consequence_realisticcase.errors | join(', ') }}</div>
+            <div class="text-xs mt-1 text-red-500">{{ form.consequence_realisticcase.errors | join(', ') }}</div>
           {% endif %}
         </div>
-        <div class="col-md-6">
-          {{ form.justification_realisticcase.label(class="form-label") }}
-          {{ form.justification_realisticcase(class="form-control", rows=3, placeholder=_('Explain the expected realistic case impact.')) }}
+        <div>
+          {{ form.justification_realisticcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          {{ form.justification_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3, placeholder=_('bia.manage_component_consequence.justification_realistic_placeholder')) }}
           {% if form.justification_realisticcase.errors %}
-            <div class="form-text text-danger">{{ form.justification_realisticcase.errors | join(', ') }}</div>
+            <div class="text-xs mt-1 text-red-500">{{ form.justification_realisticcase.errors | join(', ') }}</div>
           {% endif %}
         </div>
       </div>
-      <div class="d-flex justify-content-end gap-2">
-        <a href="{{ back_url }}" class="btn btn-outline-light">{{ _('Cancel') }}</a>
-        <button type="submit" class="btn btn-primary">{{ _('Add consequences') }}</button>
+      <div class="flex justify-end gap-3 pt-2 mt-2 border-t border-[var(--color-border)]">
+        <a href="{{ back_url }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.actions.cancel') }}</a>
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">{{ _('bia.manage_component_consequence.actions.submit') }}</button>
       </div>
     </form>
   </div>

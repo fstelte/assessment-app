@@ -1,38 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ _('auth.profile.title') }}{% endblock %}
 {% block content %}
-<h1 class="mb-4">{{ _('auth.profile.title') }}</h1>
+<h1 class="mb-4 text-2xl font-bold">{{ _('auth.profile.title') }}</h1>
 <form method="post">
     {{ form.hidden_tag() }}
-    <div class="row g-3">
-        <div class="col-md-6">
-            {{ form.first_name.label(class="form-label") }}
-            {{ form.first_name(class="form-control", value=form.first_name.data or "") }}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <div>
+            {{ form.first_name.label(class="block text-sm mb-1.5") }}
+            {{ form.first_name(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", value=form.first_name.data or "") }}
         </div>
-        <div class="col-md-6">
-            {{ form.last_name.label(class="form-label") }}
-            {{ form.last_name(class="form-control", value=form.last_name.data or "") }}
+        <div>
+            {{ form.last_name.label(class="block text-sm mb-1.5") }}
+            {{ form.last_name(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", value=form.last_name.data or "") }}
         </div>
-        <div class="col-md-4">
-            {{ form.theme.label(class="form-label") }}
-            {{ form.theme(class="form-select") }}
+        <div class="sm:col-span-1">
+            {{ form.theme.label(class="block text-sm mb-1.5") }}
+            {{ form.theme(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-4">
-            <label class="form-label" for="{{ form.locale.id }}">{{ _('app.language.label') }}</label>
-            {{ form.locale(class="form-select") }}
+        <div class="sm:col-span-1">
+            <label class="block text-sm mb-1.5" for="{{ form.locale.id }}">{{ _('app.language.label') }}</label>
+            {{ form.locale(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-4">
-            {{ form.current_password.label(class="form-label") }}
-            {{ form.current_password(class="form-control") }}
+        <div class="sm:col-span-1">
+            {{ form.current_password.label(class="block text-sm mb-1.5") }}
+            {{ form.current_password(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-4">
-            {{ form.new_password.label(class="form-label") }}
-            {{ form.new_password(class="form-control") }}
+        <div class="sm:col-span-1">
+            {{ form.new_password.label(class="block text-sm mb-1.5") }}
+            {{ form.new_password(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
     </div>
-    <div class="mt-4">
-        {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('auth.mfa_manage') }}" class="btn btn-outline-light ms-2">{{ _('auth.profile.manage_mfa') }}</a>
+    <div class="mt-4 flex items-center">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
+        <a href="{{ url_for('auth.mfa_manage') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 ml-2">{{ _('auth.profile.manage_mfa') }}</a>
     </div>
 </form>
 {% endblock %}

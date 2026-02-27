@@ -5,82 +5,82 @@
 
 {% block content %}
 <div class="mb-3">
-  <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="text-secondary text-decoration-none">&larr; {{ _('incident.scenarios.back') }}</a>
+  <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="text-[var(--color-muted)] no-underline">&larr; {{ _('incident.scenarios.back') }}</a>
 </div>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+<div class="flex flex-col flex-col md:flex-row justify-between items-start gap-3 mb-4">
   <div>
     <h1 class="h3 mb-1">{{ _('incident.steps.heading') }}</h1>
-    <p class="text-secondary mb-0">Scenario: <span class="text-white">{{ scenario.name }}</span></p>
+    <p class="text-[var(--color-muted)] mb-0">Scenario: <span class="text-white">{{ scenario.name }}</span></p>
   </div>
 </div>
 
-<form method="post" class="row g-4">
+<form method="post" class="flex flex-wrap -mx-3 g-4">
   {{ form.hidden_tag() }}
   
-  <div class="col-lg-8 d-flex flex-column gap-4">
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.actions") }}</div>
-      <div class="card-body">
+  <div class="lg:w-2/3 px-3 flex flex-col gap-4">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)] font-bold">{{ _("incident.steps.section.actions") }}</div>
+      <div class="px-5 py-4">
         <div>
-          {{ form.actions_first_hour.label(class="form-label fw-bold") }}
-          <p class="small text-secondary mb-1">What needs to happen immediately?</p>
-          {{ form.actions_first_hour(class="form-control", rows="5") }}
+          {{ form.actions_first_hour.label(class="block text-sm mb-1.5 font-bold") }}
+          <p class="text-sm text-[var(--color-muted)] mb-1">{{ _('incident.manage_steps.prompts.immediate') }}</p>
+          {{ form.actions_first_hour(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows="5") }}
         </div>
       </div>
     </div>
 
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.recovery") }}</div>
-      <div class="card-body">
-         <div class="vstack gap-3">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)] font-bold">{{ _("incident.steps.section.recovery") }}</div>
+      <div class="px-5 py-4">
+         <div class="flex flex-col gap-3">
            <div>
-              {{ form.alternatives.label(class="form-label fw-bold") }}
-              <p class="small text-secondary mb-1">Fallback options or redundancies?</p>
-              {{ form.alternatives(class="form-control", rows="4") }}
+              {{ form.alternatives.label(class="block text-sm mb-1.5 font-bold") }}
+              <p class="text-sm text-[var(--color-muted)] mb-1">{{ _('incident.manage_steps.prompts.fallback') }}</p>
+              {{ form.alternatives(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows="4") }}
            </div>
            <div>
-              {{ form.manual_procedures.label(class="form-label fw-bold") }}
-              <p class="small text-secondary mb-1">Can we operate offline? How?</p>
-              {{ form.manual_procedures(class="form-control", rows="4") }}
+              {{ form.manual_procedures.label(class="block text-sm mb-1.5 font-bold") }}
+              <p class="text-sm text-[var(--color-muted)] mb-1">{{ _('incident.manage_steps.prompts.offline') }}</p>
+              {{ form.manual_procedures(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows="4") }}
            </div>
         </div>
       </div>
     </div>
   </div>
   
-  <div class="col-lg-4 d-flex flex-column gap-4">
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary fw-bold">{{ _("incident.steps.section.targets") }}</div>
-      <div class="card-body vstack gap-3">
+  <div class="lg:w-1/3 px-3 flex flex-col gap-4">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)] font-bold">{{ _("incident.steps.section.targets") }}</div>
+      <div class="px-5 py-4 flex flex-col gap-3">
         <div>
-          {{ form.rto.label(class="form-label fw-bold") }}
-          {{ form.rto(class="form-control") }}
-          <div class="form-text">{{ form.rto.description }}</div>
+          {{ form.rto.label(class="block text-sm mb-1.5 font-bold") }}
+          {{ form.rto(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ form.rto.description }}</div>
         </div>
         <div>
-          {{ form.rpo.label(class="form-label fw-bold") }}
-          {{ form.rpo(class="form-control") }}
-           <div class="form-text">{{ form.rpo.description }}</div>
+          {{ form.rpo.label(class="block text-sm mb-1.5 font-bold") }}
+          {{ form.rpo(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+           <div class="text-xs text-[var(--color-muted)] mt-1">{{ form.rpo.description }}</div>
         </div>
       </div>
     </div>
 
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary fw-bold">{{ _("bia.context_form.section.contacts") }}</div>
-      <div class="card-body">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)] font-bold">{{ _("bia.context_form.section.contacts") }}</div>
+      <div class="px-5 py-4">
         <div>
-          {{ form.contact_list.label(class="form-label fw-bold") }}
-          <p class="small text-secondary mb-1">Who needs to be informed or activated?</p>
-          {{ form.contact_list(class="form-control", rows="8") }}
+          {{ form.contact_list.label(class="block text-sm mb-1.5 font-bold") }}
+          <p class="text-sm text-[var(--color-muted)] mb-1">{{ _('incident.manage_steps.prompts.notify') }}</p>
+          {{ form.contact_list(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows="8") }}
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-12 d-flex justify-content-end gap-2 mb-5">
-    <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="btn btn-outline-secondary">{{ _('actions.cancel') }}</a>
-    {{ form.submit(class="btn btn-primary") }}
+  <div class="w-full px-3 flex justify-end gap-2 mb-5">
+    <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('actions.cancel') }}</a>
+    {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
   </div>
 </form>
 {% endblock %}

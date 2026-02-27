@@ -1,48 +1,54 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.bia_tiers.list.title') }}{% endblock %}
+{% block title %}{{ _('admin.bia_tiers.title') }}{% endblock %}
+
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('admin.index') }}" class="text-secondary text-decoration-none">&larr; {{ _('admin.back_to_dashboard') }}</a>
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.bia_tiers.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.bia_tiers.subtitle') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.new_bia_tier') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
+         {{ _('admin.bia_tiers.new_tier') }}
+      </a>
+      <a href="{{ url_for('admin.controls') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+         {{ _('admin.bia_tiers.back_to_controls') }}
+      </a>
+  </div>
 </div>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-    <div>
-      <h1 class="h5 mb-0">{{ _('admin.bia_tiers.list.title') }}</h1>
-      <p class="text-secondary mb-0">{{ _('admin.bia_tiers.list.subtitle') }}</p>
-    </div>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle mb-0">
-        <thead>
-          <tr>
-            <th scope="col">{{ _('admin.bia_tiers.list.columns.level') }}</th>
-            <th scope="col">{{ _('admin.bia_tiers.list.columns.name') }}</th>
-            <th scope="col" class="text-end">{{ _('actions.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tier in tiers %}
-          <tr>
-            <td><span class="badge text-bg-secondary">{{ tier.level }}</span></td>
-            <td>{{ tier.get_label().split('>')[-1].strip() }}</td>
-            <td class="text-end">
-              <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.edit_bia_tier', tier_id=tier.id) }}">
-                {{ _('actions.edit') }}
-              </a>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="4" class="text-center text-secondary py-4">
-              {{ _('admin.bia_tiers.list.empty') }}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)] mb-4">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.bia_tiers.table.level') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.bia_tiers.table.name') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.bia_tiers.table.rto') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.bia_tiers.table.rpo') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24 text-right">{{ _('admin.bia_tiers.table.actions') }}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--color-border)]">
+      {% for tier in tiers %}
+      <tr class="hover:bg-slate-500/5 transition-colors">
+        <td class="px-4 py-3 align-middle font-mono">{{ tier.level }}</td>
+        <td class="px-4 py-3 align-middle font-medium">{{ tier.name }}</td>
+        <td class="px-4 py-3 align-middle">{{ tier.rto_goal_seconds | default('-', true) }}s</td>
+        <td class="px-4 py-3 align-middle">{{ tier.rpo_goal_seconds | default('-', true) }}s</td>
+        <td class="px-4 py-3 align-middle text-right">
+            <a href="{{ url_for('admin.edit_bia_tier', tier_id=tier.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.bia_tiers.edit') }}
+            </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-[var(--color-muted)]">
+              {{ _('admin.bia_tiers.no_tiers') }}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

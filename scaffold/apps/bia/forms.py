@@ -249,6 +249,16 @@ class ComponentForm(FlaskForm):
         min_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
         max_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
     )
+    ai_category = SelectField(
+        _l("bia.components.modal.category"),
+        choices=list(_AI_CATEGORY_CHOICES),
+        validators=[Optional()],
+        default="No AI",
+    )
+    ai_motivatie = TextAreaField(
+        _l("bia.components.modal.motivation"),
+        validators=[Optional()],
+    )
     submit = SubmitField("Save component")
 
 

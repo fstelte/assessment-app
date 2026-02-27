@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ _("Risk workspace") }}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-7xl px-4 sm:px-6{% endblock %}
 {% block extra_css %}
 <style nonce="{{ csp_nonce }}">
 :root {
@@ -558,34 +559,34 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
 } %}
 <div class="risk-dashboard">
   <section class="risk-hero">
-    <div class="row g-4 align-items-center">
-      <div class="col-12 col-lg-5">
-        <p class="text-uppercase small mb-2">{{ _('Live risk posture') }}</p>
-        <h1 class="display-6 fw-semibold mb-3">{{ _('Risk workspace') }}</h1>
+    <div class="flex flex-wrap -mx-3 g-4 items-center">
+      <div class="w-full px-3 lg:w-5/12 px-3">
+        <p class="uppercase text-sm mb-2">{{ _('Live risk posture') }}</p>
+        <h1 class="text-4xl font-bold font-semibold mb-3">{{ _('Risk workspace') }}</h1>
         <p class="mb-0 text-white-75">{{ _('Review the most recent impact assessments, treatment plans and linked CSA controls from a single pane.') }}</p>
         {% if metrics.recent_update %}
-        <p class="small text-white-50 mt-3">{{ _('Last update on {date}').format(date=metrics.recent_update.strftime('%d %b %Y')) }}</p>
+        <p class="text-sm text-white-50 mt-3">{{ _('Last update on {date}').format(date=metrics.recent_update.strftime('%d %b %Y')) }}</p>
         {% endif %}
       </div>
-      <div class="col-12 col-lg-7">
+      <div class="w-full px-3 lg:w-7/12 px-3">
         <div class="risk-hero__grid">
           <article class="risk-hero__metric">
-            <p class="text-uppercase small mb-1">{{ _('Tracked risks') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('Tracked risks') }}</p>
             <strong>{{ metrics.total or 0 }}</strong>
             <small>{{ _('Total records in scope') }}</small>
           </article>
           <article class="risk-hero__metric">
-            <p class="text-uppercase small mb-1">{{ _('High & critical') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('High & critical') }}</p>
             <strong>{{ metrics.high or 0 }}</strong>
             <small>{{ _('Severity-driven follow ups') }}</small>
           </article>
           <article class="risk-hero__metric">
-            <p class="text-uppercase small mb-1">{{ _('Mitigation tracks') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('Mitigation tracks') }}</p>
             <strong>{{ metrics.mitigate or 0 }}</strong>
             <small>{{ _('Risks in mitigate treatment') }}</small>
           </article>
           <article class="risk-hero__metric">
-            <p class="text-uppercase small mb-1">{{ _('Overdue plans') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('Overdue plans') }}</p>
             <strong>{{ metrics.overdue or 0 }}</strong>
             <small>{{ _('Past due treatment actions') }}</small>
           </article>
@@ -596,13 +597,13 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
 
   <section class="risk-matrix">
     <div class="risk-matrix__card">
-      <div class="flex-grow-1">
-        <p class="text-uppercase small mb-2">{{ _('Likelihood vs impact matrix') }}</p>
+      <div class="grow">
+        <p class="uppercase text-sm mb-2">{{ _('Likelihood vs impact matrix') }}</p>
         <h2 class="h4 mb-2">{{ _('Risk heatmap') }}</h2>
-        <p class="text-secondary mb-0">{{ _('Plot every recorded risk across the configured severity spectrum to reveal concentration points before treatment review meetings.') }}</p>
+        <p class="text-[var(--color-muted)] mb-0">{{ _('Plot every recorded risk across the configured severity spectrum to reveal concentration points before treatment review meetings.') }}</p>
       </div>
       <div>
-        <p class="text-uppercase small text-secondary mb-2">{{ _('Severity scale') }}</p>
+        <p class="uppercase text-sm text-[var(--color-muted)] mb-2">{{ _('Severity scale') }}</p>
         <div class="risk-matrix__legend-list">
           {% for entry in severity_scale %}
           <span class="risk-matrix-pill {{ entry.class }}">
@@ -610,7 +611,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             <span class="risk-matrix-pill__range">{{ entry.min_score }}&ndash;{{ entry.max_score }}</span>
           </span>
           {% else %}
-          <span class="text-secondary small">{{ _('Configure at least one severity threshold to populate the legend.') }}</span>
+          <span class="text-[var(--color-muted)] text-sm">{{ _('Configure at least one severity threshold to populate the legend.') }}</span>
           {% endfor %}
         </div>
       </div>
@@ -670,20 +671,20 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         </div>
         {% endfor %}
       </div>
-      <p class="risk-matrix__footnote text-secondary small mb-0">{{ _('Scores reflect the configured impact and chance weights; severity colors respect the thresholds set in the risk workspace.') }}</p>
+      <p class="risk-matrix__footnote text-[var(--color-muted)] text-sm mb-0">{{ _('Scores reflect the configured impact and chance weights; severity colors respect the thresholds set in the risk workspace.') }}</p>
     </div>
   </section>
 
   <section class="risk-actions">
     <div>
       <h2 class="h4 mb-1">{{ _('Recorded risks') }}</h2>
-      <p class="text-secondary mb-0">{{ _('Components impacted: {count}').format(count=metrics.components or 0) }}</p>
+      <p class="text-[var(--color-muted)] mb-0">{{ _('Components impacted: {count}').format(count=metrics.components or 0) }}</p>
     </div>
     <div class="risk-actions__buttons">
-      <a class="btn btn-primary" href="{{ url_for('risk.create') }}">{{ _('New risk') }}</a>
-      <a class="btn btn-outline-secondary" href="{{ url_for('risk.dashboard') }}#risk-list">{{ _('Refresh view') }}</a>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.create') }}">{{ _('New risk') }}</a>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}#risk-list">{{ _('Refresh view') }}</a>
       {% if current_user.has_role('admin') %}
-      <a class="btn btn-outline-warning" href="{{ url_for('admin.risk_thresholds') }}">{{ _('Severity thresholds') }}</a>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400/10" href="{{ url_for('admin.risk_thresholds') }}">{{ _('Severity thresholds') }}</a>
       {% endif %}
     </div>
   </section>
@@ -702,14 +703,14 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
               {{ _('Severity pending') }}
               {% endif %}
             </div>
-            <div class="d-flex flex-wrap gap-2 mt-2">
+            <div class="flex flex-wrap gap-2 mt-2">
               <span class="risk-pill risk-pill--muted">{{ _('risk.treatment.' + card.treatment.value) }}</span>
               <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
             </div>
             <h3 class="h5 mt-3 mb-1">{{ card.title }}</h3>
-            <p class="text-secondary small mb-0">{{ card.description }}</p>
+            <p class="text-[var(--color-muted)] text-sm mb-0">{{ card.description }}</p>
             {% if card.is_closed %}
-            <div class="text-secondary small mt-2">
+            <div class="text-[var(--color-muted)] text-sm mt-2">
               {% if card.closed_at %}
               {{ _('risk.status.closed_on').format(date=card.closed_at.strftime('%d %b %Y')) }}
               {% else %}
@@ -719,104 +720,104 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             {% endif %}
           </div>
           <div class="risk-card__score">
-            <small class="text-secondary d-block">{{ _('Score') }}</small>
+            <small class="text-[var(--color-muted)] block">{{ _('Score') }}</small>
             <strong>{{ card.score }}</strong>
             {% if card.discovered_on %}
-            <div class="small text-secondary">{{ _('Logged {date}').format(date=card.discovered_on.strftime('%d %b %Y')) }}</div>
+            <div class="text-sm text-[var(--color-muted)]">{{ _('Logged {date}').format(date=card.discovered_on.strftime('%d %b %Y')) }}</div>
             {% endif %}
           </div>
         </header>
 
         <ul class="risk-card__scale">
           <li>
-            <small class="text-secondary text-uppercase">{{ _('Impact') }}</small>
+            <small class="text-[var(--color-muted)] uppercase">{{ _('Impact') }}</small>
             <strong>{{ _('risk.impact.' + card.impact.value) }}</strong>
-            <span class="text-secondary small">{{ _('Weight {value}').format(value=card.impact_weight) }}</span>
+            <span class="text-[var(--color-muted)] text-sm">{{ _('Weight {value}').format(value=card.impact_weight) }}</span>
           </li>
           <li>
-            <small class="text-secondary text-uppercase">{{ _('Chance') }}</small>
+            <small class="text-[var(--color-muted)] uppercase">{{ _('Chance') }}</small>
             <strong>{{ _('risk.chance.' + card.chance.value) }}</strong>
-            <span class="text-secondary small">{{ _('Weight {value}').format(value=card.chance_weight) }}</span>
+            <span class="text-[var(--color-muted)] text-sm">{{ _('Weight {value}').format(value=card.chance_weight) }}</span>
           </li>
         </ul>
 
         <div>
-          <p class="fw-semibold small text-uppercase text-secondary mb-2">{{ _('Impact areas') }}</p>
+          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-2">{{ _('Impact areas') }}</p>
           <div class="risk-chip-group">
             {% for area in card.impact_areas %}
             <span class="risk-chip">{{ _('risk.impact_area.' + area) }}</span>
             {% else %}
-            <span class="text-secondary small">{{ _('No impact areas selected yet.') }}</span>
+            <span class="text-[var(--color-muted)] text-sm">{{ _('No impact areas selected yet.') }}</span>
             {% endfor %}
           </div>
         </div>
 
         <div>
-          <p class="fw-semibold small text-uppercase text-secondary mb-2">{{ _('Linked components') }}</p>
+          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-2">{{ _('Linked components') }}</p>
           <ul class="risk-component-list">
             {% for component in card.components %}
             <li>
               <div>
                 <strong>{{ component.name }}</strong>
-                <div class="text-secondary small">{{ component.context or _('Standalone scope') }}</div>
+                <div class="text-[var(--color-muted)] text-sm">{{ component.context or _('Standalone scope') }}</div>
               </div>
               <span class="risk-pill risk-pill--component">{{ _('Component #{id}').format(id=component.id) }}</span>
             </li>
             {% else %}
-            <li class="text-secondary small">{{ _('No components linked to this risk.') }}</li>
+            <li class="text-[var(--color-muted)] text-sm">{{ _('No components linked to this risk.') }}</li>
             {% endfor %}
           </ul>
         </div>
 
-        <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-grow-1">
-            <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('Treatment plan') }}</p>
+        <div class="flex flex-col flex-col md:flex-row gap-3">
+          <div class="grow">
+            <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('Treatment plan') }}</p>
             <p class="mb-0">{{ card.treatment_plan or _('No treatment plan documented yet.') }}</p>
           </div>
           <div>
-            <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('Owner') }}</p>
+            <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('Owner') }}</p>
             {% if card.owner %}
             <div>{{ card.owner.full_name }}</div>
-            <div class="text-secondary small">{{ card.owner.email }}</div>
+            <div class="text-[var(--color-muted)] text-sm">{{ card.owner.email }}</div>
             {% else %}
-            <div class="text-secondary">{{ _('Unassigned owner') }}</div>
+            <div class="text-[var(--color-muted)]">{{ _('Unassigned owner') }}</div>
             {% endif %}
           </div>
         </div>
 
-        <div class="d-flex flex-column flex-md-row gap-3">
+        <div class="flex flex-col flex-col md:flex-row gap-3">
           <div>
-            <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('Treatment due date') }}</p>
+            <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('Treatment due date') }}</p>
             {% if card.treatment_due_date %}
             <div>{{ card.treatment_due_date.strftime('%d %b %Y') }}</div>
             {% else %}
-            <div class="text-secondary">{{ _('Not scheduled') }}</div>
+            <div class="text-[var(--color-muted)]">{{ _('Not scheduled') }}</div>
             {% endif %}
           </div>
           <div>
-            <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('Last updated') }}</p>
+            <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('Last updated') }}</p>
             {% if card.updated_at %}
             <div>{{ card.updated_at.strftime('%d %b %Y') }}</div>
             {% else %}
-            <div class="text-secondary">{{ _('No updates captured yet.') }}</div>
+            <div class="text-[var(--color-muted)]">{{ _('No updates captured yet.') }}</div>
             {% endif %}
           </div>
         </div>
 
         {% if card.controls %}
         <div class="risk-control-card">
-          <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('risk.controls.linked') }}</p>
-          <div class="d-flex flex-column gap-2">
+          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('risk.controls.linked') }}</p>
+          <div class="flex flex-col gap-2">
             {% for control in card.controls %}
-            <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div class="flex flex-wrap justify-between gap-2">
               <div>
-                <div class="fw-semibold">{{ control.domain }}</div>
-                <div class="text-secondary small">{{ control.section }}</div>
+                <div class="font-semibold">{{ control.domain }}</div>
+                <div class="text-[var(--color-muted)] text-sm">{{ control.section }}</div>
               </div>
               <span class="risk-pill risk-pill--control">{{ _('Mitigation anchor') }}</span>
             </div>
             {% if control.description %}
-            <p class="mb-0 small text-secondary">{{ control.description }}</p>
+            <p class="mb-0 text-sm text-[var(--color-muted)]">{{ control.description }}</p>
             {% endif %}
             {% if not loop.last %}
             <hr class="my-2">
@@ -827,37 +828,37 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         {% endif %}
 
         <div>
-          <p class="fw-semibold small text-uppercase text-secondary mb-1">{{ _('risk.ticket.label') }}</p>
+          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('risk.ticket.label') }}</p>
           {% if card.ticket_url %}
           <a class="link-primary" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.ticket.open') }}</a>
-          <div class="text-secondary small text-break">{{ card.ticket_url }}</div>
+          <div class="text-[var(--color-muted)] text-sm break-all">{{ card.ticket_url }}</div>
           {% else %}
-          <div class="text-secondary small">{{ _('risk.ticket.missing') }}</div>
+          <div class="text-[var(--color-muted)] text-sm">{{ _('risk.ticket.missing') }}</div>
           {% endif %}
         </div>
 
         <div class="risk-card__actions">
-          <a class="btn btn-sm btn-primary" href="{{ url_for('risk.edit', risk_id=card.id) }}">{{ _('Edit risk') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.edit', risk_id=card.id) }}">{{ _('Edit risk') }}</a>
           {% if card.ticket_url %}
-          <a class="btn btn-sm btn-outline-secondary" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.actions.view_ticket') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.actions.view_ticket') }}</a>
           {% endif %}
           {% if api_endpoint_available %}
-          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('risk_api.get_risk', risk_id=card.id) }}" target="_blank" rel="noopener">{{ _('Open API record') }}</a>
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk_api.get_risk', risk_id=card.id) }}" target="_blank" rel="noopener">{{ _('Open API record') }}</a>
           {% endif %}
           {% if card.is_closed %}
           <form method="post" action="{{ url_for('risk.reopen', risk_id=card.id) }}">
             {{ action_form.csrf_token }}
-            <button class="btn btn-sm btn-outline-primary" type="submit">{{ _('risk.actions.reopen') }}</button>
+            <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-primary-500 text-primary-400 hover:bg-primary-500/10" type="submit">{{ _('risk.actions.reopen') }}</button>
           </form>
           {% else %}
           <form method="post" action="{{ url_for('risk.close', risk_id=card.id) }}">
             {{ action_form.csrf_token }}
-            <button class="btn btn-sm btn-outline-warning" type="submit">{{ _('risk.actions.close_archive') }}</button>
+            <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-yellow-400 text-yellow-400 hover:bg-yellow-400/10" type="submit">{{ _('risk.actions.close_archive') }}</button>
           </form>
           {% endif %}
           <form method="post" action="{{ url_for('risk.delete', risk_id=card.id) }}" data-risk-delete-form data-confirm="{{ _('risk.actions.delete_confirm') }}">
             {{ action_form.csrf_token }}
-            <button class="btn btn-sm btn-outline-danger" type="submit">{{ _('risk.actions.delete') }}</button>
+            <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10" type="submit">{{ _('risk.actions.delete') }}</button>
           </form>
         </div>
       </article>
@@ -866,8 +867,8 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     {% else %}
     <div class="risk-empty">
       <h3 class="h5">{{ _('No risks recorded yet.') }}</h3>
-      <p class="text-secondary">{{ _('Link a component, capture potential impact and assign a treatment owner to start tracking.') }}</p>
-      <a class="btn btn-primary" href="{{ url_for('risk.create') }}">{{ _('Capture the first risk') }}</a>
+      <p class="text-[var(--color-muted)]">{{ _('Link a component, capture potential impact and assign a treatment owner to start tracking.') }}</p>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.create') }}">{{ _('Capture the first risk') }}</a>
     </div>
     {% endif %}
   </section>

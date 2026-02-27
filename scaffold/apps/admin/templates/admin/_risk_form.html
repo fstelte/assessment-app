@@ -1,110 +1,57 @@
-{% macro render_risk_form(form, component_choices_available=True) -%}
-  {{ form.hidden_tag() }}
-  <div class="mb-3">
-    {{ form.title.label(class="form-label") }}
-    {{ form.title(class="form-control", placeholder=_('admin.risks.form.title_placeholder')) }}
-    {% for error in form.title.errors %}
-      <div class="invalid-feedback d-block">{{ error }}</div>
-    {% endfor %}
-  </div>
-  <div class="mb-3">
-    {{ form.description.label(class="form-label") }}
-    {{ form.description(class="form-control", placeholder=_('admin.risks.form.description_placeholder')) }}
-    {% for error in form.description.errors %}
-      <div class="invalid-feedback d-block">{{ error }}</div>
-    {% endfor %}
-  </div>
-  <div class="row g-3">
-    <div class="col-sm-6">
-      {{ form.discovered_on.label(class="form-label") }}
-      {{ form.discovered_on(class="form-control", type="date") }}
-      {% for error in form.discovered_on.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.title.label.text }}</label>
+        {{ form.title(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.title.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-    <div class="col-sm-6">
-      {{ form.treatment_owner_id.label(class="form-label") }}
-      {{ form.treatment_owner_id(class="form-select") }}
-      {% for error in form.treatment_owner_id.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+
+    <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.description.label.text }}</label>
+        {{ form.description(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", rows="4") }}
+        {% for error in form.description.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-  </div>
-  <div class="row g-3 mt-0">
-    <div class="col-sm-6">
-      {{ form.impact.label(class="form-label") }}
-      {{ form.impact(class="form-select") }}
-      {% for error in form.impact.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+
+    <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.category.label.text }}</label>
+        {{ form.category(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.category.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-    <div class="col-sm-6">
-      {{ form.chance.label(class="form-label") }}
-      {{ form.chance(class="form-select") }}
-      {% for error in form.chance.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+
+    <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.status.label.text }}</label>
+        {{ form.status(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.status.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-  </div>
-  <div class="row g-3 mt-0">
-    <div class="col-sm-6">
-      {{ form.impact_areas.label(class="form-label") }}
-      {{ form.impact_areas(class="form-select", multiple=True) }}
-      {% for error in form.impact_areas.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+
+    <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.probability.label.text }}</label>
+        {{ form.probability(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.probability.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-    <div class="col-sm-6">
-      {{ form.treatment.label(class="form-label") }}
-      {{ form.treatment(class="form-select", data_control_toggle="true") }}
-      {% for error in form.treatment.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+
+    <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.impact.label.text }}</label>
+        {{ form.impact(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.impact.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-  </div>
-  <div class="mb-3 mt-3" data-csa-control-wrapper>
-    {{ form.csa_control_ids.label(class="form-label") }}
-    {{ form.csa_control_ids(class="form-select", multiple=True) }}
-    <div class="form-text">{{ _('admin.risks.form.csa_help') }}</div>
-    {% for error in form.csa_control_ids.errors %}
-      <div class="invalid-feedback d-block">{{ error }}</div>
-    {% endfor %}
-  </div>
-  <div class="mb-3">
-    {{ form.component_ids.label(class="form-label") }}
-    {% if not component_choices_available %}
-      <div class="alert alert-warning" role="alert">{{ _('admin.risks.form.no_components') }}</div>
-    {% endif %}
-    {% if component_choices_available %}
-      {{ form.component_ids(class="form-select", multiple=True) }}
-    {% else %}
-      {{ form.component_ids(class="form-select", multiple=True, disabled=True) }}
-    {% endif %}
-    {% for error in form.component_ids.errors %}
-      <div class="invalid-feedback d-block">{{ error }}</div>
-    {% endfor %}
-  </div>
-  <div class="row g-3">
-    <div class="col-sm-6">
-      {{ form.treatment_due_date.label(class="form-label") }}
-      {{ form.treatment_due_date(class="form-control", type="date") }}
-      {% for error in form.treatment_due_date.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
+    
+    <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.owner_id.label.text }}</label>
+        {{ form.owner_id(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in form.owner_id.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
     </div>
-    <div class="col-sm-6">
-      {{ form.treatment_plan.label(class="form-label") }}
-      {{ form.treatment_plan(class="form-control") }}
-      {% for error in form.treatment_plan.errors %}
-        <div class="invalid-feedback d-block">{{ error }}</div>
-      {% endfor %}
-    </div>
-  </div>
-  <div class="d-grid mt-4">
-    {% if component_choices_available %}
-      {{ form.submit(class="btn btn-primary") }}
-    {% else %}
-      {{ form.submit(class="btn btn-primary", disabled=True) }}
-    {% endif %}
-  </div>
-{%- endmacro %}
+</div>

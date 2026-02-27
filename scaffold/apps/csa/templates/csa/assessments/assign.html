@@ -1,40 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ _('csa.assessments.assign.title') }}{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7 col-xl-6">
+<div class="flex flex-wrap -mx-3 justify-center">
+  <div class="lg:w-7/12 px-3 xl:w-1/2 px-3">
     <div class="mb-4">
       <h1 class="h3 mb-1">{{ _('csa.assessments.assign.heading') }}</h1>
-      <p class="text-secondary mb-0">{{ _('csa.assessments.assign.intro') }}</p>
+      <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.assign.intro') }}</p>
     </div>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       <div class="mb-3">
-        {{ form.assignee_id.label(_('csa.assessments.assign.fields.assignee.label'), class="form-label") }}
-        {{ form.assignee_id(class="form-select" if not form.assignee_id.errors else "form-select is-invalid") }}
+        {{ form.assignee_id.label(_('csa.assessments.assign.fields.assignee.label'), class="block text-sm mb-1.5") }}
+        {{ form.assignee_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" if not form.assignee_id.errors else "form-select is-invalid") }}
         {% for error in form.assignee_id.errors %}
-          <div class="invalid-feedback d-block">{{ error }}</div>
+          <div class="text-red-400 text-xs mt-1 block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">{{ _('csa.assessments.assign.fields.assignee.help') }}</div>
+        <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('csa.assessments.assign.fields.assignee.help') }}</div>
       </div>
       <div class="mb-3">
-        {{ form.template_id.label(_('csa.assessments.assign.fields.template.label'), class="form-label") }}
-        {{ form.template_id(class="form-select" if not form.template_id.errors else "form-select is-invalid") }}
+        {{ form.template_id.label(_('csa.assessments.assign.fields.template.label'), class="block text-sm mb-1.5") }}
+        {{ form.template_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" if not form.template_id.errors else "form-select is-invalid") }}
         {% for error in form.template_id.errors %}
-          <div class="invalid-feedback d-block">{{ error }}</div>
+          <div class="text-red-400 text-xs mt-1 block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">{{ _('csa.assessments.assign.fields.template.help') }}</div>
+        <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('csa.assessments.assign.fields.template.help') }}</div>
       </div>
       <div class="mb-3">
-        {{ form.due_date.label(_('csa.assessments.assign.fields.due_date.label'), class="form-label") }}
-        {{ form.due_date(class="form-control" if not form.due_date.errors else "form-control is-invalid", placeholder=_('csa.assessments.assign.fields.due_date.placeholder')) }}
+        {{ form.due_date.label(_('csa.assessments.assign.fields.due_date.label'), class="block text-sm mb-1.5") }}
+        {{ form.due_date(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" if not form.due_date.errors else "form-control is-invalid", placeholder=_('csa.assessments.assign.fields.due_date.placeholder')) }}
         {% for error in form.due_date.errors %}
-          <div class="invalid-feedback d-block">{{ error }}</div>
+          <div class="text-red-400 text-xs mt-1 block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">{{ _('csa.assessments.assign.fields.due_date.help') }}</div>
+        <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('csa.assessments.assign.fields.due_date.help') }}</div>
       </div>
-      <div class="text-end">
-        {{ form.submit(class="btn btn-primary") }}
+      <div class="text-right">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
       </div>
     </form>
   </div>

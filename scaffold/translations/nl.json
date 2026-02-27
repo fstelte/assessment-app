@@ -227,11 +227,15 @@
       "copied": "BIA succesvol gekopieerd."
     },
     "actions": {
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "confirm_delete": "Deze BIA verwijderen?",
       "archive": "Archiveren",
       "unarchive": "Dearchiveren",
       "confirm_archive": "Weet u zeker dat u deze BIA wilt archiveren? Het wordt alleen-lezen.",
       "copy": "Kopiëren",
-      "confirm_copy": "Deze BIA dupliceren?"
+      "confirm_copy": "Deze BIA dupliceren?",
+      "cancel": "Annuleren"
     },
     "archived": {
       "title": "Gearchiveerde BIA's",
@@ -268,11 +272,12 @@
         "subtitle": "Beheer al je BIA's vanuit één omgeving door ze te volgen, bij te werken en te exporteren."
       },
       "card": {
-        "risk_owner": "Risico-eigenaar",
+        "risk_owner": "Coördinatoren",
         "not_assigned": "Niet toegewezen",
         "owner_aria": "Selecteer eigenaar",
         "owner_unassigned": "Niet toegewezen",
         "owner_save": "Opslaan",
+        "action_save": "Opslaan",
         "components": "{count} componenten",
         "no_description": "Nog geen servicebeschrijving vastgelegd.",
         "action_view": "Bekijken",
@@ -298,6 +303,7 @@
       }
     },
     "context_form": {
+      "title": "BIA",
       "title_edit": "BIA bewerken",
       "title_new": "Nieuwe BIA",
       "back": "Terug naar dashboard",
@@ -473,6 +479,35 @@
       }
     },
     "context_detail": {
+      "back": "Terug naar startpagina",
+      "tabs": {
+        "summary": "Samenvatting"
+      },
+      "actions": {
+        "edit": "Bewerken",
+        "delete": "Verwijderen",
+        "manage": "Beheren"
+      },
+      "sections": {
+        "roles": "Contactpersonen & rollen",
+        "components": "Componenten",
+        "availability": "Beschikbaarheid",
+        "dependencies": "Afhankelijkheden",
+        "consequences": "Gevolgen"
+      },
+      "roles": {
+        "responsible": "Eindverantwoordelijke",
+        "coordinator": "Coördinator",
+        "project_leader": "Projectleider",
+        "product_owner": "Product Owner",
+        "risk_owner": "Risk Owner",
+        "technical_administrator": "Technisch Beheerder",
+        "security_manager": "Security Manager",
+        "incident_contact": "Incident Contactpersoon"
+      },
+      "table": {
+        "owner": "Eigenaar"
+      },
       "ai_risks": {
         "title": "AI-risico's",
         "component": "Component",
@@ -504,6 +539,14 @@
       },
       "table": {
         "title": "Bestaande componenten",
+        "component": "Component",
+        "context": "Context",
+        "owner_users": "Eigenaar / Gebruikers",
+        "owner_type": "Eigenaar / Informatietype",
+        "environments": "Omgevingen",
+        "availability": "Beschikbaarheid",
+        "consequences": "Gevolgen",
+        "intelligence": "Inzichten",
         "headers": {
           "component": "Component",
           "bia": "BIA",
@@ -602,8 +645,49 @@
           "production": "Productie"
         },
         "badge_not_used": "Niet gebruikt",
-        "badge_no_auth": "Authenticatie niet ingesteld"
+        "badge_no_auth": "Authenticatie niet ingesteld",
+        "title": "Omgevingen",
+        "type": "Type",
+        "enabled": "Ingeschakeld",
+        "auth_method": "Authenticatiemethode"
       },
+      "filter": {
+        "scope": "Scope",
+        "search": "Zoeken",
+        "component": "Component",
+        "search_placeholder": "Componenten zoeken\u2026",
+        "apply": "Toepassen",
+        "reset": "Wissen"
+      },
+      "actions": {
+        "availability": "Beschikbaarheid beheren",
+        "avail_short": "Beschikb.",
+        "add_consequence": "Gevolg toevoegen",
+        "cons_short": "Gevolg",
+        "start_dpia": "DPIA starten",
+        "dpia_short": "DPIA"
+      },
+      "showing_count": "Weergave {start}\u2013{end} van {total} componenten",
+      "no_components": "Nog geen componenten geregistreerd.",
+      "add_button": "Component toevoegen",
+      "export_inventory": "Inventaris exporteren",
+      "add_title": "Component toevoegen",
+      "submit_add": "Component toevoegen",
+      "list_title": "Componentbibliotheek",
+      "count_suffix": "componenten",
+      "edit": {
+        "title": "{name} bewerken",
+        "heading": "{name} bewerken"
+      },
+      "users_label": "gebruikers",
+      "mtd_prefix": "MTD",
+      "rto_prefix": "RTO",
+      "rpo_prefix": "RPO",
+      "not_set": "Niet ingesteld",
+      "no_results": "Geen componenten gevonden voor dit filter.",
+      "dpia_count_tooltip": "{count} actieve DPIA",
+      "no_dpia_tooltip": "Geen actieve DPIA",
+      "delete_confirm": "\u2018{name}\u2019 verwijderen?",
       "tooltips": {
         "name": "Geef een beknopte, beschrijvende naam van het component zodat teamgenoten het snel herkennen.",
         "scope": "Selecteer de BIA waartoe dit component behoort voordat u andere details invoert.",
@@ -618,6 +702,12 @@
         "dependencies_others": "Alle andere afhankelijkheden die hierboven niet vermeld staan.",
         "description": "Extra context of details over dit component."
       }
+    },
+    "common": {
+      "all_scopes": "Alle scopes",
+      "all_items": "Alle items",
+      "select_context": "Selecteer een BIA",
+      "actions": "Acties"
     },
     "authentication_methods": {
       "options": {

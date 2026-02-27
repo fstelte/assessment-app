@@ -1,36 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ _('csa.assessments.start.title') }}{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7 col-xl-6">
+<div class="flex flex-wrap -mx-3 justify-center">
+  <div class="lg:w-7/12 px-3 xl:w-1/2 px-3">
     <div class="mb-4">
       <h1 class="h3 mb-1">{{ _('csa.assessments.start.heading') }}</h1>
-      <p class="text-secondary mb-0">{{ _('csa.assessments.start.intro') }}</p>
+      <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.start.intro') }}</p>
     </div>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       <div class="mb-3">
-        {{ form.template_id.label(_('csa.assessments.start.fields.template.label'), class="form-label") }}
-        {{ form.template_id(class="form-select" if not form.template_id.errors else "form-select is-invalid") }}
+        {{ form.template_id.label(_('csa.assessments.start.fields.template.label'), class="block text-sm mb-1.5") }}
+        {{ form.template_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" if not form.template_id.errors else "form-select is-invalid") }}
         {% for error in form.template_id.errors %}
-          <div class="invalid-feedback d-block">{{ error }}</div>
+          <div class="text-red-400 text-xs mt-1 block">{{ error }}</div>
         {% endfor %}
-        <div class="form-text">{{ _('csa.assessments.start.fields.template.help') }}</div>
+        <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('csa.assessments.start.fields.template.help') }}</div>
       </div>
-      <div class="text-end">
-        {{ form.submit(class="btn btn-primary") }}
+      <div class="text-right">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
       </div>
     </form>
 
     <div class="mt-5">
       <h2 class="h5 mb-3">{{ _('csa.assessments.start.available.title') }}</h2>
-      <div class="list-group list-group-flush">
+      <div class="divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-xl overflow-hidden list-group-flush">
         {% for template in templates %}
-          <div class="list-group-item bg-dark text-light border-secondary">
-            <div class="d-flex justify-content-between">
+          <div class="bg-[var(--color-card)] px-4 py-3 bg-[var(--color-card)] text-slate-100 border-[var(--color-border)]">
+            <div class="flex justify-between">
               <div>
                 {% set control = template.control %}
-                <div class="fw-semibold">
+                <div class="font-semibold">
                   {% if control %}
                     {{ (control.section ~ " " ~ control.domain).strip() or template.name }}
                   {% else %}
@@ -38,20 +38,20 @@
                   {% endif %}
                 </div>
                 {% if control and control.section %}
-                  <div class="text-secondary small">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</div>
+                  <div class="text-[var(--color-muted)] text-sm">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</div>
                 {% endif %}
                 {% if control and control.domain %}
-                  <div class="text-secondary small">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</div>
+                  <div class="text-[var(--color-muted)] text-sm">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</div>
                 {% endif %}
                 {% if control and control.description %}
-                  <div class="text-secondary small">{{ control.description }}</div>
+                  <div class="text-[var(--color-muted)] text-sm">{{ control.description }}</div>
                 {% endif %}
               </div>
-              <div class="text-secondary small ms-3">{{ _('csa.assessments.common.version', version=template.version) }}</div>
+              <div class="text-[var(--color-muted)] text-sm ml-3">{{ _('csa.assessments.common.version', version=template.version) }}</div>
             </div>
           </div>
         {% else %}
-          <div class="alert alert-info mb-0">{{ _('csa.assessments.start.available.empty') }}</div>
+          <div class="rounded-xl px-4 py-3 text-sm border bg-blue-500/10 border-blue-400/40 text-blue-200 mb-0">{{ _('csa.assessments.start.available.empty') }}</div>
         {% endfor %}
       </div>
     </div>

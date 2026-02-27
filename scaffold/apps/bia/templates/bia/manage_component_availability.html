@@ -1,67 +1,67 @@
 {% extends "base.html" %}
 {% set back_url = return_to or url_for('bia.view_components') %}
-{% block title %}{{ _('Availability requirements · %(component)s', component=component.name) }}{% endblock %}
+{% block title %}{{ _('bia.manage_component_availability.title', component=component.name) }}{% endblock %}
 {% block content %}
 <div class="mb-3">
-  <a href="{{ back_url }}" class="text-secondary text-decoration-none">&larr; {{ _('Back to components') }}</a>
+  <a href="{{ back_url }}" class="text-[var(--color-muted)] no-underline hover:text-[var(--color-text)]">&larr; {{ _('bia.manage_component_availability.back') }}</a>
 </div>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+  <div class="px-5 py-4 border-b border-[var(--color-border)] flex flex-col md:flex-row justify-between md:items-center gap-2 bg-[var(--color-surface)] rounded-t-xl">
     <div>
-      <div class="fw-semibold">{{ component.name }}</div>
-      <div class="text-secondary small">
+      <div class="font-semibold text-[var(--color-text)]">{{ component.name }}</div>
+      <div class="text-[var(--color-muted)] text-sm">
         {% if component.context_scope %}
           {{ component.context_scope.name }}
         {% else %}
-          {{ _('No BIA context linked') }}
+          {{ _('bia.manage_component_availability.no_context') }}
         {% endif %}
       </div>
     </div>
-    <span class="badge bg-primary text-uppercase">{{ _('Availability requirements') }}</span>
+    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">{{ _('bia.manage_component_availability.badge') }}</span>
   </div>
-  <div class="card-body">
-    <form method="post" class="vstack gap-4">
+  <div class="p-5">
+    <form method="post" class="flex flex-col gap-4">
       {{ form.hidden_tag() }}
       <div>
-        {{ form.mtd.label(class="form-label") }}
-        {{ form.mtd(class="form-control", placeholder=_('e.g. 24 hours')) }}
+        {{ form.mtd.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.mtd(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('bia.manage_component_availability.placeholders.mtd')) }}
         {% if form.mtd.errors %}
-          <div class="form-text text-danger">{{ form.mtd.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.mtd.errors | join(', ') }}</div>
         {% else %}
-          <div class="form-text text-secondary">{{ _('Maximum tolerable downtime before operations critically fail.') }}</div>
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_component_availability.help.mtd') }}</div>
         {% endif %}
       </div>
       <div>
-        {{ form.rto.label(class="form-label") }}
-        {{ form.rto(class="form-control", placeholder=_('e.g. 8 hours')) }}
+        {{ form.rto.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.rto(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('bia.manage_component_availability.placeholders.rto')) }}
         {% if form.rto.errors %}
-          <div class="form-text text-danger">{{ form.rto.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.rto.errors | join(', ') }}</div>
         {% else %}
-          <div class="form-text text-secondary">{{ _('Target for restoring service after a disruption.') }}</div>
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_component_availability.help.rto') }}</div>
         {% endif %}
       </div>
       <div>
-        {{ form.rpo.label(class="form-label") }}
-        {{ form.rpo(class="form-control", placeholder=_('e.g. 15 minutes')) }}
+        {{ form.rpo.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.rpo(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('bia.manage_component_availability.placeholders.rpo')) }}
         {% if form.rpo.errors %}
-          <div class="form-text text-danger">{{ form.rpo.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.rpo.errors | join(', ') }}</div>
         {% else %}
-          <div class="form-text text-secondary">{{ _('Acceptable data loss measured in time.') }}</div>
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_component_availability.help.rpo') }}</div>
         {% endif %}
       </div>
       <div>
-        {{ form.masl.label(class="form-label") }}
-        {{ form.masl(class="form-control", placeholder=_('Describe the minimum acceptable level of service.')) }}
+        {{ form.masl.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+        {{ form.masl(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('bia.manage_component_availability.placeholders.masl')) }}
         {% if form.masl.errors %}
-          <div class="form-text text-danger">{{ form.masl.errors | join(', ') }}</div>
+          <div class="text-xs mt-1 text-red-500">{{ form.masl.errors | join(', ') }}</div>
         {% else %}
-          <div class="form-text text-secondary">{{ _('Define the minimum capabilities that must remain available.') }}</div>
+          <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_component_availability.help.masl') }}</div>
         {% endif %}
       </div>
-      <div class="d-flex justify-content-end gap-2">
-        <a href="{{ back_url }}" class="btn btn-outline-light">{{ _('Cancel') }}</a>
-        <button type="submit" class="btn btn-primary">{{ _('Save requirements') }}</button>
+      <div class="flex justify-end gap-3 pt-2 mt-2 border-t border-[var(--color-border)]">
+        <a href="{{ back_url }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.actions.cancel') }}</a>
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">{{ _('bia.manage_component_availability.actions.submit') }}</button>
       </div>
     </form>
   </div>

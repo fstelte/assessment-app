@@ -1,92 +1,105 @@
 {% extends "base.html" %}
-{% block title %}CSV Export | {{ item.name }}{% endblock %}
-{% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
-</div>
+{% block title %}{{ _('bia.csv_export.title', item_name=item.name) }}{% endblock %}
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary">CSV export ready</div>
-  <div class="card-body">
-    <p class="text-secondary">
-      The BIA export for <strong>{{ item.name }}</strong> completed successfully. Download the generated CSV files below.
-    </p>
-    <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle mb-0">
-        <thead>
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div>
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+        <li>
+          <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="flex items-center hover:text-[var(--color-text)] transition-colors no-underline text-inherit">
+            <span>&larr;</span> <span class="ml-1">{{ item.name }}</span>
+          </a>
+        </li>
+        <li class="select-none text-[var(--color-border)]">/</li>
+        <li class="font-medium text-[var(--color-text)]">{{ _('bia.csv_export.title_short') }}</li>
+      </ol>
+    </nav>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-[var(--color-text)]">{{ _('bia.csv_export.heading') }}</h1>
+        <p class="text-[var(--color-muted)] mt-1 max-w-3xl">
+          {{ _('bia.csv_export.description', item_name=item.name) }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Content -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-[var(--color-border)] flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-[var(--color-surface)]">
+      <h3 class="font-semibold text-[var(--color-text)] text-sm uppercase tracking-wide">{{ _('bia.csv_export.files_ready') }}</h3>
+      <button type="button" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors shadow-sm" data-download-all>
+        <i class="fas fa-download mr-2"></i> {{ _('bia.csv_export.download_all') }}
+      </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-left align-middle">
+        <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
           <tr>
-            <th scope="col">File</th>
-            <th scope="col">Category</th>
-            <th scope="col">Size</th>
-            <th scope="col">Action</th>
+            <th scope="col" class="px-6 py-3">{{ _('bia.csv_export.table.file') }}</th>
+            <th scope="col" class="px-6 py-3">{{ _('bia.csv_export.table.category') }}</th>
+            <th scope="col" class="px-6 py-3">{{ _('bia.csv_export.table.size') }}</th>
+            <th scope="col" class="px-6 py-3 text-right">{{ _('bia.common.actions') }}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-[var(--color-border)]">
           {% for file in exported_files %}
-          <tr>
-            <td>{{ file.filename }}</td>
-            <td>
+          <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+            <td class="px-6 py-4 font-mono text-xs text-[var(--color-text)] flex items-center gap-2">
+              <i class="far fa-file-alt text-[var(--color-muted)]"></i>
+              {{ file.filename }}
+            </td>
+            <td class="px-6 py-4">
               {% if 'bia' in file.filename %}
-                <span class="badge text-bg-primary">BIA</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">BIA</span>
               {% elif 'components' in file.filename %}
-                <span class="badge text-bg-info">Components</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">Components</span>
               {% elif 'consequences' in file.filename %}
-                <span class="badge text-bg-warning">Consequences</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Consequences</span>
               {% elif 'availability' in file.filename %}
-                <span class="badge text-bg-secondary">Availability</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">Availability</span>
               {% elif 'ai_identification' in file.filename %}
-                <span class="badge text-bg-danger">AI Identification</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">AI Identification</span>
               {% elif 'summary' in file.filename %}
-                <span class="badge text-bg-success">Summary</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Summary</span>
               {% else %}
-                <span class="badge text-bg-light text-dark">Data</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300">Data</span>
               {% endif %}
             </td>
-            <td>
+            <td class="px-6 py-4 text-[var(--color-muted)] tabular-nums">
               {% set size = file.size %}
               {% if size < 1024 %}
-                {{ size }} bytes
+                {{ size }} B
               {% elif size < 1048576 %}
                 {{ '%.1f'|format(size / 1024) }} KB
               {% else %}
                 {{ '%.1f'|format(size / 1048576) }} MB
               {% endif %}
             </td>
-            <td>
-              <a class="btn btn-outline-light btn-sm" href="{{ url_for('bia.download_csv_file', folder=file.path, filename=file.filename) }}">Download</a>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ url_for('bia.download_csv_file', folder=file.folder_name, filename=file.filename) }}" class="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-[var(--color-text)] bg-white border border-[var(--color-border)] rounded-md hover:bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-border)] dark:bg-[var(--color-surface)] dark:hover:bg-[var(--color-surface)]/80 transition-colors" data-download-link>
+                <i class="fas fa-download mr-1.5 text-[var(--color-muted)]"></i>
+                {{ _('Download') }}
+              </a>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <div class="alert alert-info mt-3" role="alert">
-      Files are stored at <code>exports/{{ export_folder }}/</code> on the server.
-    </div>
-    <div class="d-flex justify-content-end gap-2">
-      <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-light">Close</a>
-      <button type="button" class="btn btn-primary" data-download-all>Download all</button>
+
+    <div class="px-6 py-4 bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+      <div class="flex items-start gap-3 p-3 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border border-blue-100 dark:border-blue-800/30 text-sm">
+        <i class="fas fa-info-circle mt-0.5"></i>
+        <div>
+          <p class="font-medium">{{ _('bia.csv_export.storage_info') }}</p>
+          <p class="mt-0.5 opacity-90 text-xs font-mono">exports/{{ export_folder }}/</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
-<script nonce="{{ csp_nonce }}">
-(function () {
-  const downloadAllButton = document.querySelector('[data-download-all]');
-  if (!downloadAllButton) {
-    return;
-  }
-  downloadAllButton.addEventListener('click', function () {
-    document.querySelectorAll('a.btn[href*="download_csv"]').forEach((link, index) => {
-      setTimeout(() => {
-        const anchor = document.createElement('a');
-        anchor.href = link.href;
-        anchor.target = '_blank';
-        anchor.rel = 'noopener';
-        anchor.click();
-      }, index * 400);
-    });
-  });
-})();
-</script>
 {% endblock %}

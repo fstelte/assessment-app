@@ -92,7 +92,6 @@ gunicorn_workers: 4
 compose_project_name: scaffold
 compose_src: {{ playbook_dir }}/../..
 compose_file: docker/compose.prod.yml
-compose_profile: postgres
 
 # system packages required for default install
 common_packages:

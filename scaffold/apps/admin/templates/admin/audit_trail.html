@@ -1,152 +1,111 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.audit.title') }}{% endblock %}
-{% block main_container_class %}container-fluid px-3 px-lg-4{% endblock %}
+{% import "macros.html" as macros %}
+
+{% block title %}{{ _('admin.audit_trail.title') }}{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-  <div>
-    <h1 class="mb-1">{{ _('admin.audit.heading') }}</h1>
-    <p class="text-secondary mb-0">{{ _('admin.audit.subtitle') }}</p>
-  </div>
-  <a class="btn btn-outline-light" href="{{ url_for('admin.list_users') }}">{{ _('admin.audit.link_back') }}</a>
+<div class="mb-4">
+  <h1 class="text-2xl font-bold mb-1">{{ _('admin.audit_trail.heading') }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.audit_trail.subtitle') }}</p>
 </div>
 
-<form method="get" class="row g-3 align-items-end mb-4">
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-start-date" class="form-label">{{ _('admin.audit.filters.start_date') }}</label>
-    <input type="date" class="form-control" id="filter-start-date" name="start_date" value="{{ filters.start_date }}">
-  </div>
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-end-date" class="form-label">{{ _('admin.audit.filters.end_date') }}</label>
-    <input type="date" class="form-control" id="filter-end-date" name="end_date" value="{{ filters.end_date }}">
-  </div>
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-event-type" class="form-label">{{ _('admin.audit.filters.event_type') }}</label>
-    <select class="form-select" id="filter-event-type" name="event_type">
-      <option value="">{{ _('admin.audit.filters.event_type_all') }}</option>
-      {% for option in event_types %}
-        <option value="{{ option }}"{% if filters.event_type == option %} selected{% endif %}>{{ option }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-action" class="form-label">{{ _('admin.audit.filters.action') }}</label>
-    <input type="text" class="form-control" id="filter-action" name="action" value="{{ filters.action }}">
-  </div>
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-actor" class="form-label">{{ _('admin.audit.filters.actor') }}</label>
-    <input type="text" class="form-control" id="filter-actor" name="actor" value="{{ filters.actor }}" placeholder="{{ _('admin.audit.filters.actor_placeholder') }}" list="actor-email-options">
-    {% if actor_options %}
-      <datalist id="actor-email-options">
-        {% for option in actor_options %}
-          <option value="{{ option }}">
-        {% endfor %}
-      </datalist>
-    {% endif %}
-  </div>
-  <div class="col-12 col-md-3 col-xl-2">
-    <label for="filter-entity" class="form-label">{{ _('admin.audit.filters.entity') }}</label>
-    <input type="text" class="form-control" id="filter-entity" name="entity_type" value="{{ filters.entity_type }}">
-  </div>
-  <div class="col-6 col-md-3 col-xl-2">
-    <label for="filter-per-page" class="form-label">{{ _('admin.audit.filters.per_page') }}</label>
-    <select class="form-select" id="filter-per-page" name="per_page">
-      {% for option in [25, 50, 100] %}
-        <option value="{{ option }}"{% if pagination.per_page == option %} selected{% endif %}>{{ option }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-6 col-md-3 col-xl-2 d-grid">
-    <button type="submit" class="btn btn-outline-light">{{ _('admin.audit.filters.submit') }}</button>
-  </div>
-  <div class="col-12 col-md-3 col-xl-2 d-grid">
-    <a href="{{ url_for('admin.audit_trail') }}" class="btn btn-outline-secondary">{{ _('admin.audit.filters.reset') }}</a>
-  </div>
-</form>
+<div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] mb-4 p-4">
+    <form method="get" class="flex flex-wrap lg:flex-nowrap gap-4 items-end">
+        <div class="w-full lg:w-1/4">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.user') }}</label>
+            <input type="text" name="user" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('user', '') }}" placeholder="{{ _('admin.audit_trail.filter.user.placeholder') }}">
+        </div>
+        <div class="w-full lg:w-1/4">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.action') }}</label>
+            <input type="text" name="action" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('action', '') }}" placeholder="{{ _('admin.audit_trail.filter.action.placeholder') }}">
+        </div>
+        <div class="w-full lg:w-1/4">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.target') }}</label>
+            <input type="text" name="target" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('target', '') }}" placeholder="{{ _('admin.audit_trail.filter.target.placeholder') }}">
+        </div>
+        <div class="w-full lg:w-auto">
+            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 w-full lg:w-auto">
+                {{ _('admin.audit_trail.filter.apply') }}
+            </button>
+        </div>
+        {% if request.args %}
+        <div class="w-full lg:w-auto">
+            <a href="{{ url_for('admin.audit_trail') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 w-full lg:w-auto">
+                {{ _('admin.audit_trail.filter.clear') }}
+            </a>
+        </div>
+        {% endif %}
+    </form>
+</div>
 
-{% if entries %}
-  <div class="table-responsive">
-    <table class="table table-dark table-striped align-middle">
-      <thead>
-        <tr>
-          <th scope="col">{{ _('admin.audit.table.timestamp') }}</th>
-          <th scope="col">{{ _('admin.audit.table.user') }}</th>
-          <th scope="col">{{ _('admin.audit.table.action') }}</th>
-          <th scope="col">{{ _('admin.audit.table.entity') }}</th>
-          <th scope="col">{{ _('admin.audit.table.details') }}</th>
-          <th scope="col">{{ _('admin.audit.table.ip') }}</th>
-          <th scope="col">{{ _('admin.audit.table.user_agent') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in entries %}
-          {% set actor = entry.actor %}
-          {% set actor_name = entry.actor_name or (actor.full_name if actor else '') %}
-          {% set actor_email = entry.actor_email or (actor.email if actor else '') %}
-          <tr>
-            <td class="text-nowrap">{{ entry.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if entry.created_at else '-' }}</td>
-            <td>
-              {% if actor_name or actor_email %}
-                {% if actor_name %}
-                  <div class="fw-semibold">{{ actor_name }}</div>
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)] mb-4">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold w-40">{{ _('admin.audit_trail.table.timestamp') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.user') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.action') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.target') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.details') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.audit_trail.table.ip') }}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--color-border)]">
+      {% for event in events %}
+      <tr class="hover:bg-slate-500/5 transition-colors">
+        <td class="px-4 py-3 align-top whitespace-nowrap text-[var(--color-muted)] text-xs">
+          {{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+        </td>
+        <td class="px-4 py-3 align-top">
+          {% if event.user %}
+             <span class="font-medium">{{ event.user.full_name }}</span>
+             <br><span class="text-[var(--color-muted)] text-xs">{{ event.user.email }}</span>
+          {% else %}
+             <span class="text-[var(--color-muted)]">{{ _('admin.audit_trail.system') }}</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 align-top">
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-500/20 text-[var(--color-text)]">
+            {{ event.action }}
+          </span>
+        </td>
+        <td class="px-4 py-3 align-top font-mono text-xs text-[var(--color-primary)]">
+          {{ event.target_type }} #{{ event.target_id }}
+        </td>
+        <td class="px-4 py-3 align-top">
+          {% if event.details %}
+            <div x-data="{ expanded: false }" class="relative">
+                <div class="text-xs font-mono text-[var(--color-muted)] break-all max-h-16 overflow-hidden transition-all"
+                     :class="{ 'max-h-full': expanded, 'max-h-16': !expanded }">
+                    {{ event.details }}
+                </div>
+                {% if event.details|length > 100 %}
+                    <button @click="expanded = !expanded" class="text-[var(--color-primary)] text-xs mt-1 hover:underline focus:outline-none">
+                        <span x-show="!expanded">{{ _('admin.audit_trail.show_more') }}</span>
+                        <span x-show="expanded">{{ _('admin.audit_trail.show_less') }}</span>
+                    </button>
                 {% endif %}
-                {% if actor_email %}
-                  <div class="text-secondary small">{{ actor_email }}</div>
-                {% endif %}
-              {% else %}
-                <span class="badge bg-secondary">{{ _('admin.audit.table.anonymous') }}</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="badge bg-info text-dark text-uppercase">{{ entry.event_type }}</span>
-            </td>
-            <td>
-              <div class="fw-semibold">{{ entry.target_type }}</div>
-              {% if entry.target_id %}
-                <div class="text-secondary small">{{ _('admin.audit.table.entity_id', identifier=entry.target_id) }}</div>
-              {% endif %}
-            </td>
-            <td class="text-break">
-              {% if entry.payload %}
-                <pre class="bg-black text-light p-2 rounded small mb-0">{{ entry.payload | tojson(indent=2) }}</pre>
-              {% else %}
-                <span class="text-secondary">{{ _('admin.audit.table.no_details') }}</span>
-              {% endif %}
-            </td>
-            <td class="text-nowrap">{{ entry.actor_ip or '-' }}</td>
-            <td class="text-break">{{ entry.actor_user_agent or '-' }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+            </div>
+          {% else %}
+            <span class="text-[var(--color-muted)] text-xs">-</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 align-top text-xs text-[var(--color-muted)] font-mono">
+            {{ event.ip_address or '-' }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-[var(--color-muted)]">
+              {{ _('admin.audit_trail.no_events') }}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mt-3">
-    <div class="text-secondary small flex-grow-1">
-      {{ _('admin.audit.pagination.summary', start=pagination.first_item or 0, end=pagination.last_item or 0, total=pagination.total) }}
-    </div>
-    <nav class="flex-shrink-0" aria-label="{{ _('admin.audit.pagination.aria') }}">
-      <ul class="pagination pagination-sm mb-0 flex-nowrap gap-1">
-        <li class="page-item{% if not pagination.has_prev %} disabled{% endif %}">
-            {% if pagination.has_prev %}
-              <a class="page-link" href="{{ url_for('admin.audit_trail', page=pagination.prev_num, per_page=pagination.per_page, action=filters.action, entity_type=filters.entity_type, actor=filters.actor, event_type=filters.event_type, start_date=filters.start_date, end_date=filters.end_date) }}" aria-label="{{ _('admin.audit.pagination.previous') }}">&laquo;</a>
-            {% else %}
-              <span class="page-link">&laquo;</span>
-            {% endif %}
-        </li>
-        <li class="page-item active"><span class="page-link">{{ pagination.page }}</span></li>
-        <li class="page-item{% if not pagination.has_next %} disabled{% endif %}">
-            {% if pagination.has_next %}
-              <a class="page-link" href="{{ url_for('admin.audit_trail', page=pagination.next_num, per_page=pagination.per_page, action=filters.action, entity_type=filters.entity_type, actor=filters.actor, event_type=filters.event_type, start_date=filters.start_date, end_date=filters.end_date) }}" aria-label="{{ _('admin.audit.pagination.next') }}">&raquo;</a>
-            {% else %}
-              <span class="page-link">&raquo;</span>
-            {% endif %}
-        </li>
-      </ul>
-    </nav>
-  </div>
-{% else %}
-  <div class="alert alert-secondary" role="alert">
-    {{ _('admin.audit.empty') }}
-  </div>
-{% endif %}
+<div class="flex justify-center mt-4">
+    {{ macros.render_pagination(pagination, 'admin.audit_trail') }}
+</div>
 {% endblock %}

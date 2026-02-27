@@ -3,31 +3,35 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BIA Dependencies</title>
-    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <title>{{ _('bia.export_all_dependencies.title') }}</title>
     <style nonce="{{ csp_nonce }}">
       body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
     </style>
+      {% if export_mode and export_css %}
+    <style nonce="{{ csp_nonce }}">
+      {{ export_css|safe }}
+    </style>
+    {% endif %}
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
-      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
+      <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
         <header class="border-b border-slate-800 px-6 py-5">
-          <h1 class="text-2xl font-semibold tracking-tight">BIA Dependencies</h1>
+          <h1 class="text-2xl font-semibold tracking-tight">{{ _('bia.export_all_dependencies.title') }}</h1>
           <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
         </header>
         <div class="space-y-8 px-6 py-8">
           {% for bia in bias %}
           {% if bia.components %}
-          <section class="rounded-xl border border-slate-800 bg-slate-900/70 overflow-hidden">
+          <section class="rounded-xl border border-[var(--color-border)] border-slate-800 bg-slate-900/70 overflow-hidden">
             <div class="border-b border-slate-800 bg-slate-900/80 px-5 py-3">
               <h2 class="text-lg font-medium text-slate-200">{{ bia.name }}</h2>
             </div>
             <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
               <thead class="bg-slate-900/50 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th scope="col" class="px-5 py-3 w-1/3">Component</th>
-                  <th scope="col" class="px-5 py-3 w-2/3">Dependencies</th>
+                  <th scope="col" class="px-5 py-3 w-1/3">{{ _('bia.export_all_dependencies.table.component') }}</th>
+                  <th scope="col" class="px-5 py-3 w-2/3">{{ _('bia.export_all_dependencies.table.dependencies') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800 bg-slate-900/30">
@@ -36,22 +40,22 @@
                   <td class="px-5 py-3 font-medium text-slate-300 align-top">{{ component.name }}</td>
                   <td class="px-5 py-3 text-slate-400 space-y-2">
                     {% if component.dependencies_it_systems_applications %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">IT Systems</strong><div class="whitespace-pre-wrap">{{ component.dependencies_it_systems_applications }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.it_systems') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_it_systems_applications }}</div></div>
                     {% endif %}
                     {% if component.dependencies_equipment %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Equipment</strong><div class="whitespace-pre-wrap">{{ component.dependencies_equipment }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.equipment') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_equipment }}</div></div>
                     {% endif %}
                     {% if component.dependencies_suppliers %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Suppliers</strong><div class="whitespace-pre-wrap">{{ component.dependencies_suppliers }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.suppliers') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_suppliers }}</div></div>
                     {% endif %}
                     {% if component.dependencies_people %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">People</strong><div class="whitespace-pre-wrap">{{ component.dependencies_people }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.people') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_people }}</div></div>
                     {% endif %}
                     {% if component.dependencies_facilities %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Facilities</strong><div class="whitespace-pre-wrap">{{ component.dependencies_facilities }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.facilities') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_facilities }}</div></div>
                     {% endif %}
                     {% if component.dependencies_others %}
-                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">Others</strong><div class="whitespace-pre-wrap">{{ component.dependencies_others }}</div></div>
+                    <div><strong class="text-slate-300 block text-xs uppercase tracking-wide opacity-75">{{ _('bia.export_all_dependencies.deps.others') }}</strong><div class="whitespace-pre-wrap">{{ component.dependencies_others }}</div></div>
                     {% endif %}
                   </td>
                 </tr>
