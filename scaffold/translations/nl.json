@@ -517,6 +517,35 @@
         "empty": "Geen AI-risico's vastgesteld voor de gekoppelde componenten."
       }
     },
+    "manage_availability": {
+      "title": "Beschikbaarheidsvereisten",
+      "subtitle": "Beschikbaarheid",
+      "description": "Definieer de beschikbaarheidsdoelstellingen voor elk component in dit BIA.",
+      "instructions": "Selecteer een component en stel de maximale tolereerbare uitvaltijd en hersteldoelstellingen in.",
+      "back": "Terug naar overzicht",
+      "form": {
+        "mtd": "Maximale tolereerbare uitvaltijd",
+        "rto": "Hersteltijddoelstelling",
+        "rpo": "Herstelpuntdoelstelling",
+        "masl": "Minimaal acceptabel serviceniveau",
+        "submit": "Beschikbaarheidsvereisten opslaan",
+        "component_switch_hint": "Wisselen van component herlaadt deze pagina met de huidige doelstellingen."
+      },
+      "sections": {
+        "current_targets": "Huidige beschikbaarheidsdoelstellingen"
+      },
+      "table": {
+        "component": "Component",
+        "mtd": "MTU",
+        "rto": "HTO",
+        "rpo": "HPO",
+        "masl": "MASN"
+      },
+      "empty": {
+        "not_set": "Niet ingesteld",
+        "list": "Nog geen beschikbaarheidsvereisten vastgelegd."
+      }
+    },
     "consequence_form": {
       "validation": {
         "single_category": "Selecteer precies één categorie bij het bijwerken van een gevolg.",
@@ -708,6 +737,16 @@
       "all_items": "Alle items",
       "select_context": "Selecteer een BIA",
       "actions": "Acties"
+    },
+    "view_consequences": {
+      "actions": {
+        "save": "Opslaan",
+        "save_changes": "Wijzigingen opslaan"
+      },
+      "table": {
+        "worst_case": "Slechtste geval",
+        "realistic_case": "Realistisch geval"
+      }
     },
     "authentication_methods": {
       "options": {

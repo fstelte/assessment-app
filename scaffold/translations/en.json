@@ -554,6 +554,35 @@
       "no_dpia_tooltip": "No active DPIA",
       "delete_confirm": "Delete \u2018{name}\u2019?"
     },
+    "manage_availability": {
+      "title": "Availability Requirements",
+      "subtitle": "Availability",
+      "description": "Define the availability targets for each component in this BIA.",
+      "instructions": "Select a component and set its maximum tolerable downtime and recovery objectives.",
+      "back": "Back to overview",
+      "form": {
+        "mtd": "Maximum tolerable downtime",
+        "rto": "Recovery time objective",
+        "rpo": "Recovery point objective",
+        "masl": "Minimum acceptable service level",
+        "submit": "Save availability requirements",
+        "component_switch_hint": "Switching components reloads this page with their current targets."
+      },
+      "sections": {
+        "current_targets": "Current availability targets"
+      },
+      "table": {
+        "component": "Component",
+        "mtd": "MTD",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "masl": "MASL"
+      },
+      "empty": {
+        "not_set": "Not set",
+        "list": "No availability requirements captured yet."
+      }
+    },
     "manage_consequences": {
       "title": "Manage Consequences",
       "subtitle": "Consequences",
@@ -580,6 +609,10 @@
       }
     },
     "view_consequences": {
+      "actions": {
+        "save": "Save",
+        "save_changes": "Save changes"
+      },
       "table": {
         "worst_case": "Worst Case",
         "realistic_case": "Realistic Case"

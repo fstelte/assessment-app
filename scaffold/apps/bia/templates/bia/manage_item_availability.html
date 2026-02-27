@@ -1,20 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ _('bia.manage_availability.title') }} | {{ item.name }}{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
-    <span>&larr;</span> {{ _('bia.manage_availability.back') }}
-  </a>
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+  <div>
+    <p class="uppercase text-[var(--color-muted)] text-sm mb-1">{{ _('bia.manage_availability.subtitle') }}</p>
+    <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 mb-1">{{ item.name }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('bia.manage_availability.description') }}</p>
+  </div>
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">&larr; {{ _('bia.context_form.back') }}</a>
 </div>
 
 <div class="flex flex-wrap -mx-3 items-start">
-  <div class="w-full lg:w-1/3 px-3 mb-6 lg:mb-0">
+  <div class="w-full xl:w-1/3 px-3 mb-6 xl:mb-0">
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)] rounded-t-xl">
-        <span class="font-bold text-sm uppercase tracking-wide text-[var(--color-muted)]">{{ _('bia.manage_availability.title') }}</span>
+        <span class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)]">{{ _('bia.manage_availability.title') }}</span>
         <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">{{ selected_component.name }}</span>
       </div>
       <div class="p-5">
+        <p class="text-[var(--color-muted)] text-sm mb-4">{{ _('bia.manage_availability.instructions') }}</p>
         <form method="post" class="flex flex-col gap-4">
           {{ form.hidden_tag() }}
           <div>
@@ -22,7 +26,7 @@
             {{ form.component_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", data_component_switch=url_for('bia.manage_item_availability', item_id=item.id)) }}
             <div class="text-xs text-[var(--color-muted)] mt-1 flex items-start gap-1">
               <i class="fas fa-info-circle mt-0.5"></i>
-              <span>Switching components reloads this page with their current targets.</span>
+              <span>{{ _('bia.manage_availability.form.component_switch_hint') }}</span>
             </div>
             {% if form.component_id.errors %}
               <div class="text-xs mt-1 text-red-500">{{ form.component_id.errors | join(', ') }}</div>
@@ -51,7 +55,7 @@
           </div>
           <div>
             {{ form.masl.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.masl(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="Describe the minimum acceptable service level") }}
+            {{ form.masl(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 99%") }}
             {% if form.masl.errors %}
               <div class="text-xs mt-1 text-red-500">{{ form.masl.errors | join(', ') }}</div>
             {% endif %}
@@ -64,14 +68,15 @@
       </div>
     </div>
   </div>
-  <div class="w-full lg:w-2/3 px-3">
+  <div class="w-full xl:w-2/3 px-3">
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
       <div class="px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] rounded-t-xl">
         <h3 class="font-bold text-sm uppercase tracking-wide text-[var(--color-muted)] mb-0">{{ _('bia.manage_availability.sections.current_targets') }}</h3>
       </div>
       <div class="p-0">
+        {% if availability_rows %}
         <div class="overflow-x-auto w-full rounded-b-xl">
-          <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)] w-1/4">{{ _('bia.manage_availability.table.component') }}</th>
@@ -83,22 +88,25 @@
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]">
               {% for row in availability_rows %}
-              <tr class="hover:bg-[var(--color-surface-hover)] transition-colors {{ 'bg-[var(--color-surface)]/50' if row.component.id == selected_component.id }}">
+              <tr class="{{ 'bg-primary-500/5' if row.component.id == selected_component.id }}">
                 <td class="px-4 py-3 font-medium text-[var(--color-text)]">
                   {{ row.component.name }}
                   {% if row.component.id == selected_component.id %}
-                    <span class="ml-2 inline-block w-2 h-2 rounded-full bg-primary-500"></span>
+                    <span class="ml-2 inline-block w-2 h-2 rounded-full bg-primary-500 align-middle"></span>
                   {% endif %}
                 </td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.mtd if row.requirement else _('bia.manage_availability.empty.not_set') }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rto if row.requirement else _('bia.manage_availability.empty.not_set') }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rpo if row.requirement else _('bia.manage_availability.empty.not_set') }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] truncate max-w-xs" title="{{ row.requirement.masl if row.requirement else '' }}">{{ row.requirement.masl if row.requirement else _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.mtd if row.requirement and row.requirement.mtd else _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rto if row.requirement and row.requirement.rto else _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rpo if row.requirement and row.requirement.rpo else _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] truncate max-w-xs" title="{{ row.requirement.masl if row.requirement else '' }}">{{ row.requirement.masl if row.requirement and row.requirement.masl else _('bia.manage_availability.empty.not_set') }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+        {% else %}
+        <div class="p-6 text-center text-[var(--color-muted)]">{{ _('bia.manage_availability.empty.list') }}</div>
+        {% endif %}
       </div>
     </div>
   </div>
