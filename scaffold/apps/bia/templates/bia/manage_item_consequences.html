@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block extra_css %}
+  {{ super() }}
+  {% include "bia/_badge_styles.html" %}
+{% endblock %}
 {% block title %}{{ _('bia.manage_consequences.title') }} | {{ item.name }}{% endblock %}
 {% block content %}
 <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -144,13 +148,15 @@
                     <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ row.consequence.security_property or _('bia.manage_consequences.empty.not_set') }}</span>
                   </td>
                   <td class="px-4 py-3">
-                    <div class="font-semibold text-[var(--color-text)]">{{ row.consequence.consequence_realisticcase or 'N/A' }}</div>
+                    {% set realistic = row.consequence.consequence_realisticcase or 'N/A' %}
+                    <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></div>
                     {% if row.consequence.justification_realisticcase %}
                       <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_realisticcase }}">{{ row.consequence.justification_realisticcase }}</div>
                     {% endif %}
                   </td>
                   <td class="px-4 py-3">
-                    <div class="font-semibold text-[var(--color-text)]">{{ row.consequence.consequence_worstcase or 'N/A' }}</div>
+                    {% set worst = row.consequence.consequence_worstcase or 'N/A' %}
+                    <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
                     {% if row.consequence.justification_worstcase %}
                       <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_worstcase }}">{{ row.consequence.justification_worstcase }}</div>
                     {% endif %}
