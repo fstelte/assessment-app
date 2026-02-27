@@ -18,7 +18,7 @@
   <div class="w-full">
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)] rounded-t-xl">
-        <span class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)]">{% if editing_consequence %}{{ _('bia.components.table.headers.consequences') }}{% else %}{{ _('bia.context_detail.ai_risks.title') | default('Add consequences') }}{% endif %}</span>
+        <span class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)]">{{ _('bia.components.table.headers.consequences') }}</span>
         {% if editing_consequence %}
         <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1 text-xs transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.manage_consequences.actions.reset') }}</a>
         {% endif %}
