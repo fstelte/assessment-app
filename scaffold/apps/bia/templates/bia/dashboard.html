@@ -162,9 +162,9 @@ body[data-theme="dark"] .bia-chip {
 {% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
-{% set nav_link_color = 'text-light' if is_dark else 'text-dark' %}
-{% set outline_inverse = 'btn-outline-light' if is_dark else 'btn-outline-dark' %}
-{% set badge_muted = 'text-bg-secondary' %}
+{% set nav_link_color = 'text-slate-100' if is_dark else 'text-slate-900' %}
+{% set outline_inverse = 'border-slate-200 text-slate-100 hover:bg-slate-800' if is_dark else 'border-slate-300 text-slate-700 hover:bg-slate-50' %}
+{% set badge_muted = 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' %}
 {% set context_list = contexts or [] %}
 {% set contexts_count = context_list | length %}
 {% set assigned_contexts = context_list | selectattr('author') | list %}
@@ -182,11 +182,11 @@ body[data-theme="dark"] .bia-chip {
 
 <div class="bia-dashboard">
 	<section class="bia-dashboard-hero">
-		<div class="bia-dashboard-hero__body d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4">
-			<div class="flex-grow-1">
-				<p class="text-uppercase small text-white-50 mb-2">{{ _('bia.dashboard.header.subtitle') }}</p>
-				<h1 class="display-6 fw-semibold mb-3">{{ _('bia.dashboard.header.title') }}</h1>
-				<div class="d-flex flex-wrap gap-2">
+		<div class="bia-dashboard-hero__body flex flex-col lg:flex-row items-start lg:items-center gap-4">
+			<div class="grow">
+				<p class="uppercase text-sm text-white/50 mb-2">{{ _('bia.dashboard.header.subtitle') }}</p>
+				<h1 class="text-4xl font-bold mb-3">{{ _('bia.dashboard.header.title') }}</h1>
+				<div class="flex flex-wrap gap-2">
 					<span class="bia-chip bia-chip--muted">{{ _('bia.dashboard.sidebar.navigate') }}</span>
 					<span class="bia-chip bia-chip--muted">{{ _('bia.dashboard.sidebar.manage') }}</span>
 					<span class="bia-chip bia-chip--muted">{{ _('bia.dashboard.sidebar.exports') }}</span>
@@ -195,17 +195,17 @@ body[data-theme="dark"] .bia-chip {
 		</div>
 		<div class="bia-dashboard-hero__metrics">
 			<div class="bia-dashboard-hero__metric">
-				<p class="text-uppercase small text-white-50 mb-1">{{ _('bia.dashboard.sidebar.overview') }}</p>
+				<p class="uppercase text-sm text-white/50 mb-1">{{ _('bia.dashboard.sidebar.overview') }}</p>
 				<strong>{{ contexts_count }}</strong>
 				<small>{{ _('bia.dashboard.header.subtitle') }}</small>
 			</div>
 			<div class="bia-dashboard-hero__metric">
-				<p class="text-uppercase small text-white-50 mb-1">{{ _('bia.dashboard.sidebar.components') }}</p>
+				<p class="uppercase text-sm text-white/50 mb-1">{{ _('bia.dashboard.sidebar.components') }}</p>
 				<strong>{{ stats.components }}</strong>
 				<small>{{ _('bia.dashboard.card.components', count=stats.components) }}</small>
 			</div>
 			<div class="bia-dashboard-hero__metric">
-				<p class="text-uppercase small text-white-50 mb-1">{{ _('bia.dashboard.card.risk_owner') }}</p>
+				<p class="uppercase text-sm text-white/50 mb-1">{{ _('bia.dashboard.card.risk_owner') }}</p>
 				<strong>{{ assigned_count }}</strong>
 				<small>{{ _('bia.dashboard.card.last_updated', date=last_updated_display) }}</small>
 			</div>
@@ -214,18 +214,18 @@ body[data-theme="dark"] .bia-chip {
 
 	<section class="bia-dashboard-actions">
 		<div class="bia-dashboard-actions__item">
-			<div class="bia-quick-card h-100">
+			<div class="bia-quick-card h-full">
 				<h2>{{ _('bia.dashboard.sidebar.navigate') }}</h2>
-				<ul class="nav flex-column gap-2 bia-quick-nav">
+				<ul class="flex flex-col gap-2 bia-quick-nav">
 					<li class="nav-item">
-						<a class="nav-link {{ nav_link_color }} d-flex align-items-center" href="{{ url_for('bia.dashboard') }}">
-							<i class="fas fa-chart-line me-2 text-primary"></i>
+						<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors {{ nav_link_color }} flex items-center" href="{{ url_for('bia.dashboard') }}">
+							<i class="fas fa-chart-line mr-2 text-primary-400"></i>
 							{{ _('bia.dashboard.sidebar.overview') }}
 						</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link {{ nav_link_color }} d-flex align-items-center" href="{{ url_for('bia.view_components') }}">
-							<i class="fas fa-layer-group me-2 text-primary"></i>
+						<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors {{ nav_link_color }} flex items-center" href="{{ url_for('bia.view_components') }}">
+							<i class="fas fa-layer-group mr-2 text-primary-400"></i>
 							{{ _('bia.dashboard.sidebar.components') }}
 						</a>
 					</li>
@@ -233,61 +233,66 @@ body[data-theme="dark"] .bia-chip {
 			</div>
 		</div>
 		<div class="bia-dashboard-actions__item">
-			<div class="bia-quick-card h-100 d-flex flex-column gap-3">
+			<div class="bia-quick-card h-full flex flex-col gap-3">
 				<h2>{{ _('bia.dashboard.sidebar.manage') }}</h2>
-				<div class="d-flex flex-wrap gap-2">
-					<a href="{{ url_for('bia.new_item') }}" class="btn btn-primary btn-sm">{{ _('bia.dashboard.sidebar.new_bia') }}</a>
-					<a href="{{ url_for('bia.import_csv_view') }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.dashboard.sidebar.import_csv') }}</a>
-					<a href="{{ url_for('bia.import_sql_form') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.import_sql') }}</a>
-					<a href="{{ url_for('bia.archived_list') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.archived') }}</a>
+				<div class="flex flex-wrap gap-2">
+					<a href="{{ url_for('bia.new_item') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.new_bia') }}</a>
+					<a href="{{ url_for('bia.import_csv_view') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.import_csv') }}</a>
+					<a href="{{ url_for('bia.import_sql_form') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.import_sql') }}</a>
+					<a href="{{ url_for('bia.archived_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.archived') }}</a>
 				</div>
-				<div class="small text-secondary">
+				<div class="text-sm text-[var(--color-muted)]">
 					{{ _('bia.dashboard.header.subtitle') }}
 				</div>
 			</div>
 		</div>
 		<div class="bia-dashboard-actions__item">
-			<div class="bia-quick-card h-100 d-flex flex-column gap-2">
+			<div class="bia-quick-card h-full flex flex-col gap-2">
 				<h2>{{ _('bia.dashboard.sidebar.exports') }}</h2>
-				<div class="d-grid gap-2">
-					<a href="{{ url_for('bia.export_data_inventory') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
-					<a href="{{ url_for('bia.export_all_consequences') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_cia_detailed') }}</a>
-					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_cia_summary') }}</a>
-					<a href="{{ url_for('bia.export_availability_requirements') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_availability_detailed') }}</a>
-					<a href="{{ url_for('bia.export_availability_requirements', type='summary') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_availability_summary') }}</a>
-					<a href="{{ url_for('bia.export_all_dependencies') }}" class="btn btn-outline-secondary btn-sm">Export Dependencies</a>
-					<a href="{{ url_for('bia.export_all_tiers') }}" class="btn btn-outline-secondary btn-sm">Export Tiers</a>
-					<a href="{{ url_for('bia.export_authentication_overview') }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.sidebar.export_authentication') }}</a>
+				<div class="grid gap-2">
+					<a href="{{ url_for('bia.export_data_inventory') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
+					<a href="{{ url_for('bia.export_all_consequences') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_cia_detailed') }}</a>
+					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_cia_summary') }}</a>
+					<a href="{{ url_for('bia.export_availability_requirements') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_availability_detailed') }}</a>
+					<a href="{{ url_for('bia.export_availability_requirements', type='summary') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_availability_summary') }}</a>
+					<a href="{{ url_for('bia.export_all_dependencies') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">Export Dependencies</a>
+					<a href="{{ url_for('bia.export_all_tiers') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">Export Tiers</a>
+					<a href="{{ url_for('bia.export_authentication_overview') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_authentication') }}</a>
 				</div>
 			</div>
 		</div>
 	</section>
 
 	<section>
-		<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
+		<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
 			<div>
-				<h2 class="h4 mb-1">{{ _('bia.dashboard.header.title') }}</h2>
-				<p class="text-secondary mb-0">{{ _('bia.dashboard.header.subtitle') }}</p>
+				<h2 class="text-lg font-semibold mb-1">{{ _('bia.dashboard.header.title') }}</h2>
+				<p class="text-[var(--color-muted)] mb-0">{{ _('bia.dashboard.header.subtitle') }}</p>
 			</div>
-			<div class="d-flex flex-wrap gap-2">
+			<div class="flex flex-wrap gap-2">
 				<span class="bia-chip">{{ _('bia.dashboard.card.components', count=stats.components) }}</span>
 				<span class="bia-chip bia-chip--muted">{{ _('bia.dashboard.card.last_updated', date=last_updated_display) }}</span>
 			</div>
 		</div>
 
 		{% if context_list %}
-		<div class="row row-cols-1 row-cols-lg-2 row-cols-xxl-3 g-4 bia-context-grid">
+		<div class="grid grid-cols-1 md:grid-cols-2 xxl:grid-cols-3 gap-4 bia-context-grid">
 			{% for context in context_list %}
-			<article class="col">
-				<div class="bia-context-card h-100">
-					<div class="d-flex justify-content-between align-items-start gap-3">
+			<article class="h-full">
+				<div class="bia-context-card h-full">
+					<div class="flex justify-between items-start gap-3">
 						<div>
-							<h3 class="h5 mb-1">{{ context.name }}</h3>
-							<p class="text-secondary small mb-0">
-								{{ _('bia.dashboard.card.risk_owner') }}: {{ context.risk_owner or (context.author.full_name if context.author else context.responsible) or _('bia.dashboard.card.not_assigned') }}
+							<h3 class="text-lg font-semibold mb-1">{{ context.name }}</h3>
+							<p class="text-[var(--color-muted)] text-sm mb-0">
+								{{ _('bia.context_form.fields.coordinator.label') }}: {{ context.coordinator or (context.author.full_name if context.author) or _('bia.dashboard.card.not_assigned') }}
 							</p>
+							{% if context.last_update %}
+							<p class="text-[var(--color-muted)] text-sm mb-0">
+								{{ _('bia.dashboard.card.last_updated', date=context.last_update) }}
+							</p>
+							{% endif %}
 						</div>
-						<span class="badge {{ badge_muted }}">{{ _('bia.dashboard.card.components', count=context.components | length) }}</span>
+						<span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ badge_muted }}">{{ _('bia.dashboard.card.components', count=context.components | length) }}</span>
 					</div>
 					{% if can_manage_owner|default(False) %}
 					<div class="bia-context-card__owner">
@@ -295,59 +300,70 @@ body[data-theme="dark"] .bia-chip {
 							{% if csrf_token is defined %}
 							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 							{% endif %}
-							<div class="input-group input-group-sm">
-								<select class="form-select" name="owner_id" aria-label="{{ _('bia.dashboard.card.owner_aria') }}">
+							<div class="flex">
+								<select class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-l-lg px-3 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30" name="owner_id" aria-label="{{ _('bia.dashboard.card.owner_aria') }}">
 									<option value="" {% if not context.author %}selected{% endif %}>{{ _('bia.dashboard.card.owner_unassigned') }}</option>
-									{% if context.author and owner_choice_ids and context.author.id not in owner_choice_ids %}
-									<option value="{{ context.author.id }}" selected>{{ context.author.full_name }}</option>
-									{% endif %}
-									{% for owner in owner_choices %}
-									<option value="{{ owner.id }}" {% if context.author and context.author.id == owner.id %}selected{% endif %}>
-										{{ owner.full_name }}{% if owner.email %} ({{ owner.email }}){% endif %}
-									</option>
+									{% for user in possible_owners|default([]) %}
+										<option value="{{ user.id }}" {% if context.author_id == user.id %}selected{% endif %}>{{ user.full_name }}</option>
 									{% endfor %}
 								</select>
-								<button type="submit" class="btn btn-outline-primary">{{ _('bia.dashboard.card.owner_save') }}</button>
+								<button class="inline-flex items-center justify-center font-medium rounded-r-lg px-3 py-2 text-sm transition-colors border border-l-0 border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-text)] hover:bg-[var(--color-surface-active)]" type="submit">{{ _('bia.dashboard.card.action_save') }}</button>
 							</div>
 						</form>
 					</div>
 					{% endif %}
-					<div class="text-secondary small">
-						{% if context.service_description %}
-							{{ context.service_description | truncate(160, True, '...') }}
-						{% else %}
-							{{ _('bia.dashboard.card.no_description') }}
+					<div class="mt-auto pt-3 flex flex-col gap-2">
+						<div class="grid grid-cols-2 gap-2">
+							<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="inline-flex items-center justify-center font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+								<i class="fas fa-eye mr-2"></i> {{ _('bia.dashboard.card.action_view') }}
+							</a>
+							<div class="dropdown relative">
+								<button class="inline-flex items-center justify-center w-full font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="fas fa-download mr-2"></i> {{ _('bia.dashboard.sidebar.exports') }}
+								</button>
+								<ul class="dropdown-menu absolute z-50 hidden min-w-[10rem] py-1 m-0 text-base rounded-md shadow-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=context.id) }}"><i class="fas fa-file-code mr-2 w-5"></i> HTML</a></li>
+									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_csv', item_id=context.id) }}"><i class="fas fa-file-csv mr-2 w-5"></i> CSV</a></li>
+									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}"><i class="fas fa-database mr-2 w-5"></i> SQL</a></li>
+								</ul>
+							</div>
+						</div>
+						{% if context.id in editable_context_ids %}
+						<div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
+							<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="inline-flex items-center justify-center font-medium rounded-lg px-2 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+								<i class="fas fa-edit mr-1.5"></i> {{ _('bia.actions.edit') }}
+							</a>
+							<form method="post" action="{{ url_for('bia.copy_item', item_id=context.id) }}">
+								{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+								<button type="submit" class="w-full inline-flex items-center justify-center font-medium rounded-lg px-2 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
+									<i class="fas fa-copy mr-1.5"></i> {{ _('bia.actions.copy') }}
+								</button>
+							</form>
+							<form method="post" action="{{ url_for('bia.archive_item', item_id=context.id) }}">
+								{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+								<button type="submit" class="w-full inline-flex items-center justify-center font-medium rounded-lg px-2 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
+									<i class="fas fa-archive mr-1.5"></i> {{ _('bia.actions.archive') }}
+								</button>
+							</form>
+							<form method="post" action="{{ url_for('bia.delete_item', item_id=context.id) }}">
+								{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+								<button type="submit" class="w-full inline-flex items-center justify-center font-medium rounded-lg px-2 py-1.5 text-xs transition-colors border border-transparent bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50" onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">
+									<i class="fas fa-trash-alt mr-1.5"></i> {{ _('bia.actions.delete') }}
+								</button>
+							</form>
+						</div>
 						{% endif %}
-					</div>
-					<div class="d-flex flex-wrap gap-2 align-items-center">
-						<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="btn {{ outline_inverse }} btn-sm">{{ _('bia.dashboard.card.action_view') }}</a>
-						<a href="{{ url_for('bia.export_item', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_html') }}</a>
-						<a href="{{ url_for('bia.export_csv', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_csv') }}</a>
-						<a href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}" class="btn btn-outline-secondary btn-sm">{{ _('bia.dashboard.card.action_export_sql') }}</a>
-						{% if editable_context_ids and context.id in editable_context_ids %}
-						<a href="{{ url_for('bia.edit_item', item_id=context.id) }}" class="btn btn-outline-primary btn-sm">{{ _('bia.dashboard.card.action_edit') }}</a>
-						<form method="post" action="{{ url_for('bia.copy_item', item_id=context.id) }}" style="display: contents;">
-							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-							<button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">{{ _('bia.actions.copy') }}</button>
-						</form>
-						<form method="post" action="{{ url_for('bia.archive_item', item_id=context.id) }}" style="display: contents;">
-							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-							<button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">{{ _('bia.actions.archive') }}</button>
-						</form>
-						{% endif %}
-					</div>
-					<div class="text-secondary small">
-						{{ _('bia.dashboard.card.last_updated', date=context.last_update or _('bia.dashboard.card.never')) }}
 					</div>
 				</div>
 			</article>
 			{% endfor %}
 		</div>
 		{% else %}
-		<div class="bia-dashboard-empty">
-			<strong>{{ _('bia.dashboard.empty.title') }}</strong>
-			<p class="mb-0">{{ _('bia.dashboard.empty.body') }}</p>
-		</div>
+			<div class="bia-dashboard-empty text-center">
+				<h3 class="text-lg font-semibold text-primary-600 mb-2">{{ _('bia.dashboard.empty.title') }}</h3>
+				<p class="text-[var(--color-muted)] mb-4">{{ _('bia.dashboard.empty.subtitle') }}</p>
+				<a href="{{ url_for('bia.new_item') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('bia.dashboard.sidebar.new_bia') }}</a>
+			</div>
 		{% endif %}
 	</section>
 </div>

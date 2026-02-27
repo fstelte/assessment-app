@@ -3,25 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Something went wrong</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/maintenance.css') }}" />
+  <title>{{ _('errors.server_error.title') }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
 </head>
-<body>
-  <article class="card" role="alert" aria-live="assertive">
-    <span class="badge"><span class="pulse" aria-hidden="true"></span> Unexpected Error</span>
-    <h1>We hit a snag</h1>
-    <p>
+<body class="bg-[var(--color-bg)] text-[var(--color-text)] flex items-center justify-center min-h-screen p-4">
+  <article class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card max-w-lg w-full p-6" role="alert" aria-live="assertive">
+    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/20 text-yellow-400 mb-4">
+        <span class="w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse" aria-hidden="true"></span> Unexpected Error
+    </span>
+    <h1 class="text-2xl font-bold mb-2">We hit a snag</h1>
+    <p class="text-[var(--color-muted)] mb-6">
       The platform ran into an unexpected error while preparing this page. Our team has been notified,
       and the issue will be investigated.
     </p>
-    <div class="status">
-      <strong>What you can do</strong>
-      <span>Try returning to the previous page or refresh after a moment.</span>
-      <span>If the problem persists, please let your platform owner know.</span>
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-4 mb-6 text-sm">
+      <strong class="block mb-2 text-[var(--color-text)]">{{ _('errors.server_error.what_you_can_do') }}</strong>
+      <span class="block mb-1 text-[var(--color-muted)]">• {{ _('errors.server_error.hint_1') }}</span>
+      <span class="block text-[var(--color-muted)]">• {{ _('errors.server_error.hint_2') }}</span>
     </div>
-    <footer>
-      Need assistance? Contact <a href="{{ contact_link }}">{{ contact_label }}</a> or
-      <a href="/">go back to the start page</a>.
+    <footer class="text-sm text-[var(--color-muted)]">
+      Need assistance? Contact <a href="{{ contact_link }}" class="text-[var(--color-accent)] hover:underline">{{ contact_label }}</a> or
+      <a href="/" class="text-[var(--color-accent)] hover:underline">{{ _('errors.server_error.back_link') }}</a>.
     </footer>
   </article>
 </body>

@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ _('csa.assessments.overview.title') }}{% endblock %}
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div class="flex flex-col flex-col lg:flex-row justify-between align-items-lg-center gap-3 mb-4">
   <div>
     <h1 class="h3 mb-1">{{ _('csa.assessments.overview.heading') }}</h1>
-    <p class="text-secondary mb-0">{{ _('csa.assessments.overview.intro') }}</p>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.overview.intro') }}</p>
   </div>
   {% if current_user.has_role('admin') or current_user.has_role('manager') or current_user.has_role('control_assigner') %}
-  <a class="btn btn-outline-light" href="{{ url_for('csa.start_assessment') }}">{{ _('csa.assessments.overview.start_button') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8" href="{{ url_for('csa.start_assessment') }}">{{ _('csa.assessments.overview.start_button') }}</a>
   {% endif %}
 </div>
 
 {% if year_groups %}
   {% for grouping in year_groups %}
     <section id="year-{{ grouping.year }}" class="mb-5">
-      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-3 gap-3">
+      <div class="flex flex-col flex-col lg:flex-row align-items-lg-center justify-between mb-3 gap-3">
         <h2 class="h4 mb-0">{{ grouping.year }}</h2>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2">
           {% for month in grouping.months %}
-            <a class="btn btn-sm btn-outline-secondary" href="#year-{{ grouping.year }}-month-{{ '%02d'|format(month.month) }}">
+            <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="#year-{{ grouping.year }}-month-{{ '%02d'|format(month.month) }}">
               {{ month.label }} ({{ month.assessments|length }})
             </a>
           {% endfor %}
@@ -27,12 +27,12 @@
 
       {% for month in grouping.months %}
         <div id="year-{{ grouping.year }}-month-{{ '%02d'|format(month.month) }}" class="mb-4">
-          <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="flex items-center justify-between mb-2">
             <h3 class="h5 mb-0">{{ month.label }} {{ grouping.year }}</h3>
-            <span class="badge bg-dark">{{ _('csa.assessments.overview.count_badge', count=month.assessments|length) }}</span>
+            <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-900/80 text-slate-200">{{ _('csa.assessments.overview.count_badge', count=month.assessments|length) }}</span>
           </div>
-          <div class="table-responsive">
-            <table class="table table-dark table-striped align-middle">
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr:nth-child(odd)]:bg-slate-500/8 align-middle">
               <thead>
                 <tr>
                   <th scope="col">{{ _('csa.assessments.overview.table.id') }}</th>
@@ -40,7 +40,7 @@
                   <th scope="col">{{ _('csa.assessments.overview.table.primary_owner') }}</th>
                   <th scope="col">{{ _('csa.assessments.overview.table.status') }}</th>
                   <th scope="col">{{ _('csa.assessments.overview.table.last_update') }}</th>
-                  <th scope="col" class="text-end">{{ _('csa.assessments.overview.table.actions') }}</th>
+                  <th scope="col" class="text-right">{{ _('csa.assessments.overview.table.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -59,37 +59,37 @@
                         {% endif %}
                       </strong>
                       {% if control and control.section %}
-                        <div class="text-secondary small">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</div>
+                        <div class="text-[var(--color-muted)] text-sm">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</div>
                       {% endif %}
                       {% if control and control.domain %}
-                        <div class="text-secondary small">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</div>
+                        <div class="text-[var(--color-muted)] text-sm">{{ _('csa.assessments.common.control_label') }} {{ control.domain }}</div>
                       {% endif %}
                       {% if control and control.description %}
-                        <div class="text-secondary small">{{ control.description }}</div>
+                        <div class="text-[var(--color-muted)] text-sm">{{ control.description }}</div>
                       {% endif %}
                     </td>
                     <td>
                       {% if primary_user %}
                         {{ primary_user.full_name }}<br>
-                        <span class="text-secondary small">{{ primary_user.email }}</span>
+                        <span class="text-[var(--color-muted)] text-sm">{{ primary_user.email }}</span>
                       {% else %}
-                        <span class="text-secondary">{{ _('csa.common.unknown') }}</span>
+                        <span class="text-[var(--color-muted)]">{{ _('csa.common.unknown') }}</span>
                       {% endif %}
                     </td>
                     <td>
                       {% set label = status_labels.get(assessment.status, assessment.status.value.replace('_', ' ')|title) %}
                       {% set badge = badge_classes.get(assessment.status, 'secondary') %}
-                      <span class="badge bg-{{ badge }}">{{ label }}</span>
+                      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-{{ badge }}">{{ label }}</span>
                     </td>
                     <td>{{ assessment.updated_at or assessment.created_at or _('csa.common.unknown') }}</td>
-                    <td class="text-end">
-                      <div class="d-inline-flex flex-wrap justify-content-end gap-2">
-                        <a class="btn btn-sm btn-outline-light" href="{{ url_for('csa.view_assessment', assessment_id=assessment.id) }}">{{ _('actions.view') }}</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('csa.export_assessment', assessment_id=assessment.id) }}">{{ _('actions.export') }}</a>
+                    <td class="text-right">
+                      <div class="inline-flex flex-wrap justify-end gap-2">
+                        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8" href="{{ url_for('csa.view_assessment', assessment_id=assessment.id) }}">{{ _('actions.view') }}</a>
+                        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('csa.export_assessment', assessment_id=assessment.id) }}">{{ _('actions.export') }}</a>
                         {% if current_user.has_role('admin') or current_user.has_role('manager') or current_user.has_role('control_assigner') %}
                           <form method="post" action="{{ url_for('csa.delete_assessment', assessment_id=assessment.id) }}" class="d-inline">
                             {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('actions.delete') }}</button>
+                            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10">{{ _('actions.delete') }}</button>
                           </form>
                         {% endif %}
                       </div>
@@ -104,6 +104,6 @@
     </section>
   {% endfor %}
 {% else %}
-  <div class="alert alert-info">{{ _('csa.assessments.overview.empty') }}</div>
+  <div class="rounded-xl px-4 py-3 text-sm border bg-blue-500/10 border-blue-400/40 text-blue-200">{{ _('csa.assessments.overview.empty') }}</div>
 {% endif %}
 {% endblock %}

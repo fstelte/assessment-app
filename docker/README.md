@@ -31,7 +31,7 @@ The service exposes <http://localhost:5000> and uses the SQLite database defined
 ```bash
 cp docker/.env.production.example .env.production
 # adjust secrets inside the file
-docker compose -f docker/compose.prod.yml --profile postgres up --build -d
+docker compose -f docker/compose.prod.yml up --build -d
 ```
 
 The entrypoint script waits for the database container, ensures the database exists, performs `flask db upgrade`, and then launches Gunicorn.
@@ -53,7 +53,7 @@ The entrypoint script waits for the database container, ensures the database exi
 
 ### Perimeter Hardening (Fail2Ban & CrowdSec)
 
-- Set `COMPOSE_PROFILES` in `.env.production` to include `fail2ban` and/or `crowdsec` (e.g. `COMPOSE_PROFILES=postgres,fail2ban,crowdsec`). The profiles gate the additional services defined in `docker/example.compose.security.yml` so you can keep disabled features out of your runtime.
+- Set `COMPOSE_PROFILES` in `.env.production` to include `fail2ban` and/or `crowdsec` (e.g. `COMPOSE_PROFILES=fail2ban,crowdsec`). The profiles gate the additional services defined in `docker/example.compose.security.yml` so you can keep disabled features out of your runtime.
 - Fail2Ban watches the shared Nginx log volume and bans abusive source IPs via host firewall rules. Tune the detection window through `FAIL2BAN_MAXRETRY`, `FAIL2BAN_FINDTIME`, `FAIL2BAN_BANTIME`, and trusted ranges via `FAIL2BAN_IGNORE_IPS`. Bring it up alongside the main stack: `docker compose --env-file .env.production -f docker/example.compose.prod.yml -f docker/example.compose.security.yml up -d fail2ban`. The container requires `NET_ADMIN` and `NET_RAW`; ensure your deployment host allows these capabilities.
 - CrowdSec analyses the same logs for behavioural signals and, with the optional firewall bouncer, shares block decisions across its community feed. Configure enrollment (`CROWDSEC_ENROLL_KEY`, `CROWDSEC_ENROLL_INSTANCE_ID`) and LAPI credentials (`CROWDSEC_LAPI_DEFAULT_PASSWORD`, `CROWDSEC_BOUNCER_API_KEY`). After the containers are up, create a bouncer key with `docker compose exec crowdsec cscli bouncers add nginx-firewall`, then paste the generated value into `.env.production` under `CROWDSEC_BOUNCER_API_KEY` and restart `crowdsec-firewall-bouncer`.
 - The firewall bouncer runs with host networking and `NET_ADMIN` to manage iptables/ipset rules. Confirm your infrastructure permits these elevated privileges and that no upstream firewall (e.g. cloud security groups) blocks the relevant ports.

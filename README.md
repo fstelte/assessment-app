@@ -110,9 +110,10 @@ for Ferry Stelte in redistributions; see the `LICENSE` file for details.
 
 - Build the production image via `docker build -t assessment-app -f docker/Dockerfile .`.
 - Development stack (SQLite): `docker compose -f docker/compose.dev.yml up --build` after copying `.env.example` to `.env`.
-- Production stack: copy `docker/.env.production.example` to `.env.production` and run `docker compose --env-file .env.production -f docker/compose.prod.yml --profile postgres up --build -d`.
+- Production stack: copy `docker/.env.production.example` to `.env.production` and run `docker compose --env-file .env.production -f docker/compose.prod.yml up --build -d`.
+- To include security features like Fail2Ban and CrowdSec, add them to the `COMPOSE_PROFILES` variable in `.env.production` (e.g., `COMPOSE_PROFILES=fail2ban,crowdsec`) and include the security compose file: `docker compose --env-file .env.production -f docker/compose.prod.yml -f docker/example.compose.security.yml up --build -d`.
 - The container entrypoint waits for the configured database, ensures it exists, applies `flask db upgrade`, then starts Gunicorn.
-- To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml --profile postgres exec web flask --app scaffold:create_app create-admin`.
+- To create the first administrator inside the running container, execute `docker compose -f docker/compose.prod.yml exec web flask --app scaffold:create_app create-admin`.
 - A lightweight `gateway` service (Nginx) now terminates client traffic on port 8000, proxies to the `web` container, and serves a dedicated maintenance page whenever the app is starting or the database is unreachable. Customise the markup via `docker/templates/maintenance.html.tmpl`, and tune the contact details with `MAINTENANCE_CONTACT_EMAIL`, `MAINTENANCE_CONTACT_LABEL`, and `MAINTENANCE_CONTACT_LINK` in `.env.production`.
 
 ### Ansible Pipeline
@@ -210,7 +211,7 @@ services:
 Start the application and the backup service together using the following command:
 
 ```bash
-docker compose -f docker/compose.prod.yml -f docker/compose.backup.yml --profile postgres up --build --force-recreate
+docker compose -f docker/compose.prod.yml -f docker/compose.backup.yml up --build --force-recreate
 ```
 
 If you use `${DATABASE_URL}` placeholders in `compose.backup.yml`, make sure Docker Compose reads your production environment file during startup:

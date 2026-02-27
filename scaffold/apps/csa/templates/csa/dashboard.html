@@ -103,17 +103,17 @@ body[data-theme="dark"] .csa-quick-card {
 <div class="csa-dashboard">
 	<div class="csa-dashboard-hero">
 		<div class="csa-dashboard-hero__body">
-			<h1 class="display-5 fw-bold mb-2">{{ _('csa.dashboard.heading') }}</h1>
-			<p class="lead opacity-75 mb-0" style="max-width: 600px;">{{ _('csa.dashboard.lead') }}</p>
+			<h1 class="text-5xl font-bold font-bold mb-2">{{ _('csa.dashboard.heading') }}</h1>
+			<p class="text-[var(--color-muted)] text-lg opacity-75 mb-0" style="max-width: 600px;">{{ _('csa.dashboard.lead') }}</p>
 			
 			<div class="csa-dashboard-hero__metrics">
 				<div class="csa-dashboard-hero__metric">
-					<strong class="d-block">{{ assessment_count }}</strong>
-					<small class="text-uppercase">{{ _('csa.dashboard.cards.assessments.title') }}</small>
+					<strong class="block">{{ assessment_count }}</strong>
+					<small class="uppercase">{{ _('csa.dashboard.cards.assessments.title') }}</small>
 				</div>
 				<div class="csa-dashboard-hero__metric">
-					<strong class="d-block">{{ control_count }}</strong>
-					<small class="text-uppercase">{{ _('csa.dashboard.cards.controls.title') }}</small>
+					<strong class="block">{{ control_count }}</strong>
+					<small class="uppercase">{{ _('csa.dashboard.cards.controls.title') }}</small>
 				</div>
 			</div>
 		</div>
@@ -123,16 +123,16 @@ body[data-theme="dark"] .csa-quick-card {
 		<div>
 			<div class="csa-quick-card">
 				<h2>{{ _('csa.dashboard.quick_actions.title') | default('Quick Actions') }}</h2>
-				<nav class="nav flex-column csa-quick-nav">
-					<a class="nav-link" href="{{ url_for('csa.start_assessment') }}">
-						<i class="bi bi-play-circle me-2"></i> {{ _('csa.dashboard.quick_actions.start') }}
+				<nav class="nav flex-col csa-quick-nav">
+					<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors" href="{{ url_for('csa.start_assessment') }}">
+						<i class="bi bi-play-circle mr-2"></i> {{ _('csa.dashboard.quick_actions.start') }}
 					</a>
 					{% if can_manage_assignments %}
-					<a class="nav-link" href="{{ url_for('csa.assign_assessment') }}">
-						<i class="bi bi-person-plus me-2"></i> {{ _('csa.dashboard.quick_actions.assign') }}
+					<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors" href="{{ url_for('csa.assign_assessment') }}">
+						<i class="bi bi-person-plus mr-2"></i> {{ _('csa.dashboard.quick_actions.assign') }}
 					</a>
-					<a class="nav-link" href="{{ url_for('csa.overview_assessments') }}">
-						<i class="bi bi-list-check me-2"></i> {{ _('csa.dashboard.quick_actions.overview') }}
+					<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors" href="{{ url_for('csa.overview_assessments') }}">
+						<i class="bi bi-list-check mr-2"></i> {{ _('csa.dashboard.quick_actions.overview') }}
 					</a>
 					{% endif %}
 				</nav>
@@ -146,12 +146,12 @@ body[data-theme="dark"] .csa-quick-card {
 				{% for status, label in csa_status_labels.items() %}
 					{% set count = status_totals[status] or 0 %}
 					<div class="mb-3">
-						<div class="d-flex justify-content-between small mb-1">
+						<div class="flex justify-between text-sm mb-1">
 							<span>{{ label }}</span>
-							<span class="text-secondary">{{ count }}</span>
+							<span class="text-[var(--color-muted)]">{{ count }}</span>
 						</div>
-						<div class="progress" style="height: 6px;">
-							<div class="progress-bar bg-{{ csa_status_badges[status] }}" role="progressbar" style="width: {{ 0 if total_status == 0 else (count / total_status * 100) }}%"></div>
+						<div class="w-full h-2 bg-slate-500/20 rounded-full overflow-hidden" style="height: 6px;">
+							<div class="h-full bg-primary-500 rounded-full bg-{{ csa_status_badges[status] }}" role="progressbar" style="width: {{ 0 if total_status == 0 else (count / total_status * 100) }}%"></div>
 						</div>
 					</div>
 				{% endfor %}
@@ -162,19 +162,19 @@ body[data-theme="dark"] .csa-quick-card {
 			<div class="csa-quick-card">
 				<h2>{{ _('csa.dashboard.latest.title') }}</h2>
 				{% if latest_assessments %}
-					<ul class="list-unstyled mb-0 small">
+					<ul class="list-unstyled mb-0 text-sm">
 						{% for assessment in latest_assessments[:5] %}
-						<li class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-10">
-							<div class="text-truncate me-2">
+						<li class="flex justify-between items-center py-2 border-b border-[var(--color-border)] border-[var(--color-border)] border-opacity-10">
+							<div class="truncate mr-2">
 								<div class="fw-medium">{{ assessment.template.control.section if assessment.template.control else '' }} {{ assessment.template.control.domain if assessment.template.control else assessment.template.name }}</div>
-								<div class="text-muted" style="font-size: 0.75em;">{{ assessment.updated_at.strftime('%Y-%m-%d') if assessment.updated_at else '' }}</div>
+								<div class="text-[var(--color-muted)]" style="font-size: 0.75em;">{{ assessment.updated_at.strftime('%Y-%m-%d') if assessment.updated_at else '' }}</div>
 							</div>
-							<span class="badge bg-{{ csa_status_badges.get(assessment.status, 'secondary') }}">{{ csa_status_labels.get(assessment.status, assessment.status.value) }}</span>
+							<span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-{{ csa_status_badges.get(assessment.status, 'secondary') }}">{{ csa_status_labels.get(assessment.status, assessment.status.value) }}</span>
 						</li>
 						{% endfor %}
 					</ul>
 				{% else %}
-					<p class="text-secondary mb-0">{{ _('csa.dashboard.latest.empty') }}</p>
+					<p class="text-[var(--color-muted)] mb-0">{{ _('csa.dashboard.latest.empty') }}</p>
 				{% endif %}
 			</div>
 		</div>

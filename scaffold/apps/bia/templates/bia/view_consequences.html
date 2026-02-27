@@ -3,57 +3,83 @@
   {{ super() }}
   {% include "bia/_badge_styles.html" %}
 {% endblock %}
-{% block title %}Consequences | {{ component.name }}{% endblock %}
+{% block title %}{{ _('bia.view_consequences.title', component=component.name) }}{% endblock %}
 {% block content %}
 {% set csrf_field = consequence_form.csrf_token %}
 {% set csrf_value = csrf_field._value() if csrf_field else '' %}
 <input type="hidden" id="csrf-token" value="{{ csrf_value }}">
-<div class="mb-3">
-  <a href="{{ url_for('bia.view_components') }}" class="text-secondary text-decoration-none">&larr; Back to components</a>
+<div class="mb-4">
+  <a href="{{ url_for('bia.view_components') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
+    <span>&larr;</span> {{ _('bia.view_consequences.back') }}
+  </a>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3 mb-0">Consequences for {{ component.name }}</h1>
-  <button class="btn btn-primary" data-modal-target="addConsequenceModal">Add consequence</button>
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold mb-0 text-[var(--color-text)]">{{ _('bia.view_consequences.heading', component=component.name) }}</h1>
+  <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" data-modal-target="addConsequenceModal">
+    <i class="fas fa-plus mr-2"></i> {{ _('bia.view_consequences.actions.add') }}
+  </button>
 </div>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-body p-0">
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
+  <div class="p-0">
     {% if consequences %}
-    <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle mb-0">
-        <thead>
+    <div class="overflow-x-auto w-full">
+      <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
+        <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
           <tr>
-            <th scope="col">Category</th>
-            <th scope="col">Security property</th>
-            <th scope="col">Worst case</th>
-            <th scope="col">Realistic case</th>
-            <th scope="col">Actions</th>
+            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.category') }}</th>
+            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.security_property') }}</th>
+            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.worst_case') }}</th>
+            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.realistic_case') }}</th>
+            <th scope="col" class="px-5 py-3 text-right font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.actions') }}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-[var(--color-border)]">
           {% for consequence in consequences %}
-          <tr>
-            <td>{{ consequence.consequence_category }}</td>
-            <td class="text-uppercase">{{ consequence.security_property }}</td>
-            <td>
+          <tr class="hover:bg-[var(--color-surface-hover)] transition-colors">
+            <td class="px-5 py-3">
+              {% set raw_categories = consequence.consequence_category %}
+              {% if raw_categories %}
+                {% if raw_categories is sequence and raw_categories is not string %}
+                  {% set categories = raw_categories %}
+                {% else %}
+                  {% set categories = raw_categories.split(',') %}
+                {% endif %}
+                <div class="flex flex-wrap gap-1">
+                  {% for category in categories %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.manage_consequences.empty.not_set') }}</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3">
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ consequence.security_property or _('bia.manage_consequences.empty.not_set') }}</span>
+            </td>
+            <td class="px-5 py-3">
               {% set worst = consequence.consequence_worstcase or 'N/A' %}
-              <span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span>
+              <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
               {% if consequence.justification_worstcase %}
-                <div class="small text-secondary">{{ consequence.justification_worstcase }}</div>
+                <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_worstcase }}">{{ consequence.justification_worstcase }}</div>
               {% endif %}
             </td>
-            <td>
+            <td class="px-5 py-3">
               {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
-              <span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span>
+              <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></div>
               {% if consequence.justification_realisticcase %}
-                <div class="small text-secondary">{{ consequence.justification_realisticcase }}</div>
+                <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_realisticcase }}">{{ consequence.justification_realisticcase }}</div>
               {% endif %}
             </td>
-            <td>
-              <div class="d-flex gap-2">
-                <button class="btn btn-outline-light btn-sm" data-edit-consequence data-edit-url="{{ url_for('bia.get_consequence', consequence_id=consequence.id) }}" data-update-url="{{ url_for('bia.edit_consequence', consequence_id=consequence.id) }}">Edit</button>
-                <button class="btn btn-outline-danger btn-sm" data-delete-consequence data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=consequence.id) }}">Delete</button>
+            <td class="px-5 py-3 text-right">
+              <div class="flex justify-end gap-2">
+                <button class="inline-flex items-center justify-center rounded-md w-8 h-8 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-text)]" data-edit-consequence data-edit-url="{{ url_for('bia.get_consequence', consequence_id=consequence.id) }}" data-update-url="{{ url_for('bia.edit_consequence', consequence_id=consequence.id) }}" title="{{ _('bia.actions.edit') }}">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="inline-flex items-center justify-center rounded-md w-8 h-8 text-xs transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30" data-delete-consequence data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=consequence.id) }}" title="{{ _('bia.actions.delete') }}">
+                   <i class="fas fa-trash"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -62,285 +88,133 @@
       </table>
     </div>
     {% else %}
-      <p class="p-4 mb-0 text-secondary">No consequences recorded for this component yet.</p>
+      <div class="p-8 text-center text-[var(--color-muted)] flex flex-col items-center">
+        <i class="fas fa-clipboard-check text-4xl mb-3 opacity-20"></i>
+        <p>{{ _('bia.view_consequences.empty') }}</p>
+      </div>
     {% endif %}
   </div>
 </div>
 
 <!-- Add consequence modal -->
-<div class="modal" id="addConsequenceModal" tabindex="-1" aria-labelledby="addConsequenceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content bg-dark border-secondary">
-      <div class="modal-header border-secondary">
-        <h2 class="modal-title h5" id="addConsequenceLabel">Add consequence</h2>
-        <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="add-consequence-form" class="vstack gap-3">
-          {{ csrf_field if csrf_field else '' }}
+<div class="modal h-screen w-full fixed left-0 top-0 flex justify-center items-center bg-black bg-opacity-50 hidden z-50 transition-opacity opacity-0" id="addConsequenceModal" tabindex="-1" aria-labelledby="addConsequenceLabel" aria-hidden="true">
+  <div class="relative bg-[var(--color-card)] rounded-xl shadow-2xl w-full max-w-2xl m-4 transform transition-all scale-95 border border-[var(--color-border)]">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] rounded-t-xl bg-[var(--color-surface)]">
+      <h2 class="font-bold text-lg text-[var(--color-text)]" id="addConsequenceLabel">{{ _('bia.view_consequences.actions.add') }}</h2>
+      <button type="button" class="text-[var(--color-muted)] hover:text-[var(--color-text)] focus:outline-none" data-modal-close aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+      <form id="add-consequence-form" class="flex flex-col gap-5">
+        {{ csrf_field if csrf_field else '' }}
+        <div>
+          <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_category.id }}">{{ _('bia.view_consequences.form.category') }}</label>
+          {{ consequence_form.consequence_category(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=true) }}
+          <div class="text-xs text-[var(--color-muted)] mt-1 ml-1">{{ _('bia.view_consequences.form.category_help') }}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            {{ consequence_form.consequence_category.label(class="form-label") }}
-            {{ consequence_form.consequence_category(class="form-select", multiple=true) }}
-            <div class="form-text text-secondary">Select one or more consequence categories.</div>
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              {{ consequence_form.security_property.label(class="form-label") }}
-              {{ consequence_form.security_property(class="form-select text-capitalize") }}
-            </div>
-            <div class="col-md-6">
-              {{ consequence_form.consequence_worstcase.label(class="form-label") }}
-              {{ consequence_form.consequence_worstcase(class="form-select text-capitalize") }}
-            </div>
+            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.security_property.id }}">{{ _('bia.view_consequences.table.security_property') }}</label>
+            {{ consequence_form.security_property(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           </div>
           <div>
-            {{ consequence_form.justification_worstcase.label(class="form-label") }}
-            {{ consequence_form.justification_worstcase(class="form-control", rows=2) }}
+            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_worstcase.id }}">{{ _('bia.view_consequences.table.worst_case') }}</label>
+            {{ consequence_form.consequence_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              {{ consequence_form.consequence_realisticcase.label(class="form-label") }}
-              {{ consequence_form.consequence_realisticcase(class="form-select text-capitalize") }}
-            </div>
-            <div class="col-md-6">
-              {{ consequence_form.justification_realisticcase.label(class="form-label") }}
-              {{ consequence_form.justification_realisticcase(class="form-control", rows=2) }}
-            </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.justification_worstcase.id }}">{{ _('bia.view_consequences.form.justification_worst') }}</label>
+          {{ consequence_form.justification_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2, placeholder="Rationale...") }}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+           <div>
+            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_realisticcase.id }}">{{ _('bia.view_consequences.table.realistic_case') }}</label>
+            {{ consequence_form.consequence_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           </div>
-        </form>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-modal-close>Cancel</button>
-        <button type="button" class="btn btn-primary" data-submit-add>Save consequence(s)</button>
-      </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.justification_realisticcase.id }}">{{ _('bia.view_consequences.form.justification_realistic') }}</label>
+            {{ consequence_form.justification_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2, placeholder="Expected impact...") }}
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] rounded-b-xl flex justify-end gap-3">
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-modal-close>{{ _('bia.actions.cancel') }}</button>
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" id="saveConsequenceBtn">{{ _('bia.view_consequences.actions.save') }}</button>
     </div>
   </div>
 </div>
 
-<!-- Edit consequence modal -->
-<div class="modal" id="editConsequenceModal" tabindex="-1" aria-labelledby="editConsequenceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content bg-dark border-secondary">
-      <div class="modal-header border-secondary">
-        <h2 class="modal-title h5" id="editConsequenceLabel">Edit consequence</h2>
-        <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="edit-consequence-form" class="vstack gap-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_value }}">
-          <input type="hidden" name="update_url" value="">
-          <div>
-            <label class="form-label" for="edit-consequence-category">Consequence category</label>
-            <select id="edit-consequence-category" name="consequence_category" class="form-select">
-              {% for value, label in consequence_form.consequence_category.choices %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label" for="edit-security-property">Security property</label>
-              <select id="edit-security-property" name="security_property" class="form-select text-capitalize">
-                {% for value, label in consequence_form.security_property.choices %}
-                  <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="edit-consequence-worstcase">Worst case</label>
-              <select id="edit-consequence-worstcase" name="consequence_worstcase" class="form-select text-capitalize">
-                {% for value, label in consequence_form.consequence_worstcase.choices %}
-                  <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="form-label" for="edit-justification-worstcase">Justification (worst case)</label>
-            <textarea id="edit-justification-worstcase" name="justification_worstcase" class="form-control" rows="2"></textarea>
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label" for="edit-consequence-realisticcase">Realistic case</label>
-              <select id="edit-consequence-realisticcase" name="consequence_realisticcase" class="form-select text-capitalize">
-                {% for value, label in consequence_form.consequence_realisticcase.choices %}
-                  <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="edit-justification-realisticcase">Justification (realistic)</label>
-              <textarea id="edit-justification-realisticcase" name="justification_realisticcase" class="form-control" rows="2"></textarea>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-modal-close>Cancel</button>
-        <button type="button" class="btn btn-primary" data-submit-edit>Save changes</button>
-      </div>
+<!-- Edit consequence modal (structure similar to add, dynamically populated) -->
+<div class="modal h-screen w-full fixed left-0 top-0 flex justify-center items-center bg-black bg-opacity-50 hidden z-50 transition-opacity opacity-0" id="editConsequenceModal" tabindex="-1" aria-hidden="true">
+    <div class="relative bg-[var(--color-card)] rounded-xl shadow-2xl w-full max-w-2xl m-4 transform transition-all scale-95 border border-[var(--color-border)]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] rounded-t-xl bg-[var(--color-surface)]">
+            <h2 class="font-bold text-lg text-[var(--color-text)]">{{ _('bia.view_consequences.actions.edit') }}</h2>
+            <button type="button" class="text-[var(--color-muted)] hover:text-[var(--color-text)] focus:outline-none" data-modal-close aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="px-6 py-6 max-h-[70vh] overflow-y-auto" id="edit-consequence-modal-body">
+            <!-- Dynamic Form -->
+        </div>
+        <div class="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] rounded-b-xl flex justify-end gap-3">
+            <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-modal-close>{{ _('bia.actions.cancel') }}</button>
+            <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" id="updateConsequenceBtn">{{ _('bia.view_consequences.actions.save_changes') }}</button>
+        </div>
     </div>
-  </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ super() }}
 <script nonce="{{ csp_nonce }}">
+// Simple Modal Logic replacer for Bootstrap Modals
 document.addEventListener('DOMContentLoaded', () => {
-  const ui = window.tailwindUI || {};
-  const csrfTokenInput = document.getElementById('csrf-token');
-  const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
-  const addEndpoint = "{{ url_for('bia.add_consequence', component_id=component.id) }}";
-  const addModalElement = document.getElementById('addConsequenceModal');
-  const editModalElement = document.getElementById('editConsequenceModal');
-  const addForm = document.getElementById('add-consequence-form');
-  const editForm = document.getElementById('edit-consequence-form');
-  const showAddModal = () => ui.openModal?.(addModalElement);
-  const hideAddModal = () => ui.closeModal?.(addModalElement);
-  const showEditModal = () => ui.openModal?.(editModalElement);
-  const hideEditModal = () => ui.closeModal?.(editModalElement);
-
-  const resetForm = (form) => {
-    if (!form) {
-      return;
-    }
-    form.reset();
-  };
-
-  addModalElement?.addEventListener('twui:modal:close', () => resetForm(addForm));
-  editModalElement?.addEventListener('twui:modal:close', () => resetForm(editForm));
-
-  const collectFormValues = (form) => Object.fromEntries(new FormData(form));
-
-  const handleAdd = () => {
-    if (!addForm) {
-      return;
-    }
-    const data = collectFormValues(addForm);
-    const categorySelect = addForm.querySelector('select[name="consequence_category"]');
-    const categories = categorySelect ? Array.from(categorySelect.selectedOptions).map((option) => option.value) : [];
-    if (!categories.length) {
-      window.alert('Select at least one consequence category.');
-      return;
-    }
-    data.consequence_category = categories;
-    fetch(addEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-      },
-      body: JSON.stringify(data),
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success) {
-          hideAddModal();
-          window.location.reload();
-        } else {
-          window.alert('Unable to add consequence: ' + JSON.stringify(result.errors));
+    const modals = document.querySelectorAll('.modal');
+    
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            const content = modal.querySelector('div[class*="transform"]');
+            if(content) content.classList.replace('scale-95', 'scale-100');
         }
-      })
-      .catch(() => window.alert('Failed to add consequence.'));
-  };
+    }
+    
+    function closeModal(modal) {
+        modal.classList.add('opacity-0');
+        const content = modal.querySelector('div[class*="transform"]');
+        if(content) content.classList.replace('scale-100', 'scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+    
+    document.querySelectorAll('[data-modal-target]').forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            const targetId = trigger.dataset.modalTarget;
+            openModal(targetId);
+        });
+    });
+    
+    document.querySelectorAll('[data-modal-close]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = btn.closest('.modal');
+            closeModal(modal);
+        });
+    });
 
-  const handleEditSave = () => {
-    if (!editForm) {
-      return;
-    }
-    const payload = collectFormValues(editForm);
-    const updateUrl = payload.update_url;
-    if (!updateUrl) {
-      window.alert('Update endpoint missing.');
-      return;
-    }
-    delete payload.update_url;
-    fetch(updateUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-      },
-      body: JSON.stringify(payload),
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success) {
-          hideEditModal();
-          window.location.reload();
-        } else {
-          window.alert('Unable to update consequence: ' + JSON.stringify(result.errors));
-        }
-      })
-      .catch(() => window.alert('Failed to update consequence.'));
-  };
-
-  const hydrateEditForm = (data, updateUrl) => {
-    if (!editForm) {
-      return;
-    }
-    editForm.querySelector('input[name="update_url"]').value = updateUrl;
-    editForm.querySelector('#edit-consequence-category').value = data.consequence_category;
-    editForm.querySelector('#edit-security-property').value = (data.security_property || '').toLowerCase();
-    editForm.querySelector('#edit-consequence-worstcase').value = data.consequence_worstcase;
-    editForm.querySelector('#edit-justification-worstcase').value = data.justification_worstcase || '';
-    editForm.querySelector('#edit-consequence-realisticcase').value = data.consequence_realisticcase;
-    editForm.querySelector('#edit-justification-realisticcase').value = data.justification_realisticcase || '';
-  };
-
-  const handleEditClick = (event) => {
-    const button = event.currentTarget;
-    const getUrl = button.getAttribute('data-edit-url');
-    const updateUrl = button.getAttribute('data-update-url');
-    if (!getUrl || !updateUrl || !editForm) {
-      return;
-    }
-    fetch(getUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Lookup failed');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        hydrateEditForm(data, updateUrl);
-        showEditModal();
-      })
-      .catch(() => window.alert('Failed to load the selected consequence.'));
-  };
-
-  const handleDeleteClick = (event) => {
-    if (!window.confirm('Delete this consequence?')) {
-      return;
-    }
-    const button = event.currentTarget;
-    const deleteUrl = button.getAttribute('data-delete-url');
-    if (!deleteUrl) {
-      return;
-    }
-    const formData = new FormData();
-    formData.append('csrf_token', csrfToken);
-    fetch(deleteUrl, {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success) {
-          window.location.reload();
-        } else {
-          window.alert('Could not delete the consequence.');
-        }
-      })
-      .catch(() => window.alert('Failed to delete consequence.'));
-  };
-
-  document.querySelector('[data-submit-add]')?.addEventListener('click', handleAdd);
-  document.querySelector('[data-submit-edit]')?.addEventListener('click', handleEditSave);
-  document.querySelectorAll('[data-edit-consequence]').forEach((button) => {
-    button.addEventListener('click', handleEditClick);
-  });
-  document.querySelectorAll('[data-delete-consequence]').forEach((button) => {
-    button.addEventListener('click', handleDeleteClick);
-  });
+    modals.forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+               closeModal(modal);
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

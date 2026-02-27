@@ -4,21 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ _('bia.export.authentication_overview.title') }}</title>
-    <script nonce="{{ csp_nonce }}" src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <style nonce="{{ csp_nonce }}">
       body { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; }
     </style>
+      {% if export_mode and export_css %}
+    <style nonce="{{ csp_nonce }}">
+      {{ export_css|safe }}
+    </style>
+    {% endif %}
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <div class="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
-      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/20">
+      <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/20">
         <header class="border-b border-slate-800 px-6 py-5">
           <h1 class="text-2xl font-semibold tracking-tight">{{ _('bia.export.authentication_overview.heading') }}</h1>
           <p class="text-sm text-slate-400">{{ _('bia.export.authentication_overview.generated_at', timestamp=generated_at.strftime('%Y-%m-%d %H:%M')) }}</p>
         </header>
         <div class="space-y-4 px-6 py-5 text-sm text-slate-200">
           <p class="text-base text-slate-300">{{ _('bia.export.authentication_overview.intro') }}</p>
-          <div class="overflow-hidden rounded-xl border border-slate-800">
+          <div class="overflow-hidden rounded-xl border border-[var(--color-border)] border-slate-800">
             <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
               <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
@@ -35,7 +39,7 @@
                     <div class="text-xs text-slate-400">{{ group.option.label_for_locale('nl') }}</div>
                   </td>
                   <td class="px-4 py-3">
-                    <span class="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
+                    <span class="inline-flex items-center rounded-full border border-[var(--color-border)] border-slate-600 bg-slate-900 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
                   </td>
                   <td class="px-4 py-3 font-semibold text-slate-100">{{ group.components | length }}</td>
                 </tr>
@@ -43,7 +47,7 @@
                 <tr class="bg-amber-500/10 text-amber-100">
                   <td class="px-4 py-3 font-medium">{{ _('bia.export.authentication_overview.summary.unassigned') }}</td>
                   <td class="px-4 py-3">
-                    <span class="inline-flex items-center rounded-full border border-amber-400/60 bg-amber-500/10 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-amber-100">{{ _('bia.export.authentication_overview.summary.unassigned_slug') }}</span>
+                    <span class="inline-flex items-center rounded-full border border-[var(--color-border)] border-amber-400/60 bg-amber-500/10 px-2 py-0.5 font-mono text-xs uppercase tracking-wide text-amber-100">{{ _('bia.export.authentication_overview.summary.unassigned_slug') }}</span>
                   </td>
                   <td class="px-4 py-3 font-semibold">{{ unassigned | length }}</td>
                 </tr>
@@ -52,15 +56,14 @@
           </div>
         </div>
       </section>
-
       {% for group in groups %}
-      <section class="rounded-2xl border border-slate-800 bg-slate-900/50 shadow-xl backdrop-blur">
+      <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/50 shadow-xl backdrop-blur">
         <header class="flex flex-col gap-2 border-b border-slate-800 px-6 py-5 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 class="text-lg font-semibold text-slate-100">{{ group.option.label_for_locale('en') }}</h2>
             <p class="text-xs uppercase tracking-wide text-slate-400">{{ group.option.label_for_locale('nl') }}</p>
           </div>
-          <span class="inline-flex items-center rounded-full border border-slate-600 bg-slate-900 px-3 py-1 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
+          <span class="inline-flex items-center rounded-full border border-[var(--color-border)] border-slate-600 bg-slate-900 px-3 py-1 font-mono text-xs uppercase tracking-wide text-slate-200">{{ group.option.slug }}</span>
         </header>
         <div class="overflow-hidden p-0">
           <div class="overflow-auto">
@@ -88,14 +91,13 @@
         </div>
       </section>
       {% endfor %}
-
-      <section class="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl">
+      <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-xl">
         <header class="border-b border-slate-800 px-6 py-5">
           <h2 class="text-lg font-semibold text-slate-100">{{ _('bia.export.authentication_overview.unassigned.title') }}</h2>
         </header>
         <div class="px-6 py-5">
           {% if unassigned %}
-          <div class="overflow-hidden rounded-xl border border-slate-800">
+          <div class="overflow-hidden rounded-xl border border-[var(--color-border)] border-slate-800">
             <table class="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-200">
               <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <tr>

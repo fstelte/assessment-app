@@ -110,6 +110,7 @@ def inject_helpers():
         "bia_environment_types": ENVIRONMENT_TYPES,
         "bia_component_environment": _get_component_environment,
         "bia_environment_authentication": _describe_environment_authentication,
+        "bia_serialize_environments": _serialize_environments,
     }
 
 
@@ -329,9 +330,9 @@ def dashboard():
     can_manage_owner = _can_manage_bia_owner()
     owner_choices: list[User] = []
     if can_manage_owner:
+        # Fetch all users to ensure the dropdown is populated, even if statuses are mismatched
         owner_choices = (
-            User.query.filter(User.status == UserStatus.ACTIVE)
-            .order_by(User.last_name.asc(), User.first_name.asc(), User.email.asc())
+            User.query.order_by(User.last_name.asc(), User.first_name.asc(), User.email.asc())
             .all()
         )
     editable_context_ids = {context.id for context in contexts if _can_edit_context(context)}
@@ -340,8 +341,7 @@ def dashboard():
         "bia/dashboard.html",
         contexts=contexts,
         can_manage_owner=can_manage_owner,
-        owner_choices=owner_choices,
-        owner_choice_ids=owner_choice_ids,
+        possible_owners=owner_choices,
         editable_context_ids=editable_context_ids,
     )
 
@@ -357,7 +357,6 @@ def new_item():
         context = ContextScope(author=_resolve_user())
         if context.author:
             context.coordinator = context.author.full_name
-            context.risk_owner = context.author.full_name
         _apply_context_form(form, context, allow_owner_assignment=can_assign_owner)
         context.last_update = date.today()
         db.session.add(context)
@@ -519,7 +518,7 @@ def update_owner(item_id: int):
         except ValueError:
             flash(_("bia.flash.invalid_owner"), "danger")
             return redirect(url_for("bia.dashboard"))
-        owner = User.query.filter(User.id == owner_id, User.status == UserStatus.ACTIVE).first()
+        owner = User.query.filter(User.id == owner_id).first()
         if not owner:
             flash(_("bia.flash.unavailable_owner"), "danger")
             return redirect(url_for("bia.dashboard"))
@@ -657,6 +656,7 @@ def edit_component_form(component_id: int):
         Component.query.options(
             joinedload(Component.context_scope),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
+            joinedload(Component.ai_identificaties),
         )
         .filter(Component.id == component_id)
         .one_or_none()
@@ -670,6 +670,13 @@ def edit_component_form(component_id: int):
     form = ComponentForm(obj=component)
     _configure_component_form(form, component=component)
     contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
+
+    # Pre-populate AI fields on GET
+    if request.method != "POST":
+        existing_ai = component.ai_identificaties[0] if component.ai_identificaties else None
+        if existing_ai:
+            form.ai_category.data = existing_ai.category
+            form.ai_motivatie.data = existing_ai.motivatie
 
     if form.validate_on_submit():
         context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
@@ -694,6 +701,15 @@ def edit_component_form(component_id: int):
             component.description = form.description.data
             component.authentication_method_id = None
             _sync_component_environments(component, form)
+            # Save AI identification
+            ai_category = form.ai_category.data or "No AI"
+            ai_motivatie = form.ai_motivatie.data or ""
+            ai_record = component.ai_identificaties[0] if component.ai_identificaties else None
+            if ai_record:
+                ai_record.category = ai_category
+                ai_record.motivatie = ai_motivatie
+            else:
+                db.session.add(AIIdentificatie(component=component, category=ai_category, motivatie=ai_motivatie))
             db.session.commit()
             flash(_("bia.flash.updated"), "success")
             return redirect(url_for("bia.view_components", scope=context.name))

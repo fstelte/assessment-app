@@ -1,27 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Summary | {{ item.name }}{% endblock %}
+{% block title %}{{ _('bia.manage_summary.title') }} | {{ item.name }}{% endblock %}
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-secondary text-decoration-none">&larr; Back to BIA</a>
+<div class="mb-4">
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
+    <span>&larr;</span> {{ _('bia.manage_summary.back') }}
+  </a>
 </div>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary">Executive summary</div>
-  <div class="card-body">
-    <form method="post" class="vstack gap-3">
-      {{ form.hidden_tag() }}
-      <div>
-        {{ form.content.label(class="form-label") }}
-        {{ form.content(class="form-control", rows=8, placeholder="Summarise the key findings, impacts, and next steps.") }}
-        {% if form.content.errors %}
-          <div class="form-text text-danger">{{ form.content.errors | join(', ') }}</div>
-        {% endif %}
+<div class="flex justify-center">
+  <div class="w-full lg:w-4/5 xl:w-3/4">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
+      <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <h1 class="text-lg font-bold mb-0 text-[var(--color-text)]">Executive Summary</h1>
+        <p class="text-xs text-[var(--color-muted)] mt-1 mb-0">{{ _('bia.manage_summary.subtitle') }}</p>
       </div>
-      <div class="d-flex justify-content-end gap-2">
-        <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-light">Cancel</a>
-        {{ form.submit(class="btn btn-primary") }}
+      <div class="p-6">
+        <form method="post" class="flex flex-col gap-5">
+          {{ form.hidden_tag() }}
+          <div>
+            {{ form.content.label(class="block text-sm font-medium mb-2 text-[var(--color-text)]") }}
+            {{ form.content(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 text-base leading-relaxed", rows=10, placeholder="Summarise the key findings, impacts, and next steps for this Business Impact Analysis...") }}
+            {% if form.content.errors %}
+              <div class="text-sm mt-1 text-red-500">{{ form.content.errors | join(', ') }}</div>
+            {% endif %}
+            <div class="text-xs text-[var(--color-muted)] mt-2 italic">
+              Tip: Include high-level observations about critical dependencies and the most severe consequences identified.
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
+            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('actions.cancel') }}</a>
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer") }}
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 {% endblock %}

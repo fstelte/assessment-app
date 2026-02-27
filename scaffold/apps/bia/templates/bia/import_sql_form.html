@@ -1,28 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+<div class="mb-4">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
+    <span>&larr;</span> {{ _('bia.dashboard.back') }}
+  </a>
 </div>
 
-<div class="container py-4">
-  <h1 class="mb-4">Import BIA SQL</h1>
-  <p class="lead">Upload a validated export file (.sql) to replace the current data. All records with the same BIA name are removed first and then restored from the file.</p>
-  <div class="alert alert-warning" role="alert">
-    Upload only SQL files that were exported by this application. The file is checked for unexpected tables and potential SQL injection patterns.
+<div class="flex justify-center">
+  <div class="w-full lg:w-2/3 xl:w-1/2">
+    <div class="mb-4 text-center">
+      <h1 class="text-3xl font-bold mb-2">{{ _('bia.import_sql.title') }}</h1>
+      <p class="text-[var(--color-muted)] text-lg">{{ _('bia.import_sql.subtitle') }}</p>
+    </div>
+
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
+        <div class="p-6">
+            <div class="bg-yellow-500/10 border border-yellow-500/40 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5"></i>
+                <div class="text-sm text-yellow-600 dark:text-yellow-400">
+                    <strong>Warning:</strong> Upload only SQL files that were exported by this application. The file is checked for unexpected tables and potential SQL injection patterns. Data with the same BIA name will be overwritten.
+                </div>
+            </div>
+
+            <form id="sql-upload-form" method="post" enctype="multipart/form-data" class="flex flex-col gap-5">
+                {{ form.hidden_tag() }}
+                <div>
+                  {{ form.sql_file.label(class="block text-sm font-medium mb-2 text-[var(--color-text)]") }}
+                  {{ form.sql_file(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/40 dark:file:text-primary-300 dark:hover:file:bg-primary-900/60 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+                  {% for error in form.sql_file.errors %}
+                    <div class="text-xs mt-1 text-red-500">{{ error }}</div>
+                  {% endfor %}
+                </div>
+                
+                <div class="flex justify-end pt-2">
+                  {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2.5 text-sm transition-colors border border-transparent bg-green-600 text-white hover:bg-green-700 shadow-sm cursor-pointer w-full sm:w-auto") }}
+                </div>
+            </form>
+        </div>
+    </div>
   </div>
-  <form id="sql-upload-form" class="row g-3" method="post" enctype="multipart/form-data">
-    {{ form.hidden_tag() }}
-    <div class="col-12">
-      {{ form.sql_file.label(class="form-label") }}
-      {{ form.sql_file(class="form-control") }}
-      {% for error in form.sql_file.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
-    <div class="col-12">
-      {{ form.submit(class="btn btn-success") }}
-    </div>
-  </form>
 </div>
 {% endblock %}
 {% block scripts %}{% endblock %}

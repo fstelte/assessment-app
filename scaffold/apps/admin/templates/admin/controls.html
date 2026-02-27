@@ -1,198 +1,107 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.controls.page.title') }}{% endblock %}
+{% import "macros.html" as macros %}
+
+{% block title %}{{ _('admin.controls.title') }}{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
   <div>
-    <h1 class="h3 mb-1">{{ _('admin.controls.page.heading') }}</h1>
-    <p class="text-secondary mb-0">{{ _('admin.controls.page.subtitle') }}</p>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.controls.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.controls.subtitle') }}</p>
   </div>
-  <span class="badge bg-secondary text-uppercase">{{ _('admin.controls.page.role_hint') }}</span>
-</div>
-
-<div class="d-flex flex-column flex-lg-row gap-3 mb-4">
-  <div class="flex-fill">
-    <div class="card border-0 text-white h-100 shadow" style="background: linear-gradient(135deg, #3559f7, #8c4dff); min-height: 100%;">
-      <div class="card-body d-flex flex-column">
-        <p class="text-uppercase small text-white-50 mb-1">{{ _('admin.controls.page.stats.total') }}</p>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-6 fw-bold">{{ control_stats.total }}</span>
-          <span class="text-white-50 small">{{ _('admin.controls.list.title') }}</span>
-        </div>
-        <p class="mb-0 small text-white-75 mt-2">{{ _('admin.controls.page.stats.total_help') }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="flex-fill">
-    <div class="card border-0 h-100 shadow" style="background: linear-gradient(135deg, #0f172a, #1f2937); min-height: 100%;">
-      <div class="card-body d-flex flex-column text-light">
-        <p class="text-uppercase small text-secondary mb-1">{{ _('admin.controls.page.stats.templates') }}</p>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-6 fw-bold">{{ control_stats.templates }}</span>
-          <span class="text-secondary small">{{ _('admin.controls.list.templates') }}</span>
-        </div>
-        <p class="mb-0 small text-secondary mt-2">{{ _('admin.controls.page.stats.templates_help') }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="flex-fill">
-    <div class="card border-0 h-100 shadow" style="background: linear-gradient(135deg, #0f766e, #0d9488); min-height: 100%;">
-      <div class="card-body d-flex flex-column text-white">
-        <p class="text-uppercase small text-white-50 mb-1">{{ _('admin.controls.page.stats.described') }}</p>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-6 fw-bold">{{ control_stats.described }}</span>
-          <span class="text-white-50 small">{{ control_stats.described_pct }}%</span>
-        </div>
-        <p class="mb-0 small text-white-75 mt-2">{{ _('admin.controls.page.stats.described_help', pct=control_stats.described_pct) }}</p>
-      </div>
-    </div>
+  <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.bia_tiers_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+         {{ _('admin.controls.manage_availability_tiers') }}
+      </a>
+      {% if not has_controls %}
+         <div class="flex gap-2">
+             <form method="post" action="{{ url_for('admin.import_default_controls', standard='iso27002') }}">
+                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                     {{ _('admin.controls.import_iso') }}
+                 </button>
+             </form>
+             <form method="post" action="{{ url_for('admin.import_default_controls', standard='nist80053') }}">
+                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                     {{ _('admin.controls.import_nist') }}
+                 </button>
+             </form>
+         </div>
+      {% endif %}
+      <a href="{{ url_for('admin.new_control') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
+         {{ _('admin.controls.new_control') }}
+      </a>
   </div>
 </div>
 
-<div class="row g-4 align-items-stretch mb-4">
-  <div class="col-12 col-xl-6">
-      <div class="card bg-dark border-secondary h-100">
-        <div class="card-body">
-          <h1 class="h4 mb-2">{{ _('admin.controls.manual.title') }}</h1>
-          <p class="text-secondary mb-4">{{ _('admin.controls.manual.intro') }}</p>
-          <form method="post" action="{{ url_for('admin.create_control') }}" novalidate>
-            {{ create_form.hidden_tag() }}
-            {% from "partials/forms.html" import render_field_with_help %}
-            <div class="mb-3">
-              {{ render_field_with_help(create_form.code, class="form-control") }}
-            </div>
-            <div class="mb-3">
-              {{ render_field_with_help(create_form.name, class="form-control") }}
-            </div>
-            <div class="mb-3">
-              {{ render_field_with_help(create_form.description, class="form-control") }}
-            </div>
-            <div class="text-end">
-              {{ create_form.submit(class="btn btn-primary") }}
-            </div>
-          </form>
+<div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] mb-4 p-4">
+    <form method="get" class="flex flex-wrap lg:flex-nowrap gap-4 items-end">
+        <div class="w-full lg:w-1/3">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.controls.filter.identifier') }}</label>
+            <input type="text" name="identifier" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('identifier', '') }}" placeholder="e.g. AC-1">
         </div>
-      </div>
-    </div>
-    <div class="col-12 col-xl-6">
-      <div class="card bg-dark border-secondary h-100">
-        <div class="card-body">
-          <h1 class="h4 mb-2">{{ _('admin.import.heading') }}</h1>
-          <p class="text-secondary mb-4">{{ _('admin.import.intro') }}</p>
-          <form method="post" enctype="multipart/form-data" class="mb-4">
-            {{ import_form.hidden_tag() }}
-            <div class="mb-3">
-              {{ render_field_with_help(import_form.data_file, class="form-control") }}
-            </div>
-            <div class="text-end">
-              {{ import_form.submit(class="btn btn-primary") }}
-            </div>
-          </form>
-          <hr class="border-secondary my-4">
-          <form method="post">
-            <input type="hidden" name="action" value="import_builtin">
-            <div class="d-flex flex-column gap-2">
-              <button type="submit" name="dataset" value="iso" class="btn btn-outline-light w-100 text-start">
-                <i class="bi bi-file-earmark-text me-2"></i>
-                {{ _('admin.import.import_builtin') }}
-              </button>
-              <button type="submit" name="dataset" value="nist" class="btn btn-outline-light w-100 text-start">
-                <i class="bi bi-shield-check me-2"></i>
-                {{ _('admin.import.import_nist') }}
-              </button>
-            </div>
-          </form>
+        <div class="w-full lg:w-1/3">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.controls.filter.keyword') }}</label>
+            <input type="text" name="keyword" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('keyword', '') }}" placeholder="{{ _('admin.controls.filter.keyword.placeholder') }}">
         </div>
-      </div>
-    </div>
-    <div class="col-12">
-      <div class="card bg-dark border-secondary h-100">
-        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-          <span>{{ _('admin.controls.list.title') }}</span>
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-secondary">{{ controls|length }}</span>
-            <button type="submit" form="bulk-delete-controls-form" 
-                    onclick="return confirm('{{ _('admin.controls.delete_bulk.confirm') }}')"
-                    class="btn btn-sm btn-outline-danger">
-              {{ _('admin.controls.delete_bulk.button') }}
+        <div class="w-full lg:w-auto">
+            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 w-full lg:w-auto">
+                {{ _('admin.controls.filter.search') }}
             </button>
-          </div>
         </div>
-        <div class="card-body p-0">
-          <form id="bulk-delete-controls-form" method="post" action="{{ url_for('admin.delete_bulk_controls') }}">
-          {% if controls %}
-            <div class="table-responsive">
-              <table class="table table-dark table-striped align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th scope="col" style="width: 40px;" class="text-center">
-                      <input type="checkbox" id="select-all-controls" class="form-check-input">
-                    </th>
-                    <th scope="col">{{ _('admin.controls.list.code') }}</th>
-                    <th scope="col">{{ _('admin.controls.list.name') }}</th>
-                    <th scope="col">{{ _('admin.controls.list.description') }}</th>
-                    <th scope="col" class="text-center">{{ _('admin.controls.list.templates') }}</th>
-                    <th scope="col" class="text-end">{{ _('admin.controls.list.actions') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for control in controls %}
-                    {% set delete_form = delete_forms.get(control.id) %}
-                    <tr>
-                      <td class="text-center">
-                        <input type="checkbox" name="control_ids" value="{{ control.id }}" class="form-check-input control-checkbox">
-                      </td>
-                      <td class="text-nowrap">{{ control.section or _('csa.common.unknown') }}</td>
-                      <td><strong>{{ control.domain }}</strong></td>
-                      <td class="text-secondary small">{{ control.description or _('admin.controls.list.no_description') }}</td>
-                      <td class="text-center"><span class="badge bg-secondary">{{ control.templates|length }}</span></td>
-                      <td class="text-end">
-                        <div class="d-flex flex-wrap gap-2 justify-content-end">
-                          <a class="btn btn-sm btn-outline-light" href="{{ url_for('admin.edit_control', control_id=control.id) }}">
-                            {{ _('actions.edit') }}
-                          </a>
-                          {% if delete_form %}
-                            <button type="submit" form="delete-control-{{ control.id }}" class="btn btn-sm btn-outline-danger">
-                              {{ _('actions.delete') }}
-                            </button>
-                          {% endif %}
-                        </div>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+        {% if request.args %}
+        <div class="w-full lg:w-auto">
+            <a href="{{ url_for('admin.controls') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 w-full lg:w-auto">
+                {{ _('admin.controls.filter.clear') }}
+            </a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)] mb-4">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.controls.table.id') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-1/4">{{ _('admin.controls.table.name') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.controls.table.description') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24 text-right">{{ _('admin.controls.table.actions') }}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--color-border)]">
+      {% for control in pagination.items %}
+      <tr class="hover:bg-slate-500/5 transition-colors">
+        <td class="px-4 py-3 align-top font-mono text-primary-400 font-medium">
+            {{ control.identifier }}
+        </td>
+        <td class="px-4 py-3 align-top font-medium">
+            {{ control.title }}
+        </td>
+        <td class="px-4 py-3 align-top text-[var(--color-muted)]">
+            <div class="line-clamp-2" title="{{ control.description }}">
+                {{ control.description }}
             </div>
-          {% else %}
-            <div class="p-4 text-secondary">{{ _('admin.controls.list.empty') }}</div>
-          {% endif %}
-          </form>
+        </td>
+        <td class="px-4 py-3 align-top text-right">
+            <a href="{{ url_for('admin.edit_control', control_id=control.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.controls.edit') }}
+            </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+          <td colspan="4" class="px-4 py-8 text-center text-[var(--color-muted)]">
+              {{ _('admin.controls.no_controls') }}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-          {% for control in controls %}
-            {% set delete_form = delete_forms.get(control.id) %}
-            {% if delete_form %}
-            <form id="delete-control-{{ control.id }}" method="post" action="{{ url_for('admin.delete_control', control_id=control.id) }}" class="d-none">
-              {{ delete_form.hidden_tag() }}
-            </form>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script nonce="{{ csp_nonce }}">
-  document.addEventListener('DOMContentLoaded', function() {
-    const selectAll = document.getElementById('select-all-controls');
-    if (selectAll) {
-      selectAll.addEventListener('change', function(e) {
-        const checkboxes = document.querySelectorAll('.control-checkbox');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
-      });
-    }
-  });
-</script>
+<div class="flex justify-center mt-4">
+    {{ macros.render_pagination(pagination, 'admin.controls') }}
+</div>
 {% endblock %}

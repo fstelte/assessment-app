@@ -80,9 +80,19 @@
     if (!target) {
       return;
     }
-    const isOpen = target.classList.contains("show");
-    target.classList.toggle("show", !isOpen);
-    button.setAttribute("aria-expanded", String(!isOpen));
+    // Updated logic for Tailwind 'hidden' class toggle
+    // Instead of toggling 'show' (bootstrap), we toggle 'hidden' (tailwind)
+    // If it has 'hidden', it is closed. We remove 'hidden' to open.
+    const isHidden = target.classList.contains("hidden");
+    
+    // Toggle hidden class
+    if (isHidden) {
+      target.classList.remove("hidden");
+    } else {
+      target.classList.add("hidden");
+    }
+    
+    button.setAttribute("aria-expanded", String(isHidden)); // isHidden means we just opened it
   };
 
   const bindCollapseToggles = () => {

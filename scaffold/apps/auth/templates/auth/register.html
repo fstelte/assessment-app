@@ -2,31 +2,31 @@
 {% from "partials/forms.html" import render_field_with_help %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<h1 class="mb-4">Create account</h1>
+<h1 class="mb-4 text-2xl font-bold">{{ _('auth.register.heading') }}</h1>
 <form method="post">
     {{ form.hidden_tag() }}
-    <div class="row g-3">
-        <div class="col-md-6">
-            {{ render_field_with_help(form.email, class="form-control") }}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <div>
+            {{ render_field_with_help(form.email, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-6">
-            {{ render_field_with_help(form.username, class="form-control") }}
+        <div>
+            {{ render_field_with_help(form.username, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-6">
-            {{ render_field_with_help(form.first_name, class="form-control") }}
+        <div>
+            {{ render_field_with_help(form.first_name, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-6">
-            {{ render_field_with_help(form.last_name, class="form-control") }}
+        <div>
+            {{ render_field_with_help(form.last_name, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-6">
-            {{ render_field_with_help(form.password, class="form-control") }}
+        <div>
+            {{ render_field_with_help(form.password, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
-        <div class="col-md-6">
-            {{ render_field_with_help(form.confirm_password, class="form-control") }}
+        <div>
+            {{ render_field_with_help(form.confirm_password, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
     </div>
     <div class="mt-4">
-        {{ form.submit(class="btn btn-primary") }}
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
     </div>
 </form>
 {% endblock %}

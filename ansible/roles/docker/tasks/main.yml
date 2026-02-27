@@ -52,7 +52,5 @@
     pull: true
     build: true
     recreate: smart
-    profiles:
-      - "{{ compose_profile }}"
   environment:
     COMPOSE_PROJECT_NAME: "{{ compose_project_name }}"

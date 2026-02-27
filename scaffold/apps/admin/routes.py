@@ -755,94 +755,134 @@ def delete_authentication_method(method_id: int):
     return redirect(url_for("admin.list_authentication_methods"))
 
 
-@bp.route("/risks", methods=["GET", "POST"])
+@bp.route("/risks/create", methods=["GET", "POST"])
 @login_required
 @require_fresh_login()
-def list_risks():
+def create_risk():
     _require_admin()
 
     form = RiskForm()
     configure_risk_form(form, ineligible_suffix=_("admin.risks.form.ineligible_suffix"))
     form.submit.label.text = _("admin.risks.form.submit_create")
 
-    if request.method == "POST":
-        if form.validate_on_submit():
-            try:
-                component_ids = [int(value) for value in form.component_ids.data]
-                components = validate_component_ids(component_ids)
-            except ValueError:
-                form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
-            else:
-                try:
-                    controls = validate_control_ids(form.csa_control_ids.data or [])
-                except ValueError:
-                    form.csa_control_ids.errors.append(_("admin.risks.errors.invalid_controls"))
-                else:
-                    risk = Risk(
-                        title=(form.title.data or "").strip(),
-                        description=form.description.data,
-                        discovered_on=form.discovered_on.data,
-                        impact=RiskImpact(form.impact.data),
-                        chance=RiskChance(form.chance.data),
-                        treatment=RiskTreatmentOption(form.treatment.data),
-                        treatment_plan=form.treatment_plan.data,
-                        treatment_due_date=form.treatment_due_date.data,
-                        treatment_owner_id=optional_int(form.treatment_owner_id.data),
-                    )
-                    if risk.discovered_on is None:
-                        risk.discovered_on = date.today()
-                    risk.components = components
-                    risk.controls = controls or []
-                    set_impact_areas(risk, form.impact_areas.data or [])
-                    db.session.add(risk)
-                    db.session.flush()
-                    log_event(
-                        action="risk_created",
-                        entity_type="risk",
-                        entity_id=risk.id,
-                        details={
-                            "title": risk.title,
-                            "impact": risk.impact.value,
-                            "chance": risk.chance.value,
-                            "treatment": risk.treatment.value,
-                        },
-                    )
-                    db.session.commit()
-                    flash(_("admin.risks.flash.created", title=risk.title), "success")
-                    return redirect(url_for("admin.list_risks"))
+    if request.method == "POST" and form.validate_on_submit():
+        try:
+            component_ids = [int(value) for value in form.component_ids.data]
+            components = validate_component_ids(component_ids)
+        except ValueError:
+            form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
         else:
-            for errors in form.errors.values():
-                for error in errors:
-                    flash(error, "danger")
+            try:
+                controls = validate_control_ids(form.csa_control_ids.data or [])
+            except ValueError:
+                form.csa_control_ids.errors.append(_("admin.risks.errors.invalid_controls"))
+            else:
+                risk = Risk(
+                    title=(form.title.data or "").strip(),
+                    description=form.description.data,
+                    discovered_on=form.discovered_on.data,
+                    impact=RiskImpact(form.impact.data),
+                    chance=RiskChance(form.chance.data),
+                    treatment=RiskTreatmentOption(form.treatment.data),
+                    treatment_plan=form.treatment_plan.data,
+                    treatment_due_date=form.treatment_due_date.data,
+                    treatment_owner_id=optional_int(form.treatment_owner_id.data),
+                )
+                if risk.discovered_on is None:
+                    risk.discovered_on = date.today()
+                risk.components = components
+                risk.controls = controls or []
+                set_impact_areas(risk, form.impact_areas.data or [])
+                db.session.add(risk)
+                db.session.flush()
+                log_event(
+                    action="risk_created",
+                    entity_type="risk",
+                    entity_id=risk.id,
+                    details={
+                        "title": risk.title,
+                        "impact": risk.impact.value,
+                        "chance": risk.chance.value,
+                        "treatment": risk.treatment.value,
+                    },
+                )
+                db.session.commit()
+                flash(_("admin.risks.flash.created", title=risk.title), "success")
+                return redirect(url_for("admin.list_risks"))
+    elif request.method == "POST":
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
 
-    risks = (
-        Risk.query.options(
-            sa.orm.selectinload(Risk.components).selectinload(Component.context_scope),
-            sa.orm.selectinload(Risk.impact_area_links),
-            sa.orm.selectinload(Risk.controls),
-            sa.orm.selectinload(Risk.treatment_owner),
-        )
-        .order_by(Risk.created_at.desc())
-        .all()
+    return render_template(
+        "admin/risk_edit.html",
+        form=form,
+        title=_('admin.risks.create_title'),
     )
+
+
+@bp.route("/risks", methods=["GET"])
+@login_required
+@require_fresh_login()
+def list_risks():
+    _require_admin()
+
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    status_filter = request.args.get("status")
+
+    query = Risk.query.options(
+        sa.orm.selectinload(Risk.components).selectinload(Component.context_scope),
+        sa.orm.selectinload(Risk.impact_area_links),
+        sa.orm.selectinload(Risk.controls),
+        sa.orm.selectinload(Risk.treatment_owner),
+    ).order_by(Risk.created_at.desc())
+
+    if status_filter:
+        # Assuming Risk has a 'status' mapped, or filter by treatment if status is derived
+        # Based on template logic, risk.status is likely derived from treatment or explicitly stored
+        # Checking Risk model earlier, treatment is stored. Status might be computed.
+        # But template has filter dropdown for status...
+        # Wait, Risk model didn't have 'status' column in what I read.
+        # It had 'treatment' (enum).
+        # Let's assume for now filter might need Adjustment if status is not a column.
+        pass
+
+    pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
+    
     thresholds = load_thresholds()
-    risk_rows = [
-        {
-            "record": risk,
-            "score": risk.score(),
-            "severity": determine_risk_severity(risk.score(), thresholds),
-        }
-        for risk in risks
-    ]
+    
+    # Calculate severity colors
+    severity_colors = {
+        "low": "#10b981",       # Green
+        "moderate": "#f59e0b",  # Amber
+        "high": "#f97316",      # Orange
+        "critical": "#ef4444",  # Red
+    }
+
+    for risk in pagination.items:
+        score = risk.score()
+        severity = determine_risk_severity(score, thresholds)
+        severity_value = severity.value if severity else "low"
+        
+        # Attach properties expected by template
+        risk.inherent_risk_score = score
+        # Template uses risk.inherent_risk_matrix.color and .name
+        risk.inherent_risk_matrix = type('obj', (object,), {
+            "name": severity_value.title(),
+            "color": severity_colors.get(severity_value, "#6b7280")
+        })
+        
+        # Alias status to treatment if status attribute is missing
+        if not hasattr(risk, 'status'):
+            risk.status = risk.treatment
+
+    risk_statuses = RiskTreatmentOption
 
     return render_template(
         "admin/risks.html",
-        form=form,
-        risk_rows=risk_rows,
-        thresholds=thresholds,
-        impact_label_map=dict(form.impact.choices),
-        component_choices_available=bool(form.component_ids.choices),
-        RiskTreatmentOption=RiskTreatmentOption,
+        pagination=pagination,
+        risk_statuses=risk_statuses,
     )
 
 

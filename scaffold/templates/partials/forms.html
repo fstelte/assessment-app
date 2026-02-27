@@ -1,4 +1,4 @@
-{% macro render_field_with_tooltip(field, label_text=None, tooltip_text='', container_class='', input_class='', tooltip_id=None, label_class='form-label tooltip-trigger', sr_only_class='visually-hidden', id=None, input_attrs=None) -%}
+{% macro render_field_with_tooltip(field, label_text=None, tooltip_text='', container_class='', input_class='', tooltip_id=None, label_class='block text-sm mb-1.5 tooltip-trigger', sr_only_class='sr-only', id=None, input_attrs=None) -%}
   {%- set attr_dict = (input_attrs.copy() if input_attrs is not none else {}) -%}
   {%- if id is not none -%}
     {%- set _ = attr_dict.update({'id': id}) -%}
@@ -27,14 +27,14 @@
 
 {% macro render_field_with_help(field) -%}
   <div class="mb-4">
-    {{ field.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
-    {% set input_classes = "form-input w-full mt-1 dark:bg-gray-800 dark:border-gray-600 dark:text-white" %}
+    {{ field.label(class="block text-sm font-medium text-[var(--color-text)]") }}
+    {% set input_classes = "w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" %}
     {% if kwargs.get('class') %}
         {% set input_classes = input_classes ~ " " ~ kwargs.pop('class') %}
     {% endif %}
     {{ field(class=input_classes, **kwargs) }}
     {% if field.errors %}
-      <div class="text-red-600 dark:text-red-400 text-sm mt-1">
+      <div class="text-red-400 text-xs mt-1">
         {% for error in field.errors %}
           <div>{{ error }}</div>
         {% endfor %}
@@ -42,8 +42,8 @@
     {% endif %}
     {% if field.description %}
       <details class="mt-1">
-        <summary class="text-xs text-blue-600 dark:text-blue-400 cursor-pointer">{{ _('Help') }}</summary>
-        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+        <summary class="text-xs text-primary-400 cursor-pointer">{{ _('Help') }}</summary>
+        <div class="text-sm text-[var(--color-muted)] mt-1 p-2 bg-[var(--color-surface)] rounded-md border border-[var(--color-border)]">
           {{ field.description }}
         </div>
       </details>

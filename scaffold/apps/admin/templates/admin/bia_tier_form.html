@@ -1,29 +1,70 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.bia_tiers.edit.title') }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-  <div>
-    <h1 class="h3 mb-1">{{ _('admin.bia_tiers.edit.heading', level=tier.level) }}</h1>
-  </div>
-  <a class="btn btn-outline-light" href="{{ url_for('admin.list_bia_tiers') }}">{{ _('actions.cancel') }}</a>
+<div class="mb-5">
+  <h1 class="text-2xl font-bold mb-1">{{ title }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">
+    {% if tier %}
+        {{ _('admin.bia_tier_form.subtitle_edit') }}
+    {% else %}
+        {{ _('admin.bia_tier_form.subtitle_new') }}
+    {% endif %}
+  </p>
 </div>
 
-<div class="card bg-dark border-secondary" style="max-width: 600px;">
-  <div class="card-body">
-    <form method="post" novalidate>
-      {{ form.hidden_tag() }}
-      
-      <div class="mb-3">
-        <label class="form-label text-uppercase small text-secondary">{{ _('admin.bia_tiers.fields.level') }}</label>
-        <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ tier.level }}" disabled readonly>
-      </div>
+<div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-6 max-w-lg">
+    <form method="post" class="flex flex-col gap-4">
+        {{ form.hidden_tag() }}
+        
+        <div class="grid grid-cols-1 gap-4">
+             <div>
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.level.label.text }}</label>
+                {{ form.level(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+                {% for error in form.level.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
+                {% endfor %}
+            </div>
+            
+             <div>
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.name.label.text }}</label>
+                {{ form.name(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+                {% for error in form.name.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
+                {% endfor %}
+            </div>
 
-      <p class="text-white">{{ _('admin.bia_tiers.form.name_in_translation') }}</p>
+             <div>
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.description.label.text }}</label>
+                {{ form.description(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", rows="3") }}
+                {% for error in form.description.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
+                {% endfor %}
+            </div>
 
-      <div class="text-end">
-        {{ form.submit(class="btn btn-primary") }}
-      </div>
+             <div>
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.rto_goal_seconds.label.text }}</label>
+                {{ form.rto_goal_seconds(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", placeholder="e.g. 3600") }}
+                {% for error in form.rto_goal_seconds.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+             <div>
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.rpo_goal_seconds.label.text }}</label>
+                {{ form.rpo_goal_seconds(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", placeholder="e.g. 3600") }}
+                {% for error in form.rpo_goal_seconds.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="pt-4 flex gap-2 border-t border-[var(--color-border)] mt-2">
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+            <a href="{{ url_for('admin.bia_tiers_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.bia_tier_form.cancel') }}
+            </a>
+        </div>
     </form>
-  </div>
 </div>
 {% endblock %}

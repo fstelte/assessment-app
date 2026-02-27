@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% block title %}MFA Enrollment{% endblock %}
 {% block content %}
-<h1 class="mb-4">Enable Multi-Factor Authentication</h1>
-<p>Scan the QR code in your authenticator app and enter the 6-digit code to finish setup.</p>
-<div class="mb-3">
-    <code>{{ provisioning.uri }}</code>
+<h1 class="mb-4 text-2xl font-bold">{{ _('auth.mfa.enroll.title') }}</h1>
+<p class="mb-4">{{ _('auth.mfa.enroll.instructions_body') }}</p>
+<div class="mb-5 p-3 bg-slate-100 dark:bg-slate-900 rounded border border-[var(--color-border)] inline-block">
+    <code class="text-sm font-mono text-pink-500">{{ provisioning.uri }}</code>
 </div>
-<form method="post">
+<form method="post" class="max-w-md">
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{ form.otp_token.label(class="form-label") }}
-        {{ form.otp_token(class="form-control") }}
+    <div class="mb-4">
+        {{ form.otp_token.label(class="block text-sm mb-1.5") }}
+        {{ form.otp_token(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
     </div>
-    {{ form.submit(class="btn btn-primary") }}
+    {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
 </form>
 {% endblock %}

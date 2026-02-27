@@ -1,78 +1,100 @@
 {% extends "base.html" %}
 {% block title %}Import CSV | BIA{% endblock %}
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('bia.dashboard') }}" class="text-secondary text-decoration-none">&larr; Back to dashboard</a>
+<div class="mb-4">
+  <a href="{{ url_for('bia.dashboard') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
+    <span>&larr;</span> {{ _('bia.dashboard.back') }}
+  </a>
 </div>
 
-<div class="row">
-  <div class="col-lg-8">
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary">
-        Upload CSV exports
+<div class="flex flex-col items-center justify-center mb-8">
+  <h1 class="text-3xl font-bold mb-2">{{ _('bia.import_csv.title') }}</h1>
+  <p class="text-[var(--color-muted)] text-center max-w-2xl">{{ _('bia.import_csv.subtitle') }}</p>
+</div>
+
+<div class="flex flex-wrap -mx-3 justify-center">
+  <div class="w-full lg:w-3/4 xl:w-2/3 px-3">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-6 py-5 border-b border-[var(--color-border)] bg-[var(--color-surface)] rounded-t-xl">
+        <h2 class="text-lg font-semibold mb-0">{{ _('bia.import_csv.upload_heading') }}</h2>
       </div>
-      <div class="card-body">
-        <p class="text-secondary">
-          Provide the CSV files generated from an earlier export. At minimum include the <strong>BIA CSV</strong> file;
-          the other files are optional and will be processed when present.
-        </p>
-        <form method="post" enctype="multipart/form-data" action="{{ url_for('bia.import_csv_view') }}" class="vstack gap-3">
+      <div class="p-6">
+        <div class="mb-6 bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+          <p class="text-sm text-[var(--color-text)] mb-0">
+            <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+            Provide the CSV files generated from an earlier export. At a minimum, include the <strong>BIA CSV</strong> file; the other files are optional and will be processed if present.
+          </p>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('bia.import_csv_view') }}" class="flex flex-col gap-6">
           {{ form.hidden_tag() }}
-          <div>
-            {{ form.bia.label(class="form-label") }}
-            {{ form.bia(class="form-control") }}
-            {% if form.bia.errors %}
-              <div class="form-text text-danger">{{ form.bia.errors | join(', ') }}</div>
-            {% endif %}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="col-span-1 md:col-span-2">
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.bia.label.text }} <span class="text-red-500">*</span></label>
+              {{ form.bia(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/40 dark:file:text-primary-300 dark:hover:file:bg-primary-900/60 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.bia.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.bia.errors | join(', ') }}</div>
+              {% endif %}
+              <div class="text-xs text-[var(--color-muted)] mt-1">Primary definition file. Required.</div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.components.label.text }}</label>
+              {{ form.components(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.components.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.components.errors | join(', ') }}</div>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.consequences.label.text }}</label>
+              {{ form.consequences(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.consequences.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.consequences.errors | join(', ') }}</div>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.availability_requirements.label.text }}</label>
+              {{ form.availability_requirements(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.availability_requirements.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.availability_requirements.errors | join(', ') }}</div>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.ai_identification.label.text }}</label>
+              {{ form.ai_identification(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.ai_identification.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.ai_identification.errors | join(', ') }}</div>
+              {% endif %}
+            </div>
+            
+            <div class="col-span-1 md:col-span-2">
+              <label class="block text-sm font-medium mb-2 text-[var(--color-text)]">{{ form.summary.label.text }}</label>
+              {{ form.summary(class="block w-full text-sm text-[var(--color-muted)] file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border border-[var(--color-border)] rounded-lg") }}
+              {% if form.summary.errors %}
+                <div class="text-sm mt-1 text-red-500">{{ form.summary.errors | join(', ') }}</div>
+              {% endif %}
+            </div>
           </div>
-          <div>
-            {{ form.components.label(class="form-label") }}
-            {{ form.components(class="form-control") }}
-            {% if form.components.errors %}
-              <div class="form-text text-danger">{{ form.components.errors | join(', ') }}</div>
-            {% endif %}
-          </div>
-          <div>
-            {{ form.consequences.label(class="form-label") }}
-            {{ form.consequences(class="form-control") }}
-            {% if form.consequences.errors %}
-              <div class="form-text text-danger">{{ form.consequences.errors | join(', ') }}</div>
-            {% endif %}
-          </div>
-          <div>
-            {{ form.availability_requirements.label(class="form-label") }}
-            {{ form.availability_requirements(class="form-control") }}
-            {% if form.availability_requirements.errors %}
-              <div class="form-text text-danger">{{ form.availability_requirements.errors | join(', ') }}</div>
-            {% endif %}
-          </div>
-          <div>
-            {{ form.ai_identification.label(class="form-label") }}
-            {{ form.ai_identification(class="form-control") }}
-            {% if form.ai_identification.errors %}
-              <div class="form-text text-danger">{{ form.ai_identification.errors | join(', ') }}</div>
-            {% endif %}
-          </div>
-          <div>
-            {{ form.summary.label(class="form-label") }}
-            {{ form.summary(class="form-control") }}
-            {% if form.summary.errors %}
-              <div class="form-text text-danger">{{ form.summary.errors | join(', ') }}</div>
-            {% endif %}
-          </div>
-          <div class="text-end">
-            {{ form.submit(class="btn btn-primary") }}
+          
+          <div class="flex justify-end pt-4 border-t border-[var(--color-border)]">
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer") }}
           </div>
         </form>
       </div>
     </div>
   </div>
-  <div class="col-lg-4 mt-4 mt-lg-0">
-    <div class="card bg-dark border-secondary">
-      <div class="card-header border-secondary">Need a template?</div>
-      <div class="card-body">
-        <p class="text-secondary mb-2">Export an existing BIA to generate compatible CSV files:</p>
-        <a href="{{ url_for('bia.dashboard') }}#exports" class="btn btn-outline-light btn-sm">Go to exports</a>
+  
+  <div class="w-full lg:w-3/4 xl:w-2/3 px-3 mt-6">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+      <div class="px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm uppercase tracking-wide text-[var(--color-muted)] mb-1">Need a template?</h3>
+          <p class="text-sm text-[var(--color-muted)] mb-0">Export an existing BIA to generate compatible CSV files.</p>
+        </div>
+        <a href="{{ url_for('bia.dashboard') }}#exports" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] whitespace-nowrap">Go to exports</a>
       </div>
     </div>
   </div>

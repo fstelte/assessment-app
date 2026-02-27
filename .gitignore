@@ -176,3 +176,4 @@ bia_app/app/exports/SIDN Labs onderzoekinfrastructuur bij Nikhef/SIDN Labs onder
 bia_app/instance/bia_tool copy.db
 bia_app/instance/bia_tool.db
 .DS_Store
+.github/copilot-instructions.md

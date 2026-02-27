@@ -249,6 +249,16 @@ class ComponentForm(FlaskForm):
         min_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
         max_entries=len(_COMPONENT_ENVIRONMENT_TYPES),
     )
+    ai_category = SelectField(
+        _l("bia.components.modal.category"),
+        choices=list(_AI_CATEGORY_CHOICES),
+        validators=[Optional()],
+        default="No AI",
+    )
+    ai_motivatie = TextAreaField(
+        _l("bia.components.modal.motivation"),
+        validators=[Optional()],
+    )
     submit = SubmitField("Save component")
 
 
@@ -306,11 +316,11 @@ class ConsequenceForm(FlaskForm):
 class AvailabilityForm(FlaskForm):
     """Capture availability requirement targets for a component."""
 
-    mtd = StringField("Maximum tolerable downtime", validators=[Optional(), Length(max=255)])
-    rto = StringField("Recovery time objective", validators=[Optional(), Length(max=255)])
-    rpo = StringField("Recovery point objective", validators=[Optional(), Length(max=255)])
-    masl = StringField("Minimum acceptable service level", validators=[Optional(), Length(max=255)])
-    submit = SubmitField("Save availability requirements")
+    mtd = StringField(_l("bia.manage_availability.form.mtd"), validators=[Optional(), Length(max=255)])
+    rto = StringField(_l("bia.manage_availability.form.rto"), validators=[Optional(), Length(max=255)])
+    rpo = StringField(_l("bia.manage_availability.form.rpo"), validators=[Optional(), Length(max=255)])
+    masl = StringField(_l("bia.manage_availability.form.masl"), validators=[Optional(), Length(max=255)])
+    submit = SubmitField(_l("bia.manage_availability.form.submit"))
 
 
 class BIAAvailabilityForm(AvailabilityForm):

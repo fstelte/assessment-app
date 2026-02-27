@@ -24,31 +24,28 @@
 {% block title %}{{ item.name }} | BIA{% endblock %}
 {% block content %}
 {% set is_dark = theme != 'light' %}
-{% set border_class = 'border-secondary' if is_dark else 'border-secondary-subtle' %}
-{% set card_surface = 'bg-dark ' ~ border_class if is_dark else 'bg-white ' ~ border_class %}
-{% set outline_inverse = 'btn-outline-light' if is_dark else 'btn-outline-dark' %}
-{% set text_muted = 'text-secondary' if is_dark else 'text-muted' %}
+{% set outline_inverse = 'border-slate-200 text-slate-100 hover:bg-slate-800' if is_dark else 'border-slate-300 text-slate-700 hover:bg-slate-50' %}
 {% if not export_mode|default(false) %}
   <div class="mb-3">
     {% if item.is_archived %}
-      <a href="{{ url_for('bia.archived_list') }}" class="{{ text_muted }} text-decoration-none">&larr; {{ _('bia.archived.back_to_list') }}</a>
+      <a href="{{ url_for('bia.archived_list') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline">&larr; {{ _('bia.archived.back_to_list') }}</a>
     {% else %}
-      <a href="{{ url_for('bia.dashboard') }}" class="{{ text_muted }} text-decoration-none">&larr; Back to dashboard</a>
+      <a href="{{ url_for('bia.dashboard') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline">&larr; {{ _('bia.context_detail.back') }}</a>
     {% endif %}
   </div>
 {% endif %}
 
 {% if item.is_archived %}
-<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-  <i class="fas fa-lock me-3 fa-lg"></i>
-  <div class="flex-grow-1">
+<div class="rounded-xl px-4 py-3 text-sm border bg-yellow-400/10 border-yellow-400/40 text-yellow-600 dark:text-yellow-200 flex items-center mb-4" role="alert">
+  <i class="fas fa-lock mr-3 fa-lg"></i>
+  <div class="grow">
     <strong>{{ _('bia.archived.banner') }}</strong>
     <div>{{ _('bia.archived.archived_on', date=item.archived_at.strftime('%Y-%m-%d %H:%M') if item.archived_at else '-') }}</div>
   </div>
   {% if can_edit_context|default(False) %}
-  <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="ms-3">
+  <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="ml-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-warning" onclick="return confirm('{{ _('bia.archived.confirm_unarchive') }}');">
+    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-yellow-500 text-slate-900 hover:bg-yellow-600" onclick="return confirm('{{ _('bia.archived.confirm_unarchive') }}');">
       {{ _('bia.archived.unarchive') }}
     </button>
   </form>
@@ -56,57 +53,71 @@
 </div>
 {% endif %}
 
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4 {% if export_mode %}pt-3{% endif %}">
+<div class="flex flex-col lg:flex-row justify-between items-start gap-3 mb-6 {% if export_mode %}pt-3{% endif %}">
   <div>
-    <h1 class="mb-1">
+    <h1 class="text-3xl font-bold mb-1 flex items-center flex-wrap gap-2">
       {{ item.name }}
       {% if item.tier %}
-      <span class="badge text-bg-secondary fs-6 align-middle ms-2">{{ item.tier.get_label() }}</span>
+      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 align-middle">{{ item.tier.get_label() }}</span>
       {% endif %}
       {% if item.is_archived %}
-      <span class="badge bg-warning text-dark fs-6 align-middle ms-2"><i class="fas fa-lock me-1"></i> {{ _('bia.archived.badge') }}</span>
+      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 align-middle"><i class="fas fa-lock mr-1"></i> {{ _('bia.archived.badge') }}</span>
       {% endif %}
     </h1>
-    <p class="{{ text_muted }} mb-0">Last updated {{ item.last_update or 'never' }}</p>
+    <p class="text-[var(--color-muted)] mb-0">Last updated {{ item.last_update or 'never' }}</p>
   </div>
   {% if not export_mode|default(false) %}
-    <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="flex flex-wrap gap-2 items-center">
       {% if can_edit_context|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Edit</a>
-        <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Summary</a>
+        <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.edit') }}</a>
+        <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.tabs.summary') }}</a>
       {% endif %}
-      <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export HTML</a>
-      <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
-      <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Export SQL</a>
+      <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">HTML</a>
+      <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">CSV</a>
+      <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">SQL</a>
       {% if can_edit_context|default(False) and not item.is_archived %}
+      <div class="border-l border-[var(--color-border)] mx-1 h-6"></div>
       <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn {{ outline_inverse }} btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
-          <i class="fas fa-copy me-1"></i> {{ _('bia.actions.copy') }}
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
+          <i class="fas fa-copy mr-1"></i> {{ _('bia.actions.copy') }}
         </button>
       </form>
       <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
-          <i class="fas fa-archive me-1"></i> {{ _('bia.actions.archive') }}
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-400/10 px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
+          <i class="fas fa-archive mr-1"></i> {{ _('bia.actions.archive') }}
         </button>
       </form>
       <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" style="display: contents;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">Delete</button>
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-red-500 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10 px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">{{ _('bia.context_detail.actions.delete') }}</button>
       </form>
       {% endif %}
     </div>
   {% endif %}
 </div>
 
-<div class="bia-cia-grid mb-3">
+{% if item.summary and item.summary.content %}
+<div class="mb-6">
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+    <div class="px-5 py-4 border-b border-[var(--color-border)]">
+      <h3 class="font-semibold text-lg m-0">{{ _('bia.context_detail.tabs.summary') }}</h3>
+    </div>
+    <div class="px-5 py-4 whitespace-pre-wrap text-[var(--color-text)]">
+      {{ item.summary.content }}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="bia-cia-grid mb-6">
   {% for property in ['confidentiality', 'integrity', 'availability'] %}
     {% set value = max_cia_impact.get(property) %}
     {% if value is not none %}
-    <div class="card {{ card_surface }} h-100">
-      <div class="card-body">
-        <div class="{{ text_muted }} text-uppercase small">{{ property.capitalize() }}</div>
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 flex flex-col items-center text-center">
+        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-2">{{ property.capitalize() }}</div>
         {% set cia_value = value or 'N/A' %}
         <span class="bia-impact-badge" data-impact="{{ cia_value | lower }}">{{ cia_value }}</span>
       </div>
@@ -115,24 +126,24 @@
   {% endfor %}
 </div>
 
-<div class="row g-3 mb-4">
-  <div class="col col-md-4 col-lg-3">
-    <div class="card {{ card_surface }} h-100">
-      <div class="card-body">
-        <div class="{{ text_muted }} text-uppercase small">Components</div>
-        <div class="display-6">{{ item.components | length }}</div>
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+  <div class="h-full">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4">
+        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-1">{{ _('bia.context_detail.sections.components') }}</div>
+        <div class="text-3xl font-bold">{{ item.components | length }}</div>
       </div>
     </div>
   </div>
-  <div class="col col-md-4 col-lg-3">
-    <div class="card {{ card_surface }} h-100">
-      <div class="card-body d-flex flex-column justify-content-between">
-        <div class="{{ text_muted }} text-uppercase small">{{ _('bia.context_form.fields.tier.label') }}</div>
-        <div class="fs-4">
+  <div class="h-full">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 flex flex-col justify-between h-full">
+        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-1">{{ _('bia.context_form.fields.tier.label') }}</div>
+        <div class="text-2xl font-semibold">
           {% if item.tier %}
             {{ item.tier.get_label() }}
           {% else %}
-            <span class="{{ text_muted }}">-</span>
+            <span class="text-[var(--color-muted)]">-</span>
           {% endif %}
         </div>
       </div>
@@ -140,38 +151,39 @@
   </div>
 </div>
 
-<div class="d-flex flex-column flex-lg-row align-items-start gap-4 mb-4">
-  <div class="flex-grow-1">
-    <div class="card {{ card_surface }} h-100">
-      <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
-        <span>Components</span>
+<div class="flex flex-col lg:flex-row items-start gap-4 mb-6">
+  <div class="grow w-full">
+    <!-- Components -->
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
+        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.components') }}</span>
         {% if not export_mode|default(false) and not item.is_archived %}
-        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
         {% endif %}
       </div>
-      <div class="card-body p-0">
+      <div class="p-0">
         {% if item.components %}
-        <div class="table-responsive">
-          <table class="table {% if is_dark %}table-dark{% endif %} table-hover align-middle mb-0">
-            <thead>
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
+            <thead class="bg-[var(--color-surface)]">
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Owner</th>
-                <th scope="col">Users</th>
-                <th scope="col">Consequences</th>
-                <th scope="col">{{ _('bia.components.table.headers.environments') }}</th>
-                <th scope="col">AI</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Name</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Owner</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Users</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Consequences</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.components.table.headers.environments') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">AI</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-[var(--color-border)]">
               {% for component in item.components %}
               <tr>
-                <td>{{ component.name }}</td>
-                <td>{{ component.info_owner or 'Not set' }}</td>
-                <td>{{ component.user_type or 'Not set' }}</td>
-                <td>{{ component.consequences | length }}</td>
-                <td>
-                  <div class="d-flex flex-wrap gap-1">
+                <td class="px-4 py-3 font-medium">{{ component.name }}</td>
+                <td class="px-4 py-3">{{ component.info_owner or 'Not set' }}</td>
+                <td class="px-4 py-3">{{ component.user_type or 'Not set' }}</td>
+                <td class="px-4 py-3">{{ component.consequences | length }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-1">
                     {% for environment_type in bia_environment_types %}
                       {% set env_assignment = bia_component_environment(component, environment_type) %}
                       {% set environment_label = bia_environment_label(environment_type) %}
@@ -184,7 +196,7 @@
                     {% endfor %}
                   </div>
                 </td>
-                <td>
+                <td class="px-4 py-3">
                   {% set ai_record = ai_identifications.get(component.id) %}
                   {% if ai_record %}
                     {% set ai_label = ai_record.category or 'No AI' %}
@@ -199,237 +211,234 @@
           </table>
         </div>
         {% else %}
-        <div class="p-4 {{ text_muted }}">No components linked yet.</div>
+        <div class="p-6 text-center text-[var(--color-muted)]">No components linked yet.</div>
         {% endif %}
       </div>
     </div>
-    <div class="card {{ card_surface }} mt-4">
-      <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
-        <span>Availability requirements</span>
+
+    <!-- Availability -->
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
+        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.availability') }}</span>
         {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
+        <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
         {% endif %}
       </div>
-      <div class="card-body p-0">
+      <div class="p-0">
         {% if item.components %}
-        <div class="table-responsive">
-          <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
-            <thead>
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
+            <thead class="bg-[var(--color-surface)]">
               <tr>
-                <th scope="col">Component</th>
-                <th scope="col">MTD</th>
-                <th scope="col">RTO</th>
-                <th scope="col">RPO</th>
-                <th scope="col">MAMSL</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Component</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">MTD</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">RTO</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">RPO</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">MAMSL</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-[var(--color-border)]">
               {% for component in item.components %}
               {% set availability = component.availability_requirement %}
               <tr>
-                <td>{{ component.name }}</td>
-                <td>{{ availability.mtd if availability else 'Not set' }}</td>
-                <td>{{ availability.rto if availability else 'Not set' }}</td>
-                <td>{{ availability.rpo if availability else 'Not set' }}</td>
-                <td>{{ availability.masl if availability else 'Not set' }}</td>
+                <td class="px-4 py-3 font-medium">{{ component.name }}</td>
+                <td class="px-4 py-3">{{ availability.mtd if availability else 'Not set' }}</td>
+                <td class="px-4 py-3">{{ availability.rto if availability else 'Not set' }}</td>
+                <td class="px-4 py-3">{{ availability.rpo if availability else 'Not set' }}</td>
+                <td class="px-4 py-3">{{ availability.masl if availability else 'Not set' }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="p-4 {{ text_muted }} mb-0">No availability requirements captured yet.</div>
+          <div class="p-6 text-center text-[var(--color-muted)]">No availability requirements captured yet.</div>
         {% endif %}
       </div>
     </div>
-    <div class="card {{ card_surface }} mt-4">
-      <div class="card-header {{ border_class }}">Dependencies</div>
-      <div class="card-body p-0">
+
+    <!-- Dependencies -->
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
+        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.dependencies') }}</span>
+        {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
+        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        {% endif %}
+      </div>
+      <div class="p-0">
         {% if item.components %}
-        <div class="table-responsive">
-          <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
-            <thead>
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
+            <thead class="bg-[var(--color-surface)]">
               <tr>
-                <th scope="col">Component</th>
-                <th scope="col">IT Systems</th>
-                <th scope="col">Equipment</th>
-                <th scope="col">Suppliers</th>
-                <th scope="col">People</th>
-                <th scope="col">Facilities</th>
-                <th scope="col">Others</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Component</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">IT Systems</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Equipment</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Suppliers</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">People</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Facilities</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Others</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-[var(--color-border)]">
               {% for component in item.components %}
               <tr>
-                <td>{{ component.name }}</td>
-                <td>{{ component.dependencies_it_systems_applications or '-' }}</td>
-                <td>{{ component.dependencies_equipment or '-' }}</td>
-                <td>{{ component.dependencies_suppliers or '-' }}</td>
-                <td>{{ component.dependencies_people or '-' }}</td>
-                <td>{{ component.dependencies_facilities or '-' }}</td>
-                <td>{{ component.dependencies_others or '-' }}</td>
+                <td class="px-4 py-3 font-medium">{{ component.name }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_it_systems_applications or '-' }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_equipment or '-' }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_suppliers or '-' }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_people or '-' }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_facilities or '-' }}</td>
+                <td class="px-4 py-3">{{ component.dependencies_others or '-' }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="p-4 {{ text_muted }} mb-0">No components to show dependencies for.</div>
+          <div class="p-6 text-center text-[var(--color-muted)]">No components to show dependencies for.</div>
         {% endif %}
       </div>
     </div>
+
+    <!-- Consequences -->
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
+        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.consequences') }}</span>
+        {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
+        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        {% endif %}
+      </div>
+      <div class="p-0">
+        {% if consequences %}
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
+            <thead class="bg-[var(--color-surface)]">
+              <tr>
+                <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.component') }}</th>
+                <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.categories') }}</th>
+                <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.security_property') }}</th>
+                <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.worst_case') }}</th>
+                <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.realistic_case') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+              {% for consequence in consequences %}
+              <tr>
+                <td class="px-5 py-3 font-medium">{{ consequence.component.name }}</td>
+                <td class="px-5 py-3">{{ consequence.consequence_category }}</td>
+                <td class="px-5 py-3 uppercase">
+                  {% set prop_val = consequence.security_property %}
+                  <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-600/20 dark:bg-slate-400/10 dark:text-slate-400 dark:ring-slate-400/20">{{ prop_val }}</span>
+                </td>
+                <td class="px-5 py-3">
+                  {% set worst = consequence.consequence_worstcase or 'N/A' %}
+                  <span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span>
+                </td>
+                <td class="px-5 py-3">
+                  {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
+                  <span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="p-6 text-center text-[var(--color-muted)]">No consequences recorded yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
-  <div class="flex-shrink-0 w-100 w-lg-auto" style="min-width: 220px; max-width: 320px;">
-    <div class="card {{ card_surface }} mb-4">
-      <div class="card-header {{ border_class }}">Risk Assessment</div>
-      <div class="card-body d-flex flex-column gap-3">
-        <div class="d-flex justify-content-between align-items-center">
+
+  <div class="shrink-0 w-full lg:w-auto" style="min-width: 280px; max-width: 100%; lg:max-width: 320px;">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-4">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] font-semibold">Risk Assessment</div>
+      <div class="px-5 py-4 flex flex-col gap-4">
+        <div class="flex justify-between items-center">
           <span>Process</span>
-          <span class="badge {{ 'bg-success' if item.risk_assessment_process else 'bg-secondary' }}">
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_process else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
             {{ 'Yes' if item.risk_assessment_process else 'No' }}
           </span>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="flex justify-between items-center">
           <span>People</span>
-          <span class="badge {{ 'bg-success' if item.risk_assessment_human else 'bg-secondary' }}">
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_human else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
             {{ 'Yes' if item.risk_assessment_human else 'No' }}
           </span>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="flex justify-between items-center">
           <span>Technical</span>
-          <span class="badge {{ 'bg-success' if item.risk_assessment_technological else 'bg-secondary' }}">
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_technological else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
             {{ 'Yes' if item.risk_assessment_technological else 'No' }}
           </span>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
-          <span>AI Model Risk</span>
-          <span class="badge {{ 'bg-warning text-dark' if item.ai_model else 'bg-secondary' }}">
-            {{ 'Yes' if item.ai_model else 'No' }}
-          </span>
+      </div>
+    </div>
+
+    {% if item.ai_model and can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
+        <span class="font-semibold">AI Assessment</span>
+        <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-transparent {{ outline_inverse }}">{{ _('Manage') }}</a>
+      </div>
+      <div class="px-5 py-4">
+        {% set high_risk_ai_count = ai_identifications.values() | selectattr('category', 'in', ['High risk', 'Unacceptable risk', 'Critical']) | list | length %}
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-sm">High Risk Components</span>
+          <span class="font-bold {{ 'text-red-500' if high_risk_ai_count > 0 else 'text-[var(--color-muted)]' }}">{{ high_risk_ai_count }}</span>
         </div>
       </div>
     </div>
-    <div class="card {{ card_surface }} mb-4">
-      <div class="card-header {{ border_class }}">Overview</div>
-      <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-sm-5">{{ _('bia.context_form.fields.responsible.label') }}</dt>
-          <dd class="col-sm-7">{{ item.responsible or 'Not set' }}</dd>
-          <dt class="col-sm-5">{{ _('bia.context_form.fields.coordinator.label') }}</dt>
-          <dd class="col-sm-7">{{ item.coordinator or 'Not set' }}</dd>
-          <dt class="col-sm-5">Project leader</dt>
-          <dd class="col-sm-7">{{ item.project_leader or 'Not set' }}</dd>
-          <dt class="col-sm-5">Risk owner</dt>
-          <dd class="col-sm-7">{{ item.risk_owner or 'Not set' }}</dd>
-          <dt class="col-sm-5">Product owner</dt>
-          <dd class="col-sm-7">{{ item.product_owner or 'Not set' }}</dd>
-          <dt class="col-sm-5">Technical admin</dt>
-          <dd class="col-sm-7">{{ item.technical_administrator or 'Not set' }}</dd>
-          <dt class="col-sm-5">Security manager</dt>
-          <dd class="col-sm-7">{{ item.security_manager or 'Not set' }}</dd>
-          <dt class="col-sm-5">Incident contact</dt>
-          <dd class="col-sm-7">{{ item.incident_contact or 'Not set' }}</dd>
-        </dl>
+    {% endif %}
+    
+    <!-- Contact persons & roles -->
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mt-4">
+      <div class="px-5 py-4 border-b border-[var(--color-border)]">
+        <h3 class="font-semibold text-lg m-0">{{ _('bia.context_detail.sections.roles') }}</h3>
       </div>
-    </div>
-    <div class="card {{ card_surface }}">
-      <div class="card-header {{ border_class }}>Summary</div>
-      <div class="card-body">
-        {% if item.summary %}
-          <p class="mb-0">{{ item.summary.content }}</p>
-        {% else %}
-          <p class="{{ text_muted }} mb-0">No summary captured yet. Use the manage summary action to add one.</p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="card {{ card_surface }}">
-  <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
-    <span>Consequences</span>
-    {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-    <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
-    {% endif %}
-  </div>
-  <div class="card-body p-0">
-    {% if consequences %}
-    <div class="table-responsive">
-      <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
-        <thead>
-          <tr>
-            <th scope="col">Component</th>
-            <th scope="col">Category</th>
-            <th scope="col">Security property</th>
-            <th scope="col">Realistic impact</th>
-            <th scope="col">Worst case</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for consequence in consequences %}
-          <tr>
-            <td>{{ consequence.component.name }}</td>
-            <td>{{ consequence.consequence_category or 'Not set' }}</td>
-            <td>{{ consequence.security_property or 'Not set' }}</td>
-            {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
-            {% set worst = consequence.consequence_worstcase or 'N/A' %}
-            <td><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></td>
-            <td><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-      <div class="p-4 {{ text_muted }}">No consequences captured yet. Add consequences via the component manager.</div>
-    {% endif %}
-  </div>
-</div>
-
-<div class="card {{ card_surface }} mt-4">
-  <div class="card-header {{ border_class }} d-flex justify-content-between align-items-center">
-    <span>{{ _('bia.context_detail.ai_risks.title') }}</span>
-    {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-    <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}" class="btn {{ outline_inverse }} btn-sm">Manage</a>
-    {% endif %}
-  </div>
-  <div class="card-body p-0">
-    {% if ai_identifications %}
-    <div class="table-responsive">
-      <table class="table {% if is_dark %}table-dark{% endif %} table-striped align-middle mb-0">
-        <thead>
-          <tr>
-            <th scope="col">{{ _('bia.context_detail.ai_risks.component') }}</th>
-            <th scope="col">{{ _('bia.context_detail.ai_risks.category') }}</th>
-            <th scope="col">{{ _('bia.context_detail.ai_risks.motivation') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% set ns = namespace(has_rows=false) %}
-          {% for component in item.components %}
-            {% set ai_record = ai_identifications.get(component.id) %}
-            {% if ai_record %}
-              {% set ns.has_rows = true %}
+      <div class="p-0">
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
+            <tbody class="divide-y divide-[var(--color-border)]">
               <tr>
-                <td>{{ component.name }}</td>
-                {% set ai_label = ai_record.category or 'No AI' %}
-                <td><span class="bia-ai-badge" data-ai="{{ ai_label | lower }}">{{ ai_label }}</span></td>
-                <td>{{ ai_record.motivatie or _('bia.context_detail.ai_risks.motivation_missing') }}</td>
+                <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.responsible') }}</td>
+                <td class="px-5 py-2 block sm:table-cell">{{ item.responsible or '-' }}</td>
               </tr>
-            {% endif %}
-          {% endfor %}
-          {% if not ns.has_rows %}
-            <tr>
-              <td colspan="3" class="text-center {{ text_muted }} py-4">{{ _('bia.context_detail.ai_risks.empty') }}</td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
+              <tr>
+                <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.coordinator') }}</td>
+                <td class="px-5 py-2 block sm:table-cell">{{ item.coordinator or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.project_leader') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.project_leader or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.product_owner') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.product_owner or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.risk_owner') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.risk_owner or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.technical_administrator') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.technical_administrator or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.security_manager') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.security_manager or '-' }}</td>
+              </tr>
+              <tr>
+                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.incident_contact') }}</td>
+                 <td class="px-5 py-2 block sm:table-cell">{{ item.incident_contact or '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    {% else %}
-      <div class="p-4 {{ text_muted }}">{{ _('bia.context_detail.ai_risks.empty') }}</div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -1,84 +1,29 @@
 {% extends "base.html" %}
-{% from "admin/_risk_form.html" import render_risk_form %}
-{% block title %}{{ _('admin.risks.edit.title', title=risk.title) }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-  <div>
-    <h1 class="mb-1">{{ _('admin.risks.edit.heading', title=risk.title) }}</h1>
-    <p class="text-secondary mb-0">{{ _('admin.risks.edit.subtitle') }}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-light" href="{{ url_for('admin.list_risks') }}">{{ _('admin.risks.link_back_to_list') }}</a>
-    <a class="btn btn-outline-light" href="{{ url_for('admin.risk_thresholds') }}">{{ _('admin.risks.link_thresholds') }}</a>
-    <form method="post" action="{{ url_for('admin.delete_risk', risk_id=risk.id) }}" data-confirm="{{ _('admin.risks.actions.confirm_delete')|e }}" onsubmit="return confirm(this.dataset.confirm);">
-      {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
-      <button type="submit" class="btn btn-outline-danger">{{ _('admin.risks.actions.delete') }}</button>
+<div class="mb-4">
+  <h1 class="text-2xl font-bold mb-1">{{ title }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">
+    {% if risk %}
+        {{ _('admin.risk_edit.subtitle_edit') }}
+    {% else %}
+        {{ _('admin.risk_edit.subtitle_new') }}
+    {% endif %}
+  </p>
+</div>
+
+<div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-6 max-w-4xl">
+    <form method="post" class="flex flex-col gap-6">
+        {{ form.hidden_tag() }}
+        {% include "admin/_risk_form.html" %}
+        
+        <div class="pt-4 flex gap-2 border-t border-[var(--color-border)]">
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+            <a href="{{ url_for('admin.list_risks') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.risk_edit.cancel') }}
+            </a>
+        </div>
     </form>
-  </div>
 </div>
-<div class="row g-4">
-  <div class="col-12 col-lg-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h2 class="h5 mb-3">{{ _('admin.risks.edit.summary.title') }}</h2>
-        <dl class="row mb-0">
-          <dt class="col-6 text-secondary">{{ _('admin.risks.table.score') }}</dt>
-          <dd class="col-6">{{ score }}</dd>
-          <dt class="col-6 text-secondary">{{ _('admin.risks.edit.summary.severity') }}</dt>
-          <dd class="col-6">
-            {% if severity %}
-              <span class="badge bg-info text-dark">{{ _('risk.severity.' ~ severity.value) }}</span>
-            {% else %}
-              <span class="badge bg-secondary">{{ _('admin.risks.labels.unscored') }}</span>
-            {% endif %}
-          </dd>
-          <dt class="col-6 text-secondary">{{ _('admin.risks.table.discovered_on_label') }}</dt>
-          <dd class="col-6">{{ risk.discovered_on or _('admin.risks.labels.unknown_date') }}</dd>
-        </dl>
-        <hr>
-        <h3 class="h6 text-uppercase text-secondary">{{ _('admin.risks.thresholds.title') }}</h3>
-        <ul class="list-unstyled mb-0 small">
-          {% for threshold in thresholds %}
-            <li>{{ _('risk.severity.' ~ threshold.severity.value) }} · {{ _('admin.risks.thresholds.range', minimum=threshold.min_score, maximum=threshold.max_score) }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-lg-8">
-    <div class="card h-100">
-      <div class="card-body">
-        <h2 class="h5 mb-3">{{ _('admin.risks.edit.form_title') }}</h2>
-        <form method="post">
-          {{ render_risk_form(form, component_choices_available) }}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
-{% block extra_js %}
-<script>
-  (function () {
-    var treatmentField = document.getElementById('{{ form.treatment.id }}');
-    var wrapper = document.querySelector('[data-csa-control-wrapper]');
-    if (!treatmentField || !wrapper) {
-      return;
-    }
-    function toggleControlField() {
-      var requires = treatmentField.value === '{{ RiskTreatmentOption.MITIGATE.value if RiskTreatmentOption is defined else "mitigate" }}';
-      if (requires) {
-        wrapper.classList.remove('d-none');
-      } else {
-        wrapper.classList.add('d-none');
-        var select = wrapper.querySelector('select');
-        if (select) {
-          select.value = '';
-        }
-      }
-    }
-    treatmentField.addEventListener('change', toggleControlField);
-    toggleControlField();
-  })();
-</script>
 {% endblock %}

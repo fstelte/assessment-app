@@ -1,100 +1,15 @@
-<div class="modal" id="ai-identification-modal" tabindex="-1" aria-labelledby="ai-identification-label" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content bg-dark border-secondary">
-      <div class="modal-header border-secondary">
-        <h2 class="modal-title h5" id="ai-identification-label">{{ _('bia.components.modal.title') }}</h2>
-        <button type="button" class="btn-close btn-close-white" data-modal-close aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="ai-identification-form" class="vstack gap-3">
-          <input type="hidden" id="ai-component-id" name="component_id">
-          <div>
-            <label class="form-label" for="ai-category">{{ _('bia.components.modal.category') }}</label>
-            <select id="ai-category" name="category" class="form-select">
-              <option value="No AI">{{ _('bia.components.ai.options.no_ai') }}</option>
-              <option value="Unacceptable risk">{{ _('bia.components.ai.options.unacceptable') }}</option>
-              <option value="High risk">{{ _('bia.components.ai.options.high') }}</option>
-              <option value="Limited risk">{{ _('bia.components.ai.options.limited') }}</option>
-              <option value="Minimal risk">{{ _('bia.components.ai.options.minimal') }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="ai-motivation">{{ _('bia.components.modal.motivation') }}</label>
-            <textarea id="ai-motivation" name="motivatie" class="form-control" rows="3" placeholder="{{ _('bia.components.modal.placeholder') }}"></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-secondary" data-modal-close>{{ _('bia.components.modal.buttons.cancel') }}</button>
-        <button type="button" class="btn btn-primary" data-ai-save>{{ _('bia.components.modal.buttons.save') }}</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script nonce="{{ csp_nonce }}">
 (function () {
   const addForm = document.getElementById('add-component-form');
   const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
   const csrfToken = csrfTokenInput ? csrfTokenInput.value : null;
-  const aiModalElement = document.getElementById('ai-identification-modal');
-  const aiForm = document.getElementById('ai-identification-form');
-  const aiComponentIdField = document.getElementById('ai-component-id');
-  const aiCategoryField = document.getElementById('ai-category');
-  const aiMotivationField = document.getElementById('ai-motivation');
-  const aiSaveTrigger = document.querySelector('[data-ai-save]');
   const i18n = {
     errorUnexpected: "{{ _('bia.components.messages.error_unexpected') }}",
     validationFailed: "{{ _('bia.components.messages.validation_failed') }}",
-    componentMissing: "{{ _('bia.components.messages.component_reference_missing') }}",
-    saveFailed: "{{ _('bia.components.messages.save_failed') }}",
     addFailed: "{{ _('bia.components.messages.add_failed') }}",
     deleteFailed: "{{ _('bia.components.messages.delete_failed') }}",
     confirmDelete: "{{ _('bia.components.table.confirm_delete') }}"
   };
-  const aiRoutes = {
-    detail: '{{ url_for("bia.get_ai_identification", component_id=0)[:-1] }}',
-    upsert: '{{ url_for("bia.add_ai_identification", component_id=0)[:-1] }}'
-  };
-  const ui = window.tailwindUI || {};
-  const bootstrapModal = window.bootstrap?.Modal;
-  const openModal = (modalElement) => {
-    if (!modalElement) {
-      return;
-    }
-    if (typeof ui.openModal === 'function') {
-      ui.openModal(modalElement);
-      return;
-    }
-    if (bootstrapModal) {
-      bootstrapModal.getOrCreateInstance(modalElement).show();
-      return;
-    }
-    modalElement.removeAttribute('aria-hidden');
-    modalElement.style.display = 'block';
-    modalElement.classList.add('show');
-  };
-  const closeModal = (modalElement) => {
-    if (!modalElement) {
-      return;
-    }
-    if (typeof ui.closeModal === 'function') {
-      ui.closeModal(modalElement);
-      return;
-    }
-    if (bootstrapModal) {
-      bootstrapModal.getOrCreateInstance(modalElement).hide();
-      return;
-    }
-    modalElement.setAttribute('aria-hidden', 'true');
-    modalElement.style.display = 'none';
-    modalElement.classList.remove('show');
-  };
-  document.querySelectorAll('[data-modal-close]').forEach((button) => {
-    button.addEventListener('click', () => {
-      closeModal(button.closest('.modal'));
-    });
-  });
   const handleErrors = (messages) => {
     if (!messages) {
       window.alert(i18n.errorUnexpected);
@@ -103,99 +18,6 @@
     const details = Object.entries(messages).map(([field, errs]) => `${field}: ${errs.join(', ')}`).join('\n');
     window.alert(`${i18n.validationFailed}\n${details}`);
   };
-
-  const openAiModal = (componentId) => {
-    if (!aiComponentIdField) {
-      return;
-    }
-    aiComponentIdField.value = componentId;
-    const targetUrl = aiRoutes.detail + componentId;
-    fetch(targetUrl, { credentials: 'same-origin' })
-      .then((response) => {
-        if (response.status === 404) {
-          return { category: 'No AI', motivatie: '' };
-        }
-        if (!response.ok) {
-          throw new Error('Lookup failed');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (aiCategoryField) {
-          aiCategoryField.value = data.category || 'No AI';
-        }
-        if (aiMotivationField) {
-          aiMotivationField.value = data.motivatie || '';
-        }
-        openModal(aiModalElement);
-      })
-      .catch(() => {
-        if (aiCategoryField) {
-          aiCategoryField.value = 'No AI';
-        }
-        if (aiMotivationField) {
-          aiMotivationField.value = '';
-        }
-        openModal(aiModalElement);
-      });
-  };
-
-  document.querySelectorAll('[data-ai-manage]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const componentId = button.getAttribute('data-component-id');
-      if (componentId) {
-        openAiModal(componentId);
-      }
-    });
-  });
-
-  const resetAiForm = () => {
-    if (aiForm) {
-      aiForm.reset();
-    }
-  };
-
-  aiModalElement?.addEventListener('twui:modal:close', resetAiForm);
-  aiModalElement?.addEventListener('hidden.bs.modal', resetAiForm);
-
-  aiSaveTrigger?.addEventListener('click', () => {
-    if (!aiForm || !aiComponentIdField) {
-      return;
-    }
-    const componentId = aiComponentIdField.value;
-    if (!componentId) {
-      window.alert(i18n.componentMissing);
-      return;
-    }
-    const formData = new FormData();
-    if (csrfToken) {
-      formData.append('csrf_token', csrfToken);
-    }
-    formData.append('category', aiCategoryField ? aiCategoryField.value : 'No AI');
-    formData.append('motivatie', aiMotivationField ? aiMotivationField.value : '');
-
-    fetch(aiRoutes.upsert + componentId, {
-      method: 'POST',
-      body: formData,
-      credentials: 'same-origin',
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Save failed');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (!data.success) {
-          throw new Error('Server rejected the request');
-        }
-        closeModal(aiModalElement);
-        window.location.reload();
-      })
-      .catch(() => {
-        window.alert(i18n.saveFailed);
-      });
-  });
 
   if (addForm) {
     addForm.addEventListener('submit', function (event) {

@@ -14,16 +14,16 @@
   </div>
   
   <dl class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Assessments Started</dt>
+    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
+      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.started") }}</dt>
       <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ assessments_started }}</dd>
     </div>
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Assessments Finished</dt>
+    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
+      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.finished") }}</dt>
       <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ assessments_finished }}</dd>
     </div>
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">Average Maturity</dt>
+    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
+      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.average_maturity") }}</dt>
       <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ average_maturity }}</dd>
     </div>
   </dl>
@@ -31,7 +31,7 @@
   <div class="mt-8 flex flex-col">
     <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+        <div class="overflow-hidden shadow-card ring-1 ring-black ring-opacity-5 md:rounded-lg">
           <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:!bg-gray-800">
               <tr>

@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block title %}{{ assessment.title }}{% endblock %}
 {% block content %}
-<div class="container py-4">
-  <a href="{{ url_for('dpia.dashboard') }}" class="text-secondary text-decoration-none">&larr; {{ _('dpia.start.back') }}</a>
-  <div class="card bg-dark border-secondary mt-3">
-    <div class="card-header border-secondary">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 mx-auto max-w-5xl px-4 sm:px-6 py-4">
+  <a href="{{ url_for('dpia.dashboard') }}" class="text-[var(--color-muted)] no-underline">&larr; {{ _('dpia.start.back') }}</a>
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)] mt-3">
+    <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)]">
       <h1 class="h4 mb-0">{{ assessment.title }}</h1>
-      <p class="text-secondary mb-0">{{ _('dpia.dashboard.placeholder') }}</p>
+      <p class="text-[var(--color-muted)] mb-0">{{ _('dpia.dashboard.placeholder') }}</p>
     </div>
-    <div class="card-body">
-      <dl class="row mb-0">
-        <dt class="col-sm-3">{{ _('bia.components.table.headers.component') }}</dt>
-        <dd class="col-sm-9">{{ assessment.component.name }}</dd>
-        <dt class="col-sm-3">{{ _('dpia.start.subheading') }}</dt>
-        <dd class="col-sm-9">{{ assessment.responsible_name }}</dd>
+    <div class="px-5 py-4">
+      <dl class="flex flex-wrap -mx-3 mb-0">
+        <dt class="sm:w-1/4 px-3">{{ _('bia.components.table.headers.component') }}</dt>
+        <dd class="sm:w-3/4 px-3">{{ assessment.component.name }}</dd>
+        <dt class="sm:w-1/4 px-3">{{ _('dpia.start.subheading') }}</dt>
+        <dd class="sm:w-3/4 px-3">{{ assessment.responsible_name }}</dd>
       </dl>
     </div>
   </div>

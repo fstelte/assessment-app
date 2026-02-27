@@ -1,48 +1,44 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.risks.thresholds.page_title') }}{% endblock %}
+{% block title %}{{ _('admin.risk_thresholds.title') }}{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-  <div>
-    <h1 class="mb-1">{{ _('admin.risks.thresholds.heading') }}</h1>
-    <p class="text-secondary mb-0">{{ _('admin.risks.thresholds.subtitle') }}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-light" href="{{ url_for('admin.list_risks') }}">{{ _('admin.risks.link_back_to_list') }}</a>
-  </div>
+<div class="mb-5">
+  <h1 class="text-2xl font-bold mb-1">{{ _('admin.risk_thresholds.heading') }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.risk_thresholds.subtitle') }}</p>
 </div>
-<div class="row g-4">
-  {% for threshold in thresholds %}
-    {% set form = forms.get(threshold.id) %}
-    <div class="col-12 col-md-6 col-lg-3">
-      <div class="card h-100">
-        <div class="card-body">
-          <h2 class="h5 mb-1">{{ _('risk.severity.' ~ threshold.severity.value) }}</h2>
-          <p class="text-secondary small mb-3">{{ _('admin.risks.thresholds.range', minimum=threshold.min_score, maximum=threshold.max_score) }}</p>
-          <form method="post">
-            {% if form %}
-              {{ form.hidden_tag() }}
-              <div class="mb-3">
-                {{ form.min_score.label(class="form-label") }}
-                {{ form.min_score(class="form-control", min=0) }}
-                {% for error in form.min_score.errors %}
-                  <div class="invalid-feedback d-block">{{ error }}</div>
+
+<div class="flex flex-col gap-6 max-w-lg">
+    {% for threshold in thresholds %}
+    <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-6">
+        <h2 class="text-lg font-semibold mb-4 text-[var(--color-text)]">{{ _('risk.severity.' + threshold.severity.value) }}</h2>
+        {% set form = forms[threshold.id] %}
+        <form method="post" class="flex flex-col gap-4">
+            {{ form.hidden_tag() }}
+            
+            {% for field in form if field.name != 'csrf_token' and field.name != 'submit' %}
+            <div class="flex flex-col gap-1">
+                <label class="text-sm font-medium text-[var(--color-text)]">{{ field.label.text }}</label>
+                {{ field(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+                {% if field.description %}
+                    <p class="text-xs text-[var(--color-muted)]">{{ field.description }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                    <span class="text-red-400 text-xs">{{ error }}</span>
                 {% endfor %}
-              </div>
-              <div class="mb-3">
-                {{ form.max_score.label(class="form-label") }}
-                {{ form.max_score(class="form-control", min=0) }}
-                {% for error in form.max_score.errors %}
-                  <div class="invalid-feedback d-block">{{ error }}</div>
-                {% endfor %}
-              </div>
-              <div class="d-grid">
-                {{ form.submit(class="btn btn-primary") }}
-              </div>
-            {% endif %}
-          </form>
-        </div>
-      </div>
+            </div>
+            {% endfor %}
+            
+            <div class="pt-4 flex gap-2">
+                {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+            </div>
+        </form>
     </div>
-  {% endfor %}
+    {% endfor %}
+
+    <div class="flex gap-2">
+        <a href="{{ url_for('admin.list_risks') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+            {{ _('admin.risk_thresholds.cancel') }}
+        </a>
+    </div>
 </div>
 {% endblock %}

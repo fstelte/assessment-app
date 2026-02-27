@@ -4,95 +4,130 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BIA Report – {{ item.name }}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <style nonce="{{ csp_nonce }}">
-      body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    <style nonce="{{ csp_nonce }}">
+      body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #1a202c; color: #cbd5e0; }
+      @media print {
+        body { background-color: white; color: black; }
+        .no-print { display: none; }
+      }
       .badge-impact { text-transform: capitalize; }
-      .section-card { margin-bottom: 1.5rem; }
+      .bg-card { background-color: #2d3748; }
+      .border-card { border-color: #4a5568; }
     </style>
+      {% if export_mode and export_css %}
+    <style nonce="{{ csp_nonce }}">
+      {{ export_css|safe }}
+    </style>
+    {% endif %}
   </head>
-  <body class="bg-dark text-light">
-    <div class="container my-5">
-      <header class="mb-4">
-        <h1 class="display-6">Business Impact Analysis</h1>
-        <p class="text-secondary mb-0">Report generated from the live application data.</p>
-      </header>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary shadow">
-          <div class="card-header border-secondary">
-            <h2 class="h4 mb-0">{{ item.name }}</h2>
-          </div>
-          <div class="card-body row g-4">
-            <div class="col-lg-8">
-              <h3 class="h5">Executive summary</h3>
-              <p class="mb-0">{{ item.summary.content if item.summary else "No summary provided." }}</p>
+  <body class="p-8">
+    <div class="max-w-5xl mx-auto">
+      <header class="mb-8 border-b border-gray-700 pb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                 <h1 class="text-4xl font-bold mb-1">Business Impact Analysis</h1>
+                 <p class="text-gray-500 mb-0">{{ _('bia.export_item.generated_note') }}</p>
             </div>
-            <div class="col-lg-4">
-              <dl class="row mb-0">
-                <dt class="col-sm-5">Owner</dt>
-                <dd class="col-sm-7">{{ item.responsible or 'N/A' }}</dd>
-                <dt class="col-sm-5">Coordinator</dt>
-                <dd class="col-sm-7">{{ item.coordinator or 'N/A' }}</dd>
-                <dt class="col-sm-5">Project lead</dt>
-                <dd class="col-sm-7">{{ item.project_leader or 'N/A' }}</dd>
-                <dt class="col-sm-5">Product owner</dt>
-                <dd class="col-sm-7">{{ item.product_owner or 'N/A' }}</dd>
-                <dt class="col-sm-5">Risk owner</dt>
-                <dd class="col-sm-7">{{ item.risk_owner or 'N/A' }}</dd>
-              </dl>
+            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Print Report
+            </button>
+        </div>
+      </header>
+      <section class="mb-8">
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-600 bg-gray-700">
+            <h2 class="text-xl font-bold text-white mb-0">{{ item.name }}</h2>
+          </div>
+          <div class="p-6">
+            <div class="flex flex-wrap -mx-4">
+              <div class="w-full lg:w-2/3 px-4 mb-6 lg:mb-0">
+                <h3 class="text-lg font-semibold mb-2 text-white">Executive summary</h3>
+                <div class="prose prose-invert max-w-none text-gray-300">
+                    {{ item.summary.content|default("No summary provided.", true)|safe }}
+                </div>
+              </div>
+              <div class="w-full lg:w-1/3 px-4">
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between border-b border-gray-700 pb-2">
+                        <dt class="text-gray-400">{{ _('bia.export_item.fields.owner') }}</dt>
+                        <dd class="font-medium text-white">{{ item.responsible or 'N/A' }}</dd>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-700 pb-2">
+                        <dt class="text-gray-400">{{ _('bia.export_item.fields.coordinator') }}</dt>
+                        <dd class="font-medium text-white">{{ item.coordinator or 'N/A' }}</dd>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-700 pb-2">
+                        <dt class="text-gray-400">{{ _('bia.export_item.fields.project_lead') }}</dt>
+                        <dd class="font-medium text-white">{{ item.project_leader or 'N/A' }}</dd>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-700 pb-2">
+                        <dt class="text-gray-400">{{ _('bia.export_item.fields.product_owner') }}</dt>
+                        <dd class="font-medium text-white">{{ item.product_owner or 'N/A' }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-400">{{ _('bia.export_item.fields.risk_owner') }}</dt>
+                        <dd class="font-medium text-white">{{ item.risk_owner or 'N/A' }}</dd>
+                    </div>
+                    </dl>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary">
-          <div class="card-header border-secondary">
-            <h2 class="h5 mb-0">Scope & context</h2>
+      <section class="mb-8">
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-600 bg-gray-700">
+            <h2 class="text-lg font-bold text-white mb-0">Scope & context</h2>
           </div>
-          <div class="card-body">
-            <div class="row g-4">
-              <div class="col-lg-6">
-                <h3 class="h6 text-secondary text-uppercase">Service description</h3>
-                <p>{{ item.service_description or 'N/A' }}</p>
-                <h3 class="h6 text-secondary text-uppercase">Scope</h3>
-                <p>{{ item.scope_description or 'N/A' }}</p>
+          <div class="p-6">
+            <div class="flex flex-wrap -mx-4">
+              <div class="w-full lg:w-1/2 px-4 mb-6 lg:mb-0">
+                <div class="mb-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Service description</h3>
+                    <p class="text-gray-300">{{ item.service_description or 'N/A' }}</p>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Scope</h3>
+                    <p class="text-gray-300">{{ item.scope_description or 'N/A' }}</p>
+                </div>
               </div>
-              <div class="col-lg-6">
-                <table class="table table-dark table-striped mb-0">
-                  <tbody>
+              <div class="w-full lg:w-1/2 px-4">
+                <table class="min-w-full divide-y divide-gray-700">
+                  <tbody class="divide-y divide-gray-700">
                     <tr>
-                      <th scope="row">Knowledge</th>
-                      <td>{{ item.knowledge or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.knowledge') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.knowledge or 'N/A' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Interfaces</th>
-                      <td>{{ item.interfaces or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.interfaces') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.interfaces or 'N/A' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Mission critical</th>
-                      <td>{{ item.mission_critical or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.mission_critical') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.mission_critical or 'N/A' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Support contracts</th>
-                      <td>{{ item.support_contracts or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.support_contracts') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.support_contracts or 'N/A' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Security supplier</th>
-                      <td>{{ item.security_supplier or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.security_supplier') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.security_supplier or 'N/A' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Users</th>
-                      <td>{{ item.user_amount or 'Unknown' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.users') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.user_amount or 'Unknown' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">AI model in scope</th>
-                      <td>{{ 'Yes' if item.ai_model else 'No' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.ai_model_in_scope') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ 'Yes' if item.ai_model else 'No' }}</td>
                     </tr>
                     <tr>
-                      <th scope="row">Last update</th>
-                      <td>{{ item.last_update or 'N/A' }}</td>
+                      <th scope="row" class="text-left py-2 font-medium text-gray-400">{{ _('bia.export_item.fields.last_update') }}</th>
+                      <td class="text-right py-2 text-gray-300">{{ item.last_update or 'N/A' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -101,107 +136,110 @@
           </div>
         </div>
       </section>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary">
-          <div class="card-header border-secondary">
-            <h2 class="h5 mb-0">Risk assessments</h2>
-          </div>
-          <div class="card-body">
-            <div class="row g-4">
-              <div class="col-lg-4">
-                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
-                  <div class="card-body text-center">
-                    <div class="text-secondary text-uppercase mb-2">People</div>
-                    <span class="badge {{ 'text-bg-success' if item.risk_assessment_human else 'text-bg-secondary' }}">{{ 'Required' if item.risk_assessment_human else 'Not required' }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-4">
-                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
-                  <div class="card-body text-center">
-                    <div class="text-secondary text-uppercase mb-2">Process</div>
-                    <span class="badge {{ 'text-bg-success' if item.risk_assessment_process else 'text-bg-secondary' }}">{{ 'Required' if item.risk_assessment_process else 'Not required' }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-4">
-                <div class="card bg-secondary bg-opacity-25 border-0 h-100">
-                  <div class="card-body text-center">
-                    <div class="text-secondary text-uppercase mb-2">Technology</div>
-                    <span class="badge {{ 'text-bg-success' if item.risk_assessment_technological else 'text-bg-secondary' }}">{{ 'Required' if item.risk_assessment_technological else 'Not required' }}</span>
-                  </div>
-                </div>
-              </div>
+      <section class="mb-8">
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-600 bg-gray-700">
+                <h2 class="text-lg font-bold text-white mb-0">Risk assessments</h2>
             </div>
-            <div class="mt-4">
-              <h3 class="h6 text-secondary text-uppercase">AI identification</h3>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- People -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">People</div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 text-green-800' if item.risk_assessment_human else 'bg-gray-100 text-gray-800' }}">
+                        {{ 'Required' if item.risk_assessment_human else 'Not required' }}
+                    </span>
+                </div>
+                <!-- Process -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Process</div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 text-green-800' if item.risk_assessment_process else 'bg-gray-100 text-gray-800' }}">
+                        {{ 'Required' if item.risk_assessment_process else 'Not required' }}
+                    </span>
+                </div>
+                <!-- Technology -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+                    <div class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Technology</div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 text-green-800' if item.risk_assessment_technological else 'bg-gray-100 text-gray-800' }}">
+                        {{ 'Required' if item.risk_assessment_technological else 'Not required' }}
+                    </span>
+                </div>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3">AI identification</h3>
               {% if ai_identifications %}
-                <ul class="list-group list-group-flush">
-                  {% for component in item.components %}
-                    {% set ai = ai_identifications.get(component.id) %}
-                    {% if ai %}
-                    <li class="list-group-item bg-dark text-light border-secondary">
-                      <div class="d-flex justify-content-between">
-                        <span><strong>{{ component.name }}</strong></span>
-                        <span class="badge text-bg-info">{{ ai.category }}</span>
-                      </div>
-                      <p class="mb-0 small text-secondary">{{ ai.motivatie or 'No details provided.' }}</p>
-                    </li>
-                    {% endif %}
-                  {% endfor %}
-                </ul>
+                <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                    <ul class="divide-y divide-gray-700">
+                    {% for component in item.components %}
+                        {% set ai = ai_identifications.get(component.id) %}
+                        {% if ai %}
+                        <li class="px-4 py-3">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-semibold text-white">{{ component.name }}</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">{{ ai.category }}</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-0">{{ ai.motivatie or 'No details provided.' }}</p>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    </ul>
+                </div>
               {% else %}
-                <p class="text-secondary mb-0">No AI risks were identified for the linked components.</p>
+                <p class="text-gray-500 italic">{{ _('bia.export_item.empty.ai_risks') }}</p>
               {% endif %}
             </div>
           </div>
         </div>
       </section>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary">
-          <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-            <h2 class="h5 mb-0">Consequences</h2>
-            <div class="d-flex gap-2">
-              {% for prop, label in {'confidentiality': 'Confidentiality', 'integrity': 'Integrity', 'availability': 'Availability'}.items() %}
-              {% set value = max_cia_impact.get(prop) %}
-              <span class="badge badge-impact {{ bia_get_impact_color(value) }}">{{ label[0] }}: {{ value or 'n/a' }}</span>
-              {% endfor %}
+      <section class="mb-8">
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-600 bg-gray-700 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white mb-0">{{ _('bia.context_detail.sections.consequences') }}</h2>
+                <div class="flex gap-2 text-xs">
+                    {% for prop, label in {'confidentiality': 'Confidentiality', 'integrity': 'Integrity', 'availability': 'Availability'}.items() %}
+                    {% set value = max_cia_impact.get(prop) %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-white border border-gray-500 {{ bia_get_impact_color(value) }} opacity-75">
+                         {{ label[0] }}: {{ value or 'n/a' }}
+                    </span>
+                    {% endfor %}
+                </div>
             </div>
-          </div>
-          <div class="card-body">
+          <div class="p-0">
             {% if consequences %}
-            <div class="table-responsive">
-              <table class="table table-dark table-striped align-middle">
-                <thead>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-800">
                   <tr>
-                    <th scope="col">Component</th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Security property</th>
-                    <th scope="col">Worst case</th>
-                    <th scope="col">Realistic case</th>
-                    <th scope="col">CIA impact (realistic)</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.component') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.category') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.security_property') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.worst_case') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.realistic_case') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.cia_impact') }}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-card divide-y divide-gray-700">
                   {% for consequence in consequences %}
                   <tr>
-                    <td>{{ consequence.component.name }}</td>
-                    <td>{{ consequence.consequence_category }}</td>
-                    <td class="text-uppercase">{{ consequence.security_property }}</td>
-                    <td>
-                      {% set worst = consequence.consequence_worstcase or 'N/A' %}
-                      <span class="badge badge-impact {{ bia_get_impact_color(worst) }}">{{ worst }}</span>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">{{ consequence.component.name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-300">
+                        <div class="max-w-xs break-words">
+                            {{ consequence.consequence_category }}
+                        </div>
                     </td>
-                    <td>
-                      {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
-                      <span class="badge badge-impact {{ bia_get_impact_color(realistic) }}">{{ realistic }}</span>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 uppercase">{{ consequence.security_property }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {{ consequence.consequence_worstcase or 'N/A' }}
                     </td>
-                    <td>
-                      C: <span class="badge badge-impact {{ bia_get_impact_color(bia_get_cia_impact(consequence, 'confidentiality')) }}">{{ bia_get_cia_impact(consequence, 'confidentiality') }}</span><br>
-                      I: <span class="badge badge-impact {{ bia_get_impact_color(bia_get_cia_impact(consequence, 'integrity')) }}">{{ bia_get_cia_impact(consequence, 'integrity') }}</span><br>
-                      A: <span class="badge badge-impact {{ bia_get_impact_color(bia_get_cia_impact(consequence, 'availability')) }}">{{ bia_get_cia_impact(consequence, 'availability') }}</span>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                       {{ consequence.consequence_realisticcase or 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-400">
+                      <div class="flex flex-col gap-1">
+                        <span>C: {{ bia_get_cia_impact(consequence, 'confidentiality') }}</span>
+                        <span>I: {{ bia_get_cia_impact(consequence, 'integrity') }}</span>
+                        <span>A: {{ bia_get_cia_impact(consequence, 'availability') }}</span>
+                      </div>
                     </td>
                   </tr>
                   {% endfor %}
@@ -209,90 +247,88 @@
               </table>
             </div>
             {% else %}
-            <p class="text-secondary mb-0">No consequences have been recorded for this BIA.</p>
+            <div class="p-6 text-center text-gray-500 italic">{{ _('bia.export_item.empty.consequences') }}</div>
             {% endif %}
           </div>
         </div>
       </section>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary">
-          <div class="card-header border-secondary">
-            <h2 class="h5 mb-0">Components</h2>
-          </div>
-          <div class="card-body">
+      <section class="mb-8">
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-600 bg-gray-700">
+                <h2 class="text-lg font-bold text-white mb-0">{{ _('bia.context_detail.sections.components') }}</h2>
+            </div>
+          <div class="p-0">
             {% if item.components %}
-            <div class="table-responsive">
-              <table class="table table-dark table-striped align-middle">
-                <thead>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-800">
                   <tr>
-                    <th scope="col">Component</th>
-                    <th scope="col">Information type</th>
-                    <th scope="col">Authentication</th>
-                    <th scope="col">Owner</th>
-                    <th scope="col">Description</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.component') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.information_type') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.authentication') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.context_detail.table.owner') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.description') }}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-card divide-y divide-gray-700">
                   {% for component in item.components %}
                   <tr>
-                    <td>{{ component.name }}</td>
-                    <td>{{ component.info_type or 'N/A' }}</td>
-                    <td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ component.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.info_type or 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {% set auth_label = bia_component_authentication(component) %}
                       {% if auth_label %}
                       <div>{{ auth_label }}</div>
                       {% if component.authentication_method %}
-                      <div class="text-secondary small">{{ component.authentication_method.slug }}</div>
+                      <div class="text-gray-500 text-xs">{{ component.authentication_method.slug }}</div>
                       {% endif %}
                       {% else %}
                       N/A
                       {% endif %}
                     </td>
-                    <td>{{ component.info_owner or 'N/A' }}</td>
-                    <td>{{ component.description or 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.info_owner or 'N/A' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate" title="{{ component.description }}">{{ component.description or 'N/A' }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
             </div>
             {% else %}
-            <p class="text-secondary mb-0">No components are linked to this BIA.</p>
+            <div class="p-6 text-center text-gray-500 italic">{{ _('bia.export_item.empty.components') }}</div>
             {% endif %}
           </div>
         </div>
       </section>
-
-      <section class="section-card">
-        <div class="card bg-dark border-secondary">
-          <div class="card-header border-secondary">
-            <h2 class="h5 mb-0">Availability requirements</h2>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-dark table-striped align-middle">
-                <thead>
+      <section>
+        <div class="bg-card border border-card rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-600 bg-gray-700">
+                <h2 class="text-lg font-bold text-white mb-0">{{ _('bia.context_detail.sections.availability') }}</h2>
+            </div>
+          <div class="p-0">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-800">
                   <tr>
-                    <th scope="col">Component</th>
-                    <th scope="col">MTD</th>
-                    <th scope="col">RTO</th>
-                    <th scope="col">RPO</th>
-                    <th scope="col">MASL</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.component') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.mtd') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.rto') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.rpo') }}</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ _('bia.export_item.table.masl') }}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-card divide-y divide-gray-700">
                   {% for component in item.components %}
                   {% set availability = component.availability_requirement %}
                   <tr>
-                    <td>{{ component.name }}</td>
-                    <td>{{ availability.mtd if availability else 'N/A' }}</td>
-                    <td>{{ availability.rto if availability else 'N/A' }}</td>
-                    <td>{{ availability.rpo if availability else 'N/A' }}</td>
-                    <td>{{ availability.masl if availability else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ component.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.mtd if availability else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.rto if availability else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.rpo if availability else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.masl if availability else 'N/A' }}</td>
                   </tr>
                   {% else %}
                   <tr>
-                    <td colspan="5" class="text-center text-secondary">No components to display.</td>
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500 italic">{{ _('bia.export_item.empty.components_table') }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>

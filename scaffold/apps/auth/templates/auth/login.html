@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% block title %}{{ _('auth.login.title') }}{% endblock %}
-{% block main_container_class %}container-fluid p-0{% endblock %}
+{% block main_container_class %}w-full p-0{% endblock %}
 
 {% block content %}
-<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: var(--bs-tertiary-bg);">
-    <div class="w-100" style="max-width: 420px;">
+<div class="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
+    <div class="w-full max-w-sm">
         
         {# Language Selector #}
         {% if available_locales %}
-            <div class="d-flex justify-content-end mb-3 px-3">
-                <form method="get" class="d-inline-flex align-items-center gap-2">
+            <div class="flex justify-end mb-3">
+                <form method="get" class="inline-flex items-center gap-2">
                     {% for key, value in request.args.items() %}
                         {% if key != 'lang' %}
                             <input type="hidden" name="{{ key }}" value="{{ value }}">
                         {% endif %}
                     {% endfor %}
-                    <select id="login-language-select" name="lang" class="form-select form-select-sm w-auto border-0 bg-transparent text-secondary shadow-none cursor-pointer" aria-label="{{ _('app.language.label') }}">
+                    <select id="login-language-select" name="lang" class="w-auto bg-transparent text-[var(--color-muted)] border-0 shadow-none cursor-pointer focus:ring-0 text-sm" aria-label="{{ _('app.language.label') }}">
                         {% for locale in available_locales %}
                             <option value="{{ locale }}" {% if locale == current_locale %}selected{% endif %}>{{ _('app.language.option.' ~ locale) }}</option>
                         {% endfor %}
@@ -24,52 +24,52 @@
             </div>
         {% endif %}
 
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="card-body p-4 p-md-5">
-                <div class="text-center mb-4">
-                    <h1 class="h3 fw-bold mb-1">{{ _('auth.login.heading') }}</h1>
-                    <p class="text-muted small">{{ _('app.home.subtitle') }}</p>
+        <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-2xl shadow-card overflow-hidden w-full max-w-sm">
+            <div class="p-6 sm:p-8">
+                <div class="text-center mb-6">
+                    <h1 class="text-xl font-bold mb-1">{{ _('auth.login.heading') }}</h1>
+                    <p class="text-[var(--color-muted)] text-sm">{{ _('app.home.subtitle') }}</p>
                 </div>
 
                 {% set show_password = password_login_enabled and form is not none %}
                 
                 {% if not saml_login_enabled and not show_password %}
-                    <div class="alert alert-danger rounded-3 text-sm" role="status">
+                    <div class="rounded-xl px-4 py-3 text-sm border bg-red-500/10 border-red-400/40 text-red-200 mb-4" role="status">
                         {{ _('auth.login.saml_unavailable') }}
                     </div>
                 {% endif %}
 
                 {% if show_password %}
-                    <form method="post" novalidate>
+                    <form method="post" novalidate class="space-y-4">
                         {{ form.hidden_tag() }}
                         {% from "partials/forms.html" import render_field_with_help %}
                         
-                        {{ render_field_with_help(form.email, class="form-control form-control-lg bg-body-tertiary border-0", placeholder=_('auth.login.fields.email'), autocomplete="username") }}
+                        {{ render_field_with_help(form.email, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('auth.login.fields.email'), autocomplete="username") }}
                         
-                        {{ render_field_with_help(form.password, class="form-control form-control-lg bg-body-tertiary border-0", placeholder=_('auth.login.fields.password'), autocomplete="current-password") }}
+                        {{ render_field_with_help(form.password, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder=_('auth.login.fields.password'), autocomplete="current-password") }}
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                {{ form.remember_me(class="form-check-input", id="remember-me") }}
-                                {{ form.remember_me.label(class="form-check-label small text-secondary", for="remember-me") }}
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                {{ form.remember_me(class="w-4 h-4 accent-primary-500 rounded border-[var(--color-border)] bg-[var(--color-surface)]", id="remember-me") }}
+                                <label for="remember-me" class="text-sm text-[var(--color-muted)]">{{ form.remember_me.label.text }}</label>
                             </div>
                         </div>
 
-                        {{ form.submit(class="btn btn-primary btn-lg w-100 fw-semibold shadow-sm") }}
+                        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-lg px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 w-full font-semibold shadow-card") }}
                     </form>
                 {% endif %}
 
                 {% if saml_login_enabled %}
                     {% if show_password %}
-                        <div class="position-relative my-4">
-                            <hr class="text-secondary opacity-25">
-                            <span class="position-absolute top-50 start-50 translate-middle px-2 bg-body text-muted small text-uppercase">Or</span>
+                        <div class="relative my-6">
+                            <hr class="border-[var(--color-border)]">
+                            <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 bg-[var(--color-card)] text-[var(--color-muted)] text-xs uppercase font-medium">Or</span>
                         </div>
                     {% endif %}
 
-                    <div class="d-grid gap-2">
-                        <a class="btn btn-outline-secondary btn-lg d-flex align-items-center justify-content-center gap-2" href="{{ url_for('auth.login_saml') }}">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-primary">
+                    <div class="grid gap-2">
+                        <a class="inline-flex items-center justify-center font-medium rounded-lg px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 gap-2 w-full" href="{{ url_for('auth.login_saml') }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-primary-400">
                                 <path d="M4 3h9.5l6.5 9-6.5 9H4l4.5-9L4 3zm5.3 2-3.1 7 3.1 7h3.8l5-7-5-7H9.3z"/>
                             </svg>
                             <span>{{ _('auth.login.saml_enterprise_button') }}</span>
@@ -77,7 +77,7 @@
                     </div>
                     
                     {% if not show_password %}
-                         <div class="alert alert-light border-0 bg-body-tertiary mt-3 mb-0 text-center small text-muted">
+                         <div class="rounded-xl px-4 py-3 text-sm border bg-slate-100/10 border-[var(--color-border)] text-[var(--color-text)] mt-3 mb-0 text-center">
                             {{ _('auth.login.saml_only_notice') }}
                         </div>
                     {% endif %}
@@ -85,31 +85,14 @@
             </div>
             
             {% if show_password %}
-            <div class="card-footer bg-body-tertiary border-0 py-3 text-center">
-                <p class="mb-0 small text-muted">
+            <div class="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 text-center">
+                <p class="mb-0 text-sm text-[var(--color-muted)]">
                     {{ _('auth.login.register_prompt') }} 
-                    <a href="{{ url_for('auth.register_user') }}" class="text-decoration-none fw-semibold">{{ _('auth.login.register_link') }}</a>
+                    <a href="{{ url_for('auth.register_user') }}" class="text-[var(--color-accent)] hover:underline font-semibold">{{ _('auth.login.register_link') }}</a>
                 </p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-    {{ super() }}
-    <script nonce="{{ csp_nonce }}">
-        document.addEventListener("DOMContentLoaded", function () {
-            var select = document.getElementById("login-language-select");
-            if (!select || !select.form) {
-                return;
-            }
-            select.addEventListener("change", function () {
-                if (this.form) {
-                    this.form.submit();
-                }
-            });
-        });
-    </script>
 {% endblock %}

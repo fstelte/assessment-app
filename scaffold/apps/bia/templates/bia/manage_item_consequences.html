@@ -1,127 +1,133 @@
 {% extends "base.html" %}
-{% block title %}Consequences | {{ item.name }}{% endblock %}
+{% block extra_css %}
+  {{ super() }}
+  {% include "bia/_badge_styles.html" %}
+{% endblock %}
+{% block title %}{{ _('bia.manage_consequences.title') }} | {{ item.name }}{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-5">
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
   <div>
-    <p class="text-uppercase text-secondary small mb-1">Business Impact Analysis</p>
-    <h1 class="h3 text-light mb-1">{{ item.name }}</h1>
-    <p class="text-secondary mb-0">Capture how confidentiality, integrity and availability degradations influence this workspace.</p>
+    <p class="uppercase text-[var(--color-muted)] text-sm mb-1">{{ _('bia.manage_consequences.subtitle') }}</p>
+    <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 mb-1">{{ item.name }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('bia.manage_consequences.description') }}</p>
   </div>
-  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-secondary">&larr; {{ _('bia.context_form.back') }}</a>
+  <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">&larr; {{ _('bia.context_form.back') }}</a>
 </div>
 
-<div class="row g-5 align-items-start">
-  <div class="col-12 col-xl-4 col-xxl-3">
-    <div class="card bg-dark border-secondary h-100 shadow-lg">
-      <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
-        <span class="text-uppercase small text-secondary">{% if editing_consequence %}{{ _('bia.components.table.headers.consequences') }}{% else %}{{ _('bia.context_detail.ai_risks.title') | default('Add consequences') }}{% endif %}</span>
+<div class="flex flex-col gap-6">
+  <div class="w-full">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)] rounded-t-xl">
+        <span class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)]">{{ _('bia.components.table.headers.consequences') }}</span>
         {% if editing_consequence %}
-        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1 text-xs transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.manage_consequences.actions.reset') }}</a>
         {% endif %}
       </div>
-      <div class="card-body p-4">
-        <p class="text-secondary small mb-4">Select a component and register the consequence scoring for each CIA property.</p>
-        <form method="post" class="vstack gap-4">
+      <div class="p-5">
+        <p class="text-[var(--color-muted)] text-sm mb-4">{{ _('bia.manage_consequences.instructions') }}</p>
+        <form method="post" class="flex flex-col gap-4">
           {{ form.hidden_tag() }}
           {{ form.consequence_id }}
           <div>
-            {{ form.component_id.label(class="form-label text-secondary text-uppercase small") }}
-            {{ form.component_id(class="form-select") }}
+            {{ form.component_id.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.component_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
             {% if form.component_id.errors %}
-              <div class="form-text text-danger">{{ form.component_id.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.component_id.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
-            {{ form.consequence_category.label(class="form-label text-secondary text-uppercase small") }}
-            {{ form.consequence_category(class="form-select", multiple=True) }}
-            <div class="form-text text-secondary">Select one or more categories. Editing an entry requires exactly one selection.</div>
+            {{ form.consequence_category.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.consequence_category(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", size=4) }}
+            <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('bia.manage_consequences.category_help') }}</div>
             {% if form.consequence_category.errors %}
-              <div class="form-text text-danger">{{ form.consequence_category.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.consequence_category.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
-            {{ form.security_property.label(class="form-label text-secondary text-uppercase small") }}
-            {{ form.security_property(class="form-select") }}
+            {{ form.security_property.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.security_property(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
             {% if form.security_property.errors %}
-              <div class="form-text text-danger">{{ form.security_property.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.security_property.errors | join(', ') }}</div>
             {% endif %}
           </div>
-          <div class="row g-4">
-            <div class="col-md-6">
-              {{ form.consequence_realisticcase.label(class="form-label text-secondary text-uppercase small") }}
-              {{ form.consequence_realisticcase(class="form-select") }}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              {{ form.consequence_realisticcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+              {{ form.consequence_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
               {% if form.consequence_realisticcase.errors %}
-                <div class="form-text text-danger">{{ form.consequence_realisticcase.errors | join(', ') }}</div>
+                <div class="text-xs mt-1 text-red-500">{{ form.consequence_realisticcase.errors | join(', ') }}</div>
               {% endif %}
             </div>
-            <div class="col-md-6">
-              {{ form.consequence_worstcase.label(class="form-label text-secondary text-uppercase small") }}
-              {{ form.consequence_worstcase(class="form-select") }}
+            <div>
+              {{ form.consequence_worstcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+              {{ form.consequence_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
               {% if form.consequence_worstcase.errors %}
-                <div class="form-text text-danger">{{ form.consequence_worstcase.errors | join(', ') }}</div>
+                <div class="text-xs mt-1 text-red-500">{{ form.consequence_worstcase.errors | join(', ') }}</div>
               {% endif %}
             </div>
           </div>
           <div>
-            {{ form.justification_realisticcase.label(class="form-label text-secondary text-uppercase small") }}
-            {{ form.justification_realisticcase(class="form-control", rows=3, placeholder="Outline the realistic impact") }}
+            {{ form.justification_realisticcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.justification_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3, placeholder="Outline the realistic impact") }}
             {% if form.justification_realisticcase.errors %}
-              <div class="form-text text-danger">{{ form.justification_realisticcase.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.justification_realisticcase.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
-            {{ form.justification_worstcase.label(class="form-label text-secondary text-uppercase small") }}
-            {{ form.justification_worstcase(class="form-control", rows=3, placeholder="Describe the plausible worst case") }}
+            {{ form.justification_worstcase.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.justification_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3, placeholder="Describe the plausible worst case") }}
             {% if form.justification_worstcase.errors %}
-              <div class="form-text text-danger">{{ form.justification_worstcase.errors | join(', ') }}</div>
+              <div class="text-xs mt-1 text-red-500">{{ form.justification_worstcase.errors | join(', ') }}</div>
             {% endif %}
           </div>
-          <div class="d-flex justify-content-end gap-3 pt-2">
-            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
-            {{ form.submit(class="btn btn-primary", value=editing_consequence and 'Update' or 'Save consequences') }}
+          <div class="flex justify-end gap-3 pt-2 mt-2 border-t border-[var(--color-border)]">
+            <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.actions.cancel') }}</a>
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer", value=editing_consequence and _('bia.view_consequences.actions.save_changes') or _('bia.view_consequences.actions.save')) }}
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <div class="col-12 col-xl-8 col-xxl-9">
-    <div class="card bg-dark border-secondary h-100 shadow-lg">
-      <div class="card-header border-secondary d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
+  <div class="w-full">
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex flex-wrap justify-between items-center gap-3 bg-[var(--color-surface)] rounded-t-xl">
         <div>
-          <p class="text-uppercase small text-secondary mb-1">Recorded consequences</p>
-          <p class="mb-0 text-secondary">Browse every captured consequence, grouped by component.</p>
+          <p class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)] mb-1">{{ _('bia.manage_consequences.sections.recorded') }}</p>
+          <p class="mb-0 text-sm text-[var(--color-muted)]">{{ _('bia.manage_consequences.sections.recorded_subtitle') }}</p>
         </div>
         {% if consequence_rows %}
-          <span class="badge bg-secondary">{{ consequence_rows|length }} entries</span>
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ consequence_rows|length }} entries</span>
         {% endif %}
       </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-dark table-striped table-hover align-middle mb-0">
-            <thead>
+      <div class="p-0">
+        <div class="overflow-x-auto w-full rounded-b-xl">
+          <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
+            <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
-                <th scope="col">Component</th>
-                <th scope="col">Categories</th>
-                <th scope="col">Security property</th>
-                <th scope="col">Realistic</th>
-                <th scope="col">Worst case</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.component') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.categories') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.security_property') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.realistic') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.worst_case') }}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-[var(--color-border)]">
               {% if consequence_rows %}
                 {% for row in consequence_rows %}
-                <tr>
-                  <td>
-                    <div class="d-flex flex-column gap-1">
-                      <div class="fw-semibold text-light">{{ row.component.name }}</div>
-                      <div class="text-secondary small">{{ row.component.info_type or 'Component details pending' }}</div>
+                <tr class="hover:bg-[var(--color-surface-hover)] transition-colors">
+                  <td class="px-4 py-3">
+                    <div class="flex flex-col gap-1">
+                      <div class="font-semibold text-[var(--color-text)]">{{ row.component.name }}</div>
+                      <div class="text-[var(--color-muted)] text-xs">{{ row.component.info_type or 'Details pending' }}</div>
                       <div>
-                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="btn btn-outline-light btn-sm mt-1">Edit</a>
+                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)] mt-1">
+                          <i class="fas fa-pencil-alt mr-1"></i> {{ _('bia.actions.edit') }}
+                        </a>
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td class="px-4 py-3">
                     {% set raw_categories = row.consequence.consequence_category %}
                     {% if raw_categories %}
                       {% if raw_categories is sequence and raw_categories is not string %}
@@ -129,35 +135,42 @@
                       {% else %}
                         {% set categories = raw_categories.split(',') %}
                       {% endif %}
-                      <div class="d-flex flex-wrap gap-1">
+                      <div class="flex flex-wrap gap-1">
                         {% for category in categories %}
-                          <span class="badge bg-secondary">{{ category | trim }}</span>
+                          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
                         {% endfor %}
                       </div>
                     {% else %}
-                      <span class="text-secondary">Not set</span>
+                      <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.manage_consequences.empty.not_set') }}</span>
                     {% endif %}
                   </td>
-                  <td>
-                    <span class="badge bg-info text-dark text-uppercase">{{ row.consequence.security_property or 'Not set' }}</span>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ row.consequence.security_property or _('bia.manage_consequences.empty.not_set') }}</span>
                   </td>
-                  <td>
-                    <div class="fw-semibold">{{ row.consequence.consequence_realisticcase or 'N/A' }}</div>
+                  <td class="px-4 py-3">
+                    {% set realistic = row.consequence.consequence_realisticcase or 'N/A' %}
+                    <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></div>
                     {% if row.consequence.justification_realisticcase %}
-                      <div class="text-secondary small">{{ row.consequence.justification_realisticcase }}</div>
+                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_realisticcase }}">{{ row.consequence.justification_realisticcase }}</div>
                     {% endif %}
                   </td>
-                  <td>
-                    <div class="fw-semibold">{{ row.consequence.consequence_worstcase or 'N/A' }}</div>
+                  <td class="px-4 py-3">
+                    {% set worst = row.consequence.consequence_worstcase or 'N/A' %}
+                    <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
                     {% if row.consequence.justification_worstcase %}
-                      <div class="text-secondary small">{{ row.consequence.justification_worstcase }}</div>
+                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_worstcase }}">{{ row.consequence.justification_worstcase }}</div>
                     {% endif %}
                   </td>
                 </tr>
                 {% endfor %}
               {% else %}
                 <tr>
-                  <td colspan="6" class="text-center text-secondary py-4">No consequences recorded yet.</td>
+                  <td colspan="5" class="text-center text-[var(--color-muted)] py-8">
+                    <div class="flex flex-col items-center justify-center">
+                      <i class="fas fa-clipboard-list text-3xl mb-3 opacity-20"></i>
+                      <p>{{ _('bia.manage_consequences.empty.list') }}</p>
+                    </div>
+                  </td>
                 </tr>
               {% endif %}
             </tbody>

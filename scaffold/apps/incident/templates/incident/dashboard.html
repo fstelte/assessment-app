@@ -2,71 +2,71 @@
 {% block title %}{{ _('incident.dashboard.title') }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="flex justify-between items-center mb-4">
   <h1 class="h3 margin-0">{{ _('incident.dashboard.title') }}</h1>
 </div>
 
-<form class="row g-3 align-items-end mb-4" method="get" action="{{ url_for('incident.dashboard') }}">
-  <div class="col-md-6">
-    <label for="incident-search" class="form-label">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
-    <div class="input-group">
-      <span class="input-group-text bg-dark border-secondary">
+<form class="flex flex-wrap -mx-3 g-3 items-end mb-4" method="get" action="{{ url_for('incident.dashboard') }}">
+  <div class="md:w-1/2 px-3">
+    <label for="incident-search" class="block text-sm mb-1.5">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
+    <div class="flex">
+      <span class="px-3 py-2 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-l-lg text-[var(--color-muted)] bg-[var(--color-card)] border-[var(--color-border)]">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
           <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
         </svg>
       </span>
-      <input type="search" name="q" id="incident-search" class="form-control bg-dark border-secondary text-light" placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}" value="{{ search_query }}">
+      <input type="search" name="q" id="incident-search" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 bg-[var(--color-card)] border-[var(--color-border)] text-slate-100" placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}" value="{{ search_query }}">
     </div>
   </div>
-  <div class="col-md-4">
-    <label for="incident-scope" class="form-label">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
-    <select name="scope" id="incident-scope" class="form-select bg-dark border-secondary text-light">
+  <div class="md:w-1/3 px-3">
+    <label for="incident-scope" class="block text-sm mb-1.5">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
+    <select name="scope" id="incident-scope" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 bg-[var(--color-card)] border-[var(--color-border)] text-slate-100">
       <option value="all" {% if selected_scope == 'all' %}selected{% endif %}>{{ _('incident.dashboard.all_scopes', default='All Scopes') }}</option>
       {% for context in contexts %}
       <option value="{{ context.name }}" {% if selected_scope == context.name %}selected{% endif %}>{{ context.name }}</option>
       {% endfor %}
     </select>
   </div>
-  <div class="col-md-2 d-grid">
-    <button type="submit" class="btn btn-primary">{{ _('actions.filter', default='Filter') }}</button>
+  <div class="md:w-1/6 px-3 grid">
+    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('actions.filter', default='Filter') }}</button>
   </div>
 </form>
 
-<div class="card bg-dark border-secondary">
-  <div class="card-header border-secondary">{{ _('incident.dashboard.components_list') }}</div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-dark table-hover align-middle mb-0">
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
+  <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)]">{{ _('incident.dashboard.components_list') }}</div>
+  <div class="px-5 py-4 p-0">
+    <div class="overflow-x-auto w-full">
+      <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/8 align-middle mb-0">
         <thead>
           <tr>
             <th>{{ _('incident.labels.component_name') }}</th>
             <th>{{ _('incident.labels.context') }}</th>
-            <th class="text-end">{{ _('actions.actions') }}</th>
+            <th class="text-right">{{ _('actions.actions') }}</th>
           </tr>
         </thead>
         <tbody>
           {% for component in components %}
           <tr>
             <td>
-              <div class="fw-semibold">{{ component.name }}</div>
+              <div class="font-semibold">{{ component.name }}</div>
               {% if component.description %}
-              <div class="text-secondary small text-truncate" style="max-width: 300px;">{{ component.description }}</div>
+              <div class="text-[var(--color-muted)] text-sm truncate" style="max-width: 300px;">{{ component.description }}</div>
               {% endif %}
             </td>
             <td>
               {% if component.context_scope %}
-              <span class="badge bg-secondary">{{ component.context_scope.name }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ component.context_scope.name }}</span>
               {% endif %}
             </td>
-            <td class="text-end">
-              <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="btn btn-sm btn-primary">
+            <td class="text-right">
+              <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">
                 {{ _('incident.actions.manage_plans') }}
               </a>
             </td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="3" class="text-center text-secondary py-4">
+            <td colspan="3" class="text-center text-[var(--color-muted)] py-4">
               {{ _('incident.dashboard.no_components') }}
             </td>
           </tr>
@@ -76,23 +76,23 @@
     </div>
   </div>
   {% if pagination.pages > 1 %}
-  <div class="card-footer border-secondary">
+  <div class="px-5 py-3 border-t border-[var(--color-border)] border-[var(--color-border)]">
     <nav aria-label="Page navigation">
-      <ul class="pagination justify-content-center mb-0">
+      <ul class="flex items-center gap-1 justify-center mb-0">
         <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-          <a class="page-link" href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) if pagination.has_prev else '#' }}">&laquo;</a>
+          <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) if pagination.has_prev else '#' }}">&laquo;</a>
         </li>
         {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
           {% if page_num %}
             <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-              <a class="page-link" href="{{ url_for('incident.dashboard', page=page_num, q=search_query, scope=selected_scope) }}">{{ page_num }}</a>
+              <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=page_num, q=search_query, scope=selected_scope) }}">{{ page_num }}</a>
             </li>
           {% else %}
-            <li class="page-item disabled"><span class="page-link">...</span></li>
+            <li class="page-item disabled"><span class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors">...</span></li>
           {% endif %}
         {% endfor %}
         <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-          <a class="page-link" href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) if pagination.has_next else '#' }}">&raquo;</a>
+          <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) if pagination.has_next else '#' }}">&raquo;</a>
         </li>
       </ul>
     </nav>

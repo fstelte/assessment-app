@@ -45,8 +45,6 @@ services:
 
   postgres:
     image: postgres:18-alpine
-    profiles:
-      - postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-scaffold}
       POSTGRES_USER: ${POSTGRES_USER:-scaffold}

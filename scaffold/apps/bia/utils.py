@@ -132,14 +132,14 @@ def get_impact_color(impact: object | None) -> str:
     """Return the CSS class that corresponds with an impact label."""
 
     color_map = {
-        1: "bg-green",
-        2: "bg-yellow",
-        3: "bg-orange",
-        4: "bg-red",
-        5: "bg-dark-red",
+        1: "bg-green-600 text-white",
+        2: "bg-yellow-400 text-black",
+        3: "bg-orange-500 text-black",
+        4: "bg-red-600 text-white",
+        5: "bg-red-900 text-white",
     }
     level = get_impact_level(impact)
-    return color_map.get(level, "impact-unknown")
+    return color_map.get(level, "bg-slate-500 text-white")
 
 
 def get_cia_impact(

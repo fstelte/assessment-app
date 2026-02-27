@@ -1,116 +1,117 @@
 {% extends "base.html" %}
 {% block title %}{{ _('admin.users.title') }}{% endblock %}
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
   <div>
-  <h1 class="mb-1">{{ _('admin.users.heading') }}</h1>
-  <p class="text-secondary mb-0">{{ _('admin.users.subtitle') }}</p>
+  <h1 class="text-2xl font-bold mb-1">{{ _('admin.users.heading') }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.users.subtitle') }}</p>
   </div>
-  <div class="d-flex flex-wrap gap-2">
-  <a class="btn btn-outline-light" href="{{ url_for('csa.dashboard') }}">{{ _('admin.users.link_csa_dashboard') }}</a>
-  <a class="btn btn-outline-light" href="{{ url_for('bia.dashboard') }}">{{ _('admin.users.link_bia_dashboard') }}</a>
-  <a class="btn btn-outline-light" href="{{ url_for('admin.list_authentication_methods') }}">{{ _('admin.users.link_authentication_methods') }}</a>
-  <a class="btn btn-outline-light" href="{{ url_for('admin.list_risks') }}">{{ _('admin.users.link_risk_management') }}</a>
-  <a class="btn btn-outline-light" href="{{ url_for('admin.audit_trail') }}">{{ _('admin.users.link_audit_trail') }}</a>
-  <a class="btn btn-primary" href="{{ url_for('admin.controls') }}">
+  <div class="flex flex-wrap gap-2">
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5" href="{{ url_for('csa.dashboard') }}">{{ _('admin.users.link_csa_dashboard') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5" href="{{ url_for('bia.dashboard') }}">{{ _('admin.users.link_bia_dashboard') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5" href="{{ url_for('admin.list_authentication_methods') }}">{{ _('admin.users.link_authentication_methods') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5" href="{{ url_for('admin.list_risks') }}">{{ _('admin.users.link_risk_management') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5" href="{{ url_for('admin.audit_trail') }}">{{ _('admin.users.link_audit_trail') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('admin.controls') }}">
     {{ _('admin.users.button.import_controls') }}
   </a>
   </div>
 </div>
 
-<div class="table-responsive">
-  <table class="table table-dark table-striped align-middle">
-    <thead>
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)]">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
       <tr>
-  <th scope="col">{{ _('admin.users.table.user') }}</th>
-  <th scope="col">{{ _('admin.users.table.status') }}</th>
-  <th scope="col">{{ _('admin.users.table.roles') }}</th>
-  <th scope="col">{{ _('admin.users.table.assign_role') }}</th>
-  <th scope="col">{{ _('admin.users.table.mfa') }}</th>
-  <th scope="col" class="text-end">{{ _('admin.users.table.actions') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.users.table.user') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.users.table.status') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.users.table.roles') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.users.table.assign_role') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.users.table.mfa') }}</th>
+  <th scope="col" class="px-4 py-3 font-semibold text-right">{{ _('admin.users.table.actions') }}</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="divide-y divide-[var(--color-border)]">
       {% for user in users %}
         {% set assign_form = assign_forms.get(user.id) %}
         {% set removal_map = remove_forms.get(user.id, {}) %}
-        <tr>
-          <td>
-            <div class="fw-semibold">{{ user.full_name }}</div>
-            <div class="text-secondary small">{{ user.email }}</div>
+        <tr class="hover:bg-slate-500/5 transition-colors">
+          <td class="px-4 py-3 align-middle">
+            <div class="font-semibold">{{ user.full_name }}</div>
+            <div class="text-[var(--color-muted)] text-sm">{{ user.email }}</div>
           </td>
-          <td>
+          <td class="px-4 py-3 align-middle">
             {% if user.status == UserStatus.ACTIVE %}
-              <span class="badge bg-success">{{ _('admin.users.status.active') }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-green-500/20 text-green-400">{{ _('admin.users.status.active') }}</span>
             {% elif user.status == UserStatus.PENDING %}
-              <span class="badge bg-warning text-dark">{{ _('admin.users.status.pending') }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/20 text-yellow-400">{{ _('admin.users.status.pending') }}</span>
             {% else %}
-              <span class="badge bg-secondary">{{ _('admin.users.status.disabled') }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ _('admin.users.status.disabled') }}</span>
             {% endif %}
           </td>
-          <td>
-            <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+          <td class="px-4 py-3 align-middle">
+            <ul class="list-none pl-0 mb-0 flex flex-col gap-2">
               {% for role in user.roles %}
                 {% set removal = removal_map.get(role.name) %}
-                <li class="d-flex align-items-center gap-2">
-                  <span class="badge bg-secondary">{{ role_labels.get(role.name, role.name) }}</span>
+                <li class="flex items-center gap-2">
+                  <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ role_labels.get(role.name, role.name) }}</span>
                   {% if removal and removal.form %}
-                    <form method="post" action="{{ url_for('admin.remove_user_role', user_id=user.id) }}" class="d-inline">
+                    <form method="post" action="{{ url_for('admin.remove_user_role', user_id=user.id) }}" class="inline">
                       {{ removal.form.hidden_tag() }}
-                      {{ removal.form.submit(class="btn btn-sm btn-outline-light") }}
+                      {{ removal.form.submit(class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs cursor-pointer") }}
                     </form>
                   {% elif removal and removal.disabled_reason %}
-                    <span class="text-secondary small">{{ removal.disabled_reason }}</span>
+                    <span class="text-[var(--color-muted)] text-sm">{{ removal.disabled_reason }}</span>
                   {% endif %}
                 </li>
               {% else %}
-                <li class="text-secondary small">{{ _('admin.users.no_roles') }}</li>
+                <li class="text-[var(--color-muted)] text-sm">{{ _('admin.users.no_roles') }}</li>
               {% endfor %}
             </ul>
           </td>
-          <td class="w-25">
+          <td class="px-4 py-3 align-middle w-1/4">
             {% if assign_form and assign_form.role.choices %}
-              <form method="post" action="{{ url_for('admin.assign_user_role', user_id=user.id) }}" class="row g-2 align-items-center">
+              <form method="post" action="{{ url_for('admin.assign_user_role', user_id=user.id) }}" class="flex flex-wrap -mx-2 gap-y-2 items-center">
                 {{ assign_form.hidden_tag() }}
-                <div class="col">
-                  {{ assign_form.role(class="form-select form-select-sm") }}
+                <div class="flex-1 px-2">
+                  {{ assign_form.role(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-2 py-1 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
                   {% for error in assign_form.role.errors %}
-                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    <div class="text-red-400 text-xs mt-1 block">{{ error }}</div>
                   {% endfor %}
                 </div>
-                <div class="col-auto">
-                  {{ assign_form.submit(class="btn btn-sm btn-outline-light") }}
+                <div class="flex-none px-2">
+                  {{ assign_form.submit(class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-3 py-1 text-xs cursor-pointer") }}
                 </div>
               </form>
             {% else %}
-              <span class="text-secondary small">{{ _('admin.users.all_roles_assigned') }}</span>
+              <span class="text-[var(--color-muted)] text-sm">{{ _('admin.users.all_roles_assigned') }}</span>
             {% endif %}
           </td>
-          <td>
+          <td class="px-4 py-3 align-middle">
             {% if user.mfa_setting and user.mfa_setting.enabled %}
-              <span class="badge bg-info text-dark">{{ _('admin.users.mfa.enabled') }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-blue-500/20 text-blue-400">{{ _('admin.users.mfa.enabled') }}</span>
             {% else %}
-              <span class="badge bg-secondary">{{ _('admin.users.mfa.disabled') }}</span>
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ _('admin.users.mfa.disabled') }}</span>
             {% endif %}
           </td>
-          <td class="text-end">
-            <div class="d-flex flex-wrap justify-content-end gap-2">
-              <a class="btn btn-sm btn-outline-light" href="{{ url_for('admin.user_mfa', user_id=user.id) }}">{{ _('admin.users.actions.manage_mfa') }}</a>
+          <td class="px-4 py-3 align-middle text-right">
+            <div class="flex flex-wrap justify-end gap-2">
+              <a class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.user_mfa', user_id=user.id) }}">{{ _('admin.users.actions.manage_mfa') }}</a>
               {% if user.status == UserStatus.ACTIVE %}
-                <form method="post" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" class="d-inline">
-                  {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
-                  <button type="submit" class="btn btn-sm btn-outline-warning">{{ _('admin.users.actions.deactivate') }}</button>
+                <form method="post" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-red-500/50 text-red-500 hover:bg-red-500/10 px-2.5 py-1 text-xs cursor-pointer">{{ _('admin.users.actions.deactivate') }}</button>
                 </form>
-              {% else %}
-                <form method="post" action="{{ url_for('admin.activate_user', user_id=user.id) }}" class="d-inline">
-                  {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
-                  <button type="submit" class="btn btn-sm btn-outline-success">{{ _('admin.users.actions.activate') }}</button>
+              {% elif user.status == UserStatus.DISABLED %}
+                <form method="post" action="{{ url_for('admin.activate_user', user_id=user.id) }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-green-500/50 text-green-500 hover:bg-green-500/10 px-2.5 py-1 text-xs cursor-pointer">{{ _('admin.users.actions.activate') }}</button>
+                </form>
+              {% elif user.status == UserStatus.PENDING %}
+                <form method="post" action="{{ url_for('admin.activate_user', user_id=user.id) }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-green-500/50 text-green-500 hover:bg-green-500/10 px-2.5 py-1 text-xs cursor-pointer">{{ _('admin.users.actions.approve') }}</button>
                 </form>
               {% endif %}
-              <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="d-inline" data-confirm="{{ _('admin.users.actions.confirm_delete')|e }}" onsubmit="return confirm(this.getAttribute('data-confirm'));">
-                {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
-                <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('admin.users.actions.delete') }}</button>
-              </form>
             </div>
           </td>
         </tr>
@@ -118,5 +119,4 @@
     </tbody>
   </table>
 </div>
-
 {% endblock %}
