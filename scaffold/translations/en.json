@@ -2030,6 +2030,16 @@
     "target_level_label": "Target Maturity Level",
     "target_level_help": "Select the intended maturity level to filter relevant requirements.",
     "score_label": "Maturity Score",
+    "assessment": {
+      "select_level_placeholder": "Select target level...",
+      "score": {
+        "na": "0 - Not Applicable",
+        "1": "1 - Not Available (Major Gap)",
+        "2": "2 - Partially Implemented",
+        "3": "3 - Implemented (Needs Improvement)",
+        "4": "4 - Best Practice"
+      }
+    },
     "jira_label": "Jira Ticket / Tracking Issue",
     "evidence_url_label": "Evidence Link / Attachment URL",
     "description_label": "Context / Description",

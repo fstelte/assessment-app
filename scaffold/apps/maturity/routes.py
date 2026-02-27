@@ -182,8 +182,8 @@ def assess(control_id):
                     description = request.form.get(f"desc_{req_key}", "").strip()
                     evidence_url = request.form.get(f"url_{req_key}", "").strip()
                     
-                    # Logic: Score 3 (Implemented) and 4 (Best Practice) count as compliant
-                    is_compliant = score_val >= 3
+                    # Logic: Score 2 (Partially Implemented) and above counts as compliant
+                    is_compliant = score_val >= 2
                 
                 # Find or create answer record
                 answer = MaturityAnswer.query.filter_by(

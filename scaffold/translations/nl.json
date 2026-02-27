@@ -2094,6 +2094,16 @@
     "target_level_label": "Beoogd Volwassenheidsniveau",
     "target_level_help": "Kies het beoogde niveau om relevante vragen te tonen.",
     "score_label": "Volwassenheidsscore",
+    "assessment": {
+      "select_level_placeholder": "Kies doelniveau...",
+      "score": {
+        "na": "0 - Niet van toepassing",
+        "1": "1 - Niet beschikbaar (Grote tekortkoming)",
+        "2": "2 - Gedeeltelijk geïmplementeerd",
+        "3": "3 - Geïmplementeerd (Verbetering nodig)",
+        "4": "4 - Best praktijk"
+      }
+    },
     "jira_label": "Jira Ticket / Issue",
     "evidence_url_label": "Bewijslast Link / Bijlage URL",
     "description_label": "Context / Omschrijving",
