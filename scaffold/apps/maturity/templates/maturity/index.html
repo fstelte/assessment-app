@@ -2,93 +2,221 @@
 
 {% block title %}{{ _("maturity.index.title") }}{% endblock %}
 
-{% block content %}
-<div class="px-4 py-6 sm:px-6 lg:px-8">
-  <div class="sm:flex sm:items-center">
-    <div class="sm:flex-auto">
-      <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ _("maturity.index.title") }}</h1>
-      <p class="mt-2 text-sm text-gray-700 dark:text-gray-400">
-        {{ _("maturity.index.subtitle") }}
-      </p>
-    </div>
-  </div>
-  
-  <dl class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.started") }}</dt>
-      <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ assessments_started }}</dd>
-    </div>
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.finished") }}</dt>
-      <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ assessments_finished }}</dd>
-    </div>
-    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow-card sm:p-6 dark:bg-gray-800">
-      <dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{{ _("maturity.index.stats.average_maturity") }}</dt>
-      <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">{{ average_maturity }}</dd>
-    </div>
-  </dl>
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+.maturity-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.maturity-hero {
+  background: linear-gradient(130deg, rgba(13, 148, 136, 0.95), rgba(5, 150, 105, 0.9));
+  border-radius: 1.5rem;
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.25);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+body[data-theme="dark"] .maturity-hero {
+  background: linear-gradient(130deg, rgba(13, 148, 136, 0.6), rgba(5, 150, 105, 0.7));
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.maturity-hero::after {
+  content: "";
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 65%);
+  right: -80px;
+  top: -60px;
+  filter: blur(4px);
+  pointer-events: none;
+}
+.maturity-hero__body {
+  position: relative;
+  z-index: 1;
+}
+.maturity-hero__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.maturity-hero__metric {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(6px);
+}
+.maturity-hero__metric strong {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  line-height: 1;
+  display: block;
+}
+.maturity-hero__metric small {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+}
+.maturity-quick-card {
+  border: none;
+  border-radius: 1.25rem;
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+body[data-theme="dark"] .maturity-quick-card {
+  background: rgba(18, 18, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
+}
+.maturity-quick-card h2 {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+.maturity-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(13, 148, 136, 0.12);
+  color: #0d9488;
+  border: 1px solid rgba(13, 148, 136, 0.25);
+}
+body[data-theme="dark"] .maturity-level-badge {
+  color: #5eead4;
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.35);
+}
+.maturity-level-badge--unassessed {
+  background: rgba(108, 117, 125, 0.1);
+  color: var(--bs-secondary-color);
+  border-color: rgba(108, 117, 125, 0.2);
+}
+</style>
+{% endblock %}
 
-  <div class="mt-8 flex flex-col">
-    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-      <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-        <div class="overflow-hidden shadow-card ring-1 ring-black ring-opacity-5 md:rounded-lg">
-          <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:!bg-gray-800">
-              <tr>
-                <th scope="col" class="relative w-12 px-6 sm:w-16 sm:px-8">
-                  <input type="checkbox" id="select-all" class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 sm:left-6">
-                </th>
-                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-200 sm:pl-6">
-                  {{ _("admin.controls.list.code") }}
-                </th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-200">
-                  {{ _("maturity.index.table.control") }}
-                </th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-200">
-                  {{ _("maturity.index.table.level") }}
-                </th>
-                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                  <span class="sr-only">{{ _("maturity.assess.button") }}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:!bg-gray-900">
-              {% for control, assessment in controls %}
-              <tr>
-                <td class="relative w-12 px-6 sm:w-16 sm:px-8">
-                  <input type="checkbox" name="control_ids" value="{{ control.id }}" class="assessment-checkbox absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 sm:left-6">
-                </td>
-                <td class="px-3 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                  {{ control.section or control.id }}
-                </td>
-                <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                  <div class="font-medium text-gray-900 dark:text-white">{{ control.domain }}</div>
-                  <div class="truncate max-w-xs">{{ (control.description or '')|truncate(80) }}</div>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                  {% if assessment %}
-                    <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-100">
-                      {{ _("maturity.level_prefix") }} {{ assessment.current_level.value }} - {{ assessment.current_level.name|replace('_', ' ')|title }}
-                    </span>
-                  {% else %}
-                    <span class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-300">
-                       {{ _("maturity.index.not_assessed") }}
-                    </span>
-                  {% endif %}
-                </td>
-                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <a href="{{ url_for('maturity.assess', control_id=control.id) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
-                     {{ _("maturity.assess.button") }}<span class="sr-only">, {{ control.section }}</span>
-                  </a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+{% block content %}
+<div class="maturity-dashboard">
+
+  {# ── Hero ── #}
+  <section class="maturity-hero">
+    <div class="maturity-hero__body d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4">
+      <div class="flex-grow-1">
+        <p class="text-uppercase text-white-50 mb-2" style="font-size:0.75rem;letter-spacing:0.08em;">CMMI Maturity</p>
+        <h1 class="fw-bold mb-2" style="font-size:clamp(1.6rem,4vw,2.2rem);">{{ _("maturity.index.title") }}</h1>
+        <p class="mb-0" style="color:rgba(255,255,255,0.8);font-size:0.9rem;">{{ _("maturity.index.subtitle") }}</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap mt-3 mt-lg-0">
+        <a href="{{ url_for('maturity.index') }}" class="btn btn-sm btn-light fw-medium">
+          <i class="fas fa-th-list me-1"></i> {{ _("maturity.index.title") }}
+        </a>
       </div>
     </div>
-  </div>
+    <div class="maturity-hero__metrics">
+      <div class="maturity-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _("maturity.index.stats.started") }}</p>
+        <strong>{{ assessments_started }}</strong>
+        <small>{{ _("maturity.index.stats.started") }}</small>
+      </div>
+      <div class="maturity-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _("maturity.index.stats.finished") }}</p>
+        <strong>{{ assessments_finished }}</strong>
+        <small>{{ _("maturity.index.stats.finished") }}</small>
+      </div>
+      <div class="maturity-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _("maturity.index.stats.average_maturity") }}</p>
+        <strong>{{ average_maturity }}</strong>
+        <small>{{ _("maturity.index.stats.average_maturity") }}</small>
+      </div>
+      <div class="maturity-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _("maturity.index.table.control") }}</p>
+        <strong>{{ controls | length }}</strong>
+        <small>{{ _("maturity.index.subtitle") }}</small>
+      </div>
+    </div>
+  </section>
+
+  {# ── Controls table ── #}
+  <section>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
+      <div>
+        <h2 class="h5 fw-semibold mb-1">{{ _("maturity.index.title") }}</h2>
+        <p class="text-secondary mb-0" style="font-size:0.875rem;">{{ _("maturity.index.subtitle") }}</p>
+      </div>
+    </div>
+
+    <div class="maturity-quick-card p-0 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 w-100 text-sm [&_tbody_tr]:hover:bg-primary-500/8">
+          <thead>
+            <tr>
+              <th class="ps-4" style="width:1rem;">
+                <input type="checkbox" id="select-all" class="form-check-input" style="cursor:pointer;">
+              </th>
+              <th class="ps-3" style="width:8rem;">{{ _("admin.controls.list.code") }}</th>
+              <th>{{ _("maturity.index.table.control") }}</th>
+              <th style="width:12rem;">{{ _("maturity.index.table.level") }}</th>
+              <th style="width:7rem;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for control, assessment in controls %}
+            <tr>
+              <td class="ps-4">
+                <input type="checkbox" name="control_ids" value="{{ control.id }}" class="assessment-checkbox form-check-input" style="cursor:pointer;">
+              </td>
+              <td class="ps-3">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border fw-semibold" style="font-size:0.75rem;">
+                  {{ control.section or control.id }}
+                </span>
+              </td>
+              <td>
+                <div class="fw-semibold text-body">{{ control.domain }}</div>
+                <div class="text-secondary" style="font-size:0.8rem;max-width:30rem;">{{ (control.description or '') | truncate(90) }}</div>
+              </td>
+              <td>
+                {% if assessment %}
+                  <span class="maturity-level-badge">
+                    <i class="fas fa-circle-check" style="font-size:0.65rem;"></i>
+                    {{ _("maturity.level_prefix") }} {{ assessment.current_level.value }} – {{ assessment.current_level.name | replace('_', ' ') | title }}
+                  </span>
+                {% else %}
+                  <span class="maturity-level-badge maturity-level-badge--unassessed">
+                    <i class="fas fa-circle-minus" style="font-size:0.65rem;"></i>
+                    {{ _("maturity.index.not_assessed") }}
+                  </span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <a href="{{ url_for('maturity.assess', control_id=control.id) }}"
+                   class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 px-2.5 py-1 text-xs">
+                  {{ _("maturity.assess.button") }}
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-secondary py-5">
+                <i class="fas fa-clipboard-list fa-2x mb-2 d-block text-secondary opacity-50"></i>
+                {{ _("maturity.index.not_assessed") }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </div>
 {% endblock %}
 
@@ -98,8 +226,7 @@
     const selectAll = document.getElementById('select-all');
     if (selectAll) {
       selectAll.addEventListener('change', function(e) {
-        const checkboxes = document.querySelectorAll('.assessment-checkbox');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        document.querySelectorAll('.assessment-checkbox').forEach(cb => cb.checked = e.target.checked);
       });
     }
   });
