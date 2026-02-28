@@ -317,14 +317,15 @@ body[data-theme="dark"] .bia-chip {
 							<a href="{{ url_for('bia.view_item', item_id=context.id) }}" class="inline-flex items-center justify-center font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
 								<i class="fas fa-eye mr-2"></i> {{ _('bia.dashboard.card.action_view') }}
 							</a>
-							<div class="dropdown relative">
-								<button class="inline-flex items-center justify-center w-full font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<div class="relative" data-export-dropdown>
+								<button type="button" class="export-toggle inline-flex items-center justify-center w-full font-medium rounded-lg px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" aria-expanded="false" aria-haspopup="true">
 									<i class="fas fa-download mr-2"></i> {{ _('bia.dashboard.sidebar.exports') }}
+									<i class="fas fa-chevron-down ml-auto pl-2 text-[0.6rem]"></i>
 								</button>
-								<ul class="dropdown-menu absolute z-50 hidden min-w-[10rem] py-1 m-0 text-base rounded-md shadow-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
-									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=context.id) }}"><i class="fas fa-file-code mr-2 w-5"></i> HTML</a></li>
-									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_csv', item_id=context.id) }}"><i class="fas fa-file-csv mr-2 w-5"></i> CSV</a></li>
-									<li><a class="dropdown-item block px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}"><i class="fas fa-database mr-2 w-5"></i> SQL</a></li>
+								<ul class="export-menu absolute right-0 z-50 mt-1 min-w-[10rem] rounded-md shadow-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-1 hidden">
+									<li><a class="flex items-center px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=context.id) }}"><i class="fas fa-file-code mr-2 w-4"></i> HTML</a></li>
+									<li><a class="flex items-center px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_csv', item_id=context.id) }}"><i class="fas fa-file-csv mr-2 w-4"></i> CSV</a></li>
+									<li><a class="flex items-center px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_bia_sql', item_id=context.id) }}"><i class="fas fa-database mr-2 w-4"></i> SQL</a></li>
 								</ul>
 							</div>
 						</div>
@@ -367,4 +368,31 @@ body[data-theme="dark"] .bia-chip {
 		{% endif %}
 	</section>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('click', function(e) {
+	var btn = e.target.closest('[data-export-dropdown] .export-toggle');
+	if (btn) {
+		e.stopPropagation();
+		var menu = btn.nextElementSibling;
+		var isOpen = !menu.classList.contains('hidden');
+		// Close all open menus first
+		document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+			m.classList.add('hidden');
+			if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+		});
+		if (!isOpen) {
+			menu.classList.remove('hidden');
+			btn.setAttribute('aria-expanded', 'true');
+		}
+		return;
+	}
+	// Close menus when clicking outside
+	document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+		m.classList.add('hidden');
+		if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+	});
+});
+</script>
 {% endblock %}

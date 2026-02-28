@@ -13,6 +13,95 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
+    /* Hero */
+    .bia-item-hero {
+      background: linear-gradient(130deg, rgba(13, 110, 253, 0.95), rgba(111, 66, 193, 0.95));
+      border-radius: 1.5rem;
+      padding: clamp(1.75rem, 4vw, 2.5rem);
+      box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.25);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    body[data-theme="dark"] .bia-item-hero {
+      background: linear-gradient(130deg, rgba(13, 110, 253, 0.6), rgba(111, 66, 193, 0.7));
+      box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .bia-item-hero::after {
+      content: "";
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 65%);
+      right: -80px;
+      top: -60px;
+      filter: blur(4px);
+      pointer-events: none;
+    }
+    .bia-item-hero__body {
+      position: relative;
+      z-index: 1;
+    }
+    .bia-hero-metric {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 0.85rem 1.25rem;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      min-width: 0;
+    }
+    .bia-hero-metric strong {
+      font-size: clamp(1.25rem, 3vw, 2rem);
+      line-height: 1;
+      display: block;
+    }
+    .bia-hero-metric small {
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 0.75rem;
+    }
+    /* Section nav */
+    .bia-section-nav {
+      display: flex;
+      gap: 0.25rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+      scrollbar-width: none;
+    }
+    .bia-section-nav::-webkit-scrollbar { display: none; }
+    .bia-section-nav a {
+      white-space: nowrap;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid var(--color-border, rgba(148,163,184,0.3));
+      color: var(--color-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .bia-section-nav a:hover {
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--color-text);
+    }
+    /* Section titles */
+    .bia-section-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .bia-section-title i {
+      opacity: 0.6;
+    }
+    /* Archive banner */
+    .bia-archive-banner {
+      border-radius: 1rem;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.9rem;
+      border: 1px solid;
+    }
     {% if export_mode %}
     .badge-ai-high-risk {
       background-color: #fd7e14;
@@ -21,144 +110,200 @@
     {% endif %}
   </style>
 {% endblock %}
+
 {% block title %}{{ item.name }} | BIA{% endblock %}
+
+{% block main_container_class %}container mx-auto max-w-7xl px-4 sm:px-6{% endblock %}
+
 {% block content %}
 {% set is_dark = theme != 'light' %}
 {% set outline_inverse = 'border-slate-200 text-slate-100 hover:bg-slate-800' if is_dark else 'border-slate-300 text-slate-700 hover:bg-slate-50' %}
+
+{# Back link #}
 {% if not export_mode|default(false) %}
-  <div class="mb-3">
-    {% if item.is_archived %}
-      <a href="{{ url_for('bia.archived_list') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline">&larr; {{ _('bia.archived.back_to_list') }}</a>
-    {% else %}
-      <a href="{{ url_for('bia.dashboard') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline">&larr; {{ _('bia.context_detail.back') }}</a>
-    {% endif %}
-  </div>
+<div class="mb-4">
+  {% if item.is_archived %}
+    <a href="{{ url_for('bia.archived_list') }}" class="inline-flex items-center gap-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline text-sm transition-colors">
+      <i class="fas fa-arrow-left text-xs"></i> {{ _('bia.archived.back_to_list') }}
+    </a>
+  {% else %}
+    <a href="{{ url_for('bia.dashboard') }}" class="inline-flex items-center gap-1.5 text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline text-sm transition-colors">
+      <i class="fas fa-arrow-left text-xs"></i> {{ _('bia.context_detail.back') }}
+    </a>
+  {% endif %}
+</div>
 {% endif %}
 
+{# Archived banner #}
 {% if item.is_archived %}
-<div class="rounded-xl px-4 py-3 text-sm border bg-yellow-400/10 border-yellow-400/40 text-yellow-600 dark:text-yellow-200 flex items-center mb-4" role="alert">
-  <i class="fas fa-lock mr-3 fa-lg"></i>
+<div class="bia-archive-banner bg-yellow-400/10 border-yellow-400/40 text-yellow-600 dark:text-yellow-200 flex items-center gap-3 mb-5" role="alert">
+  <i class="fas fa-lock fa-lg flex-shrink-0"></i>
   <div class="grow">
     <strong>{{ _('bia.archived.banner') }}</strong>
-    <div>{{ _('bia.archived.archived_on', date=item.archived_at.strftime('%Y-%m-%d %H:%M') if item.archived_at else '-') }}</div>
+    <div class="text-sm opacity-80">{{ _('bia.archived.archived_on', date=item.archived_at.strftime('%Y-%m-%d %H:%M') if item.archived_at else '-') }}</div>
   </div>
   {% if can_edit_context|default(False) %}
-  <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="ml-3">
+  <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" class="flex-shrink-0">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-yellow-500 text-slate-900 hover:bg-yellow-600" onclick="return confirm('{{ _('bia.archived.confirm_unarchive') }}');">
-      {{ _('bia.archived.unarchive') }}
+    <button type="submit"
+      class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3 py-1.5 text-sm transition-colors bg-yellow-500 text-slate-900 hover:bg-yellow-400"
+      onclick="return confirm('{{ _('bia.archived.confirm_unarchive') }}');">
+      <i class="fas fa-lock-open"></i> {{ _('bia.archived.unarchive') }}
     </button>
   </form>
   {% endif %}
 </div>
 {% endif %}
 
-<div class="flex flex-col lg:flex-row justify-between items-start gap-3 mb-6 {% if export_mode %}pt-3{% endif %}">
-  <div>
-    <h1 class="text-3xl font-bold mb-1 flex items-center flex-wrap gap-2">
-      {{ item.name }}
-      {% if item.tier %}
-      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 align-middle">{{ item.tier.get_label() }}</span>
-      {% endif %}
-      {% if item.is_archived %}
-      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 align-middle"><i class="fas fa-lock mr-1"></i> {{ _('bia.archived.badge') }}</span>
-      {% endif %}
-    </h1>
-    <p class="text-[var(--color-muted)] mb-0">Last updated {{ item.last_update or 'never' }}</p>
-  </div>
-  {% if not export_mode|default(false) %}
-    <div class="flex flex-wrap gap-2 items-center">
-      {% if can_edit_context|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.edit_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.edit') }}</a>
-        <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.tabs.summary') }}</a>
-      {% endif %}
-      <a href="{{ url_for('bia.export_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">HTML</a>
-      <a href="{{ url_for('bia.export_csv', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">CSV</a>
-      <a href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">SQL</a>
-      {% if can_edit_context|default(False) and not item.is_archived %}
-      <div class="border-l border-[var(--color-border)] mx-1 h-6"></div>
-      <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" style="display: contents;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
-          <i class="fas fa-copy mr-1"></i> {{ _('bia.actions.copy') }}
-        </button>
-      </form>
-      <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" style="display: contents;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-400/10 px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
-          <i class="fas fa-archive mr-1"></i> {{ _('bia.actions.archive') }}
-        </button>
-      </form>
-      <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" style="display: contents;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-red-500 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10 px-2.5 py-1 text-xs" onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">{{ _('bia.context_detail.actions.delete') }}</button>
-      </form>
+{# Hero header #}
+<div class="bia-item-hero mb-6 {% if export_mode %}pt-2{% endif %}">
+  <div class="bia-item-hero__body">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+      <div class="grow min-w-0">
+        <p class="uppercase text-xs text-white/50 tracking-widest mb-2">Business Impact Analysis</p>
+        <h1 class="text-3xl font-bold mb-2 flex flex-wrap items-center gap-2 text-white">
+          {{ item.name }}
+          {% if item.tier %}
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-white/20 text-white/90">{{ item.tier.get_label() }}</span>
+          {% endif %}
+          {% if item.is_archived %}
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/30 text-yellow-200"><i class="fas fa-lock mr-1"></i> {{ _('bia.archived.badge') }}</span>
+          {% endif %}
+        </h1>
+        <p class="text-white/60 text-sm mb-0 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {% if item.responsible %}<span><i class="fas fa-user mr-1.5"></i>{{ item.responsible }}</span>{% endif %}
+          {% if item.last_update %}<span><i class="fas fa-clock mr-1.5"></i>{{ item.last_update }}</span>{% endif %}
+        </p>
+      </div>
+      {# Action buttons #}
+      {% if not export_mode|default(false) %}
+      <div class="flex flex-wrap gap-2 flex-shrink-0">
+        {% if can_edit_context|default(False) and not item.is_archived %}
+          <a href="{{ url_for('bia.edit_item', item_id=item.id) }}"
+             class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/15 text-white hover:bg-white/25 border border-white/20">
+            <i class="fas fa-edit"></i> {{ _('bia.context_detail.actions.edit') }}
+          </a>
+          <a href="{{ url_for('bia.manage_summary', item_id=item.id) }}"
+             class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/15 text-white hover:bg-white/25 border border-white/20">
+            <i class="fas fa-align-left"></i> {{ _('bia.context_detail.tabs.summary') }}
+          </a>
+        {% endif %}
+        <div class="relative" data-export-dropdown>
+          <button type="button"
+            class="export-toggle inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/10 text-white hover:bg-white/20 border border-white/15"
+            aria-expanded="false" aria-haspopup="true">
+            <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down text-[0.6rem] ml-0.5"></i>
+          </button>
+          <ul class="export-menu absolute right-0 z-50 mt-1 min-w-[9rem] rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+            <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=item.id) }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+            <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_csv', item_id=item.id) }}"><i class="fas fa-file-csv w-4"></i> CSV</a></li>
+            <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}"><i class="fas fa-database w-4"></i> SQL</a></li>
+          </ul>
+        </div>
+        {% if can_edit_context|default(False) and not item.is_archived %}
+        <div class="border-l border-white/20 mx-0.5 h-8 self-center"></div>
+        <form method="post" action="{{ url_for('bia.copy_item', item_id=item.id) }}" style="display:contents">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/10 text-white hover:bg-white/20 border border-white/15"
+            onclick="return confirm('{{ _('bia.actions.confirm_copy') }}');">
+            <i class="fas fa-copy"></i> {{ _('bia.actions.copy') }}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('bia.archive_item', item_id=item.id) }}" style="display:contents">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-yellow-500/25 text-yellow-100 hover:bg-yellow-500/40 border border-yellow-400/30"
+            onclick="return confirm('{{ _('bia.actions.confirm_archive') }}');">
+            <i class="fas fa-archive"></i> {{ _('bia.actions.archive') }}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('bia.delete_item', item_id=item.id) }}" style="display:contents">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+            class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-red-500/25 text-red-100 hover:bg-red-500/40 border border-red-400/30"
+            onclick="return confirm('{{ _('bia.actions.confirm_delete') }}');">
+            <i class="fas fa-trash-alt"></i> {{ _('bia.context_detail.actions.delete') }}
+          </button>
+        </form>
+        {% endif %}
+      </div>
       {% endif %}
     </div>
-  {% endif %}
+
+    {# Metric chips #}
+    <div class="flex flex-col gap-3 mt-5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bia-hero-metric">
+          <p class="text-white/50 uppercase text-xs tracking-wider mb-1">{{ _('bia.context_detail.sections.components') }}</p>
+          <strong>{{ item.components | length }}</strong>
+          <small>components</small>
+        </div>
+        {% if item.tier %}
+        <div class="bia-hero-metric">
+          <p class="text-white/50 uppercase text-xs tracking-wider mb-1">{{ _('bia.context_form.fields.tier.label') }}</p>
+          <strong class="text-lg">{{ item.tier.get_label() }}</strong>
+          <small>criticality tier</small>
+        </div>
+        {% else %}
+        <div></div>
+        {% endif %}
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        {% for property in ['confidentiality', 'integrity', 'availability'] %}
+        {% set value = max_cia_impact.get(property) %}
+        <div class="bia-hero-metric">
+          <p class="text-white/50 uppercase text-xs tracking-wider mb-1">{{ property.upper() }}</p>
+          <strong class="text-lg uppercase">{{ value or 'N/A' }}</strong>
+          <small>max impact</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
 </div>
 
+{# Section navigation #}
+{% if not export_mode|default(false) %}
+<div class="bia-section-nav mb-5">
+  {% if item.summary and item.summary.content %}
+  <a href="#section-summary"><i class="fas fa-align-left mr-1"></i>{{ _('bia.context_detail.tabs.summary') }}</a>
+  {% endif %}
+  <a href="#section-components"><i class="fas fa-layer-group mr-1"></i>{{ _('bia.context_detail.sections.components') }}</a>
+  <a href="#section-availability"><i class="fas fa-clock mr-1"></i>{{ _('bia.context_detail.sections.availability') }}</a>
+  <a href="#section-dependencies"><i class="fas fa-network-wired mr-1"></i>{{ _('bia.context_detail.sections.dependencies') }}</a>
+  <a href="#section-consequences"><i class="fas fa-bolt mr-1"></i>{{ _('bia.context_detail.sections.consequences') }}</a>
+  <a href="#section-roles"><i class="fas fa-users mr-1"></i>{{ _('bia.context_detail.sections.roles') }}</a>
+</div>
+{% endif %}
+
+{# Executive Summary #}
 {% if item.summary and item.summary.content %}
-<div class="mb-6">
+<div id="section-summary" class="mb-5">
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
     <div class="px-5 py-4 border-b border-[var(--color-border)]">
-      <h3 class="font-semibold text-lg m-0">{{ _('bia.context_detail.tabs.summary') }}</h3>
+      <span class="bia-section-title"><i class="fas fa-align-left"></i>{{ _('bia.context_detail.tabs.summary') }}</span>
     </div>
-    <div class="px-5 py-4 whitespace-pre-wrap text-[var(--color-text)]">
-      {{ item.summary.content }}
-    </div>
+    <div class="px-5 py-4 whitespace-pre-wrap text-[var(--color-text)] leading-relaxed">{{ item.summary.content }}</div>
   </div>
 </div>
 {% endif %}
 
-<div class="bia-cia-grid mb-6">
-  {% for property in ['confidentiality', 'integrity', 'availability'] %}
-    {% set value = max_cia_impact.get(property) %}
-    {% if value is not none %}
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
-      <div class="px-5 py-4 flex flex-col items-center text-center">
-        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-2">{{ property.capitalize() }}</div>
-        {% set cia_value = value or 'N/A' %}
-        <span class="bia-impact-badge" data-impact="{{ cia_value | lower }}">{{ cia_value }}</span>
-      </div>
-    </div>
-    {% endif %}
-  {% endfor %}
-</div>
+{# Main layout: content + sidebar #}
+<div class="flex flex-col lg:flex-row items-start gap-5 mb-6">
 
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-  <div class="h-full">
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
-      <div class="px-5 py-4">
-        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-1">{{ _('bia.context_detail.sections.components') }}</div>
-        <div class="text-3xl font-bold">{{ item.components | length }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="h-full">
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
-      <div class="px-5 py-4 flex flex-col justify-between h-full">
-        <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wider mb-1">{{ _('bia.context_form.fields.tier.label') }}</div>
-        <div class="text-2xl font-semibold">
-          {% if item.tier %}
-            {{ item.tier.get_label() }}
-          {% else %}
-            <span class="text-[var(--color-muted)]">-</span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  {# Main column #}
+  <div class="grow w-full min-w-0">
 
-<div class="flex flex-col lg:flex-row items-start gap-4 mb-6">
-  <div class="grow w-full">
-    <!-- Components -->
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+    {# Components #}
+    <div id="section-components" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-5">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.components') }}</span>
+        <span class="bia-section-title"><i class="fas fa-layer-group"></i>{{ _('bia.context_detail.sections.components') }}</span>
         {% if not export_mode|default(false) and not item.is_archived %}
-        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}"
+           class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+          <i class="fas fa-cog"></i> {{ _('bia.context_detail.actions.manage') }}
+        </a>
         {% endif %}
       </div>
       <div class="p-0">
@@ -179,9 +324,11 @@
               {% for component in item.components %}
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
-                <td class="px-4 py-3">{{ component.info_owner or 'Not set' }}</td>
-                <td class="px-4 py-3">{{ component.user_type or 'Not set' }}</td>
-                <td class="px-4 py-3">{{ component.consequences | length }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.info_owner or 'Not set' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.user_type or 'Not set' }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-0.5 bg-slate-500/15 text-[var(--color-text)]">{{ component.consequences | length }}</span>
+                </td>
                 <td class="px-4 py-3">
                   <div class="flex flex-wrap gap-1">
                     {% for environment_type in bia_environment_types %}
@@ -211,17 +358,23 @@
           </table>
         </div>
         {% else %}
-        <div class="p-6 text-center text-[var(--color-muted)]">No components linked yet.</div>
+        <div class="p-8 text-center text-[var(--color-muted)]">
+          <i class="fas fa-layer-group fa-2x mb-3 opacity-25 block"></i>
+          <p class="mb-0">No components linked yet.</p>
+        </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Availability -->
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+    {# Availability #}
+    <div id="section-availability" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-5">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.availability') }}</span>
+        <span class="bia-section-title"><i class="fas fa-clock"></i>{{ _('bia.context_detail.sections.availability') }}</span>
         {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        <a href="{{ url_for('bia.manage_item_availability', item_id=item.id) }}"
+           class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+          <i class="fas fa-cog"></i> {{ _('bia.context_detail.actions.manage') }}
+        </a>
         {% endif %}
       </div>
       <div class="p-0">
@@ -242,27 +395,33 @@
               {% set availability = component.availability_requirement %}
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
-                <td class="px-4 py-3">{{ availability.mtd if availability else 'Not set' }}</td>
-                <td class="px-4 py-3">{{ availability.rto if availability else 'Not set' }}</td>
-                <td class="px-4 py-3">{{ availability.rpo if availability else 'Not set' }}</td>
-                <td class="px-4 py-3">{{ availability.masl if availability else 'Not set' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.mtd if availability else '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.rto if availability else '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.rpo if availability else '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.masl if availability else '–' }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="p-6 text-center text-[var(--color-muted)]">No availability requirements captured yet.</div>
+        <div class="p-8 text-center text-[var(--color-muted)]">
+          <i class="fas fa-clock fa-2x mb-3 opacity-25 block"></i>
+          <p class="mb-0">No availability requirements captured yet.</p>
+        </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Dependencies -->
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full mb-6">
+    {# Dependencies #}
+    <div id="section-dependencies" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-5">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.dependencies') }}</span>
+        <span class="bia-section-title"><i class="fas fa-network-wired"></i>{{ _('bia.context_detail.sections.dependencies') }}</span>
         {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        <a href="{{ url_for('bia.view_components', scope=item.name, bia_id=item.id) }}"
+           class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+          <i class="fas fa-cog"></i> {{ _('bia.context_detail.actions.manage') }}
+        </a>
         {% endif %}
       </div>
       <div class="p-0">
@@ -284,29 +443,35 @@
               {% for component in item.components %}
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_it_systems_applications or '-' }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_equipment or '-' }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_suppliers or '-' }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_people or '-' }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_facilities or '-' }}</td>
-                <td class="px-4 py-3">{{ component.dependencies_others or '-' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[140px] truncate" title="{{ component.dependencies_it_systems_applications or '' }}">{{ component.dependencies_it_systems_applications or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_equipment or '' }}">{{ component.dependencies_equipment or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_suppliers or '' }}">{{ component.dependencies_suppliers or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_people or '' }}">{{ component.dependencies_people or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_facilities or '' }}">{{ component.dependencies_facilities or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_others or '' }}">{{ component.dependencies_others or '–' }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="p-6 text-center text-[var(--color-muted)]">No components to show dependencies for.</div>
+        <div class="p-8 text-center text-[var(--color-muted)]">
+          <i class="fas fa-network-wired fa-2x mb-3 opacity-25 block"></i>
+          <p class="mb-0">No components to show dependencies for.</p>
+        </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Consequences -->
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
+    {# Consequences #}
+    <div id="section-consequences" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-        <span class="font-semibold text-lg">{{ _('bia.context_detail.sections.consequences') }}</span>
+        <span class="bia-section-title"><i class="fas fa-bolt"></i>{{ _('bia.context_detail.sections.consequences') }}</span>
         {% if can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
-        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent {{ outline_inverse }} px-2.5 py-1 text-xs">{{ _('bia.context_detail.actions.manage') }}</a>
+        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}"
+           class="inline-flex items-center gap-1.5 font-medium rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+          <i class="fas fa-cog"></i> {{ _('bia.context_detail.actions.manage') }}
+        </a>
         {% endif %}
       </div>
       <div class="p-0">
@@ -326,7 +491,7 @@
               {% for consequence in consequences %}
               <tr>
                 <td class="px-5 py-3 font-medium">{{ consequence.component.name }}</td>
-                <td class="px-5 py-3">{{ consequence.consequence_category }}</td>
+                <td class="px-5 py-3 text-[var(--color-muted)]">{{ consequence.consequence_category }}</td>
                 <td class="px-5 py-3 uppercase">
                   {% set prop_val = consequence.security_property %}
                   <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-600/20 dark:bg-slate-400/10 dark:text-slate-400 dark:ring-slate-400/20">{{ prop_val }}</span>
@@ -345,100 +510,139 @@
           </table>
         </div>
         {% else %}
-          <div class="p-6 text-center text-[var(--color-muted)]">No consequences recorded yet.</div>
+        <div class="p-8 text-center text-[var(--color-muted)]">
+          <i class="fas fa-bolt fa-2x mb-3 opacity-25 block"></i>
+          <p class="mb-0">No consequences recorded yet.</p>
+        </div>
         {% endif %}
       </div>
     </div>
 
-  </div>
+  </div>{# end main column #}
 
-  <div class="shrink-0 w-full lg:w-auto" style="min-width: 280px; max-width: 100%; lg:max-width: 320px;">
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-4">
-      <div class="px-5 py-4 border-b border-[var(--color-border)] font-semibold">Risk Assessment</div>
-      <div class="px-5 py-4 flex flex-col gap-4">
-        <div class="flex justify-between items-center">
-          <span>Process</span>
-          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_process else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
-            {{ 'Yes' if item.risk_assessment_process else 'No' }}
-          </span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span>People</span>
-          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_human else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
-            {{ 'Yes' if item.risk_assessment_human else 'No' }}
-          </span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span>Technical</span>
-          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' if item.risk_assessment_technological else 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' }}">
-            {{ 'Yes' if item.risk_assessment_technological else 'No' }}
-          </span>
+  {# Sidebar #}
+  <div class="shrink-0 w-full lg:w-72 xl:w-80 flex flex-col gap-4">
+
+    {# Roles / Contacts #}
+    <div id="section-roles" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+      <div class="px-5 py-4 border-b border-[var(--color-border)]">
+        <span class="bia-section-title"><i class="fas fa-users"></i>{{ _('bia.context_detail.sections.roles') }}</span>
+      </div>
+      <div class="p-0">
+        <div class="divide-y divide-[var(--color-border)] text-sm">
+          {% set role_rows = [
+            (_('bia.context_detail.roles.responsible'), item.responsible),
+            (_('bia.context_detail.roles.coordinator'), item.coordinator),
+            (_('bia.context_detail.roles.project_leader'), item.project_leader),
+            (_('bia.context_detail.roles.product_owner'), item.product_owner),
+            (_('bia.context_detail.roles.risk_owner'), item.risk_owner),
+            (_('bia.context_detail.roles.technical_administrator'), item.technical_administrator),
+            (_('bia.context_detail.roles.security_manager'), item.security_manager),
+            (_('bia.context_detail.roles.incident_contact'), item.incident_contact),
+          ] %}
+          {% for label, value in role_rows %}
+          <div class="flex justify-between items-start px-4 py-2.5 gap-3">
+            <span class="text-[var(--color-muted)] flex-shrink-0">{{ label }}</span>
+            <span class="text-[var(--color-text)] font-medium text-right break-all">{{ value or '–' }}</span>
+          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
 
+    {# Risk Assessment #}
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+      <div class="px-5 py-4 border-b border-[var(--color-border)]">
+        <span class="bia-section-title"><i class="fas fa-shield-alt"></i>Risk Assessment</span>
+      </div>
+      <div class="divide-y divide-[var(--color-border)] text-sm">
+        {% set risk_rows = [
+          ('Process', item.risk_assessment_process),
+          ('People', item.risk_assessment_human),
+          ('Technical', item.risk_assessment_technological),
+        ] %}
+        {% for label, value in risk_rows %}
+        <div class="flex justify-between items-center px-5 py-3">
+          <span class="text-[var(--color-muted)]">{{ label }}</span>
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 {{ 'bg-green-500/15 text-green-500 dark:text-green-400' if value else 'bg-slate-500/15 text-[var(--color-muted)]' }}">
+            {{ 'Yes' if value else 'No' }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# AI Assessment #}
     {% if item.ai_model and can_edit_context|default(False) and not export_mode|default(False) and not item.is_archived %}
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-        <span class="font-semibold">AI Assessment</span>
-        <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-transparent {{ outline_inverse }}">{{ _('Manage') }}</a>
+        <span class="bia-section-title"><i class="fas fa-robot"></i>AI Assessment</span>
+        <a href="{{ url_for('bia.manage_item_ai', item_id=item.id) }}"
+           class="inline-flex items-center gap-1 font-medium rounded-lg px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+          <i class="fas fa-cog"></i> Manage
+        </a>
       </div>
       <div class="px-5 py-4">
         {% set high_risk_ai_count = ai_identifications.values() | selectattr('category', 'in', ['High risk', 'Unacceptable risk', 'Critical']) | list | length %}
-        <div class="flex justify-between items-center mb-1">
-          <span class="text-sm">High Risk Components</span>
-          <span class="font-bold {{ 'text-red-500' if high_risk_ai_count > 0 else 'text-[var(--color-muted)]' }}">{{ high_risk_ai_count }}</span>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-[var(--color-muted)]">High Risk Components</span>
+          <span class="font-bold text-lg {{ 'text-red-500' if high_risk_ai_count > 0 else 'text-[var(--color-muted)]' }}">{{ high_risk_ai_count }}</span>
         </div>
       </div>
     </div>
     {% endif %}
-    
-    <!-- Contact persons & roles -->
-    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mt-4">
+
+    {# Mission & Scope #}
+    {% if item.mission_critical or item.scope_description %}
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
       <div class="px-5 py-4 border-b border-[var(--color-border)]">
-        <h3 class="font-semibold text-lg m-0">{{ _('bia.context_detail.sections.roles') }}</h3>
+        <span class="bia-section-title"><i class="fas fa-crosshairs"></i>Mission &amp; Scope</span>
       </div>
-      <div class="p-0">
-        <div class="overflow-x-auto w-full">
-          <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
-            <tbody class="divide-y divide-[var(--color-border)]">
-              <tr>
-                <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.responsible') }}</td>
-                <td class="px-5 py-2 block sm:table-cell">{{ item.responsible or '-' }}</td>
-              </tr>
-              <tr>
-                <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.coordinator') }}</td>
-                <td class="px-5 py-2 block sm:table-cell">{{ item.coordinator or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.project_leader') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.project_leader or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.product_owner') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.product_owner or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.risk_owner') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.risk_owner or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.technical_administrator') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.technical_administrator or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.security_manager') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.security_manager or '-' }}</td>
-              </tr>
-              <tr>
-                 <td class="px-5 py-2 font-medium text-[var(--color-muted)] block sm:table-cell sm:w-1/3">{{ _('bia.context_detail.roles.incident_contact') }}</td>
-                 <td class="px-5 py-2 block sm:table-cell">{{ item.incident_contact or '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="px-5 py-4 flex flex-col gap-4 text-sm">
+        {% if item.mission_critical %}
+        <div>
+          <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wide mb-1">Mission Criticality</div>
+          <div class="text-[var(--color-text)]">{{ item.mission_critical }}</div>
         </div>
+        {% endif %}
+        {% if item.scope_description %}
+        <div>
+          <div class="text-[var(--color-muted)] uppercase text-xs font-semibold tracking-wide mb-1">Scope</div>
+          <div class="text-[var(--color-text)]">{{ item.scope_description }}</div>
+        </div>
+        {% endif %}
       </div>
     </div>
-  </div>
-</div>
+    {% endif %}
+
+  </div>{# end sidebar #}
+
+</div>{# end flex row #}
+
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-export-dropdown] .export-toggle');
+  if (btn) {
+    e.stopPropagation();
+    var menu = btn.nextElementSibling;
+    var isOpen = !menu.classList.contains('hidden');
+    document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+      m.classList.add('hidden');
+      if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+    });
+    if (!isOpen) {
+      menu.classList.remove('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+    }
+    return;
+  }
+  document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+    m.classList.add('hidden');
+    if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+  });
+});
+</script>
 {% endblock %}
