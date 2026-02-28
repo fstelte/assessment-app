@@ -1,102 +1,280 @@
 {% extends "base.html" %}
 {% block title %}{{ _('incident.dashboard.title') }}{% endblock %}
 
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+.incident-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.incident-hero {
+  background: linear-gradient(130deg, rgba(220, 38, 38, 0.9), rgba(185, 28, 28, 0.95));
+  border-radius: 1.5rem;
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.25);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+body[data-theme="dark"] .incident-hero {
+  background: linear-gradient(130deg, rgba(220, 38, 38, 0.6), rgba(185, 28, 28, 0.7));
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.incident-hero::after {
+  content: "";
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 65%);
+  right: -80px;
+  top: -60px;
+  filter: blur(4px);
+  pointer-events: none;
+}
+.incident-hero__body {
+  position: relative;
+  z-index: 1;
+}
+.incident-hero__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.incident-hero__metric {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(6px);
+}
+.incident-hero__metric strong {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  line-height: 1;
+  display: block;
+}
+.incident-hero__metric small {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+}
+.incident-quick-card {
+  border: none;
+  border-radius: 1.25rem;
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+}
+body[data-theme="dark"] .incident-quick-card {
+  background: rgba(18, 18, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
+}
+.incident-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+}
+body[data-theme="dark"] .incident-scope-badge {
+  color: #fca5a5;
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.32);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-  <h1 class="h3 margin-0">{{ _('incident.dashboard.title') }}</h1>
-</div>
+<div class="incident-dashboard">
 
-<form class="flex flex-wrap -mx-3 g-3 items-end mb-4" method="get" action="{{ url_for('incident.dashboard') }}">
-  <div class="md:w-1/2 px-3">
-    <label for="incident-search" class="block text-sm mb-1.5">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
-    <div class="flex">
-      <span class="px-3 py-2 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-l-lg text-[var(--color-muted)] bg-[var(--color-card)] border-[var(--color-border)]">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
-        </svg>
-      </span>
-      <input type="search" name="q" id="incident-search" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 bg-[var(--color-card)] border-[var(--color-border)] text-slate-100" placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}" value="{{ search_query }}">
+  {# ── Hero ── #}
+  <section class="incident-hero">
+    <div class="incident-hero__body d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4">
+      <div class="flex-grow-1">
+        <p class="text-uppercase mb-2" style="font-size:0.75rem;letter-spacing:0.08em;color:rgba(255,255,255,0.6);">{{ _('incident.dashboard.title') }}</p>
+        <h1 class="fw-bold mb-2" style="font-size:clamp(1.6rem,4vw,2.2rem);">{{ _('incident.dashboard.title') }}</h1>
+        <p class="mb-0" style="color:rgba(255,255,255,0.8);font-size:0.9rem;">{{ _('incident.dashboard.search_label', default='Select a component to manage its incident response plans') }}</p>
+      </div>
     </div>
-  </div>
-  <div class="md:w-1/3 px-3">
-    <label for="incident-scope" class="block text-sm mb-1.5">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
-    <select name="scope" id="incident-scope" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 bg-[var(--color-card)] border-[var(--color-border)] text-slate-100">
-      <option value="all" {% if selected_scope == 'all' %}selected{% endif %}>{{ _('incident.dashboard.all_scopes', default='All Scopes') }}</option>
-      {% for context in contexts %}
-      <option value="{{ context.name }}" {% if selected_scope == context.name %}selected{% endif %}>{{ context.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="md:w-1/6 px-3 grid">
-    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('actions.filter', default='Filter') }}</button>
-  </div>
-</form>
+    <div class="incident-hero__metrics">
+      <div class="incident-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _('incident.labels.component_name') }}</p>
+        <strong>{{ pagination.total }}</strong>
+        <small>{{ _('incident.dashboard.components_list') }}</small>
+      </div>
+      <div class="incident-hero__metric">
+        <p class="text-uppercase mb-1" style="font-size:0.7rem;color:rgba(255,255,255,0.6);letter-spacing:0.08em;">{{ _('incident.labels.context') }}</p>
+        <strong>{{ contexts | length }}</strong>
+        <small>{{ _('incident.dashboard.scope_label', default='Context Scopes') }}</small>
+      </div>
+    </div>
+  </section>
 
-<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)]">
-  <div class="px-5 py-4 border-b border-[var(--color-border)] border-[var(--color-border)]">{{ _('incident.dashboard.components_list') }}</div>
-  <div class="px-5 py-4 p-0">
-    <div class="overflow-x-auto w-full">
-      <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/8 align-middle mb-0">
-        <thead>
-          <tr>
-            <th>{{ _('incident.labels.component_name') }}</th>
-            <th>{{ _('incident.labels.context') }}</th>
-            <th class="text-right">{{ _('actions.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for component in components %}
-          <tr>
-            <td>
-              <div class="font-semibold">{{ component.name }}</div>
-              {% if component.description %}
-              <div class="text-[var(--color-muted)] text-sm truncate" style="max-width: 300px;">{{ component.description }}</div>
-              {% endif %}
-            </td>
-            <td>
-              {% if component.context_scope %}
-              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ component.context_scope.name }}</span>
-              {% endif %}
-            </td>
-            <td class="text-right">
-              <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">
-                {{ _('incident.actions.manage_plans') }}
-              </a>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3" class="text-center text-[var(--color-muted)] py-4">
-              {{ _('incident.dashboard.no_components') }}
-            </td>
-          </tr>
+  {# ── Filter form ── #}
+  <form method="get" action="{{ url_for('incident.dashboard') }}">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-md-5">
+        <label for="incident-search" class="form-label small fw-medium">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+          <input type="search" name="q" id="incident-search" class="form-control"
+                 placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}"
+                 value="{{ search_query }}">
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <label for="incident-scope" class="form-label small fw-medium">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
+        <select name="scope" id="incident-scope" class="form-select">
+          <option value="all" {% if selected_scope == 'all' %}selected{% endif %}>{{ _('incident.dashboard.all_scopes', default='All Scopes') }}</option>
+          {% for context in contexts %}
+          <option value="{{ context.name }}" {% if selected_scope == context.name %}selected{% endif %}>{{ context.name }}</option>
           {% endfor %}
-        </tbody>
-      </table>
+        </select>
+      </div>
+      <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-filter me-1"></i> {{ _('actions.filter', default='Filter') }}
+        </button>
+      </div>
+      {% if search_query or (selected_scope and selected_scope != 'all') %}
+      <div class="col-12 col-md-auto">
+        <a href="{{ url_for('incident.dashboard') }}" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-times me-1"></i> {{ _('actions.clear', default='Clear') }}
+        </a>
+      </div>
+      {% endif %}
     </div>
-  </div>
-  {% if pagination.pages > 1 %}
-  <div class="px-5 py-3 border-t border-[var(--color-border)] border-[var(--color-border)]">
-    <nav aria-label="Page navigation">
-      <ul class="flex items-center gap-1 justify-center mb-0">
-        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-          <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) if pagination.has_prev else '#' }}">&laquo;</a>
-        </li>
-        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if page_num %}
-            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-              <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=page_num, q=search_query, scope=selected_scope) }}">{{ page_num }}</a>
-            </li>
+  </form>
+
+  {# ── Components table ── #}
+  <section>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
+      <div>
+        <h2 class="h5 fw-semibold mb-1">{{ _('incident.dashboard.components_list') }}</h2>
+        <p class="text-secondary mb-0" style="font-size:0.875rem;">
+          {% if search_query or (selected_scope and selected_scope != 'all') %}
+            {{ pagination.total }} {{ _('incident.labels.component_name') }}
+            {% if search_query %} &mdash; &ldquo;{{ search_query }}&rdquo;{% endif %}
+            {% if selected_scope and selected_scope != 'all' %} &mdash; {{ selected_scope }}{% endif %}
           {% else %}
-            <li class="page-item disabled"><span class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors">...</span></li>
+            {{ _('incident.dashboard.search_label', default='Select a component to manage its incident response plans') }}
           {% endif %}
-        {% endfor %}
-        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-          <a class="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors" href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) if pagination.has_next else '#' }}">&raquo;</a>
-        </li>
-      </ul>
-    </nav>
-  </div>
-  {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <div class="incident-quick-card overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 w-100">
+          <thead>
+            <tr>
+              <th class="ps-4">{{ _('incident.labels.component_name') }}</th>
+              <th>{{ _('incident.labels.context') }}</th>
+              <th class="text-end pe-4">{{ _('actions.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for component in components %}
+            <tr>
+              <td class="ps-4">
+                <div class="fw-semibold text-body">{{ component.name }}</div>
+                {% if component.description %}
+                <div class="text-secondary" style="font-size:0.8rem;max-width:26rem;">{{ component.description | truncate(90) }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% if component.context_scope %}
+                <span class="incident-scope-badge">{{ component.context_scope.name }}</span>
+                {% else %}
+                <span class="text-secondary" style="font-size:0.8rem;">&mdash;</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-4">
+                <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}"
+                   class="btn btn-sm btn-primary">
+                  <i class="fas fa-shield-alt me-1"></i> {{ _('incident.actions.manage_plans') }}
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="text-center text-secondary py-5">
+                <i class="fas fa-shield-alt fa-2x mb-2 d-block opacity-40"></i>
+                {{ _('incident.dashboard.no_components') }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if pagination.pages > 1 %}
+      <div class="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
+        <div class="flex flex-1 justify-between sm:hidden">
+          {% if pagination.has_prev %}
+          <a href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) }}" class="relative inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)]">
+            {{ _('pagination.previous') }}
+          </a>
+          {% else %}
+          <span class="relative inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] opacity-50 cursor-not-allowed">
+            {{ _('pagination.previous') }}
+          </span>
+          {% endif %}
+          {% if pagination.has_next %}
+          <a href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) }}" class="relative ml-3 inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-surface)]">
+            {{ _('pagination.next') }}
+          </a>
+          {% else %}
+          <span class="relative ml-3 inline-flex items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-muted)] opacity-50 cursor-not-allowed">
+            {{ _('pagination.next') }}
+          </span>
+          {% endif %}
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-end">
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('incident.dashboard', page=pagination.prev_num, q=search_query, scope=selected_scope) }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+              <span class="sr-only">{{ _('pagination.previous') }}</span>
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+            </a>
+            {% else %}
+            <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] bg-[var(--color-surface)] opacity-50 cursor-not-allowed">
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+            </span>
+            {% endif %}
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+              {% if page_num %}
+                {% if page_num == pagination.page %}
+                <span class="relative z-10 inline-flex items-center bg-primary-600 px-4 py-2 text-sm font-semibold text-white focus:z-20">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('incident.dashboard', page=page_num, q=search_query, scope=selected_scope) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-text)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+                {% endif %}
+              {% else %}
+              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] focus:outline-offset-0">&hellip;</span>
+              {% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}
+            <a href="{{ url_for('incident.dashboard', page=pagination.next_num, q=search_query, scope=selected_scope) }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+              <span class="sr-only">{{ _('pagination.next') }}</span>
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+            </a>
+            {% else %}
+            <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] bg-[var(--color-surface)] opacity-50 cursor-not-allowed">
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+            </span>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
 </div>
 {% endblock %}
