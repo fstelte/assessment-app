@@ -147,43 +147,44 @@ body[data-theme="dark"] .maturity-level-badge {
 
   {# ── Controls table ── #}
   <section>
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
-      <div>
-        <h2 class="h5 fw-semibold mb-1">{{ _("maturity.index.title") }}</h2>
-        <p class="text-secondary mb-0" style="font-size:0.875rem;">{{ _("maturity.index.subtitle") }}</p>
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--color-text)] mb-0">{{ _("maturity.index.title") }}</h2>
+          <p class="text-sm text-[var(--color-muted)] mt-0.5 mb-0">{{ _("maturity.index.subtitle") }}</p>
+        </div>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ controls | length }}</span>
       </div>
-    </div>
 
-    <div class="maturity-quick-card p-0 overflow-hidden">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 w-100 text-sm [&_tbody_tr]:hover:bg-primary-500/8">
-          <thead>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left align-middle">
+          <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
             <tr>
-              <th class="ps-4" style="width:1rem;">
-                <input type="checkbox" id="select-all" class="form-check-input" style="cursor:pointer;">
+              <th scope="col" class="px-5 py-3 w-8">
+                <input type="checkbox" id="select-all" class="rounded border-[var(--color-border)] text-primary-600 cursor-pointer">
               </th>
-              <th class="ps-3" style="width:8rem;">{{ _("admin.controls.list.code") }}</th>
-              <th>{{ _("maturity.index.table.control") }}</th>
-              <th style="width:12rem;">{{ _("maturity.index.table.level") }}</th>
-              <th style="width:7rem;"></th>
+              <th scope="col" class="px-3 py-3 w-28">{{ _("admin.controls.list.code") }}</th>
+              <th scope="col" class="px-3 py-3">{{ _("maturity.index.table.control") }}</th>
+              <th scope="col" class="px-3 py-3 w-48">{{ _("maturity.index.table.level") }}</th>
+              <th scope="col" class="px-5 py-3 w-28 text-right"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-[var(--color-border)]">
             {% for control, assessment in controls %}
-            <tr>
-              <td class="ps-4">
-                <input type="checkbox" name="control_ids" value="{{ control.id }}" class="assessment-checkbox form-check-input" style="cursor:pointer;">
+            <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+              <td class="px-5 py-4">
+                <input type="checkbox" name="control_ids" value="{{ control.id }}" class="assessment-checkbox rounded border-[var(--color-border)] text-primary-600 cursor-pointer">
               </td>
-              <td class="ps-3">
-                <span class="badge bg-secondary bg-opacity-10 text-secondary border fw-semibold" style="font-size:0.75rem;">
+              <td class="px-3 py-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-[var(--color-surface)] text-[var(--color-muted)] border border-[var(--color-border)]">
                   {{ control.section or control.id }}
                 </span>
               </td>
-              <td>
-                <div class="fw-semibold text-body">{{ control.domain }}</div>
-                <div class="text-secondary" style="font-size:0.8rem;max-width:30rem;">{{ (control.description or '') | truncate(90) }}</div>
+              <td class="px-3 py-4">
+                <div class="font-medium text-[var(--color-text)]">{{ control.domain }}</div>
+                <div class="text-xs text-[var(--color-muted)] mt-0.5">{{ (control.description or '') | truncate(90) }}</div>
               </td>
-              <td>
+              <td class="px-3 py-4">
                 {% if assessment %}
                   <span class="maturity-level-badge">
                     <i class="fas fa-circle-check" style="font-size:0.65rem;"></i>
@@ -196,18 +197,20 @@ body[data-theme="dark"] .maturity-level-badge {
                   </span>
                 {% endif %}
               </td>
-              <td class="text-end pe-3">
+              <td class="px-5 py-4 text-right">
                 <a href="{{ url_for('maturity.assess', control_id=control.id) }}"
-                   class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 px-2.5 py-1 text-xs">
+                   class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
                   {{ _("maturity.assess.button") }}
                 </a>
               </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="5" class="text-center text-secondary py-5">
-                <i class="fas fa-clipboard-list fa-2x mb-2 d-block text-secondary opacity-50"></i>
-                {{ _("maturity.index.not_assessed") }}
+              <td colspan="5">
+                <div class="flex flex-col items-center justify-center py-16 text-[var(--color-muted)]">
+                  <svg class="h-10 w-10 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  <p class="text-sm">{{ _("maturity.index.not_assessed") }}</p>
+                </div>
               </td>
             </tr>
             {% endfor %}

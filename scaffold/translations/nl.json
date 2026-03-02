@@ -1670,7 +1670,9 @@
     }
   },
   "actions": {
+    "actions": "Acties",
     "cancel": "Annuleren",
+    "clear": "Wissen",
     "close": "Sluiten",
     "delete": "Verwijderen",
     "edit": "Bewerken",

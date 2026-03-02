@@ -117,96 +117,106 @@ body[data-theme="dark"] .incident-scope-badge {
   </section>
 
   {# ── Filter form ── #}
-  <form method="get" action="{{ url_for('incident.dashboard') }}">
-    <div class="row g-3 align-items-end">
-      <div class="col-12 col-md-5">
-        <label for="incident-search" class="form-label small fw-medium">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fas fa-search"></i></span>
-          <input type="search" name="q" id="incident-search" class="form-control"
-                 placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}"
-                 value="{{ search_query }}">
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <label for="incident-scope" class="form-label small fw-medium">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
-        <select name="scope" id="incident-scope" class="form-select">
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-4">
+    <form action="{{ url_for('incident.dashboard') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
+
+      <div class="w-full md:w-1/2">
+        <label for="incident-scope" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('incident.dashboard.scope_label', default='Context Scope') }}</label>
+        <select name="scope" id="incident-scope" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
           <option value="all" {% if selected_scope == 'all' %}selected{% endif %}>{{ _('incident.dashboard.all_scopes', default='All Scopes') }}</option>
           {% for context in contexts %}
           <option value="{{ context.name }}" {% if selected_scope == context.name %}selected{% endif %}>{{ context.name }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-12 col-md-auto">
-        <button type="submit" class="btn btn-primary w-100">
-          <i class="fas fa-filter me-1"></i> {{ _('actions.filter', default='Filter') }}
+
+      <div class="w-full md:w-1/2">
+        <label for="incident-search" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('incident.dashboard.search_label', default='Search Components') }}</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="search" name="q" id="incident-search" value="{{ search_query }}"
+                 placeholder="{{ _('incident.dashboard.search_placeholder', default='Search by name...') }}"
+                 class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+        </div>
+      </div>
+
+      <div class="flex gap-2 shrink-0">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm h-[42px]">
+          {{ _('actions.filter', default='Filter') }}
         </button>
-      </div>
-      {% if search_query or (selected_scope and selected_scope != 'all') %}
-      <div class="col-12 col-md-auto">
-        <a href="{{ url_for('incident.dashboard') }}" class="btn btn-outline-secondary w-100">
-          <i class="fas fa-times me-1"></i> {{ _('actions.clear', default='Clear') }}
+        {% if search_query or (selected_scope and selected_scope != 'all') %}
+        <a href="{{ url_for('incident.dashboard') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 h-[42px]">
+          {{ _('actions.clear', default='Clear') }}
         </a>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
-  </form>
+    </form>
+  </div>
 
   {# ── Components table ── #}
   <section>
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
-      <div>
-        <h2 class="h5 fw-semibold mb-1">{{ _('incident.dashboard.components_list') }}</h2>
-        <p class="text-secondary mb-0" style="font-size:0.875rem;">
-          {% if search_query or (selected_scope and selected_scope != 'all') %}
-            {{ pagination.total }} {{ _('incident.labels.component_name') }}
-            {% if search_query %} &mdash; &ldquo;{{ search_query }}&rdquo;{% endif %}
-            {% if selected_scope and selected_scope != 'all' %} &mdash; {{ selected_scope }}{% endif %}
-          {% else %}
-            {{ _('incident.dashboard.search_label', default='Select a component to manage its incident response plans') }}
-          {% endif %}
-        </p>
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--color-text)] mb-0">{{ _('incident.dashboard.components_list') }}</h2>
+          <p class="text-sm text-[var(--color-muted)] mt-0.5 mb-0">
+            {% if search_query or (selected_scope and selected_scope != 'all') %}
+              {{ pagination.total }} {{ _('incident.labels.component_name') }}
+              {% if search_query %} &mdash; &ldquo;{{ search_query }}&rdquo;{% endif %}
+              {% if selected_scope and selected_scope != 'all' %} &mdash; {{ selected_scope }}{% endif %}
+            {% else %}
+              {{ _('incident.dashboard.search_label', default='Select a component to manage its incident response plans') }}
+            {% endif %}
+          </p>
+        </div>
       </div>
-    </div>
 
-    <div class="incident-quick-card overflow-hidden">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 w-100">
-          <thead>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left align-middle">
+          <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
             <tr>
-              <th class="ps-4">{{ _('incident.labels.component_name') }}</th>
-              <th>{{ _('incident.labels.context') }}</th>
-              <th class="text-end pe-4">{{ _('actions.actions') }}</th>
+              <th scope="col" class="px-5 py-3">{{ _('incident.labels.component_name') }}</th>
+              <th scope="col" class="px-3 py-3">{{ _('incident.labels.context') }}</th>
+              <th scope="col" class="px-5 py-3 text-right">{{ _('actions.actions', default='Actions') }}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-[var(--color-border)]">
             {% for component in components %}
-            <tr>
-              <td class="ps-4">
-                <div class="fw-semibold text-body">{{ component.name }}</div>
+            <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+              <td class="px-5 py-4">
+                <div class="font-medium text-[var(--color-text)]">{{ component.name }}</div>
                 {% if component.description %}
-                <div class="text-secondary" style="font-size:0.8rem;max-width:26rem;">{{ component.description | truncate(90) }}</div>
+                <div class="text-xs text-[var(--color-muted)] mt-0.5">{{ component.description | truncate(90) }}</div>
                 {% endif %}
               </td>
-              <td>
+              <td class="px-3 py-4">
                 {% if component.context_scope %}
-                <span class="incident-scope-badge">{{ component.context_scope.name }}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
+                  {{ component.context_scope.name }}
+                </span>
                 {% else %}
-                <span class="text-secondary" style="font-size:0.8rem;">&mdash;</span>
+                <span class="text-[var(--color-muted)] italic text-xs">&mdash;</span>
                 {% endif %}
               </td>
-              <td class="text-end pe-4">
+              <td class="px-5 py-4 text-right">
                 <a href="{{ url_for('incident.component_scenarios', component_id=component.id) }}"
-                   class="btn btn-sm btn-primary">
-                  <i class="fas fa-shield-alt me-1"></i> {{ _('incident.actions.manage_plans') }}
+                   class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
+                  <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  {{ _('incident.actions.manage_plans') }}
                 </a>
               </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="3" class="text-center text-secondary py-5">
-                <i class="fas fa-shield-alt fa-2x mb-2 d-block opacity-40"></i>
-                {{ _('incident.dashboard.no_components') }}
+              <td colspan="3">
+                <div class="flex flex-col items-center justify-center py-16 text-[var(--color-muted)]">
+                  <svg class="h-10 w-10 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  <p class="text-sm">{{ _('incident.dashboard.no_components') }}</p>
+                </div>
               </td>
             </tr>
             {% endfor %}
