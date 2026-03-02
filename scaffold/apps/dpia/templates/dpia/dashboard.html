@@ -145,92 +145,101 @@ body[data-theme="dark"] .dpia-auth-badge {
   </section>
 
   {# ── Filter form ── #}
-  <form method="get" action="{{ url_for('dpia.dashboard') }}">
-    <div class="row g-3 align-items-end">
-      <div class="col-12 col-md-5">
-        <label for="dpia-component-search" class="form-label small fw-medium">{{ _('dpia.dashboard.filters.search_label') }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fas fa-search"></i></span>
-          <input type="search" name="q" id="dpia-component-search" class="form-control"
-                 value="{{ search_query }}"
-                 placeholder="{{ _('dpia.dashboard.filters.search_placeholder') }}">
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <label for="dpia-scope-filter" class="form-label small fw-medium">{{ _('dpia.dashboard.filters.scope_label') }}</label>
-        <select name="scope" id="dpia-scope-filter" class="form-select">
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-4">
+    <form action="{{ url_for('dpia.dashboard') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
+
+      <div class="w-full md:w-1/2">
+        <label for="dpia-scope-filter" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('dpia.dashboard.filters.scope_label') }}</label>
+        <select name="scope" id="dpia-scope-filter" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
           <option value="all" {% if selected_scope|lower == 'all' %}selected{% endif %}>{{ _('dpia.dashboard.filters.scope_all') }}</option>
           {% for context in contexts %}
             <option value="{{ context.name }}" {% if context.name == selected_scope %}selected{% endif %}>{{ context.name }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-12 col-md-auto">
-        <button type="submit" class="btn btn-primary w-100">
-          <i class="fas fa-filter me-1"></i> {{ _('dpia.dashboard.filters.apply') }}
+
+      <div class="w-full md:w-1/2">
+        <label for="dpia-component-search" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('dpia.dashboard.filters.search_label') }}</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="search" name="q" id="dpia-component-search" value="{{ search_query }}"
+                 placeholder="{{ _('dpia.dashboard.filters.search_placeholder') }}"
+                 class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+        </div>
+      </div>
+
+      <div class="flex gap-2 shrink-0">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm h-[42px]">
+          {{ _('dpia.dashboard.filters.apply') }}
         </button>
-      </div>
-      {% if search_query or (selected_scope and selected_scope|lower != 'all') %}
-      <div class="col-12 col-md-auto">
-        <a href="{{ url_for('dpia.dashboard') }}" class="btn btn-outline-secondary w-100">
-          <i class="fas fa-times me-1"></i> {{ _('actions.clear', default='Clear') }}
+        {% if search_query or (selected_scope and selected_scope|lower != 'all') %}
+        <a href="{{ url_for('dpia.dashboard') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 h-[42px]">
+          {{ _('actions.clear', default='Clear') }}
         </a>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
-  </form>
+    </form>
+  </div>
 
   {# ── Components table ── #}
   <section>
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
-      <div>
-        <h2 class="h5 fw-semibold mb-1">{{ _('dpia.dashboard.table.title') }}</h2>
-        <p class="text-secondary mb-0" style="font-size:0.875rem;">{{ _('dpia.dashboard.supporting_copy') }}</p>
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--color-text)] mb-0">{{ _('dpia.dashboard.table.title') }}</h2>
+          <p class="text-sm text-[var(--color-muted)] mt-0.5 mb-0">{{ _('dpia.dashboard.supporting_copy') }}</p>
+        </div>
+        {% if pagination.pages > 1 %}
+        <span class="text-sm text-[var(--color-muted)]">{{ _('dpia.dashboard.table.pagination', start=page_start, end=page_end, total=pagination.total) }}</span>
+        {% endif %}
       </div>
-      {% if pagination.pages > 1 %}
-      <small class="text-secondary">{{ _('dpia.dashboard.table.pagination', start=page_start, end=page_end, total=pagination.total) }}</small>
-      {% endif %}
-    </div>
 
-    <div class="dpia-quick-card overflow-hidden">
       {% if components %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 w-100">
-          <thead>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left align-middle">
+          <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
             <tr>
-              <th class="ps-4">{{ _('dpia.dashboard.table.headers.component') }}</th>
-              <th>{{ _('dpia.dashboard.table.headers.bia') }}</th>
-              <th>{{ _('dpia.dashboard.table.headers.owner') }}</th>
-              <th>{{ _('dpia.dashboard.table.headers.authentication') }}</th>
-              <th>{{ _('dpia.dashboard.table.headers.dpia_status') }}</th>
-              <th class="text-end pe-4">{{ _('dpia.dashboard.table.headers.actions') }}</th>
+              <th scope="col" class="px-5 py-3">{{ _('dpia.dashboard.table.headers.component') }}</th>
+              <th scope="col" class="px-3 py-3">{{ _('dpia.dashboard.table.headers.bia') }}</th>
+              <th scope="col" class="px-3 py-3">{{ _('dpia.dashboard.table.headers.owner') }}</th>
+              <th scope="col" class="px-3 py-3">{{ _('dpia.dashboard.table.headers.authentication') }}</th>
+              <th scope="col" class="px-3 py-3">{{ _('dpia.dashboard.table.headers.dpia_status') }}</th>
+              <th scope="col" class="px-5 py-3 text-right">{{ _('dpia.dashboard.table.headers.actions') }}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-[var(--color-border)]">
             {% for component in components %}
               {% set assessment_count = component.dpia_assessments | length %}
-              <tr>
-                <td class="ps-4 fw-semibold">{{ component.name }}</td>
-                <td>
+              <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+                <td class="px-5 py-4">
+                  <div class="font-medium text-[var(--color-text)]">{{ component.name }}</div>
+                </td>
+                <td class="px-3 py-4">
                   {% if component.context_scope %}
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border" style="font-size:0.72rem;">{{ component.context_scope.name }}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
+                      {{ component.context_scope.name }}
+                    </span>
                   {% else %}
-                    <span class="text-secondary" style="font-size:0.8rem;">{{ _('dpia.dashboard.table.not_linked') }}</span>
+                    <span class="text-[var(--color-muted)] italic text-xs">{{ _('dpia.dashboard.table.not_linked') }}</span>
                   {% endif %}
                 </td>
-                <td>
-                  <span class="text-body" style="font-size:0.875rem;">{{ component.info_owner or _('dpia.dashboard.table.not_set') }}</span>
+                <td class="px-3 py-4">
+                  <span class="text-[var(--color-text)] text-sm">{{ component.info_owner or _('dpia.dashboard.table.not_set') }}</span>
                 </td>
-                <td>
+                <td class="px-3 py-4">
                   {% if component.authentication_method and component.authentication_method.name %}
                     <span class="dpia-auth-badge">{{ component.authentication_method.name }}</span>
                   {% else %}
                     <span class="dpia-auth-badge dpia-auth-badge--unset">{{ _('dpia.dashboard.table.authentication_unset') }}</span>
                   {% endif %}
                 </td>
-                <td>
+                <td class="px-3 py-4">
                   {% if assessment_count %}
-                    <div class="d-flex flex-column gap-2">
+                    <div class="flex flex-col gap-2">
                       {% for assessment in component.dpia_assessments|sort(attribute='updated_at', reverse=True) %}
                         {% set badge_class = dpia_status_badges.get(assessment.status.value, 'bg-secondary') %}
                         {% if assessment.updated_at %}
@@ -238,31 +247,32 @@ body[data-theme="dark"] .dpia-auth-badge {
                         {% else %}
                           {% set updated_display = _('dpia.dashboard.table.assessment_updated', timestamp=_('dpia.dashboard.table.unknown')) %}
                         {% endif %}
-                        <div class="dpia-assessment-row">
+                        <div class="flex items-center gap-2">
                           <span class="badge {{ badge_class }}" style="font-size:0.7rem;">{{ _('dpia.status.' ~ assessment.status.value) }}</span>
-                          <small class="text-secondary">{{ updated_display }}</small>
+                          <span class="text-xs text-[var(--color-muted)]">{{ updated_display }}</span>
                         </div>
                       {% endfor %}
                     </div>
                   {% else %}
-                    <span class="text-secondary" style="font-size:0.8rem;">{{ _('dpia.dashboard.table.dpia_none') }}</span>
+                    <span class="text-[var(--color-muted)] italic text-xs">{{ _('dpia.dashboard.table.dpia_none') }}</span>
                   {% endif %}
                 </td>
-                <td class="text-end pe-4">
+                <td class="px-5 py-4 text-right">
                   {% if component.context_scope %}
                     {% if assessment_count %}
-                      <div class="d-flex flex-column align-items-end gap-2">
+                      <div class="flex flex-col items-end gap-2">
                         {% for assessment in component.dpia_assessments|sort(attribute='updated_at', reverse=True) %}
-                          <div class="d-flex flex-wrap justify-content-end gap-1">
+                          <div class="flex flex-wrap justify-end gap-1">
                             <a href="{{ url_for('dpia.view_assessment', assessment_id=assessment.id) }}"
-                               class="btn btn-sm btn-outline-secondary">
+                               class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface)]">
                               {{ _('dpia.dashboard.table.edit_existing_action') }}
                             </a>
-                            <form method="post" action="{{ url_for('dpia.delete_assessment', assessment_id=assessment.id) }}" class="d-inline">
+                            <form method="post" action="{{ url_for('dpia.delete_assessment', assessment_id=assessment.id) }}" class="inline">
                               {% if csrf_token is defined %}
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                               {% endif %}
-                              <button type="submit" class="btn btn-sm btn-outline-danger"
+                              <button type="submit"
+                                      class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-red-400 text-red-400 hover:bg-red-400/10"
                                       data-confirm-message="{{ _('dpia.dashboard.table.delete_confirm') }}"
                                       onclick="return confirm(this.dataset.confirmMessage);">
                                 {{ _('dpia.dashboard.table.delete_action') }}
@@ -270,16 +280,17 @@ body[data-theme="dark"] .dpia-auth-badge {
                             </form>
                           </div>
                         {% endfor %}
-                        <small class="text-secondary">{{ _('dpia.dashboard.table.start_blocked') }}</small>
+                        <span class="text-xs text-[var(--color-muted)]">{{ _('dpia.dashboard.table.start_blocked') }}</span>
                       </div>
                     {% else %}
                       <a href="{{ url_for('dpia.start_from_component', component_id=component.id) }}"
-                         class="btn btn-sm btn-primary">
-                        <i class="fas fa-plus me-1"></i> {{ _('dpia.dashboard.table.start_action') }}
+                         class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm">
+                        <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        {{ _('dpia.dashboard.table.start_action') }}
                       </a>
                     {% endif %}
                   {% else %}
-                    <span class="text-secondary" style="font-size:0.8rem;">{{ _('dpia.dashboard.table.start_disabled') }}</span>
+                    <span class="text-[var(--color-muted)] italic text-xs">{{ _('dpia.dashboard.table.start_disabled') }}</span>
                   {% endif %}
                 </td>
               </tr>
@@ -352,22 +363,23 @@ body[data-theme="dark"] .dpia-auth-badge {
       {% endif %}
 
       {% else %}
-      <div class="text-center text-secondary py-5">
-        <i class="fas fa-shield-alt fa-2x mb-2 d-block opacity-40"></i>
-        {{ _('dpia.dashboard.table.empty') }}
+      <div class="flex flex-col items-center justify-center py-16 text-[var(--color-muted)]">
+        <svg class="h-10 w-10 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+        <p class="text-sm">{{ _('dpia.dashboard.table.empty') }}</p>
       </div>
       {% endif %}
     </div>
   </section>
 
   {# ── Help notice ── #}
-  <div class="alert alert-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-0" role="alert">
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
-      <strong>{{ _('dpia.dashboard.help.title') }}</strong>
-      <p class="mb-0 mt-1" style="font-size:0.875rem;">{{ _('dpia.dashboard.help.description') }}</p>
+      <p class="font-semibold text-[var(--color-text)] mb-1">{{ _('dpia.dashboard.help.title') }}</p>
+      <p class="text-sm text-[var(--color-muted)] mb-0">{{ _('dpia.dashboard.help.description') }}</p>
     </div>
-    <a href="{{ url_for('bia.view_components') }}" class="btn btn-sm btn-outline-secondary flex-shrink-0">
-      <i class="fas fa-layer-group me-1"></i> {{ _('dpia.dashboard.help.manage_link') }}
+    <a href="{{ url_for('bia.view_components') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 shrink-0">
+      <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h8"/></svg>
+      {{ _('dpia.dashboard.help.manage_link') }}
     </a>
   </div>
 
