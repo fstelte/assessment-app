@@ -1360,8 +1360,6 @@ def export_item(item_id: int):
     consequences = [consequence for component in item.components for consequence in component.consequences]
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
-    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
-    export_css = css_path.read_text(encoding="utf-8") if css_path.exists() else ""
     html_content = render_template(
         "bia/context_detail.html",
         item=item,
@@ -1370,7 +1368,7 @@ def export_item(item_id: int):
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
         export_mode=True,
-        export_css=export_css,
+        export_css=_load_export_css(),
     )
 
     safe_name = _safe_filename(item.name)
@@ -1555,6 +1553,8 @@ def export_authentication_overview():
         groups=groups,
         unassigned=unassigned,
         generated_at=datetime.now(),
+        export_mode=True,
+        export_css=_load_export_css(),
     )
 
     filename = f"Authentication_Overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
@@ -1588,6 +1588,8 @@ def export_all_consequences():
             "bia/export_consequences_summary.html",
             bia_summaries=summaries,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"CIA_Consequences_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
@@ -1607,6 +1609,8 @@ def export_all_consequences():
             "bia/export_all_consequences.html",
             consequences=all_consequences,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"All_CIA_Consequences_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
@@ -1700,6 +1704,8 @@ def export_availability_requirements():
             "bia/export_availability_summary.html",
             bia_summaries=summaries,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"Availability_Requirements_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
@@ -1719,6 +1725,8 @@ def export_availability_requirements():
             "bia/export_availability_requirements.html",
             requirements=all_requirements,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"Availability_Requirements_Detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
@@ -1782,6 +1790,8 @@ def export_all_dependencies():
             "bia/export_all_dependencies.html",
             bias=bias,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
 
         filename = f"BIA_Dependencies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
@@ -1802,6 +1812,8 @@ def export_all_tiers():
             "bia/export_all_tiers.html",
             bias=bias,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
 
         filename = f"BIA_Tiers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
@@ -1907,6 +1919,12 @@ def _safe_filename(value: str | None) -> str:
         return "bia"
     cleaned = "".join(ch for ch in value if ch.isalnum() or ch in {"_", "-", " "}).strip()
     return cleaned.replace(" ", "_") or "bia"
+
+
+def _load_export_css() -> str:
+    """Return the compiled Tailwind CSS so standalone export pages are styled."""
+    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
+    return css_path.read_text(encoding="utf-8") if css_path.exists() else ""
 
 
 def _send_export_response(html_content: str, base_filename: str):
