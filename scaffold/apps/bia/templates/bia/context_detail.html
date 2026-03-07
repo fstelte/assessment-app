@@ -426,8 +426,8 @@
       </div>
       <div class="p-0">
         {% if item.components %}
-        <div class="overflow-x-auto w-full">
-          <table class="w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
+        <div class="w-full">
+          <table class="table-fixed w-full text-sm border-collapse bg-[var(--color-card)] [&_tbody_tr]:hover:bg-primary-500/5 align-middle mb-0">
             <thead class="bg-[var(--color-surface)]">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Component</th>
@@ -442,13 +442,13 @@
             <tbody class="divide-y divide-[var(--color-border)]">
               {% for component in item.components %}
               <tr>
-                <td class="px-4 py-3 font-medium">{{ component.name }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[140px] truncate" title="{{ component.dependencies_it_systems_applications or '' }}">{{ component.dependencies_it_systems_applications or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_equipment or '' }}">{{ component.dependencies_equipment or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_suppliers or '' }}">{{ component.dependencies_suppliers or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_people or '' }}">{{ component.dependencies_people or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_facilities or '' }}">{{ component.dependencies_facilities or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)] max-w-[120px] truncate" title="{{ component.dependencies_others or '' }}">{{ component.dependencies_others or '–' }}</td>
+                <td class="px-4 py-3 font-medium break-words">{{ component.name }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_it_systems_applications or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_equipment or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_suppliers or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_people or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_facilities or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)] break-words">{{ component.dependencies_others or '–' }}</td>
               </tr>
               {% endfor %}
             </tbody>
