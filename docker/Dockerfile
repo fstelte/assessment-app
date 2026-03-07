@@ -13,7 +13,8 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock README.md /app/
-RUN poetry install --only main --no-interaction --no-ansi --no-root
+RUN poetry install --only main --no-interaction --no-ansi --no-root \
+    && playwright install --with-deps chromium
 
 COPY . /app
 

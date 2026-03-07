@@ -24,6 +24,7 @@ from sqlalchemy.orm import selectinload
 
 from ...extensions import db
 from ...core.i18n import gettext as _
+from ...core.pdf_export import html_to_pdf_bytes
 from ..identity.models import (
     ROLE_ADMIN,
     ROLE_ASSESSMENT_MANAGER,
@@ -599,8 +600,21 @@ def export_assessment(assessment_id: int):
 
     safe_name = _slugify_filename(filename_base)
     date_suffix = generated_at.strftime("%Y%m%d")
-    filename = f"{safe_name} - {date_suffix}.html"
 
+    export_format = request.args.get("format", "html").lower()
+    if export_format == "pdf":
+        pdf_filename = f"{safe_name} - {date_suffix}.pdf"
+        try:
+            pdf_bytes = html_to_pdf_bytes(html)
+        except RuntimeError as exc:
+            current_app.logger.error("PDF export failed: %s", exc)
+            flash(str(exc), "danger")
+            return redirect(url_for("csa.overview_assessments"))
+        response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = f'attachment; filename="{pdf_filename}"'
+        return response
+
+    filename = f"{safe_name} - {date_suffix}.html"
     response = current_app.response_class(html, mimetype="text/html")
     response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response

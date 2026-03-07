@@ -28,6 +28,7 @@ from sqlalchemy.orm import joinedload
 from urllib.parse import urlparse
 
 from ...core.audit import log_change_event
+from ...core.pdf_export import html_to_pdf_bytes
 from ...core.security import require_fresh_login
 from ...core.i18n import gettext as _, get_locale
 from ...extensions import db
@@ -1342,7 +1343,20 @@ def manage_item_ai(item_id: int):
 @bp.route("/item/<int:item_id>/export")
 @login_required
 def export_item(item_id: int):
-    item = ContextScope.query.get_or_404(item_id)
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components)
+            .joinedload(Component.environments)
+            .joinedload(ComponentEnvironment.authentication_method),
+            joinedload(ContextScope.components).joinedload(Component.consequences),
+            joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
+            joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
     consequences = [consequence for component in item.components for consequence in component.consequences]
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
@@ -1361,10 +1375,7 @@ def export_item(item_id: int):
 
     safe_name = _safe_filename(item.name)
     filename = f"BIA_{safe_name}.html"
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_csv/<int:item_id>")
@@ -1547,10 +1558,7 @@ def export_authentication_overview():
     )
 
     filename = f"Authentication_Overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_all_consequences")
@@ -1602,10 +1610,7 @@ def export_all_consequences():
         )
         filename = f"All_CIA_Consequences_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_availability_requirements")
@@ -1717,10 +1722,7 @@ def export_availability_requirements():
         )
         filename = f"Availability_Requirements_Detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/debug/consequences")
@@ -1783,11 +1785,7 @@ def export_all_dependencies():
         )
 
         filename = f"BIA_Dependencies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        export_folder = ensure_export_folder()
-        file_path = export_folder / filename
-        file_path.write_text(html_content, encoding="utf-8")
-
-        return send_file(file_path, as_attachment=True, download_name=filename)
+        return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Dependency export failed")
         flash(_("An error occurred while exporting dependencies: %(error)s", error=str(exc)), "danger")
@@ -1807,11 +1805,7 @@ def export_all_tiers():
         )
 
         filename = f"BIA_Tiers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        export_folder = ensure_export_folder()
-        file_path = export_folder / filename
-        file_path.write_text(html_content, encoding="utf-8")
-
-        return send_file(file_path, as_attachment=True, download_name=filename)
+        return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Tiers export failed")
         flash(_("An error occurred while exporting tiers: %(error)s", error=str(exc)), "danger")
@@ -1913,6 +1907,34 @@ def _safe_filename(value: str | None) -> str:
         return "bia"
     cleaned = "".join(ch for ch in value if ch.isalnum() or ch in {"_", "-", " "}).strip()
     return cleaned.replace(" ", "_") or "bia"
+
+
+def _send_export_response(html_content: str, base_filename: str):
+    """Return *html_content* as an HTML or PDF download.
+
+    The output format is controlled by the ``format`` query-string parameter:
+    ``html`` (default) saves the file and sends it; ``pdf`` converts via
+    Playwright and returns a PDF attachment.
+    """
+    export_format = request.args.get("format", "html").lower()
+    if export_format == "pdf":
+        pdf_filename = base_filename.removesuffix(".html") + ".pdf"
+        try:
+            pdf_bytes = html_to_pdf_bytes(html_content)
+        except RuntimeError as exc:
+            current_app.logger.error("PDF export failed: %s", exc)
+            flash(str(exc), "danger")
+            return redirect(request.referrer or url_for("bia.dashboard"))
+        response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = f'attachment; filename="{pdf_filename}"'
+        return response
+    # Default: HTML
+    export_folder = ensure_export_folder()
+    file_path = export_folder / base_filename
+    file_path.write_text(html_content, encoding="utf-8")
+    return send_file(file_path, as_attachment=True, download_name=base_filename)
+
+
 @bp.route("/item/<int:item_id>/copy", methods=["POST"])
 @login_required
 def copy_item(item_id: int):

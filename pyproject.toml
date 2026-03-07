@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2026.3.5"
+version = "2026.3.6"
 description = "Unified scaffold for applications"
 authors = ["Ferry Stelte"]
 readme = "README.md"
@@ -32,6 +32,7 @@ python3-saml = "^1.16.0"
 sqlalchemy = "^2.0.32"
 werkzeug = ">=3.1.6"
 zipp = ">=3.19.1"
+playwright = ">=1.40.0"
 
 [tool.poetry.extras]
 postgresql = ["psycopg"]

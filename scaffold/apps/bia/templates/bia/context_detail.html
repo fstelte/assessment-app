@@ -196,6 +196,7 @@
           </button>
           <ul class="export-menu absolute right-0 z-50 mt-1 min-w-[9rem] rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
             <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=item.id) }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+            <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_item', item_id=item.id, format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
             <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_csv', item_id=item.id) }}"><i class="fas fa-file-csv w-4"></i> CSV</a></li>
             <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_bia_sql', item_id=item.id) }}"><i class="fas fa-database w-4"></i> SQL</a></li>
           </ul>

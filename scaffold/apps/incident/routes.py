@@ -7,6 +7,7 @@ from flask import render_template, redirect, url_for, flash, request, abort, cur
 from flask_login import login_required
 from flask_wtf import FlaskForm
 
+from ...core.pdf_export import html_to_pdf_bytes
 from ...extensions import db
 from ...apps.bia.models import Component, ContextScope
 from . import bp
@@ -177,13 +178,43 @@ def export_scenario_html(scenario_id):
     file_path.write_text(html_content, encoding="utf-8")
     
     return send_file(file_path, as_attachment=True, download_name=filename)
-    return render_template(
+
+
+@bp.route("/scenario/<int:scenario_id>/export/pdf")
+@login_required
+def export_scenario_pdf(scenario_id):
+    """Export the scenario and plans as a PDF."""
+    scenario = IncidentScenario.query.get_or_404(scenario_id)
+    steps = IncidentStep.query.filter_by(scenario_id=scenario.id).first()
+
+    from datetime import date
+
+    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
+    export_css = css_path.read_text(encoding="utf-8") if css_path.exists() else ""
+
+    html_content = render_template(
         "incident/export_scenario.html",
         scenario=scenario,
         component=scenario.component,
         steps=steps,
-        current_date=date.today().strftime("%Y-%m-%d")
+        current_date=date.today().strftime("%Y-%m-%d"),
+        export_mode=True,
+        export_css=export_css,
     )
+
+    try:
+        pdf_bytes = html_to_pdf_bytes(html_content)
+    except RuntimeError as exc:
+        current_app.logger.error("PDF export failed: %s", exc)
+        flash(str(exc), "danger")
+        return redirect(url_for("incident.component_scenarios", component_id=scenario.component_id))
+
+    safe_name = _safe_filename(f"{scenario.component.name}_{scenario.name}")
+    filename = f"IncidentPlan_{safe_name}.pdf"
+    response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
 
 @bp.route("/scenario/<int:scenario_id>/delete", methods=["POST"])
 @login_required
