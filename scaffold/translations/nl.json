@@ -736,7 +736,9 @@
       "all_scopes": "Alle scopes",
       "all_items": "Alle items",
       "select_context": "Selecteer een BIA",
-      "actions": "Acties"
+      "actions": "Acties",
+      "yes": "Ja",
+      "no": "Nee"
     },
     "view_consequences": {
       "actions": {
@@ -755,6 +757,16 @@
       }
     },
     "export": {
+      "generated_at": "Gegenereerd op {timestamp}",
+      "legend": "Legenda",
+      "impact_labels": {
+        "minor": "Gering",
+        "moderate": "Matig",
+        "major": "Ernstig",
+        "critical": "Kritiek",
+        "catastrophic": "Catastrofaal",
+        "insignificant": "Verwaarloosbaar"
+      },
       "authentication_overview": {
         "title": "Overzicht authenticatie",
         "heading": "Overzicht authenticatie",
@@ -779,6 +791,150 @@
           "title": "Componenten zonder authenticatietype",
           "empty": "Alle componenten hebben een authenticatietype."
         }
+      }
+    },
+    "export_item": {
+      "title": "Business Impact Analyse",
+      "print": "Rapport afdrukken",
+      "generated_note": "Gegenereerd door de BIA-module.",
+      "sections": {
+        "executive_summary": "Managementsamenvatting",
+        "scope": "Scope & context",
+        "service_description": "Servicebeschrijving",
+        "scope_field": "Scope",
+        "risk_assessments": "Risicobeoordelingen",
+        "ai_identification": "AI-identificatie"
+      },
+      "fields": {
+        "owner": "Eindverantwoordelijke",
+        "coordinator": "Coordinator",
+        "project_lead": "Projectleider",
+        "product_owner": "Product owner",
+        "risk_owner": "Risico-eigenaar",
+        "knowledge": "Kennis",
+        "interfaces": "Interfaces",
+        "mission_critical": "Missionkritisch",
+        "support_contracts": "Onderhoudscontracten",
+        "security_supplier": "Beveiligingsleverancier",
+        "users": "Aantal gebruikers",
+        "ai_model_in_scope": "Gebruik van AI-componenten",
+        "last_update": "Laatste update"
+      },
+      "risk": {
+        "people": "Mensen",
+        "process": "Processen",
+        "technology": "Technologie",
+        "required": "Vereist",
+        "not_required": "Niet vereist"
+      },
+      "cia": {
+        "confidentiality": "Vertrouwelijkheid",
+        "integrity": "Integriteit",
+        "availability": "Beschikbaarheid"
+      },
+      "table": {
+        "component": "Component",
+        "category": "Categorie",
+        "security_property": "Beveiligingseigenschap",
+        "worst_case": "Worst case",
+        "realistic_case": "Realistisch geval",
+        "cia_impact": "CIA-impact",
+        "information_type": "Informatietype",
+        "authentication": "Authenticatie",
+        "description": "Omschrijving",
+        "mtd": "MTD",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "masl": "MASL"
+      },
+      "empty": {
+        "summary": "Geen samenvatting opgegeven.",
+        "ai_risks": "Geen AI-risico's geïdentificeerd.",
+        "ai_details": "Geen details opgegeven.",
+        "consequences": "Geen gevolgen vastgelegd.",
+        "components": "Geen componenten toegevoegd.",
+        "components_table": "Geen componenten met beschikbaarheidsvereisten."
+      }
+    },
+    "export_all_consequences": {
+      "title": "Alle CIA-gevolgen",
+      "empty": "Geen gevolgen vastgelegd.",
+      "table": {
+        "bia": "BIA",
+        "component": "Component",
+        "category": "Categorie",
+        "security_property": "Beveiligingseigenschap",
+        "realistic_case": "Realistisch geval",
+        "worst_case": "Worst case"
+      },
+      "stats": {
+        "total": "Totaal gevolgen",
+        "unique_bias": "Unieke BIA's",
+        "unique_components": "Unieke componenten"
+      }
+    },
+    "export_consequences_summary": {
+      "title": "Samenvatting CIA-gevolgen",
+      "empty": "Geen gevolgen vastgelegd.",
+      "table": {
+        "bia": "BIA",
+        "components": "Componenten",
+        "consequences": "Gevolgen",
+        "confidentiality": "Vertrouwelijkheid",
+        "integrity": "Integriteit",
+        "availability": "Beschikbaarheid",
+        "worst_case_shown": "Worst case getoond",
+        "worst_value": "Worst: {value}"
+      }
+    },
+    "export_availability_summary": {
+      "title": "Samenvatting beschikbaarheidsvereisten",
+      "empty": "Geen beschikbaarheidsvereisten vastgelegd.",
+      "table": {
+        "bia": "BIA",
+        "components": "Componenten",
+        "mtd": "MTD",
+        "rpo": "RPO",
+        "rto": "RTO",
+        "masl": "MASL"
+      }
+    },
+    "export_availability_requirements": {
+      "title": "Beschikbaarheidsvereisten (gedetailleerd)",
+      "empty": "Geen beschikbaarheidsvereisten vastgelegd.",
+      "table": {
+        "bia": "BIA",
+        "component": "Component",
+        "mtd": "MTD",
+        "rpo": "RPO",
+        "rto": "RTO",
+        "masl": "MASL"
+      }
+    },
+    "export_all_dependencies": {
+      "title": "Alle afhankelijkheden",
+      "empty": "Geen afhankelijkheden vastgelegd.",
+      "table": {
+        "component": "Component",
+        "dependencies": "Afhankelijkheden"
+      },
+      "deps": {
+        "it_systems": "IT-systemen en applicaties",
+        "equipment": "Apparatuur",
+        "suppliers": "Leveranciers",
+        "people": "Mensen",
+        "facilities": "Faciliteiten",
+        "others": "Overige afhankelijkheden"
+      }
+    },
+    "export_all_tiers": {
+      "title": "Alle BIA-tiers",
+      "empty": "Geen BIA's vastgelegd.",
+      "table": {
+        "bia_context": "BIA",
+        "tier": "Tier",
+        "risk_owner": "Risico-eigenaar",
+        "components": "Componenten"
       }
     },
     "impacts": {

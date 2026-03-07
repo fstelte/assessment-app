@@ -24,20 +24,20 @@
     } %}
     {% set default_impact_class = 'bg-slate-800 text-slate-100' %}
     {% set legend_items = [
-      {'label': 'Minor', 'class': 'bg-emerald-500'},
-      {'label': 'Moderate', 'class': 'bg-amber-400'},
-      {'label': 'Major', 'class': 'bg-orange-500'},
-      {'label': 'Critical', 'class': 'bg-rose-600'}
+      {'label': _('bia.export.impact_labels.minor'), 'class': 'bg-emerald-500'},
+      {'label': _('bia.export.impact_labels.moderate'), 'class': 'bg-amber-400'},
+      {'label': _('bia.export.impact_labels.major'), 'class': 'bg-orange-500'},
+      {'label': _('bia.export.impact_labels.critical'), 'class': 'bg-rose-600'}
     ] %}
     <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
       <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
         <header class="border-b border-slate-800 px-6 py-5">
           <h1 class="text-2xl font-semibold tracking-tight">{{ _('bia.export_all_consequences.title') }}</h1>
-          <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+          <p class="text-sm text-slate-400">{{ _('bia.export.generated_at', timestamp=generated_at.strftime('%Y-%m-%d %H:%M')) }}</p>
         </header>
         <div class="space-y-6 px-6 py-5">
           <section class="rounded-xl border border-[var(--color-border)] border-slate-800 bg-slate-900/70 px-5 py-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Legend</h2>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">{{ _('bia.export.legend') }}</h2>
             <div class="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
               {% for item in legend_items %}
               <span class="inline-flex items-center gap-2">

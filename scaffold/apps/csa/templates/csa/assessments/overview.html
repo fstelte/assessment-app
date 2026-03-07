@@ -86,6 +86,7 @@
                       <div class="inline-flex flex-wrap justify-end gap-2">
                         <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8" href="{{ url_for('csa.view_assessment', assessment_id=assessment.id) }}">{{ _('actions.view') }}</a>
                         <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('csa.export_assessment', assessment_id=assessment.id) }}">{{ _('actions.export') }}</a>
+                        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('csa.export_assessment', assessment_id=assessment.id, format='pdf') }}"><i class="fas fa-file-pdf mr-1"></i> PDF</a>
                         {% if current_user.has_role('admin') or current_user.has_role('manager') or current_user.has_role('control_assigner') %}
                           <form method="post" action="{{ url_for('csa.delete_assessment', assessment_id=assessment.id) }}" class="d-inline">
                             {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}

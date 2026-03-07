@@ -28,6 +28,7 @@ from sqlalchemy.orm import joinedload
 from urllib.parse import urlparse
 
 from ...core.audit import log_change_event
+from ...core.pdf_export import html_to_pdf_bytes
 from ...core.security import require_fresh_login
 from ...core.i18n import gettext as _, get_locale
 from ...extensions import db
@@ -1342,12 +1343,23 @@ def manage_item_ai(item_id: int):
 @bp.route("/item/<int:item_id>/export")
 @login_required
 def export_item(item_id: int):
-    item = ContextScope.query.get_or_404(item_id)
+    item = (
+        ContextScope.query.options(
+            joinedload(ContextScope.components)
+            .joinedload(Component.environments)
+            .joinedload(ComponentEnvironment.authentication_method),
+            joinedload(ContextScope.components).joinedload(Component.consequences),
+            joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
+            joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+        )
+        .filter(ContextScope.id == item_id)
+        .one_or_none()
+    )
+    if item is None:
+        abort(404)
     consequences = [consequence for component in item.components for consequence in component.consequences]
     max_cia_impact = get_max_cia_impact(consequences)
     ai_identifications = _collect_ai_identifications(item)
-    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
-    export_css = css_path.read_text(encoding="utf-8") if css_path.exists() else ""
     html_content = render_template(
         "bia/context_detail.html",
         item=item,
@@ -1356,15 +1368,12 @@ def export_item(item_id: int):
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
         export_mode=True,
-        export_css=export_css,
+        export_css=_load_export_css(),
     )
 
     safe_name = _safe_filename(item.name)
     filename = f"BIA_{safe_name}.html"
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_csv/<int:item_id>")
@@ -1544,13 +1553,12 @@ def export_authentication_overview():
         groups=groups,
         unassigned=unassigned,
         generated_at=datetime.now(),
+        export_mode=True,
+        export_css=_load_export_css(),
     )
 
     filename = f"Authentication_Overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_all_consequences")
@@ -1580,6 +1588,8 @@ def export_all_consequences():
             "bia/export_consequences_summary.html",
             bia_summaries=summaries,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"CIA_Consequences_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
@@ -1599,13 +1609,12 @@ def export_all_consequences():
             "bia/export_all_consequences.html",
             consequences=all_consequences,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"All_CIA_Consequences_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_availability_requirements")
@@ -1695,6 +1704,8 @@ def export_availability_requirements():
             "bia/export_availability_summary.html",
             bia_summaries=summaries,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"Availability_Requirements_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
@@ -1714,13 +1725,12 @@ def export_availability_requirements():
             "bia/export_availability_requirements.html",
             requirements=all_requirements,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
         filename = f"Availability_Requirements_Detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
-    export_folder = ensure_export_folder()
-    file_path = export_folder / filename
-    file_path.write_text(html_content, encoding="utf-8")
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/debug/consequences")
@@ -1780,14 +1790,12 @@ def export_all_dependencies():
             "bia/export_all_dependencies.html",
             bias=bias,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
 
         filename = f"BIA_Dependencies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        export_folder = ensure_export_folder()
-        file_path = export_folder / filename
-        file_path.write_text(html_content, encoding="utf-8")
-
-        return send_file(file_path, as_attachment=True, download_name=filename)
+        return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Dependency export failed")
         flash(_("An error occurred while exporting dependencies: %(error)s", error=str(exc)), "danger")
@@ -1804,14 +1812,12 @@ def export_all_tiers():
             "bia/export_all_tiers.html",
             bias=bias,
             generated_at=datetime.now(),
+            export_mode=True,
+            export_css=_load_export_css(),
         )
 
         filename = f"BIA_Tiers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        export_folder = ensure_export_folder()
-        file_path = export_folder / filename
-        file_path.write_text(html_content, encoding="utf-8")
-
-        return send_file(file_path, as_attachment=True, download_name=filename)
+        return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Tiers export failed")
         flash(_("An error occurred while exporting tiers: %(error)s", error=str(exc)), "danger")
@@ -1913,6 +1919,40 @@ def _safe_filename(value: str | None) -> str:
         return "bia"
     cleaned = "".join(ch for ch in value if ch.isalnum() or ch in {"_", "-", " "}).strip()
     return cleaned.replace(" ", "_") or "bia"
+
+
+def _load_export_css() -> str:
+    """Return the compiled Tailwind CSS so standalone export pages are styled."""
+    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
+    return css_path.read_text(encoding="utf-8") if css_path.exists() else ""
+
+
+def _send_export_response(html_content: str, base_filename: str):
+    """Return *html_content* as an HTML or PDF download.
+
+    The output format is controlled by the ``format`` query-string parameter:
+    ``html`` (default) saves the file and sends it; ``pdf`` converts via
+    Playwright and returns a PDF attachment.
+    """
+    export_format = request.args.get("format", "html").lower()
+    if export_format == "pdf":
+        pdf_filename = base_filename.removesuffix(".html") + ".pdf"
+        try:
+            pdf_bytes = html_to_pdf_bytes(html_content)
+        except RuntimeError as exc:
+            current_app.logger.error("PDF export failed: %s", exc)
+            flash(str(exc), "danger")
+            return redirect(request.referrer or url_for("bia.dashboard"))
+        response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = f'attachment; filename="{pdf_filename}"'
+        return response
+    # Default: HTML
+    export_folder = ensure_export_folder()
+    file_path = export_folder / base_filename
+    file_path.write_text(html_content, encoding="utf-8")
+    return send_file(file_path, as_attachment=True, download_name=base_filename)
+
+
 @bp.route("/item/<int:item_id>/copy", methods=["POST"])
 @login_required
 def copy_item(item_id: int):

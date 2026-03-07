@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, flash, redirect, render_template, request, url_for, send_file
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for, send_file
 from flask_login import current_user, login_required
 
 from scaffold.apps.identity.models import (
@@ -8,6 +8,7 @@ from scaffold.apps.identity.models import (
     ROLE_CONTROL_OWNER,
 )
 from scaffold.core.i18n import gettext as _
+from scaffold.core.pdf_export import html_to_pdf_bytes
 from scaffold.extensions import db
 from scaffold.models import (
     Control,
@@ -363,3 +364,46 @@ def export_html():
         generated_at=datetime.now(),
     )
 
+
+@maturity_bp.route("/export/pdf")
+@login_required
+def export_pdf():
+    """Generate a PDF report of the maturity state."""
+    results = (
+        db.session.query(Control, MaturityAssessment)
+        .outerjoin(MaturityAssessment, MaturityAssessment.control_id == Control.id)
+        .order_by(Control.domain, Control.id)
+        .all()
+    )
+
+    assessments_finished = 0
+    total_maturity = 0
+
+    for _, assessment in results:
+        if assessment and assessment.status in (AssessmentStatus.ASSESSED, AssessmentStatus.SUBMITTED, AssessmentStatus.APPROVED):
+            assessments_finished += 1
+            total_maturity += assessment.current_level.value
+
+    average_maturity = round(total_maturity / assessments_finished, 1) if assessments_finished else 0
+
+    html_content = render_template(
+        "maturity/export_report.html",
+        controls=results,
+        assessments_finished=assessments_finished,
+        average_maturity=average_maturity,
+        levels=CMMI_REQUIREMENTS,
+        MaturityLevel=MaturityLevel,
+        generated_at=datetime.now(),
+    )
+
+    try:
+        pdf_bytes = html_to_pdf_bytes(html_content)
+    except RuntimeError as exc:
+        current_app.logger.error("PDF export failed: %s", exc)
+        flash(str(exc), "danger")
+        return redirect(url_for("maturity.index"))
+
+    filename = f"Maturity_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

@@ -18,7 +18,7 @@
       <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/30">
         <header class="border-b border-slate-800 px-6 py-5">
           <h1 class="text-2xl font-semibold tracking-tight">{{ _('bia.export_all_tiers.title') }}</h1>
-          <p class="text-sm text-slate-400">Generated {{ generated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+          <p class="text-sm text-slate-400">{{ _('bia.export.generated_at', timestamp=generated_at.strftime('%Y-%m-%d %H:%M')) }}</p>
         </header>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
