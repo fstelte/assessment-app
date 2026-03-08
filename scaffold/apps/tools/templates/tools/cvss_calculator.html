@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+{% block title %}CVSS Risk Calculator{% endblock %}
+
+{% block main_container_class %}container mx-auto max-w-4xl px-4 sm:px-6 grow{% endblock %}
+
+{% block extra_css %}
+    <style nonce="{{ csp_nonce }}">
+*, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --surface-2:  #22263a;
+      --border:     #2e3350;
+      --accent:     #6c8ef5;
+      --accent-dim: #3a4a8a;
+      --text:       #e2e6f3;
+      --text-muted: #7a82a8;
+      --low:        #34d399;
+      --medium:     #fbbf24;
+      --high:       #f97316;
+      --critical:   #ef4444;
+      --radius:     14px;
+      --transition: 0.25s ease;
+    }
+
+    .tool-body-wrap {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-header {
+      margin-bottom: 2rem;
+    }
+
+    .card-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .card-header p {
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Steps ─────────────────────────────────── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .step {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.25rem 1rem;
+      transition: border-color var(--transition);
+    }
+
+    .step:focus-within {
+      border-color: var(--accent-dim);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .step-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    /* ── Inputs ─────────────────────────────────── */
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.6rem 0.85rem;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 142, 245, 0.15);
+    }
+
+    input[type="number"]::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* hide number spinners */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"] { -moz-appearance: textfield; }
+
+    /* custom select arrow */
+    .select-wrap {
+      position: relative;
+    }
+
+    .select-wrap::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--text-muted);
+      border-bottom: 0;
+    }
+
+    select option {
+      background: var(--surface-2);
+    }
+
+    /* ── Calculate button ────────────────────────── */
+    .calc-btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.8rem;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.97rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition),
+                  box-shadow var(--transition);
+    }
+
+    .calc-btn:hover {
+      background: #7ea0ff;
+      box-shadow: 0 4px 20px rgba(108, 142, 245, 0.45);
+    }
+
+    .calc-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* ── Result ──────────────────────────────────── */
+    .result {
+      margin-top: 1.5rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: none;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .result.visible { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .result-body {
+      background: var(--surface-2);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .result-score-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .result-score-circle .score-num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .result-score-circle .score-max {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .result-details {
+      flex: 1;
+    }
+
+    .result-severity {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .result-breakdown {
+      margin-top: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .breakdown-row {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .breakdown-row span:last-child {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* severity colour themes */
+    .sev-low    { --sev: var(--low);      background: rgba(52, 211, 153, 0.08); }
+    .sev-medium { --sev: var(--medium);   background: rgba(251, 191, 36, 0.08); }
+    .sev-high   { --sev: var(--high);     background: rgba(249, 115, 22, 0.08); }
+    .sev-critical { --sev: var(--critical); background: rgba(239, 68, 68, 0.08); }
+
+    .result-header { color: var(--sev); }
+    .result-score-circle { border-color: var(--sev); color: var(--sev); }
+    .result-severity { color: var(--sev); }
+
+    /* validation */
+    .error-msg {
+      font-size: 0.78rem;
+      color: var(--critical);
+      margin-top: 0.4rem;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-body-wrap py-6">
+<div class="card">
+  <div class="card-header">
+    <h1>CVSS Risk Calculator</h1>
+    <p>Calculates an adjusted risk score based on CVSS, business impact, and exposure.</p>
+  </div>
+
+  <div class="steps">
+
+    <!-- Step 1: CVSSv3 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div>
+          <div class="step-label">CVSSv3 Base Score</div>
+          <div class="step-desc">Enter a value between 0.0 and 10.0 &mdash; will be weighted &times; 0.6</div>
+        </div>
+      </div>
+      <input
+        type="number"
+        id="cvssInput"
+        min="0" max="10" step="0.1"
+        placeholder="e.g. 7.5"
+      />
+      <div class="error-msg" id="cvssError">Please enter a CVSSv3 score between 0.0 and 10.0.</div>
+    </div>
+
+    <!-- Step 2: Business Impact -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <div>
+          <div class="step-label">Business Impact</div>
+          <div class="step-desc">How critical is this asset to business operations?</div>
+        </div>
+      </div>
+      <div class="select-wrap">
+        <select id="impactSelect">
+          <option value="0">0 &mdash; Low (supporting system)</option>
+          <option value="1">1 &mdash; Average (important, not business-critical)</option>
+          <option value="2">2 &mdash; High (authentication / core services)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 3: Exposure -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <div>
+          <div class="step-label">Exposure</div>
+          <div class="step-desc">Where is the asset reachable from?</div>
+        </div>
+      </div>
+      <div class="select-wrap">
+        <select id="exposureSelect">
+          <option value="0">0 &mdash; Internal</option>
+          <option value="1">1 &mdash; DMZ</option>
+          <option value="2">2 &mdash; External / Untrusted</option>
+        </select>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+  <button class="calc-btn" data-fn="calculate">Calculate Risk Score</button>
+
+  <!-- Result -->
+  <div class="result" id="result">
+    <div class="result-header" id="resultHeader">&#9679; SEVERITY</div>
+    <div class="result-body">
+      <div class="result-score-circle" id="scoreCircle">
+        <span class="score-num" id="scoreNum">0</span>
+        <span class="score-max">/ 10</span>
+      </div>
+      <div class="result-details">
+        <div class="result-severity" id="severityLabel"></div>
+        <div class="result-breakdown">
+          <div class="breakdown-row">
+            <span>CVSSv3 &times; 0.6</span>
+            <span id="bCvss"></span>
+          </div>
+          <div class="breakdown-row">
+            <span>+ Business Impact</span>
+            <span id="bImpact"></span>
+          </div>
+          <div class="breakdown-row">
+            <span>+ Exposure</span>
+            <span id="bExposure"></span>
+          </div>
+          <div class="breakdown-row" style="border-top:1px solid #2e3350; padding-top:0.3rem; margin-top:0.1rem;">
+            <span style="color:var(--text); font-weight:600;">Total Risk Score</span>
+            <span id="bTotal" style="color:var(--text); font-weight:700;"></span>
+          </div>
+        </div>
+  <div id="pdf-export-section" style="display:none; margin-top:1.5rem; text-align:center;">
+    <button class="calc-btn" id="exportPdfBtn" data-fn="exportPDF" style="background: var(--accent); max-width:260px;">&#8659; Export as PDF</button>
+  </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script nonce="{{ csp_nonce }}">
+  function calculate() {
+    const cvssRaw = parseFloat(document.getElementById('cvssInput').value);
+    const cvssError = document.getElementById('cvssError');
+
+    // Validate CVSS input
+    if (isNaN(cvssRaw) || cvssRaw < 0 || cvssRaw > 10) {
+      cvssError.classList.add('visible');
+      document.getElementById('result').classList.remove('visible');
+      return;
+    }
+    cvssError.classList.remove('visible');
+
+    const impact   = parseInt(document.getElementById('impactSelect').value, 10);
+    const exposure = parseInt(document.getElementById('exposureSelect').value, 10);
+
+    const cvssWeighted = cvssRaw * 0.6;
+    const total        = cvssWeighted + impact + exposure;
+    const totalRounded = Math.round(total * 10) / 10;
+
+    // Severity bands: 0–3.9 Low | 4–6.9 Medium | 7–8.9 High | 9–10 Critical
+    let severity, sevClass;
+    if (total < 4)       { severity = 'Low';      sevClass = 'sev-low'; }
+    else if (total < 7)  { severity = 'Medium';   sevClass = 'sev-medium'; }
+    else if (total < 9)  { severity = 'High';     sevClass = 'sev-high'; }
+    else                 { severity = 'Critical';  sevClass = 'sev-critical'; }
+
+    // Populate result
+    const resultEl = document.getElementById('result');
+    resultEl.className = `result visible ${sevClass}`;
+
+    document.getElementById('resultHeader').textContent  = `\u25CF  ${severity.toUpperCase()} RISK`;
+    document.getElementById('scoreNum').textContent      = totalRounded;
+    document.getElementById('severityLabel').textContent = severity;
+    document.getElementById('bCvss').textContent         = cvssWeighted.toFixed(2);
+    document.getElementById('bImpact').textContent       = `+${impact}`;
+    document.getElementById('bExposure').textContent     = `+${exposure}`;
+    document.getElementById('bTotal').textContent        = totalRounded;
+  }
+
+  // Allow Enter key to trigger calculation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  /* ── Event delegation (CSP-safe inline-handler replacement) ── */
+  document.addEventListener('click', function (e) {
+    const el = e.target.closest('[data-fn]');
+    if (!el) return;
+    const map = { calculate, exportPDF };
+    const f = map[el.dataset.fn];
+    if (f) f();
+  });
+
+</script>
+<script nonce="{{ csp_nonce }}">
+  function exportPDF() {
+    var btn = document.getElementById("exportPdfBtn");
+    var old = btn.textContent;
+    btn.textContent = "Generating...";
+    btn.disabled = true;
+    var el = document.querySelector(".card");
+    html2pdf().set({margin:10,filename:"CVSS-"+new Date().toISOString().split("T")[0]+".pdf",image:{type:"jpeg",quality:.95},html2canvas:{scale:2,backgroundColor:"#0f1117"},jsPDF:{unit:"mm",format:"a4"}}).from(el).save().then(function(){btn.textContent=old;btn.disabled=false;});
+  }
+  document.addEventListener("DOMContentLoaded", function() {
+    var calcBtn = document.querySelector(".calc-btn");
+    if (calcBtn) {
+      calcBtn.addEventListener("click", function() {
+        setTimeout(function(){
+          var r = document.getElementById("result");
+          if (r && r.classList.contains("visible")) document.getElementById("pdf-export-section").style.display="block";
+        }, 150);
+      });
+    }
+  });
+
+</script>
+{% endblock %}

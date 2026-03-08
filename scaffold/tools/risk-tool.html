@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Risico-beschrijving generator</title>
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --panel:#111827;        /* gray-900 */
+      --muted:#6b7280;        /* gray-500 */
+      --text:#e5e7eb;         /* gray-200 */
+      --accent:#2563eb;       /* blue-600 */
+      --ok:#16a34a;           /* green-600 */
+      --border:#1f2937;       /* gray-800 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Open Sans","Helvetica Neue",Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #0b1225 20%, var(--bg));
+      color: var(--text);
+      line-height:1.45;
+    }
+    .wrap{max-width:1000px; margin:32px auto; padding:0 16px;}
+    h1{font-weight:700; letter-spacing:.3px; margin:0 0 16px;}
+    .subtitle{color:var(--muted); margin-bottom:24px}
+    .badge{
+      display:inline-block; border:1px solid var(--border); border-radius:999px; padding:2px 8px;
+      font-size:.8rem; color:var(--muted)
+    }
+    .grid{display:grid; gap:16px; grid-template-columns: 1fr; }
+    @media (min-width: 880px){
+      .grid{grid-template-columns: 1.1fr .9fr;}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+      border:1px solid var(--border);
+      border-radius:14px; padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    label{display:block; font-weight:600; margin:10px 0 6px;}
+    .hint{color:var(--muted); font-size:.9rem; margin-top:4px}
+    input[type="text"], textarea, select{
+      width:100%; background:#0b1020; color:var(--text);
+      border:1px solid var(--border); border-radius:10px;
+      padding:10px 12px; outline:none; transition:border-color .15s, box-shadow .15s;
+    }
+    textarea{min-height:78px; resize:vertical}
+    input[type="text"]:focus, textarea:focus, select:focus{
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.25);
+    }
+    .row{display:flex; gap:8px; align-items:center}
+    .row > *{flex:1}
+    .btn{
+      background: linear-gradient(180deg, var(--accent), #1e40af);
+      color:white; border: none; border-radius:10px; padding:10px 14px;
+      font-weight:600; cursor:pointer; transition: transform .04s ease, opacity .15s ease;
+    }
+    .btn.secondary{
+      background:#0b1020; border:1px solid var(--border); color:var(--text);
+    }
+    .btn:active{transform:translateY(1px)}
+    .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
+    .chip{
+      background:#0b1020; border:1px solid var(--border); color:var(--text);
+      padding:4px 8px; border-radius:999px; font-size:.85rem
+    }
+    .fieldset{
+      border:1px dashed var(--border); border-radius:10px; padding:10px; margin-top:6px
+    }
+    .checklist{display:grid; grid-template-columns: 1fr; gap:6px}
+    @media(min-width:520px){ .checklist{grid-template-columns: 1fr 1fr} }
+    .check{
+      background:#0b1020; border:1px solid var(--border); border-radius:10px; padding:8px 10px; display:flex; gap:8px; align-items:flex-start;
+    }
+    .check input{margin-top:2px}
+    .toggle{ display:flex; align-items:center; gap:10px; margin-top:8px; }
+    .preview-title{font-weight:700; margin-top:0}
+    .preview{
+      font-size:1.05rem; background:#0b1020; border:1px solid var(--border); border-radius:12px; padding:14px;
+    }
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Risico‑beschrijving generator</h1>
+    <div class="subtitle">
+      Formule: <span class="badge">[gebeurtenis] die een effect heeft op [doelstellingen/business processen] veroorzaakt door [oorzaak(en)] met als gevolg [schade op] [gevolg(en)]</span>
+    </div>
+
+    <div class="grid">
+      <!-- Formulier -->
+      <section class="card">
+        <label for="gebeurtenis">Gebeurtenis</label>
+        <textarea id="gebeurtenis" placeholder="Bijv. Onbevoegde wijziging van DNS‑records"></textarea>
+        <div class="hint">Vrij invulveld.</div>
+
+        <label for="domein">Doelstellingen of business processen</label>
+        <div class="row">
+          <select id="domein"></select>
+          <button id="openAddDomain" class="btn secondary" type="button">+ Toevoegen</button>
+        </div>
+        <div id="addDomainPanel" class="fieldset" style="display:none">
+          <div class="row">
+            <input id="newDomain" type="text" placeholder="Nieuwe optie (bijv. Domein monitoring)" />
+            <button id="addDomain" class="btn" type="button">Toevoegen aan lijst</button>
+          </div>
+          <div class="hint">Wordt lokaal opgeslagen (alleen in deze browser) en direct beschikbaar in de selectie.</div>
+        </div>
+
+        <label for="oorzaken">Oorzaak(en)</label>
+        <input id="oorzaken" type="text" placeholder="Meerdere oorzaken scheiden met komma’s (bijv. misconfiguratie, phishing, lekke API)" />
+        <div id="oorzakenChips" class="chips" aria-live="polite"></div>
+
+        <label>Gevolg(en)</label>
+        <div class="checklist" id="gevolgenBox">
+          <!-- Checkboxen worden door JS gevuld -->
+        </div>
+        <div class="toggle">
+          <input type="checkbox" id="includeDamage" checked />
+          <label for="includeDamage">Voeg “schade op” toe aan de formulering</label>
+        </div>
+        <div class="hint">Meerdere selecties mogelijk. De zin past zich aan (gevolg vs. gevolgen). Toggle voor “schade op”.</div>
+      </section>
+
+      <!-- Voorbeeld & acties -->
+      <section class="card">
+        <h3 class="preview-title">Voorbeeldzin</h3>
+        <div id="preview" class="preview muted">Begin met invullen — de zin verschijnt hier.</div>
+        <div class="toolbar">
+          <button id="copyBtn" class="btn" type="button">Kopieer zin</button>
+          <button id="resetBtn" class="btn secondary" type="button">Reset</button>
+        </div>
+        <div class="hint" style="margin-top:10px">
+          Tip: Laat <em>oorzaken</em> leeg als je die (nog) niet wilt specificeren; de zin blijft grammaticaal correct.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ---- Configuratie ----
+    const DEFAULT_DOMAINS = ['Domein registratie', 'Domein resolving']; // makkelijk uitbreidbaar
+    const GEVOLGEN = [
+      'Financieel',
+      'Operationeel',
+      'Wet- en regelgeving',
+      'Privacy',
+      'Reputatie en vertrouwen',
+      'mens en veiligheid' // exact overgenomen zoals aangeleverd
+    ];
+
+    // ---- Elementen ----
+    const elGebeurtenis = document.getElementById('gebeurtenis');
+    const elDomein      = document.getElementById('domein');
+    const elOpenAdd     = document.getElementById('openAddDomain');
+    const elAddPanel    = document.getElementById('addDomainPanel');
+    const elNewDomain   = document.getElementById('newDomain');
+    const elAddDomain   = document.getElementById('addDomain');
+    const elOorzaken    = document.getElementById('oorzaken');
+    const elOorzChips   = document.getElementById('oorzakenChips');
+    const elGevolgenBox = document.getElementById('gevolgenBox');
+    const elIncludeDamage = document.getElementById('includeDamage');
+    const elPreview     = document.getElementById('preview');
+    const elCopy        = document.getElementById('copyBtn');
+    const elReset       = document.getElementById('resetBtn');
+
+    // ---- Helpers ----
+    const storageKey = 'risicoGen.domains';
+    const unique = arr => [...new Set(arr.map(x => x.trim()).filter(Boolean))];
+
+    function loadDomains(){
+      try{
+        const raw = localStorage.getItem(storageKey);
+        const fromStore = raw ? JSON.parse(raw) : [];
+        return unique([...DEFAULT_DOMAINS, ...fromStore]);
+      }catch{ return [...DEFAULT_DOMAINS]; }
+    }
+    function saveDomain(newOpt){
+      const current = loadDomains().filter(d => !DEFAULT_DOMAINS.includes(d));
+      const next = unique([...current, newOpt]);
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    }
+    function fillDomainSelect(){
+      const domains = loadDomains();
+      elDomein.innerHTML = domains.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    }
+    function fillGevolgen(){
+      elGevolgenBox.innerHTML = GEVOLGEN.map((g,i) => {
+        const id = 'gevolg_' + i;
+        return `
+          <label class="check" for="${id}">
+            <input id="${id}" type="checkbox" value="${escapeHtml(g)}" />
+            <span>${escapeHtml(g)}</span>
+          </label>
+        `;
+      }).join('');
+    }
+    function parseOorzaken(text){
+      if(!text) return [];
+      // splits op komma, puntkomma of nieuwe regel
+      return unique(text.split(/[;,]\s*|\n+/g));
+    }
+    function renderOorzakenChips(items){
+      elOorzChips.innerHTML = items.map(v => `<span class="chip">${escapeHtml(v)}</span>`).join('');
+    }
+    function joinEn(items){
+      if(items.length <= 1) return items[0] || '';
+      if(items.length === 2) return `${items[0]} en ${items[1]}`;
+      return `${items.slice(0, -1).join(', ')} en ${items[items.length - 1]}`;
+    }
+    function capitalizeFirst(s){
+      if(!s) return '';
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function stripTrailingPunct(s){
+      return s.replace(/[.?!\s]+$/,'').trim();
+    }
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function buildSentence(){
+      const gebeurtenisRaw = elGebeurtenis.value.trim();
+      const gebeurtenis = stripTrailingPunct(gebeurtenisRaw);
+      const domein = elDomein.value || '';
+
+      const oorzaken = parseOorzaken(elOorzaken.value);
+      renderOorzakenChips(oorzaken);
+
+      const gevolgen = [...elGevolgenBox.querySelectorAll('input[type="checkbox"]:checked')]
+        .map(cb => cb.value.toLowerCase()); // lopende zin: lowercase
+
+      if(!gebeurtenis){
+        return ''; // signaal voor lege preview
+      }
+
+      const parts = [];
+      // Basis
+      parts.push(`${gebeurtenis} die een effect heeft op ${domein}`);
+
+      // Oorzaken (optioneel)
+      if(oorzaken.length > 0){
+        parts.push('veroorzaakt door ' + joinEn(oorzaken));
+      }
+
+      // Gevolgen (optioneel), met conditionele "schade op"
+      if(gevolgen.length > 0){
+        const enkelvoud = (gevolgen.length === 1);
+        const basis = enkelvoud ? 'met als gevolg' : 'met als gevolgen';
+        const schade = elIncludeDamage.checked ? ' schade op' : '';
+        parts.push(basis + schade + ' ' + joinEn(gevolgen));
+      }
+
+      // Alles lowercase, 1e letter hoofdletter, eindig met 1 punt
+      let sentence = parts.join(' ').toLowerCase();
+      sentence = stripTrailingPunct(sentence);
+      sentence = capitalizeFirst(sentence) + '.';
+      return sentence;
+    }
+
+    function updateSentence(){
+      const sentence = buildSentence();
+      if(!sentence){
+        elPreview.classList.add('muted');
+        elPreview.textContent = 'Begin met invullen — de zin verschijnt hier.';
+        return;
+      }
+      elPreview.classList.remove('muted');
+      elPreview.textContent = sentence;
+    }
+
+    // ---- Events ----
+    elGebeurtenis.addEventListener('input', updateSentence);
+    elDomein.addEventListener('change', updateSentence);
+    elOorzaken.addEventListener('input', updateSentence);
+    elGevolgenBox.addEventListener('change', updateSentence); // live bijwerken bij (de)selectie
+    elIncludeDamage.addEventListener('change', updateSentence); // toggle "schade op"
+
+    elOpenAdd.addEventListener('click', () => {
+      elAddPanel.style.display = (elAddPanel.style.display === 'none' || !elAddPanel.style.display) ? 'block' : 'none';
+      if(elAddPanel.style.display === 'block'){ elNewDomain.focus(); }
+    });
+
+    elAddDomain.addEventListener('click', () => {
+      const val = elNewDomain.value.trim();
+      if(!val) return;
+      saveDomain(val);
+      fillDomainSelect();
+      elDomein.value = val;     // selecteer meteen de nieuwe optie
+      elNewDomain.value = '';
+      updateSentence();
+    });
+
+    elCopy.addEventListener('click', async () => {
+      const txt = elPreview.textContent.trim();
+      if(!txt || /Begin met invullen/.test(txt)) return;
+      try{
+        await navigator.clipboard.writeText(txt);
+        const old = elCopy.textContent;
+        elCopy.textContent = 'Gekopieerd!';
+        elCopy.style.background = 'linear-gradient(180deg, var(--ok), #166534)';
+        setTimeout(() => {
+          elCopy.textContent = old;
+          elCopy.style.background = '';
+        }, 1200);
+      }catch(e){
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+    });
+
+    elReset.addEventListener('click', () => {
+      elGebeurtenis.value = '';
+      elOorzaken.value = '';
+      renderOorzakenChips([]);
+      elGevolgenBox.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      elIncludeDamage.checked = true;
+      // Reset domein naar eerste optie
+      const domains = loadDomains();
+      if(domains.length > 0) elDomein.value = domains[0];
+      updateSentence();
+    });
+
+    // ---- Init ----
+    fillDomainSelect();
+    fillGevolgen();
+    updateSentence();
+  </script>
+</body>
+</html>
+``

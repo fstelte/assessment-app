@@ -17,6 +17,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.pages",
     "scaffold.apps.maturity",
     "scaffold.apps.template",
+    "scaffold.apps.tools",
 ]
 
 

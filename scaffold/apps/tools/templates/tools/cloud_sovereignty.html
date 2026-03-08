@@ -1,0 +1,1398 @@
+{% extends "base.html" %}
+{% block title %}Cloud Sovereignty Framework{% endblock %}
+
+{% block main_container_class %}container mx-auto max-w-4xl px-4 sm:px-6 grow{% endblock %}
+
+{% block extra_css %}
+    <style nonce="{{ csp_nonce }}">
+/* ─── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:           #080d18;
+      --bg-raised:    #0e1629;
+      --bg-card:      #131d30;
+      --bg-card-h:    #172038;
+      --border:       #1f2f4a;
+      --border-h:     #2d4570;
+      --txt:          #dde4f0;
+      --txt-2:        #7d92b8;
+      --txt-3:        #445674;
+
+      --blue:         #3b82f6;
+      --blue-l:       #60a5fa;
+      --blue-glow:    rgba(59,130,246,.18);
+      --teal:         #06b6d4;
+      --green:        #10b981;
+      --yellow:       #f59e0b;
+      --orange:       #f97316;
+      --red:          #ef4444;
+      --purple:       #8b5cf6;
+
+      --seal0:        #ef4444;
+      --seal1:        #f97316;
+      --seal2:        #f59e0b;
+      --seal3:        #3b82f6;
+      --seal4:        #10b981;
+
+      --radius:       12px;
+      --radius-lg:    18px;
+      --transition:   .2s ease;
+      --font:         'Inter', system-ui, sans-serif;
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    .tool-body-wrap {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--txt);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    /* header suppressed */
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: .95rem;
+      color: var(--txt);
+      text-decoration: none;
+    }
+    .header-logo .flag {
+      font-size: 1.25rem;
+    }
+    .header-badge {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: .75rem;
+      color: var(--txt-2);
+    }
+
+    /* ─── Progress bar ───────────────────────────────────────────── */
+    .progress-wrap {
+      background: var(--bg-raised);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+    }
+    .progress-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .progress-labels {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .progress-label {
+      font-size: .7rem;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--txt-3);
+      transition: var(--transition);
+    }
+    .progress-label.done  { background: var(--bg-card); color: var(--green); border-color: rgba(16,185,129,.3); }
+    .progress-label.active { background: var(--blue-glow); color: var(--blue-l); border-color: rgba(59,130,246,.4); }
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--teal));
+      border-radius: 4px;
+      transition: width .4s ease;
+    }
+
+    /* ─── Welcome Page ───────────────────────────────────────────── */
+    #page-welcome {
+      padding: 80px 24px 60px;
+    }
+    .welcome-hero {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .eu-emblem {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #003399, #0050a0);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 40px rgba(0,51,153,.35);
+    }
+    .welcome-hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .welcome-hero h1 span {
+      background: linear-gradient(90deg, var(--blue-l), var(--teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .welcome-hero p {
+      font-size: 1.05rem;
+      color: var(--txt-2);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      max-width: 820px;
+      margin: 0 auto 40px;
+    }
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+    }
+    .info-card .ic-icon {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    .info-card h3 {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--txt);
+      margin-bottom: 4px;
+    }
+    .info-card p {
+      font-size: .78rem;
+      color: var(--txt-2);
+      line-height: 1.5;
+    }
+
+    .seal-preview {
+      max-width: 820px;
+      margin: 0 auto 48px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+    .seal-preview h3 {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--txt-3);
+      margin-bottom: 16px;
+    }
+    .seal-levels {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .seal-badge {
+      flex: 1;
+      min-width: 90px;
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+    .seal-badge .seal-num {
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: block;
+    }
+    .seal-badge .seal-lbl {
+      font-size: .68rem;
+      opacity: .75;
+      display: block;
+      margin-top: 2px;
+    }
+    .s0 { color: var(--seal0); border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.07); }
+    .s1 { color: var(--seal1); border-color: rgba(249,115,22,.25); background: rgba(249,115,22,.07); }
+    .s2 { color: var(--seal2); border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.07); }
+    .s3 { color: var(--seal3); border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.07); }
+    .s4 { color: var(--seal4); border-color: rgba(16,185,129,.25); background: rgba(16,185,129,.07); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 28px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: #fff;
+      box-shadow: 0 0 28px rgba(37,99,235,.3);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 0 36px rgba(59,130,246,.45);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--txt-2);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card-h);
+      color: var(--txt);
+      border-color: var(--border-h);
+    }
+    .btn-lg { padding: 15px 36px; font-size: 1rem; }
+    .cta-center { text-align: center; }
+
+    /* ─── Assessment Pages ───────────────────────────────────────── */
+    .assess-page {
+      padding: 48px 24px 80px;
+    }
+    .dim-header {
+      max-width: 820px;
+      margin: 0 auto 36px;
+    }
+    .dim-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -.015em;
+      margin-bottom: 8px;
+    }
+    .dim-header p {
+      color: var(--txt-2);
+      font-size: .95rem;
+      max-width: 620px;
+    }
+    .dim-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .dim-tag.legal     { color: var(--blue-l);  background: var(--blue-glow);        border: 1px solid rgba(59,130,246,.25); }
+    .dim-tag.ops       { color: var(--teal);    background: rgba(6,182,212,.1);      border: 1px solid rgba(6,182,212,.25); }
+    .dim-tag.tech      { color: var(--purple);  background: rgba(139,92,246,.1);     border: 1px solid rgba(139,92,246,.25); }
+    .dim-tag.strategic { color: var(--green);   background: rgba(16,185,129,.1);     border: 1px solid rgba(16,185,129,.25); }
+
+    .dim-
+    .dim-
+
+    .questions-list {
+      max-width: 820px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .q-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .q-card.answered { border-color: rgba(59,130,246,.3); }
+    .q-number {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      color: var(--txt-3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .q-text {
+      font-size: .95rem;
+      font-weight: 500;
+      color: var(--txt);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .q-hint {
+      font-size: .8rem;
+      color: var(--txt-3);
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+    .q-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .q-opt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      background: transparent;
+      text-align: center;
+    }
+    .q-opt:hover {
+      border-color: var(--border-h);
+      background: var(--bg-card-h);
+    }
+    .q-opt input[type="radio"] { display: none; }
+    .q-opt .opt-label {
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--txt-2);
+      line-height: 1.3;
+    }
+    .q-opt .opt-score {
+      font-size: .65rem;
+      color: var(--txt-3);
+    }
+    .q-opt.sel-0 { border-color: rgba(239,68,68,.6); background: rgba(239,68,68,.08); }
+    .q-opt.sel-0 .opt-label { color: var(--red); }
+    .q-opt.sel-1 { border-color: rgba(245,158,11,.6); background: rgba(245,158,11,.08); }
+    .q-opt.sel-1 .opt-label { color: var(--yellow); }
+    .q-opt.sel-2 { border-color: rgba(16,185,129,.6); background: rgba(16,185,129,.08); }
+    .q-opt.sel-2 .opt-label { color: var(--green); }
+
+    .critical-flag {
+      display: inline-block;
+      font-size: .65rem;
+      font-weight: 600;
+      background: rgba(249,115,22,.15);
+      color: var(--orange);
+      border: 1px solid rgba(249,115,22,.3);
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .nav-row {
+      max-width: 820px;
+      margin: 36px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .q-count-info {
+      font-size: .8rem;
+      color: var(--txt-3);
+    }
+    .q-count-info span { color: var(--txt-2); font-weight: 600; }
+
+    /* ─── Results Page ───────────────────────────────────────────── */
+    #page-results { padding: 48px 24px 80px; }
+
+    .results-header {
+      max-width: 960px;
+      margin: 0 auto 40px;
+      text-align: center;
+    }
+    .results-header h2 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+    }
+    .results-header p {
+      color: var(--txt-2);
+      font-size: .95rem;
+    }
+
+    .seal-result {
+      max-width: 960px;
+      margin: 0 auto 40px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .seal-main {
+      flex: 1;
+      min-width: 260px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      text-align: center;
+    }
+    .seal-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+    .seal-ring .seal-ring-label {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      opacity: .7;
+    }
+    .seal-ring .seal-ring-num {
+      font-size: 2.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .seal-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .seal-score-pct {
+      font-size: .9rem;
+      color: var(--txt-2);
+      margin-bottom: 12px;
+    }
+    .seal-desc {
+      font-size: .82rem;
+      color: var(--txt-2);
+      line-height: 1.6;
+    }
+
+    .chart-panel {
+      flex: 1.4;
+      min-width: 280px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-panel h3 {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--txt-2);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .chart-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+    }
+
+    .dim-scores {
+      max-width: 960px;
+      margin: 0 auto 32px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .dim-score-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+    }
+    .dsc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .dsc-name {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--txt-2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dsc-pct {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--txt);
+    }
+    .dsc-bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .dsc-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width .8s cubic-bezier(.4,0,.2,1);
+    }
+
+    .recs-section {
+      max-width: 960px;
+      margin: 0 auto 40px;
+    }
+    .recs-section h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--txt);
+    }
+    .rec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .rec-item {
+      display: flex;
+      gap: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      align-items: flex-start;
+    }
+    .rec-item.prio-high   { border-left: 3px solid var(--red); }
+    .rec-item.prio-medium { border-left: 3px solid var(--yellow); }
+    .rec-item.prio-low    { border-left: 3px solid var(--blue); }
+    .rec-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .rec-content h4 { font-size: .88rem; font-weight: 600; color: var(--txt); margin-bottom: 3px; }
+    .rec-content p  { font-size: .8rem; color: var(--txt-2); line-height: 1.5; }
+    .rec-prio {
+      font-size: .65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .prio-high   .rec-prio { background: rgba(239,68,68,.15);  color: var(--red);    border: 1px solid rgba(239,68,68,.3); }
+    .prio-medium .rec-prio { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
+    .prio-low    .rec-prio { background: rgba(59,130,246,.12); color: var(--blue-l); border: 1px solid rgba(59,130,246,.25); }
+
+    .disclaimer-note {
+      max-width: 960px;
+      margin: 0 auto 32px;
+      background: rgba(59,130,246,.06);
+      border: 1px solid rgba(59,130,246,.2);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: .78rem;
+      color: var(--txt-2);
+      line-height: 1.6;
+    }
+    .disclaimer-note strong { color: var(--blue-l); }
+
+    .results-actions {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── Utility ────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(14px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .35s ease forwards; }
+
+    @media (max-width: 600px) {
+      .q-options { grid-template-columns: 1fr; }
+      .seal-levels { gap: 5px; }
+      .seal-badge { min-width: 60px; }
+      .seal-result { flex-direction: column; }
+    }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-body-wrap py-6">
+<!-- ─── Header ──────────────────────────────────────────────────── -->
+
+
+<!-- ─── Progress (hidden on welcome / results) ──────────────────── -->
+<div class="progress-wrap" id="progress-wrap" style="display:none;">
+  <div class="progress-inner">
+    <div class="progress-labels" id="progress-labels"></div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 0 · WELCOME                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-welcome" class="page active">
+  <div id="page-welcome-inner">
+    <div class="welcome-hero fade-up">
+      <div class="eu-emblem">⚖️</div>
+      <h1>Cloud Sovereignty<br><span>Assessment Tool</span></h1>
+      <p>Evaluate how sovereign your cloud solution is, based on the European Commission's
+         Cloud Sovereignty Framework (October 2025) and its SEAL assurance methodology.</p>
+    </div>
+
+    <div class="info-grid fade-up">
+      <div class="info-card">
+        <div class="ic-icon">⚖️</div>
+        <h3>Legal &amp; Regulatory</h3>
+        <p>Data residency, GDPR, foreign law exposure, legal jurisdiction.</p>
+      </div>
+      <div class="info-card">
+        <div class="ic-icon">🛠️</div>
+        <h3>Operational</h3>
+        <p>EU-staffed operations, key management, audit rights, access controls.</p>
+      </div>
+      <div class="info-card">
+        <div class="ic-icon">🔗</div>
+        <h3>Technical</h3>
+        <p>Open standards, portability, interoperability, encryption, supply chain.</p>
+      </div>
+      <div class="info-card">
+        <div class="ic-icon">🏛️</div>
+        <h3>Strategic</h3>
+        <p>Ownership, governance, independence from non-EU influence, exit strategy.</p>
+      </div>
+    </div>
+
+    <div class="seal-preview fade-up container">
+      <h3>SEAL — Sovereignty Evaluation Assurance Levels</h3>
+      <div class="seal-levels">
+        <div class="seal-badge s0"><span class="seal-num">0</span><span class="seal-lbl">Not Sovereign</span></div>
+        <div class="seal-badge s1"><span class="seal-num">1</span><span class="seal-lbl">Basic</span></div>
+        <div class="seal-badge s2"><span class="seal-num">2</span><span class="seal-lbl">Standard</span></div>
+        <div class="seal-badge s3"><span class="seal-num">3</span><span class="seal-lbl">Enhanced</span></div>
+        <div class="seal-badge s4"><span class="seal-num">4</span><span class="seal-lbl">Full</span></div>
+      </div>
+    </div>
+
+    <div class="cta-center fade-up">
+      <button class="btn btn-primary btn-lg" data-fn="startAssessment">
+        Start Assessment &rarr;
+        <span style="opacity:.65;font-size:.8rem;">40 questions · ~10 min</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 1 · LEGAL & REGULATORY                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-1" class="page">
+  <div class="assess-page">
+    <div class="dim-header">
+      <div class="dim-tag legal">⚖️ Dimension 1 of 4</div>
+      <h2>Legal &amp; Regulatory</h2>
+      <p>Assess jurisdictional exposure, compliance posture, and regulatory alignment with EU law for the cloud solution under review.</p>
+    </div>
+    <div class="questions-list" id="ql-1"></div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" data-fn="goPage" data-a0="0">← Back</button>
+      <span class="q-count-info">Questions answered: <span id="ans-count-1">0</span> / 10</span>
+      <button class="btn btn-primary" data-fn="nextPage" data-a0="1">Next: Operational →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2 · OPERATIONAL                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-2" class="page">
+  <div class="assess-page">
+    <div class="dim-header">
+      <div class="dim-tag ops">🛠️ Dimension 2 of 4</div>
+      <h2>Operational Sovereignty</h2>
+      <p>Evaluate day-to-day control over infrastructure access, key management, transparency, and the ability to audit operations.</p>
+    </div>
+    <div class="questions-list" id="ql-2"></div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" data-fn="goPage" data-a0="1">← Back</button>
+      <span class="q-count-info">Questions answered: <span id="ans-count-2">0</span> / 10</span>
+      <button class="btn btn-primary" data-fn="nextPage" data-a0="2">Next: Technical →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3 · TECHNICAL                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-3" class="page">
+  <div class="assess-page">
+    <div class="dim-header">
+      <div class="dim-tag tech">🔗 Dimension 3 of 4</div>
+      <h2>Technical &amp; Interoperability</h2>
+      <p>Examine openness, portability, supply chain integrity, interoperability standards, and cryptographic controls.</p>
+    </div>
+    <div class="questions-list" id="ql-3"></div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" data-fn="goPage" data-a0="2">← Back</button>
+      <span class="q-count-info">Questions answered: <span id="ans-count-3">0</span> / 10</span>
+      <button class="btn btn-primary" data-fn="nextPage" data-a0="3">Next: Strategic →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 4 · STRATEGIC                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-4" class="page">
+  <div class="assess-page">
+    <div class="dim-header">
+      <div class="dim-tag strategic">🏛️ Dimension 4 of 4</div>
+      <h2>Strategic &amp; Governance</h2>
+      <p>Assess ownership structure, management independence, sovereignty roadmap, and long-term strategic risk.</p>
+    </div>
+    <div class="questions-list" id="ql-4"></div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" data-fn="goPage" data-a0="3">← Back</button>
+      <span class="q-count-info">Questions answered: <span id="ans-count-4">0</span> / 10</span>
+      <button class="btn btn-primary" data-fn="showResults">View Results →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PAGE 5 · RESULTS                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="page-results" class="page">
+  <div class="results-header fade-up">
+    <h2>Assessment Results</h2>
+    <p>Based on the EU Cloud Sovereignty Framework — SEAL Assurance Level</p>
+  </div>
+
+  <div class="seal-result fade-up">
+    <!-- SEAL badge -->
+    <div class="seal-main">
+      <div class="seal-ring" id="seal-ring">
+        <span class="seal-ring-label">SEAL</span>
+        <span class="seal-ring-num" id="seal-ring-num">–</span>
+      </div>
+      <div class="seal-name" id="seal-name">–</div>
+      <div class="seal-score-pct" id="seal-score-pct">–</div>
+      <div class="seal-desc" id="seal-desc">–</div>
+    </div>
+    <!-- Radar chart -->
+    <div class="chart-panel">
+      <h3>Dimension Scores</h3>
+      <div class="chart-wrap">
+        <canvas id="radarChart" style="width:100%;max-width:380px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dimension detail bars -->
+  <div class="dim-scores fade-up" id="dim-scores"></div>
+
+  <!-- Recommendations -->
+  <div class="recs-section fade-up">
+    <h3>Recommendations</h3>
+    <div class="rec-list" id="rec-list"></div>
+  </div>
+
+  <div class="disclaimer-note fade-up">
+    <strong>Disclaimer:</strong> This tool provides a structured self-assessment based on the European Commission's
+    Cloud Sovereignty Framework (October 2025). Results are indicative and do not constitute an official SEAL
+    certification. Formal certification requires assessment by an accredited EU conformity assessment body.
+    Reference document:
+    <a href="https://commission.europa.eu/document/download/09579818-64a6-4dd5-9577-446ab6219113_en"
+       target="_blank" style="color:var(--blue-l);">Commission Cloud Sovereignty Framework PDF</a>.
+  </div>
+
+  <div class="results-actions fade-up">
+    <button class="btn btn-primary" data-fn="exportPDF">⬇️ Export to PDF</button>
+    <button class="btn btn-secondary" data-fn="restartAssessment">↩ Start Over</button>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script nonce="{{ csp_nonce }}">
+/* ════════════════════════════════════════════════════════════════
+   DATA — Questions (10 per dimension, score 0/1/2)
+   critical: true  →  2× weight in final score
+   ════════════════════════════════════════════════════════════════ */
+const DIMS = [
+  { id:1, key:'legal',     label:'Legal & Regulatory',      icon:'⚖️', color:'#60a5fa', fillColor:'rgba(59,130,246,.25)' },
+  { id:2, key:'ops',       label:'Operational',             icon:'🛠️', color:'#06b6d4', fillColor:'rgba(6,182,212,.25)' },
+  { id:3, key:'tech',      label:'Technical',               icon:'🔗', color:'#8b5cf6', fillColor:'rgba(139,92,246,.25)' },
+  { id:4, key:'strategic', label:'Strategic & Governance',  icon:'🏛️', color:'#10b981', fillColor:'rgba(16,185,129,.25)' },
+];
+
+const QUESTIONS = {
+  1: [ // Legal & Regulatory
+    { id:'L1',  text:'Is the cloud provider incorporated and headquartered under EU/EEA law, with no ultimate parent company domiciled outside the EU/EEA?',
+      hint:'Check corporate registry and group structure.', critical:true },
+    { id:'L2',  text:'Are all data centers physically located within EU/EEA territory, with a contractual guarantee of no data transfers outside?',
+      hint:'Review DPA and data processing schedules.', critical:true },
+    { id:'L3',  text:'Is the provider demonstrably free from foreign legislation that could compel disclosure of EU data (e.g., US CLOUD Act, FISA 702, Chinese NSL)?',
+      hint:'Legal opinion or sovereignty declaration required.', critical:true },
+    { id:'L4',  text:'Does the provider offer a GDPR-compliant Data Processing Agreement (DPA) with binding data residency guarantees?',
+      hint:'Standard Contractual Clauses alone are insufficient.', critical:false },
+    { id:'L5',  text:'Is the provider certified or in scope for an EU-recognised cloud cybersecurity certification (e.g., EUCS, BSI C5, SecNumCloud)?',
+      hint:'EUCS High level is the gold standard for EU institutions.', critical:false },
+    { id:'L6',  text:'Does the provider comply with the NIS2 Directive requirements as an essential or important entity?',
+      hint:'Self-declaration or third-party attestation.', critical:false },
+    { id:'L7',  text:'Are all dispute resolution mechanisms, SLAs, and governing law clauses enforceable under EU/EEA jurisdiction?',
+      hint:'Check master agreement jurisdiction clause.', critical:false },
+    { id:'L8',  text:'Does the provider maintain binding contractual commitments preventing non-EU law enforcement access to customer data without prior EU judicial review?',
+      hint:'"Judicial redress" clauses and transparency reports.', critical:true },
+    { id:'L9',  text:'Does the provider have relevant sector-specific compliance certifications (e.g., ISAE 3402, ISO 27001, eIDAS) applicable to your industry?',
+      hint:'Align to your sector\'s regulatory requirements.', critical:false },
+    { id:'L10', text:'Does the provider publish regular transparency reports disclosing government requests and their legal basis?',
+      hint:'Annual reporting with aggregated statistics at minimum.', critical:false },
+  ],
+  2: [ // Operational
+    { id:'O1',  text:'Is the infrastructure operated exclusively by EU-resident/national staff with no remote access rights granted to personnel in non-EU jurisdictions?',
+      hint:'HR records, access policy, and role-based access controls.', critical:true },
+    { id:'O2',  text:'Are privileged administrative operations restricted to EU-based personnel under documented least-privilege policies?',
+      hint:'PAM (Privileged Access Management) controls in scope.', critical:true },
+    { id:'O3',  text:'Does the customer retain full control over encryption key management (BYOK or BYOE), with no provider access to plaintext data?',
+      hint:'HSM-backed key management under customer control is best practice.', critical:true },
+    { id:'O4',  text:'Does the provider offer tamper-evident, comprehensive audit logs of all access to customer data including internal provider access?',
+      hint:'Logs must be retained, immutable, and exportable by the customer.', critical:false },
+    { id:'O5',  text:'Does the provider support independent audits by EU-accredited third-party auditors at the customer\'s request?',
+      hint:'Right-to-audit clause in contract.', critical:false },
+    { id:'O6',  text:'Can the provider demonstrate isolated or air-gapped deployment options for highly sensitive workloads?',
+      hint:'Dedicated hardware, single-tenant environments, or private regions.', critical:false },
+    { id:'O7',  text:'Is critical incident response and support delivered exclusively by EU-based personnel within contractually guaranteed timeframes?',
+      hint:'P1/P2 SLA response by EU-resident staff.', critical:false },
+    { id:'O8',  text:'Does the provider have a documented, regularly tested Business Continuity Plan (BCP) and Disaster Recovery Plan (DRP) within EU territory?',
+      hint:'Annual DR tests with results available to customers.', critical:false },
+    { id:'O9',  text:'Can the customer independently verify sovereignty compliance through technical means (e.g., network flow monitoring, key usage logs)?',
+      hint:'Verification must not rely solely on provider claims.', critical:false },
+    { id:'O10', text:'Does the provider publish a detailed security architecture document covering EU data residency enforcement at the infrastructure level?',
+      hint:'Design documentation reviewed by accredited auditor.', critical:false },
+  ],
+  3: [ // Technical
+    { id:'T1',  text:'Does the provider expose services through open, interoperable APIs based on EU or international open standards (e.g., ETSI, ISO, W3C)?',
+      hint:'Evaluate whether proprietary API lock-in exists.', critical:true },
+    { id:'T2',  text:'Can customer data be exported at any time in open, non-proprietary formats without provider assistance or additional fees?',
+      hint:'Self-service data portability is required by EU Data Act.', critical:true },
+    { id:'T3',  text:'Does the provider support workload portability — can applications be migrated to another EU cloud provider without substantial rework?',
+      hint:'Container standards (OCI), Kubernetes conformance, etc.', critical:true },
+    { id:'T4',  text:'Are all core technology components based on open-source or vendor-neutral technologies, with no undisclosed proprietary dependencies?',
+      hint:'Software Bill of Materials (SBOM) should be available.', critical:false },
+    { id:'T5',  text:'Is end-to-end encryption deployed as the default, with customer-managed keys and independently audited cryptographic implementations?',
+      hint:'FIPS 140-2/3 validated modules preferred.', critical:false },
+    { id:'T6',  text:'Does the provider participate in EU cloud interoperability initiatives such as GAIA-X or EUCS working groups?',
+      hint:'Active participation and published node certificates.', critical:false },
+    { id:'T7',  text:'Is the software supply chain demonstrably free from components controlled by non-EU entities that could introduce backdoors or forced access?',
+      hint:'SBOM analysis and third-party supply chain audit.', critical:true },
+    { id:'T8',  text:'Does the provider support geo-fencing controls allowing customers to enforce data residency at a technical level, not only contractually?',
+      hint:'Technical enforcement (network policies, IAM restrictions) is required.', critical:false },
+    { id:'T9',  text:'Is the source code of the cloud platform (at least the sovereignty-critical components) auditable by accredited EU parties?',
+      hint:'Open source or source code escrow arrangements.', critical:false },
+    { id:'T10', text:'Does the provider maintain a published security baseline and patch management process with response SLAs aligned to EU CERT requirements?',
+      hint:'CVE response times aligned to ENISA good practices.', critical:false },
+  ],
+  4: [ // Strategic
+    { id:'S1',  text:'Is the ultimate beneficial ownership (UBO) of the provider exclusively controlled by EU or EEA entities with no significant non-EU shareholders?',
+      hint:'>50% EU beneficial ownership; registry check required.', critical:true },
+    { id:'S2',  text:'Does the provider have a published, board-approved Cloud Sovereignty Roadmap with measurable targets and public reporting?',
+      hint:'Annual progress report against roadmap milestones.', critical:false },
+    { id:'S3',  text:'Is the provider\'s executive management and board of directors entirely free from appointment rights, veto powers, or influence by non-EU governments?',
+      hint:'Articles of association and shareholder agreements to review.', critical:true },
+    { id:'S4',  text:'Does the provider have a dedicated Chief Sovereignty Officer or equivalent governance function responsible for sovereignty compliance?',
+      hint:'Evidenced by organisational chart and job description.', critical:false },
+    { id:'S5',  text:'Does the provider have a documented and publicly verifiable track record of refusing or legally challenging extra-jurisdictional government access requests?',
+      hint:'Court cases, published refusals, transparency reports.', critical:true },
+    { id:'S6',  text:'Is the provider financially independent from non-EU parent companies, ensuring continuity cannot be disrupted by foreign commercial or political decisions?',
+      hint:'Audited standalone financials; no cross-default clauses to non-EU parents.', critical:false },
+    { id:'S7',  text:'Does the contract provide strong protections against unilateral changes that could reduce sovereignty posture, with customer right-to-exit?',
+      hint:'Material adverse change clause with 12-month notice minimum.', critical:false },
+    { id:'S8',  text:'Does the provider actively engage in EU policy and standards development (EC working groups, ENISA, ETSI, CEN/CENELEC)?',
+      hint:'Active membership and documented contributions.', critical:false },
+    { id:'S9',  text:'Is there a contractually guaranteed, technically feasible exit strategy allowing full data retrieval and migration within a defined timeframe?',
+      hint:'Exit assistance clause with at least 12 months transition support.', critical:true },
+    { id:'S10', text:'Has the provider obtained or actively pursuing EU security clearance (e.g., applicable to classified data / public sector critical infrastructure)?',
+      hint:'National security authority clearance or equivalent accreditation.', critical:false },
+  ],
+};
+
+const OPTS = [
+  { value:0, label:'No / Not met',          score:'0 pts' },
+  { value:1, label:'Partial / Unclear',      score:'1 pt'  },
+  { value:2, label:'Yes / Fully met',        score:'2 pts' },
+];
+
+const SEAL_META = [
+  { level:0, name:'Not Sovereign',    color:'var(--seal0)', min:0,  max:19,  desc:'The solution does not meet fundamental EU sovereignty requirements. Significant legal, operational, and structural gaps expose the organisation to non-EU jurisdiction risks. Immediate remediation is required before procurement or use for sensitive workloads.' },
+  { level:1, name:'Basic',            color:'var(--seal1)', min:20, max:39,  desc:'Minimal sovereignty requirements are met. Core data residency may be covered, but legal exposure, operational gaps, and technical lock-in remain. Suitable only for non-sensitive, non-regulated workloads pending improvement.' },
+  { level:2, name:'Standard',         color:'var(--seal2)', min:40, max:59,  desc:'Core sovereignty requirements are addressed. The solution demonstrates reasonable EU alignment but lacks depth in one or more dimensions. Suitable for general business workloads with residual risk accepted by management.' },
+  { level:3, name:'Enhanced',         color:'var(--seal3)', min:60, max:75,  desc:'Strong sovereignty posture across most dimensions. The solution is well-aligned to EU requirements and suitable for sensitive workloads. Remaining gaps should be tracked via a remediation plan with clear timelines.' },
+  { level:4, name:'Full',             color:'var(--seal4)', min:76, max:100, desc:'Maximum sovereignty assurance. The solution meets or exceeds all EU Cloud Sovereignty Framework criteria. Suitable for critical infrastructure, classified data, and EU institutional use. Maintain posture through regular re-assessment.' },
+];
+
+// State
+const answers = {};
+let radarChart = null;
+
+/* ════════════════════════════════════════════════════════════════
+   BUILD QUESTIONS
+   ════════════════════════════════════════════════════════════════ */
+function buildQuestions() {
+  for (let dim = 1; dim <= 4; dim++) {
+    const container = document.getElementById('ql-' + dim);
+    const qs = QUESTIONS[dim];
+    qs.forEach((q, idx) => {
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      card.id = 'qcard-' + q.id;
+      card.innerHTML = `
+        <div class="q-number">Q${idx + 1} ${q.critical ? '<span class="critical-flag">CRITICAL</span>' : ''}</div>
+        <div class="q-text">${q.text}</div>
+        ${q.hint ? `<div class="q-hint">${q.hint}</div>` : ''}
+        <div class="q-options">
+          ${OPTS.map(o => `
+            <label class="q-opt" id="opt-${q.id}-${o.value}">
+              <input type="radio" name="${q.id}" value="${o.value}" data-fn="selectAnswer" data-a0="${q.id}" data-a1="${o.value}" data-a2="${dim}">
+              <span class="opt-label">${o.label}</span>
+              <span class="opt-score">${o.score}${q.critical ? ' ×2' : ''}</span>
+            </label>
+          `).join('')}
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+}
+
+function selectAnswer(qid, value, dim) {
+  answers[qid] = value;
+  // Style option buttons
+  const qs = QUESTIONS[dim];
+  const q  = qs.find(x => x.id === qid);
+  OPTS.forEach(o => {
+    const el = document.getElementById('opt-' + qid + '-' + o.value);
+    el.classList.remove('sel-0', 'sel-1', 'sel-2');
+  });
+  document.getElementById('opt-' + qid + '-' + value).classList.add('sel-' + value);
+  document.getElementById('qcard-' + qid).classList.add('answered');
+  // Update counter
+  updateAnsCount(dim);
+}
+
+function updateAnsCount(dim) {
+  const qs   = QUESTIONS[dim];
+  const done = qs.filter(q => answers[q.id] !== undefined).length;
+  document.getElementById('ans-count-' + dim).textContent = done;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ════════════════════════════════════════════════════════════════ */
+const PAGE_IDS = ['page-welcome', 'page-1', 'page-2', 'page-3', 'page-4', 'page-results'];
+const DIM_LABELS = ['Legal & Regulatory', 'Operational', 'Technical', 'Strategic'];
+let currentPage = 0;
+
+function goPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(PAGE_IDS[n]).classList.add('active');
+  currentPage = n;
+  updateProgress(n);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function updateProgress(n) {
+  const wrap = document.getElementById('progress-wrap');
+  if (n === 0 || n === 5) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  // Labels
+  const labelsEl = document.getElementById('progress-labels');
+  labelsEl.innerHTML = DIM_LABELS.map((l, i) => {
+    const step = i + 1;
+    let cls = '';
+    if (step < n) cls = 'done';
+    else if (step === n) cls = 'active';
+    return `<span class="progress-label ${cls}">${step < n ? '✓ ' : ''}${l}</span>`;
+  }).join('');
+  // Bar
+  const pct = ((n - 1) / 4) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function startAssessment() { goPage(1); }
+
+function nextPage(current) {
+  // Warn if not all answered
+  const qs = QUESTIONS[current];
+  const unanswered = qs.filter(q => answers[q.id] === undefined).length;
+  if (unanswered > 0) {
+    const ok = confirm(`You have ${unanswered} unanswered question(s) in this section. Unanswered questions will score 0. Continue anyway?`);
+    if (!ok) return;
+  }
+  goPage(current + 1);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCORING
+   ════════════════════════════════════════════════════════════════ */
+function scoreAll() {
+  const dimScores = {};
+  let totalRaw = 0, totalMax = 0;
+
+  for (let dim = 1; dim <= 4; dim++) {
+    let raw = 0, max = 0;
+    QUESTIONS[dim].forEach(q => {
+      const weight = q.critical ? 2 : 1;
+      const val    = answers[q.id] ?? 0;
+      raw += val * weight;
+      max += 2 * weight;       // max score per q = 2
+    });
+    const pct = Math.round((raw / max) * 100);
+    dimScores[dim] = { raw, max, pct };
+    totalRaw += raw;
+    totalMax += max;
+  }
+  const totalPct = Math.round((totalRaw / totalMax) * 100);
+
+  // SEAL level
+  const seal = SEAL_META.find(s => totalPct >= s.min && totalPct <= s.max) || SEAL_META[0];
+
+  return { dimScores, totalRaw, totalMax, totalPct, seal };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RECOMMENDATIONS
+   ════════════════════════════════════════════════════════════════ */
+const RECS = {
+  L1:  { icon:'🏛️', text:'Verify full EU incorporation and eliminate non-EU parent company control. Engage legal counsel to restructure group ownership if needed.', prio:'high' },
+  L2:  { icon:'📍', text:'Require contractual data residency guarantees limiting all processing to EU/EEA data centres. Validate through technical geo-fencing.', prio:'high' },
+  L3:  { icon:'🔒', text:'Obtain a formal legal opinion confirming freedom from extra-territorial foreign laws. Consider providers with dedicated EU sovereign cloud offerings.', prio:'high' },
+  L4:  { icon:'📄', text:'Execute a GDPR-compliant DPA with explicit EU data residency and sub-processor flow restrictions.', prio:'medium' },
+  L5:  { icon:'🏅', text:'Prioritise providers with EUCS High certification or equivalent BSI C5 / SecNumCloud attestation.', prio:'medium' },
+  L6:  { icon:'🛡️', text:'Confirm NIS2 compliance status and request evidence of incident reporting obligations being met.', prio:'medium' },
+  L7:  { icon:'⚖️', text:'Renegotiate governing law and jurisdiction clauses to EU courts with full enforceability.', prio:'medium' },
+  L8:  { icon:'🔐', text:'Embed "judicial redress" clauses requiring EU judicial review before any government disclosure.', prio:'high' },
+  L9:  { icon:'📋', text:'Map provider certifications against your sector regulatory requirements and identify gaps.', prio:'low' },
+  L10: { icon:'📊', text:'Request annual government request transparency reports as a contractual obligation.', prio:'low' },
+  O1:  { icon:'👥', text:'Require contractual staff geography restrictions ensuring all operations are EU-resident personnel only.', prio:'high' },
+  O2:  { icon:'🔑', text:'Implement and audit Privileged Access Management (PAM) controls limiting admin access to EU staff.', prio:'high' },
+  O3:  { icon:'🗝️', text:'Implement Bring-Your-Own-Key (BYOK) or Bring-Your-Own-Encryption (BYOE) with HSM-backed key management under your control.', prio:'high' },
+  O4:  { icon:'📝', text:'Enable immutable audit logging of all data access events; ensure logs are exportable and retained by you.', prio:'medium' },
+  O5:  { icon:'🔍', text:'Include a right-to-audit clause covering sovereignty controls, exercisable annually with EU-accredited auditors.', prio:'medium' },
+  O6:  { icon:'🏗️', text:'Evaluate availability of dedicated, single-tenant, or physically isolated infrastructure options for sensitive workloads.', prio:'low' },
+  O7:  { icon:'🚨', text:'Require SLA guarantees that critical incident response is handled by EU-based support staff.', prio:'medium' },
+  O8:  { icon:'♻️', text:'Obtain and review BCP/DRP documentation; verify multi-region EU failover capability.', prio:'medium' },
+  O9:  { icon:'🔭', text:'Deploy technical monitoring (SIEM, network flow analysis) to independently verify data residency and access patterns.', prio:'low' },
+  O10: { icon:'📐', text:'Request architecture documentation reviewed by an accredited EU security auditor.', prio:'low' },
+  T1:  { icon:'🌐', text:'Evaluate open API compliance and document proprietary API dependencies that create lock-in risk.', prio:'high' },
+  T2:  { icon:'📦', text:'Test self-service data export in open formats (CSV, JSON, SQL, Parquet) and confirm EU Data Act compliance.', prio:'high' },
+  T3:  { icon:'🚀', text:'Define a workload portability architecture using OCI containers and Kubernetes to enable provider migration.', prio:'high' },
+  T4:  { icon:'📂', text:'Request a full Software Bill of Materials (SBOM) and conduct dependency analysis for non-EU-controlled components.', prio:'medium' },
+  T5:  { icon:'🔐', text:'Enforce end-to-end encryption with FIPS 140-2/3 validated modules and customer-controlled keys as baseline.', prio:'medium' },
+  T6:  { icon:'🤝', text:'Favour GAIA-X compliant providers with published Gaia-X Self-Descriptions and valid trust anchor certificates.', prio:'low' },
+  T7:  { icon:'⛓️', text:'Conduct a supply chain risk assessment; avoid components from jurisdictions with mandatory backdoor laws.', prio:'high' },
+  T8:  { icon:'🗺️', text:'Implement technical geo-fencing at the platform level (IAM policies, network controls) to enforce data residency automatically.', prio:'medium' },
+  T9:  { icon:'👁️', text:'Request source code escrow arrangements or open-source access for sovereignty-critical platform components.', prio:'low' },
+  T10: { icon:'🩹', text:'Validate patch management SLAs align to ENISA good practices (critical CVEs patched within 72h).', prio:'low' },
+  S1:  { icon:'🏢', text:'Commission Ultimate Beneficial Ownership (UBO) analysis; require structural EU control as a procurement gate.', prio:'high' },
+  S2:  { icon:'🗺️', text:'Request a published sovereignty roadmap with measurable targets and commit to annual provider reviews.', prio:'medium' },
+  S3:  { icon:'👤', text:'Review articles of association and shareholder agreements for non-EU government influence rights or veto powers.', prio:'high' },
+  S4:  { icon:'🎓', text:'Request evidence of a dedicated sovereignty governance function (CSO or equivalent) within the provider organisation.', prio:'low' },
+  S5:  { icon:'⚔️', text:'Ask the provider for evidence of legal challenges to foreign government access requests; include contractual commitment to notify you of any such requests.', prio:'high' },
+  S6:  { icon:'💰', text:'Review provider financials for dependency on non-EU parent company funding or cross-default clauses.', prio:'medium' },
+  S7:  { icon:'🚪', text:'Negotiate material adverse change and right-to-exit clauses triggered by sovereignty posture reduction.', prio:'medium' },
+  S8:  { icon:'🗣️', text:'Prefer providers actively shaping EU standards — check ETSI, ENISA, and CEN/CENELEC membership lists.', prio:'low' },
+  S9:  { icon:'🏁', text:'Define and contract an exit plan with at least 12 months transition assistance and full data retrieval guarantee.', prio:'high' },
+  S10: { icon:'🔒', text:'For sensitive public sector workloads, require national security clearance or BS EN ISO 27001-aligned accreditation.', prio:'low' },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   SHOW RESULTS
+   ════════════════════════════════════════════════════════════════ */
+function showResults() {
+  const unanswered4 = QUESTIONS[4].filter(q => answers[q.id] === undefined).length;
+  if (unanswered4 > 0) {
+    const ok = confirm(`You have ${unanswered4} unanswered question(s) in this section. Unanswered questions will score 0. Continue anyway?`);
+    if (!ok) return;
+  }
+
+  const { dimScores, totalRaw, totalMax, totalPct, seal } = scoreAll();
+
+  // ── SEAL badge ──
+  const ring = document.getElementById('seal-ring');
+  ring.style.borderColor = seal.color;
+  ring.style.boxShadow   = `0 0 32px ${seal.color}44`;
+  document.getElementById('seal-ring-num').style.color = seal.color;
+  document.getElementById('seal-ring-num').textContent  = seal.level;
+  document.getElementById('seal-name').textContent      = `SEAL ${seal.level} — ${seal.name}`;
+  document.getElementById('seal-name').style.color      = seal.color;
+  document.getElementById('seal-score-pct').textContent = `Overall Score: ${totalRaw} / ${totalMax} (${totalPct}%)`;
+  document.getElementById('seal-desc').textContent      = seal.desc;
+
+  // ── Dimension bars ──
+  const dimEl = document.getElementById('dim-scores');
+  dimEl.innerHTML = '';
+  DIMS.forEach(d => {
+    const ds = dimScores[d.id];
+    const card = document.createElement('div');
+    card.className = 'dim-score-card';
+    card.innerHTML = `
+      <div class="dsc-top">
+        <span class="dsc-name">${d.icon} ${d.label}</span>
+        <span class="dsc-pct" style="color:${d.color}">${ds.pct}%</span>
+      </div>
+      <div class="dsc-bar">
+        <div class="dsc-fill" style="width:0%;background:${d.color}" data-w="${ds.pct}"></div>
+      </div>`;
+    dimEl.appendChild(card);
+  });
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.dsc-fill').forEach(el => {
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 100);
+
+  // ── Radar chart ──
+  if (radarChart) radarChart.destroy();
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  const data = DIMS.map(d => dimScores[d.id].pct);
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Legal &\nRegulatory', 'Operational', 'Technical', 'Strategic &\nGovernance'],
+      datasets: [{
+        label: 'Score %',
+        data,
+        backgroundColor: 'rgba(59,130,246,.15)',
+        borderColor: '#60a5fa',
+        borderWidth: 2,
+        pointBackgroundColor: DIMS.map(d => d.color),
+        pointRadius: 5,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      layout: {
+        padding: { top: 16, bottom: 16, left: 32, right: 32 },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw}%`
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          ticks: {
+            display: true,
+            stepSize: 25,
+            color: '#445674',
+            font: { size: 10 },
+            backdropColor: 'transparent',
+          },
+          grid:        { color: '#1f2f4a' },
+          angleLines:  { color: '#1f2f4a' },
+          pointLabels: {
+            color: '#7d92b8',
+            font: { size: 12, family: 'Inter', weight: '500' },
+            padding: 8,
+          },
+        }
+      }
+    }
+  });
+
+  // ── Recommendations ──
+  const recListEl = document.getElementById('rec-list');
+  recListEl.innerHTML = '';
+
+  // Collect unanswered or low-scored critical + non-critical questions
+  const critFailed = [], nonCritLow = [];
+  for (let dim = 1; dim <= 4; dim++) {
+    QUESTIONS[dim].forEach(q => {
+      const v = answers[q.id] ?? 0;
+      if (v < 2 && q.critical)   critFailed.push(q);
+      if (v < 1 && !q.critical)  nonCritLow.push(q);
+    });
+  }
+
+  // Show top 10 most impactful
+  const toShow = [
+    ...critFailed.map(q => ({ q, prio:'high' })),
+    ...nonCritLow.slice(0, Math.max(0, 8 - critFailed.length)).map(q => ({ q, prio:'medium' })),
+  ].slice(0, 10);
+
+  if (toShow.length === 0) {
+    recListEl.innerHTML = `<div class="rec-item" style="border-left:3px solid var(--green)">
+      <div class="rec-icon">🎉</div>
+      <div class="rec-content">
+        <h4>Excellent sovereignty posture</h4>
+        <p>All critical requirements have been met. Continue to monitor and re-assess annually or upon significant changes to the cloud solution or regulatory landscape.</p>
+      </div>
+    </div>`;
+  } else {
+    toShow.forEach(({ q, prio: defaultPrio }) => {
+      const rec  = RECS[q.id];
+      const v    = answers[q.id] ?? 0;
+      const prio = q.critical && v === 0 ? 'high' : q.critical && v === 1 ? 'medium' : defaultPrio;
+      const item = document.createElement('div');
+      item.className = `rec-item prio-${prio}`;
+      item.innerHTML = `
+        <div class="rec-icon">${rec.icon}</div>
+        <div class="rec-content">
+          <h4>${q.id}: ${q.text.substring(0, 80)}… <span class="rec-prio">${prio.toUpperCase()}</span></h4>
+          <p>${rec.text}</p>
+        </div>`;
+      recListEl.appendChild(item);
+    });
+  }
+
+  goPage(5);
+}
+
+function exportPDF() {
+  const element = document.getElementById('page-results');
+  const actionsDiv = element.querySelector('.results-actions');
+  actionsDiv.style.display = 'none';
+
+  // Clone so we don't mutate the live page
+  const clone = element.cloneNode(true);
+
+  // Replace <canvas> elements with <img> data-URL snapshots so Chart.js output renders in the PDF
+  const liveCanvases = Array.from(element.querySelectorAll('canvas'));
+  const cloneCanvases = Array.from(clone.querySelectorAll('canvas'));
+  liveCanvases.forEach((canvas, i) => {
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.style.cssText = canvas.getAttribute('style') || '';
+    img.style.display = 'block';
+    cloneCanvases[i].replaceWith(img);
+  });
+
+  // Collect all inline <style> blocks
+  const inlineStyles = Array.from(document.querySelectorAll('style'))
+    .map(s => s.outerHTML).join('\n');
+
+  // Also inline <link rel="stylesheet"> rules (same-origin only; cross-origin sheets are silently skipped)
+  let linkedCss = '';
+  Array.from(document.styleSheets).forEach(ss => {
+    if (!ss.href) return;
+    try {
+      linkedCss += Array.from(ss.cssRules).map(r => r.cssText).join('\n');
+    } catch (e) { /* cross-origin sheet — skip */ }
+  });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">${inlineStyles}${linkedCss ? '<style>' + linkedCss + '</style>' : ''}</head><body style="margin:0;padding:1rem;background:#0d0f18">${clone.outerHTML}</body></html>`;
+
+  const filename = `Cloud-Sovereignty-Assessment-${new Date().toISOString().split('T')[0]}.pdf`;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{{ url_for("tools.export_pdf") }}';
+  form.style.display = 'none';
+
+  const htmlField = document.createElement('input');
+  htmlField.type = 'hidden'; htmlField.name = 'html'; htmlField.value = html;
+  const nameField = document.createElement('input');
+  nameField.type = 'hidden'; nameField.name = 'filename'; nameField.value = filename;
+  const csrfField = document.createElement('input');
+  csrfField.type = 'hidden'; csrfField.name = 'csrf_token';
+  csrfField.value = '{{ csrf_token() }}';
+
+  form.appendChild(htmlField);
+  form.appendChild(nameField);
+  form.appendChild(csrfField);
+  document.body.appendChild(form);
+  form.submit();
+
+  setTimeout(() => {
+    actionsDiv.style.display = '';
+    document.body.removeChild(form);
+  }, 500);
+}
+
+function restartAssessment() {
+  // Clear answers
+  Object.keys(answers).forEach(k => delete answers[k]);
+  // Reset UI
+  document.querySelectorAll('.q-opt').forEach(el => el.classList.remove('sel-0','sel-1','sel-2'));
+  document.querySelectorAll('.q-card').forEach(el => el.classList.remove('answered'));
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  for (let i = 1; i <= 4; i++) updateAnsCount(i);
+  goPage(0);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════ */
+buildQuestions();
+
+/* ── Event delegation (CSP-safe inline-handler replacement) ── */
+document.addEventListener('click', function (e) {
+  const el = e.target.closest('[data-fn]');
+  if (!el) return;
+  const fn = el.dataset.fn;
+  const a0 = el.dataset.a0;
+  const map = { startAssessment, goPage, nextPage, showResults, exportPDF, restartAssessment };
+  const f = map[fn];
+  if (!f) return;
+  if (a0 === undefined) f();
+  else f(isNaN(a0) ? a0 : +a0);
+});
+
+document.addEventListener('change', function (e) {
+  const el = e.target.closest('[data-fn="selectAnswer"]');
+  if (!el) return;
+  selectAnswer(el.dataset.a0, +el.dataset.a1, +el.dataset.a2);
+});
+
+</script>
+{% endblock %}

@@ -26,7 +26,8 @@
       "mfa_reset": "Mfa Reset",
       "mfa_setup": "Mfa Setup",
       "start_assessment": "Start Assessment",
-      "admin_import_controls": "Import Controls"
+      "admin_import_controls": "Import Controls",
+      "tools": "Tools"
     },
     "home": {
       "subtitle": "Unified workspace for assessments."
@@ -2347,6 +2348,20 @@
         "targets": "Recovery Targets",
         "recovery": "Recovery Procedures"
       }
+    }
+  },
+  "tools": {
+    "nav": {
+      "overview": "Overview",
+      "cvss_calculator": "CVSS Calculator",
+      "risk_tool": "Risk Description Tool",
+      "ai_act_checker": "EU AI Act Checker",
+      "cloud_sovereignty": "Cloud Sovereignty Framework",
+      "security_roadmap": "Security Roadmap"
+    },
+    "index": {
+      "title": "Security Tools",
+      "subtitle": "A collection of standalone security and compliance tools."
     }
   }
 }

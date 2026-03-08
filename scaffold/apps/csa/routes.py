@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import defaultdict
+from pathlib import Path
 from datetime import UTC, datetime
 from typing import Iterable
 
@@ -107,6 +108,12 @@ def _has_assessment_management_role() -> bool:
         current_user.has_role(role)
         for role in (ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER, ROLE_CONTROL_ASSIGNER)
     )
+
+
+def _load_export_css() -> str:
+    """Return the compiled Tailwind CSS so standalone export pages are styled."""
+    css_path = Path(current_app.root_path) / "static" / "css" / "app.css"
+    return css_path.read_text(encoding="utf-8") if css_path.exists() else ""
 
 
 def _slugify_filename(value: str) -> str:
@@ -590,6 +597,8 @@ def export_assessment(assessment_id: int):
         framework_reference=framework_reference,
         control_description=control_description,
         badge_class=STATUS_BADGE_CLASSES.get(assessment.status, "secondary"),
+        export_mode=True,
+        export_css=_load_export_css(),
     )
 
     if framework_code and control_name:

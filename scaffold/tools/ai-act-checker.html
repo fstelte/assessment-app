@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EU AI Act Compliance Checker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0d0f18;
+      --bg-secondary: #12151f;
+      --bg-card: #1a1d2e;
+      --bg-card-hover: #1e2235;
+      --border: #2a2d42;
+      --border-light: #363a52;
+      --accent: #6366f1;
+      --accent-hover: #7c7ff5;
+      --accent-light: rgba(99,102,241,0.12);
+      --accent-glow: rgba(99,102,241,0.25);
+      --danger: #ef4444;
+      --danger-light: rgba(239,68,68,0.12);
+      --warning: #f59e0b;
+      --warning-light: rgba(245,158,11,0.12);
+      --success: #10b981;
+      --success-light: rgba(16,185,129,0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --purple: #a855f7;
+      --purple-light: rgba(168,85,247,0.12);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0d0f18 0%, #12151f 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .badge-eu {
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      margin-bottom: 2.5rem;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .progress-meta span:last-child { color: var(--accent); font-weight: 600; }
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+    .step-dots {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border-light);
+      transition: all 0.3s;
+    }
+    .step-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+    .step-dot.done { background: var(--success); }
+
+    /* ── Screen cards ── */
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeIn 0.35s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Welcome screen ── */
+    .welcome-hero {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+    }
+    .welcome-hero .hero-icon {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2));
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+      margin: 0 auto 1.5rem;
+    }
+    .welcome-hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f1f5f9, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+    .welcome-hero p {
+      color: var(--text-secondary);
+      max-width: 580px;
+      margin: 0 auto 2rem;
+      font-size: 1.05rem;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: left;
+    }
+    .feature-card .icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+    .feature-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.3rem;
+    }
+    .feature-card p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Question card ── */
+    .q-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .q-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .q-section-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+    .q-card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+    .q-card .q-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    /* ── Option buttons ── */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      color: var(--text-primary);
+      font-size: 0.92rem;
+      position: relative;
+      width: 100%;
+    }
+    .option-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      transform: translateX(3px);
+    }
+    .option-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .option-btn.selected::after {
+      content: '✓';
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .option-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .option-text strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .option-text span {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Radio-style single-select */
+    .option-radio {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border-light);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .option-btn.selected .option-radio,
+    .option-btn:hover .option-radio {
+      border-color: var(--accent);
+    }
+    .option-btn.selected .option-radio::after {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    /* Checkbox-style multi-select */
+    .option-check {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border-light);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 3px;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .option-btn.selected .option-check {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .option-btn.selected .option-check::after {
+      content: '✓';
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: var(--accent-light);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1.1rem;
+      font-size: 0.83rem;
+      color: var(--text-secondary);
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.6rem;
+    }
+    .info-box .icon { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Navigation ── */
+    .nav-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: space-between;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover {
+      border-color: var(--border-light);
+      color: var(--text-primary);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+    }
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1rem;
+    }
+
+    /* ── Results ── */
+    #results-screen {
+      display: none;
+    }
+    #results-screen.active {
+      display: block;
+    }
+
+    .result-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .result-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    .result-header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .classification-banner {
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      border: 2px solid;
+    }
+    .classification-banner.prohibited {
+      background: var(--danger-light);
+      border-color: var(--danger);
+    }
+    .classification-banner.high-risk {
+      background: var(--warning-light);
+      border-color: var(--warning);
+    }
+    .classification-banner.limited-risk {
+      background: var(--purple-light);
+      border-color: var(--purple);
+    }
+    .classification-banner.gpai {
+      background: var(--accent-light);
+      border-color: var(--accent);
+    }
+    .classification-banner.minimal-risk {
+      background: var(--success-light);
+      border-color: var(--success);
+    }
+    .banner-icon {
+      font-size: 3rem;
+      flex-shrink: 0;
+    }
+    .banner-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.25rem;
+      opacity: 0.7;
+    }
+    .banner-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.4rem;
+    }
+    .banner-desc {
+      font-size: 0.875rem;
+      opacity: 0.85;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+      .welcome-hero h1 { font-size: 1.5rem; }
+      header { padding: 0 1rem; }
+      main { padding: 1.5rem 1rem 3rem; }
+    }
+
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .result-card h3 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-card h3::before {
+      content: '';
+      display: inline-block;
+      width: 5px; height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .obligation-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .obligation-list li {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      padding: 0.6rem 0.8rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid;
+    }
+    .obligation-list li.high { border-color: var(--warning); }
+    .obligation-list li.medium { border-color: var(--accent); }
+    .obligation-list li.info { border-color: var(--success); }
+    .obligation-list li .ob-icon { flex-shrink: 0; font-size: 1rem; }
+
+    .qa-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .qa-row {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      font-size: 0.83rem;
+    }
+    .qa-row:last-child { border-bottom: none; }
+    .qa-q { color: var(--text-secondary); }
+    .qa-a { color: var(--text-primary); font-weight: 500; text-align: right; }
+
+    .ref-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-light);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .ref-tag:hover { background: rgba(99,102,241,0.2); }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--purple-light);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 99px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--purple);
+    }
+
+    .export-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Printable output */
+    #pdf-content {
+      display: none;
+    }
+    @media print {
+      header, .progress-wrap, .export-row, #quiz-area { display: none !important; }
+      #results-screen { display: block !important; }
+      #pdf-content { display: none !important; }
+      body { background: white !important; color: #111 !important; }
+      .result-card, .classification-banner { border: 1px solid #ccc !important; }
+      .banner-title, .result-header h1 { color: #111 !important; }
+      .btn { display: none !important; }
+    }
+
+    /* Tooltip article ref */
+    .article-ref-popup {
+      display: none;
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      max-width: 340px;
+      box-shadow: var(--shadow);
+      z-index: 200;
+      animation: fadeIn 0.2s ease;
+    }
+    .article-ref-popup h4 { font-size: 0.85rem; color: var(--accent); margin-bottom: 0.4rem; }
+    .article-ref-popup p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+    .article-ref-popup .close-popup {
+      position: absolute; top: 0.5rem; right: 0.75rem;
+      cursor: pointer; color: var(--text-muted); font-size: 1.2rem; background: none; border: none;
+    }
+
+    /* Stepper sidebar indicator */
+    .step-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .step-num {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .step-title-text h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .step-title-text span {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    /* ── Text input ── */
+    .text-input-wrap {
+      margin-top: 1.25rem;
+    }
+    .text-input-wrap input[type="text"] {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1.1rem;
+      font-size: 1rem;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .text-input-wrap input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .text-input-wrap input[type="text"]::placeholder {
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚖️</div>
+    EU AI Act Checker
+  </div>
+  <span class="badge-eu">Regulation (EU) 2024/1689</span>
+</header>
+
+<main>
+  <!-- Progress bar -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-meta">
+      <span id="progress-label">Step 1 of 9</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="step-dots" id="step-dots"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 0 — WELCOME
+  ═══════════════════════════════════════════ -->
+  <div class="screen active" id="screen-0">
+    <div class="welcome-hero">
+      <div class="hero-icon">⚖️</div>
+      <h1>EU AI Act Compliance Checker</h1>
+      <p>Answer a short set of questions about your AI system to determine its risk classification, your legal role, and which obligations apply under the EU AI Act (Regulation 2024/1689).</p>
+      <button class="btn btn-primary btn-lg" onclick="startQuiz()">Start Assessment →</button>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="icon">🔍</div>
+          <h3>Risk Classification</h3>
+          <p>Determine if your AI is prohibited, high-risk, limited-risk or minimal-risk</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📋</div>
+          <h3>Obligations</h3>
+          <p>Get a tailored list of obligations based on your role and system type</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">👤</div>
+          <h3>Role Detection</h3>
+          <p>Identify whether you are a Provider, Deployer, Importer or Distributor</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📄</div>
+          <h3>Export Report</h3>
+          <p>Download a PDF or print your compliance assessment report</p>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-muted);">
+        Based on <a href="https://ai-act-law.eu" target="_blank" style="color:var(--accent);">ai-act-law.eu</a>. 
+        This tool provides general guidance only and does not constitute legal advice.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       QUIZ AREA (Steps 1-8)
+  ═══════════════════════════════════════════ -->
+  <div id="quiz-area" style="display:none;">
+
+    <!-- STEP 1: Application Name -->
+    <div class="screen" id="screen-1">
+      <div class="step-title-row">
+        <div class="step-num">1</div>
+        <div class="step-title-text">
+          <h2>Application Name</h2>
+          <span>Identify the AI system being assessed</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>Application Details</div>
+        <h2>What is the name of the AI application or system you are assessing?</h2>
+        <p class="q-desc">Enter the name of the AI system, product, or application. This will appear in your assessment report to clearly identify what was evaluated.</p>
+        <div class="text-input-wrap">
+          <input type="text" id="app-name-input" placeholder="e.g. SmartHire Recruitment Assistant" maxlength="120"
+            oninput="onAppNameInput(this.value)" onkeydown="if(event.key==='Enter' && this.value.trim()) goStep(2);" />
+        </div>
+        <div class="info-box" style="margin-top:1rem;">
+          <span class="icon">💡</span>
+          <span>The application name helps identify the system in the report. Use a descriptive name that clearly represents the AI system being assessed.</span>
+        </div>
+      </div>
+      <div class="nav-row">
+        <span></span>
+        <button class="btn btn-primary" id="next-1" onclick="goStep(2)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Role (decision tree) -->
+    <div class="screen" id="screen-2">
+      <div class="step-title-row">
+        <div class="step-num">2</div>
+        <div class="step-title-text">
+          <h2>Your Role in the AI Value Chain</h2>
+          <span>Article 2 &amp; 3 AI Act</span>
+        </div>
+      </div>
+
+      <!-- Breadcrumb trail of answered sub-questions -->
+      <div id="role-trail" style="display:none;margin-bottom:1rem;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;">Your answers so far</div>
+        <div id="role-trail-items" style="display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+
+      <!-- Sub-question card (rendered dynamically) -->
+      <div class="q-card" id="role-subq-card">
+        <div class="q-section"><div class="q-section-dot"></div>Role Detection — <span id="role-subq-counter">Question 1</span></div>
+        <h2 id="role-subq-text"></h2>
+        <p class="q-desc" id="role-subq-desc"></p>
+        <div class="options" id="role-subq-opts"></div>
+      </div>
+
+      <!-- Role result card (shown when role is determined) -->
+      <div id="role-result-card" style="display:none;">
+        <div class="q-card" style="border-color:var(--accent);background:var(--accent-light);">
+          <div class="q-section"><div class="q-section-dot"></div>Role Identified</div>
+          <div style="display:flex;align-items:center;gap:1rem;">
+            <div id="role-result-icon" style="font-size:2.8rem;"></div>
+            <div>
+              <div style="font-size:1.3rem;font-weight:800;color:var(--text-primary);" id="role-result-name"></div>
+              <div style="font-size:0.875rem;color:var(--text-secondary);margin-top:4px;" id="role-result-desc"></div>
+            </div>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:0;">
+          <span class="icon">⚖️</span>
+          <span id="role-result-obligation-hint"></span>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost" id="role-back-btn" onclick="roleBack()" style="display:none;">← Redo</button>
+        <button class="btn btn-primary" id="next-2" onclick="goStep(3)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: AI System Basics -->
+    <div class="screen" id="screen-3">
+      <div class="step-title-row">
+        <div class="step-num">3</div>
+        <div class="step-title-text">
+          <h2>Basic AI System Characteristics</h2>
+          <span>Article 3 AI Act — Definition of 'AI system'</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>System Type</div>
+        <h2>Which of the following best describes your system?</h2>
+        <p class="q-desc">Select the category that best fits the core technology of your AI. This helps determine if the AI Act applies at all and which category of rules is relevant.</p>
+        <div class="options" id="opts-system_type">
+          <button class="option-btn" onclick="selectOption('system_type','ml',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🧠 Machine Learning System</strong>
+              <span>Trained models such as neural networks, deep learning, decision trees, etc. that infer outputs from data</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('system_type','gpai',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🤖 General-Purpose AI Model (GPAI)</strong>
+              <span>A large model trained on broad data that can perform a wide variety of tasks (e.g. LLMs, multimodal foundation models)</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('system_type','rule_based',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>📐 Rules-Based / Expert System</strong>
+              <span>Logic-based systems with explicitly coded rules, without autonomous learning from data</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('system_type','hybrid',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🔀 Hybrid System</strong>
+              <span>Combines ML models with rule-based logic or other approaches</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('system_type','not_ai',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>💻 Traditional Software / Not an AI System</strong>
+              <span>Deterministic software without machine learning or autonomous inference capabilities</span>
+            </div>
+          </button>
+        </div>
+        <div class="info-box">
+          <span class="icon">📖</span>
+          <span>Under Art. 3(1) AI Act, an AI system is a machine-based system that operates with some degree of autonomy and infers outputs (predictions, decisions, content, recommendations) influencing real or virtual environments. Traditional deterministic software generally falls outside this definition.</span>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" id="next-3" onclick="checkSystemType()" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: GPAI specifics (only shown if GPAI) -->
+    <div class="screen" id="screen-4">
+      <div class="step-title-row">
+        <div class="step-num">4</div>
+        <div class="step-title-text">
+          <h2>General-Purpose AI Model Details</h2>
+          <span>Articles 51–55 AI Act — GPAI Classification</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>GPAI Classification</div>
+        <h2>Does your GPAI model have systemic risk?</h2>
+        <p class="q-desc">A GPAI model is presumed to have systemic risk if it was trained using more than 10²⁵ FLOPs or if the European Commission designates it as such (Art. 51). This triggers additional obligations.</p>
+        <div class="options" id="opts-gpai_systemic">
+          <button class="option-btn" onclick="selectOption('gpai_systemic','yes',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>⚠️ Yes — likely systemic risk</strong>
+              <span>Training compute exceeds 10²⁵ FLOPs, or it has been designated as systemic risk by the EU Commission</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('gpai_systemic','no',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>✅ No — standard GPAI</strong>
+              <span>Training compute is below 10²⁵ FLOPs and no systemic risk designation applies</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('gpai_systemic','unknown',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>❓ Unknown / Not sure</strong>
+              <span>Unable to determine the training compute or designation status</span>
+            </div>
+          </button>
+        </div>
+        <div class="info-box">
+          <span class="icon">💡</span>
+          <span>If systemic risk is uncertain, it is recommended to treat the model as if it has systemic risk to ensure compliance. The AI Office may also designate GPAI models as systemic risk.</span>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+        <button class="btn btn-primary" id="next-4" onclick="goStep(5)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Prohibited Practices -->
+    <div class="screen" id="screen-5">
+      <div class="step-title-row">
+        <div class="step-num">5</div>
+        <div class="step-title-text">
+          <h2>Prohibited AI Practices Check</h2>
+          <span>Article 5 AI Act — Unacceptable Risk</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>Prohibited Practices (Art. 5)</div>
+        <h2>Does your AI system do any of the following?</h2>
+        <p class="q-desc">Select <strong>all that apply</strong>. These practices are considered incompatible with EU values and are completely prohibited under the AI Act.</p>
+        <div class="options" id="opts-prohibited">
+          <button class="option-btn" onclick="toggleMulti('prohibited','subliminal',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🧪 Subliminal / manipulative techniques</strong>
+              <span>Deploys techniques beyond a person's consciousness to distort behaviour and cause significant harm (Art. 5(1a))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','vulnerability',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>⚠️ Exploiting vulnerabilities</strong>
+              <span>Targets vulnerabilities due to age, disability or social/economic situation to distort behaviour (Art. 5(1b))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','social_scoring',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>📊 Social scoring of individuals</strong>
+              <span>Evaluates or classifies individuals over time based on social behaviour leading to detrimental treatment (Art. 5(1c))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','predictive_policing',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🚔 Predictive policing (individual profiling)</strong>
+              <span>Assesses/predicts risk of criminal offence based solely on profiling or personality traits (Art. 5(1d))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','face_scraping',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>👁️ Facial recognition database scraping</strong>
+              <span>Creates/expands facial recognition databases through untargeted scraping of the internet or CCTV (Art. 5(1e))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','emotion_work_edu',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>😐 Emotion recognition (workplace/education)</strong>
+              <span>Infers emotions of persons in workplace or educational settings, except for medical/safety reasons (Art. 5(1f))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','biometric_cat_sensitive',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🧬 Biometric categorisation by sensitive attributes</strong>
+              <span>Categorises individuals based on biometrics to infer race, political opinions, sexual orientation, etc. (Art. 5(1g))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','realtime_biometric',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>📷 Real-time biometric ID in public spaces (law enforcement)</strong>
+              <span>Uses real-time remote biometric identification in publicly accessible spaces for law enforcement purposes (Art. 5(1h))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('prohibited','none',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>✅ None of the above</strong>
+              <span>The system does not fall into any of the above prohibited categories</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="backFromStep5()">← Back</button>
+        <button class="btn btn-primary" id="next-5" onclick="goStep(6)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: High-Risk Annex I -->
+    <div class="screen" id="screen-6">
+      <div class="step-title-row">
+        <div class="step-num">6</div>
+        <div class="step-title-text">
+          <h2>Regulated Product Integration</h2>
+          <span>Article 6(1) & Annex I AI Act</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>High-Risk (Annex I)</div>
+        <h2>Is your AI system a safety component of, or itself a product regulated under, one of these EU laws?</h2>
+        <p class="q-desc">If your AI is used as a safety component in — or is itself — a product covered by EU harmonisation legislation requiring third-party conformity assessment, it is automatically high-risk (Art. 6(1)).</p>
+        <div class="options" id="opts-annex1">
+          <button class="option-btn" onclick="selectOption('annex1','machinery',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>⚙️ Machinery / Industrial Equipment</strong>
+              <span>Machinery Directive (2006/42/EC), Lifts Regulation, Pressure Equipment Directive, etc.</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('annex1','medical',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🏥 Medical Devices / IVD</strong>
+              <span>Medical Devices Regulation (EU) 2017/745 or IVD Regulation (EU) 2017/746</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('annex1','aviation',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>✈️ Aviation / Aeronautical Products</strong>
+              <span>Regulation (EU) 2018/1139 on aviation safety</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('annex1','automotive',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🚗 Automotive / Vehicles</strong>
+              <span>Regulations on motor vehicles, agricultural machinery, or marine equipment</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('annex1','railway',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🚂 Railway Systems</strong>
+              <span>Directive (EU) 2016/797 on the interoperability of the rail system</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('annex1','none',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>❌ Not applicable — not in regulated products</strong>
+              <span>The AI system is not a safety component of any of these regulated product categories</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(5)">← Back</button>
+        <button class="btn btn-primary" id="next-6" onclick="goStep(7)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: High-Risk Annex III -->
+    <div class="screen" id="screen-7">
+      <div class="step-title-row">
+        <div class="step-num">7</div>
+        <div class="step-title-text">
+          <h2>High-Risk Use Case Domains</h2>
+          <span>Article 6(2) & Annex III AI Act</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>High-Risk Domains (Annex III)</div>
+        <h2>In which domain(s) is your AI system primarily used?</h2>
+        <p class="q-desc">Select <strong>all that apply</strong>. AI systems used in these domains are generally classified as high-risk under Annex III of the AI Act (unless the Art. 6(3) exemption applies).</p>
+        <div class="options" id="opts-annex3">
+          <button class="option-btn" onclick="toggleMulti('annex3','biometrics',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🪪 Biometrics</strong>
+              <span>Remote biometric identification, biometric categorisation, or emotion recognition (excluding see Art. 5 prohibitions)</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','critical_infra',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🏭 Critical Infrastructure</strong>
+              <span>Safety components in management of digital infrastructure, road traffic, water, gas, heating, electricity</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','education',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🎓 Education & Vocational Training</strong>
+              <span>Admission decisions, evaluation of learning outcomes, determining education level, student monitoring</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','employment',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>💼 Employment & Worker Management</strong>
+              <span>Recruitment, selection, promotion, termination, task allocation, performance monitoring</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','essential_services',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🏛️ Access to Essential Services</strong>
+              <span>Healthcare, creditworthiness/credit scoring, insurance pricing, emergency dispatch systems</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','law_enforcement',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>⚖️ Law Enforcement</strong>
+              <span>Victim risk assessment, polygraphs, evidence evaluation, re-offending risk, criminal profiling</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','migration',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🛂 Migration, Asylum & Border Control</strong>
+              <span>Risk assessment of persons, asylum/visa application processing, border identification</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','justice',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🏛️ Administration of Justice & Democratic Processes</strong>
+              <span>Legal research/fact interpretation, influencing elections or voting behaviour</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('annex3','none',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>✅ None of the above domains</strong>
+              <span>The system does not operate in any of the above high-risk domains</span>
+            </div>
+          </button>
+        </div>
+        <div class="info-box">
+          <span class="icon">⚠️</span>
+          <span>Even if your system falls in one of these domains, it may not be high-risk if it only performs a narrow procedural task, improves a previously completed human activity, or is purely preparatory (Art. 6(3)). However, profiling of individuals always qualifies as high-risk.</span>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(6)">← Back</button>
+        <button class="btn btn-primary" id="next-7" onclick="goStep(8)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: Transparency -->
+    <div class="screen" id="screen-8">
+      <div class="step-title-row">
+        <div class="step-num">8</div>
+        <div class="step-title-text">
+          <h2>Transparency Obligations</h2>
+          <span>Article 50 AI Act</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>Transparency (Art. 50)</div>
+        <h2>Which of the following apply to your AI system?</h2>
+        <p class="q-desc">Select <strong>all that apply</strong>. These trigger specific transparency disclosure obligations regardless of risk classification.</p>
+        <div class="options" id="opts-transparency">
+          <button class="option-btn" onclick="toggleMulti('transparency','chatbot',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>💬 Interacts directly with humans (chatbot/conversational)</strong>
+              <span>System is designed to have conversations or interactions with natural persons (Art. 50(1))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('transparency','synthetic_content',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🎨 Generates synthetic audio, images, video or text</strong>
+              <span>AI produces artificial content — must be marked as AI-generated in machine-readable format (Art. 50(2))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('transparency','emotion_biometric',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>😮 Emotion recognition or biometric categorisation system</strong>
+              <span>Deployers must inform persons exposed to the system (Art. 50(3))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('transparency','deepfake',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>🎭 Generates deepfakes (manipulated image/audio/video)</strong>
+              <span>Must disclose that content is artificially generated or manipulated (Art. 50(4))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('transparency','public_info_text',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>📰 Generates text published to inform the public</strong>
+              <span>AI-generated text for public information purposes must declare it was AI-generated (Art. 50(4))</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="toggleMulti('transparency','none',this)">
+            <div class="option-check"></div>
+            <div class="option-text">
+              <strong>✅ None of the above</strong>
+              <span>No specific transparency triggers apply</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(7)">← Back</button>
+        <button class="btn btn-primary" id="next-8" onclick="goStep(9)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 9: Context / Deployment -->
+    <div class="screen" id="screen-9">
+      <div class="step-title-row">
+        <div class="step-num">9</div>
+        <div class="step-title-text">
+          <h2>Deployment Context</h2>
+          <span>Article 2 AI Act — Scope & Applicability</span>
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-section"><div class="q-section-dot"></div>Scope Check</div>
+        <h2>Where and how is the AI system used?</h2>
+        <p class="q-desc">The geographic and contextual scope of the AI Act affects which provisions apply and when they become enforceable.</p>
+        <div class="options" id="opts-scope">
+          <button class="option-btn" onclick="selectOption('scope','eu_market',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🇪🇺 Placed on or used within the EU market</strong>
+              <span>The AI system is deployed or used within the European Union</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('scope','output_in_eu',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🌐 Outside EU, but outputs used/affect persons in EU</strong>
+              <span>System is outside the EU but its outputs or effects directly impact persons located in the EU</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('scope','research',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🔬 Scientific research & development only</strong>
+              <span>System is exclusively used for scientific R&D, not yet deployed for other purposes</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('scope','military',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🛡️ Military, defence or national security purposes only</strong>
+              <span>System is exclusively used for military, defence or national security — AI Act does not apply</span>
+            </div>
+          </button>
+          <button class="option-btn" onclick="selectOption('scope','private',this)">
+            <div class="option-radio"></div>
+            <div class="option-text">
+              <strong>🏠 Private individual use only</strong>
+              <span>Used solely for purely personal/private activities (not for professional use)</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="nav-row">
+        <button class="btn btn-ghost" onclick="goStep(8)">← Back</button>
+        <button class="btn btn-primary" id="next-9" onclick="generateResults()" disabled>See Results →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       RESULTS SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="results-screen">
+    <div class="result-header">
+      <h1 id="result-app-name">Your AI Act Assessment</h1>
+      <p>Completed on <span id="result-date"></span> — based on your answers</p>
+    </div>
+
+    <!-- Classification banner -->
+    <div id="classification-banner" class="classification-banner">
+      <div class="banner-icon" id="banner-icon">⚠️</div>
+      <div>
+        <div class="banner-label">Classification</div>
+        <div class="banner-title" id="banner-title">—</div>
+        <div class="banner-desc" id="banner-desc">—</div>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <!-- Role & Scope -->
+      <div class="result-card">
+        <h3>Your Role & Scope</h3>
+        <div id="result-role-scope"></div>
+      </div>
+      <!-- Applicable Articles -->
+      <div class="result-card">
+        <h3>Key Legal References</h3>
+        <div id="result-articles"></div>
+      </div>
+    </div>
+
+    <!-- Obligations -->
+    <div class="result-card" style="margin-bottom:1.5rem;">
+      <h3>Applicable Obligations</h3>
+      <ul class="obligation-list" id="obligation-list"></ul>
+    </div>
+
+    <!-- Q&A Summary -->
+    <div class="result-card" style="margin-bottom:1.5rem;">
+      <h3>Assessment Summary — Your Answers</h3>
+      <div class="qa-table" id="qa-table"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="info-box" style="margin-bottom:1rem;">
+      <span class="icon">⚖️</span>
+      <span>This assessment is for informational purposes only and does not constitute legal advice. The full text of the AI Act is available at <strong>ai-act-law.eu</strong>. Requirements and obligations for high-risk AI systems apply 3 years after entry into force (from 2 August 2027). Please consult qualified legal counsel for definitive compliance guidance.</span>
+    </div>
+
+    <div class="export-row">
+      <button class="btn btn-primary btn-lg" onclick="exportPDF()">⬇️ Export as PDF</button>
+      <button class="btn btn-ghost btn-lg" onclick="window.print()">🖨️ Print Report</button>
+      <button class="btn btn-ghost btn-lg" onclick="startOver()">🔄 Start New Assessment</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Article popup -->
+<div class="article-ref-popup" id="article-popup">
+  <button class="close-popup" onclick="closePopup()">×</button>
+  <h4 id="popup-title">Article Reference</h4>
+  <p id="popup-text"></p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const answers = {
+  app_name: null,
+  role: null,
+  system_type: null,
+  gpai_systemic: null,
+  prohibited: [],
+  annex1: null,
+  annex3: [],
+  transparency: [],
+  scope: null
+};
+
+const TOTAL_STEPS = 9;
+let currentStep = 0;
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function onAppNameInput(value) {
+  answers.app_name = value.trim();
+  document.getElementById('next-1').disabled = (answers.app_name.length === 0);
+}
+
+function startQuiz() {
+  document.getElementById('screen-0').classList.remove('active');
+  document.getElementById('quiz-area').style.display = 'block';
+  document.getElementById('progress-wrap').style.display = 'block';
+  buildDots();
+  goStep(1);
+}
+
+function buildDots() {
+  const container = document.getElementById('step-dots');
+  container.innerHTML = '';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot';
+    d.id = `dot-${i}`;
+    container.appendChild(d);
+  }
+}
+
+function updateProgress(step) {
+  const pct = Math.round(((step - 1) / TOTAL_STEPS) * 100);
+  document.getElementById('progress-label').textContent = `Step ${step} of ${TOTAL_STEPS}`;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const d = document.getElementById(`dot-${i}`);
+    if (!d) continue;
+    d.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+  }
+}
+
+function goStep(n) {
+  // Hide current
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // Show target
+  const el = document.getElementById(`screen-${n}`);
+  if (el) {
+    el.classList.add('active');
+    currentStep = n;
+    updateProgress(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (n === 2) initRoleTree();
+}
+
+function checkSystemType() {
+  if (answers.system_type === 'not_ai') {
+    // Skip most steps
+    answers.prohibited = ['none'];
+    answers.annex1 = 'none';
+    answers.annex3 = ['none'];
+    goStep(8);
+  } else if (answers.system_type === 'gpai') {
+    goStep(4);
+  } else {
+    goStep(5);
+  }
+}
+
+function backFromStep5() {
+  if (answers.system_type === 'gpai') goStep(4);
+  else goStep(3);
+}
+
+// ═══════════════════════════════════════════
+//  OPTION SELECTION
+// ═══════════════════════════════════════════
+function selectOption(key, value, btn) {
+  answers[key] = value;
+  const parent = btn.closest('.options');
+  parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Enable next button
+  const nextBtn = document.getElementById(`next-${currentStep}`);
+  if (nextBtn) nextBtn.disabled = false;
+}
+
+function toggleMulti(key, value, btn) {
+  // 'none' is exclusive
+  if (value === 'none') {
+    answers[key] = ['none'];
+    const parent = btn.closest('.options');
+    parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  } else {
+    // Remove 'none' from selection
+    const noneIdx = answers[key].indexOf('none');
+    if (noneIdx > -1) answers[key].splice(noneIdx, 1);
+    const parent = btn.closest('.options');
+    parent.querySelector('[onclick*="\'none\'"]')?.classList.remove('selected');
+
+    const idx = answers[key].indexOf(value);
+    if (idx > -1) {
+      answers[key].splice(idx, 1);
+      btn.classList.remove('selected');
+    } else {
+      answers[key].push(value);
+      btn.classList.add('selected');
+    }
+  }
+  const nextBtn = document.getElementById(`next-${currentStep}`);
+  if (nextBtn) nextBtn.disabled = (answers[key].length === 0);
+}
+
+// ═══════════════════════════════════════════
+//  RESULTS ENGINE
+// ═══════════════════════════════════════════
+function generateResults() {
+  // Hide quiz, show results
+  document.getElementById('quiz-area').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('results-screen').classList.add('active');
+  document.getElementById('result-date').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  // Show app name in header
+  const appNameEl = document.getElementById('result-app-name');
+  if (answers.app_name) {
+    appNameEl.textContent = `AI Act Assessment: ${answers.app_name}`;
+  } else {
+    appNameEl.textContent = 'Your AI Act Assessment';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const classification = computeClassification();
+  renderBanner(classification);
+  renderRoleScope();
+  renderArticles(classification);
+  renderObligations(classification);
+  renderQA(classification);
+}
+
+function computeClassification() {
+  const { prohibited, annex1, annex3, system_type, gpai_systemic, scope } = answers;
+
+  if (scope === 'military' || scope === 'private') {
+    return { level: 'not-applicable', key: 'not-applicable' };
+  }
+  if (scope === 'research') {
+    return { level: 'research', key: 'research' };
+  }
+  if (system_type === 'not_ai') {
+    return { level: 'not-ai', key: 'not-ai' };
+  }
+
+  const hasProhibited = prohibited.some(p => p !== 'none');
+  if (hasProhibited) return { level: 'prohibited', key: 'prohibited', items: prohibited.filter(p => p !== 'none') };
+
+  const isAnnex1 = annex1 && annex1 !== 'none';
+  const hasAnnex3 = annex3.some(a => a !== 'none');
+
+  if (isAnnex1 || hasAnnex3) {
+    if (system_type === 'gpai') {
+      return { level: 'high-risk-gpai', key: 'high-risk' };
+    }
+    return { level: 'high-risk', key: 'high-risk' };
+  }
+
+  if (system_type === 'gpai') {
+    if (gpai_systemic === 'yes' || gpai_systemic === 'unknown') {
+      return { level: 'gpai-systemic', key: 'gpai' };
+    }
+    return { level: 'gpai', key: 'gpai' };
+  }
+
+  const hasTransparency = answers.transparency.some(t => t !== 'none');
+  if (hasTransparency) {
+    return { level: 'limited-risk', key: 'limited-risk' };
+  }
+
+  return { level: 'minimal-risk', key: 'minimal-risk' };
+}
+
+function renderBanner(cls) {
+  const banner = document.getElementById('classification-banner');
+  const icon = document.getElementById('banner-icon');
+  const title = document.getElementById('banner-title');
+  const desc = document.getElementById('banner-desc');
+
+  banner.className = 'classification-banner';
+
+  const configs = {
+    'prohibited': {
+      cls: 'prohibited', icon: '🚫',
+      title: 'Prohibited AI System',
+      desc: 'Your AI system falls under at least one prohibited practice under Article 5 AI Act. Such systems may not be placed on the market, put into service, or used in the EU. Violations can result in fines up to €35 million or 7% of global annual turnover.'
+    },
+    'high-risk': {
+      cls: 'high-risk', icon: '⚠️',
+      title: 'High-Risk AI System',
+      desc: 'Your AI system is classified as high-risk under Article 6 (Annex I or Annex III). It must meet extensive requirements before being placed on the market or put into service: risk management, data governance, technical documentation, transparency, human oversight, accuracy and cybersecurity.'
+    },
+    'high-risk-gpai': {
+      cls: 'high-risk', icon: '⚠️',
+      title: 'High-Risk GPAI System',
+      desc: 'Your general-purpose AI model is used in a high-risk context. It must comply with both GPAI obligations (Chapter 5) and, where integrated into a high-risk application, the high-risk requirements of Chapter 3.'
+    },
+    'gpai-systemic': {
+      cls: 'gpai', icon: '🤖',
+      title: 'GPAI Model — Systemic Risk',
+      desc: 'Your model is a general-purpose AI model with systemic risk (Art. 51/55 AI Act). In addition to standard GPAI obligations, you must conduct model evaluations, adversarial testing, report serious incidents, and implement cybersecurity measures.'
+    },
+    'gpai': {
+      cls: 'gpai', icon: '🤖',
+      title: 'General-Purpose AI Model',
+      desc: 'Your model is a standard GPAI model (Chapter 5 AI Act). You must maintain technical documentation, follow the EU copyright policy, publish training data summaries, and cooperate with the AI Office.'
+    },
+    'limited-risk': {
+      cls: 'limited-risk', icon: '🟣',
+      title: 'Limited Risk — Transparency Obligations',
+      desc: 'Your AI system has limited risk but triggers specific transparency obligations under Article 50 AI Act. Users must be informed they are interacting with AI, and synthetic content must be labelled as AI-generated.'
+    },
+    'minimal-risk': {
+      cls: 'minimal-risk', icon: '✅',
+      title: 'Minimal / No Risk',
+      desc: 'Your AI system does not appear to fall within the high-risk, prohibited, or transparency-trigger categories. The AI Act imposes no mandatory requirements, though voluntary codes of conduct (Art. 95) are encouraged. Standard product liability and data protection law still applies.'
+    },
+    'not-applicable': {
+      cls: 'minimal-risk', icon: '🛡️',
+      title: 'AI Act Does Not Apply',
+      desc: 'The AI Act does not apply to this system based on your answers (military/defence/national security use, or purely private individual use). Other applicable laws (national security law, GDPR, etc.) still apply.'
+    },
+    'research': {
+      cls: 'minimal-risk', icon: '🔬',
+      title: 'Research & Development — Limited Obligations',
+      desc: 'AI systems used solely for scientific research and development are largely exempted from the AI Act requirements according to Article 2(6). However, you must still comply when output is used outside the R&D context.'
+    },
+    'not-ai': {
+      cls: 'minimal-risk', icon: '💻',
+      title: 'Not an AI System (AI Act Not Applicable)',
+      desc: 'Your system appears to be traditional deterministic software and does not meet the definition of an AI system under Article 3(1) AI Act. The AI Act does not apply. Standard software product liability, GDPR, and other relevant laws still apply.'
+    }
+  };
+
+  const cfg = configs[cls.level] || configs['minimal-risk'];
+  banner.classList.add(cfg.cls);
+  icon.textContent = cfg.icon;
+  title.textContent = cfg.title;
+  desc.textContent = cfg.desc;
+}
+
+function renderRoleScope() {
+  const container = document.getElementById('result-role-scope');
+  const roleLabels = {
+    provider: '🏭 Provider',
+    deployer: '🏢 Deployer',
+    importer: '🚢 Importer',
+    distributor: '📦 Distributor',
+    product_manufacturer: '🔧 Product Manufacturer'
+  };
+  const scopeLabels = {
+    eu_market: '🇪🇺 EU Market Deployment',
+    output_in_eu: '🌐 Outputs Used in EU',
+    research: '🔬 Research & Development',
+    military: '🛡️ Military / Defence',
+    private: '🏠 Private Use'
+  };
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      ${answers.app_name ? `<div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Application Name</div>
+        <span style="font-size:0.95rem;color:var(--text-primary);font-weight:600;">📱 ${answers.app_name}</span>
+      </div>` : ''}
+      <div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Your Role</div>
+        <span class="role-pill">${roleLabels[answers.role] || '—'}</span>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Deployment Scope</div>
+        <span style="font-size:0.875rem;color:var(--text-secondary);">${scopeLabels[answers.scope] || '—'}</span>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">System Type</div>
+        <span style="font-size:0.875rem;color:var(--text-secondary);">${getSystemTypeLabel()}</span>
+      </div>
+    </div>
+  `;
+}
+
+function getSystemTypeLabel() {
+  const map = { ml: '🧠 Machine Learning', gpai: '🤖 General-Purpose AI (GPAI)', rule_based: '📐 Rules-Based / Expert System', hybrid: '🔀 Hybrid System', not_ai: '💻 Traditional Software (Not AI)' };
+  return map[answers.system_type] || '—';
+}
+
+function renderArticles(cls) {
+  const container = document.getElementById('result-articles');
+  const refs = [];
+
+  if (cls.key === 'prohibited') refs.push({ art: 'Art. 5', url: 'https://ai-act-law.eu/article/5/', desc: 'Prohibited AI Practices' });
+  if (cls.key === 'high-risk') {
+    refs.push({ art: 'Art. 6', url: 'https://ai-act-law.eu/article/6/', desc: 'High-Risk Classification' });
+    refs.push({ art: 'Art. 9', url: 'https://ai-act-law.eu/article/9/', desc: 'Risk Management System' });
+    refs.push({ art: 'Art. 10', url: 'https://ai-act-law.eu/article/10/', desc: 'Data Governance' });
+    refs.push({ art: 'Art. 11', url: 'https://ai-act-law.eu/article/11/', desc: 'Technical Documentation' });
+    refs.push({ art: 'Art. 13', url: 'https://ai-act-law.eu/article/13/', desc: 'Transparency & Logging' });
+    refs.push({ art: 'Art. 14', url: 'https://ai-act-law.eu/article/14/', desc: 'Human Oversight' });
+    refs.push({ art: 'Art. 15', url: 'https://ai-act-law.eu/article/15/', desc: 'Accuracy & Robustness' });
+    refs.push({ art: 'Annex III', url: 'https://ai-act-law.eu/annex/3/', desc: 'High-Risk Use Cases' });
+  }
+  if (cls.key === 'gpai') {
+    refs.push({ art: 'Art. 51', url: 'https://ai-act-law.eu/article/51/', desc: 'GPAI Systemic Risk Classification' });
+    refs.push({ art: 'Art. 53', url: 'https://ai-act-law.eu/article/53/', desc: 'GPAI Model Obligations' });
+    refs.push({ art: 'Art. 55', url: 'https://ai-act-law.eu/article/55/', desc: 'Systemic Risk Obligations' });
+  }
+  if (answers.transparency.some(t => t !== 'none')) {
+    refs.push({ art: 'Art. 50', url: 'https://ai-act-law.eu/article/50/', desc: 'Transparency Obligations' });
+  }
+  refs.push({ art: 'Art. 2', url: 'https://ai-act-law.eu/article/2/', desc: 'Scope & Applicability' });
+  refs.push({ art: 'Art. 3', url: 'https://ai-act-law.eu/article/3/', desc: 'Definitions' });
+  if (answers.role === 'provider') refs.push({ art: 'Art. 16', url: 'https://ai-act-law.eu/article/16/', desc: 'Provider Obligations' });
+  if (answers.role === 'deployer') refs.push({ art: 'Art. 26', url: 'https://ai-act-law.eu/article/26/', desc: 'Deployer Obligations' });
+  if (answers.role === 'importer') refs.push({ art: 'Art. 23', url: 'https://ai-act-law.eu/article/23/', desc: 'Importer Obligations' });
+  if (answers.role === 'distributor') refs.push({ art: 'Art. 24', url: 'https://ai-act-law.eu/article/24/', desc: 'Distributor Obligations' });
+
+  container.innerHTML = refs.map(r => `
+    <div style="margin-bottom:0.5rem;">
+      <a href="${r.url}" target="_blank" class="ref-tag">📎 ${r.art}</a>
+      <span style="font-size:0.8rem;color:var(--text-secondary);margin-left:6px;">${r.desc}</span>
+    </div>
+  `).join('');
+}
+
+function renderObligations(cls) {
+  const list = document.getElementById('obligation-list');
+  const obligations = [];
+  const { role, system_type, gpai_systemic, transparency, annex3 } = answers;
+
+  // === PROHIBITED ===
+  if (cls.key === 'prohibited') {
+    obligations.push({ level: 'high', icon: '🚫', text: 'STOP: This system must NOT be placed on the market, put into service, or used (Art. 5).' });
+    obligations.push({ level: 'high', icon: '⚖️', text: 'Violations may result in fines up to €35 million or 7% of global annual turnover (Art. 99).' });
+    obligations.push({ level: 'medium', icon: '🔍', text: 'Review the specific prohibited practice and redesign or discontinue the system.' });
+    obligations.push({ level: 'info', icon: '📞', text: 'Consult qualified legal counsel and your national market surveillance authority.' });
+  }
+
+  // === HIGH RISK (Provider) ===
+  if (cls.key === 'high-risk' && role === 'provider') {
+    obligations.push({ level: 'high', icon: '📋', text: 'Establish and maintain a Risk Management System throughout the AI lifecycle (Art. 9).' });
+    obligations.push({ level: 'high', icon: '🗄️', text: 'Implement comprehensive Data and Data Governance practices for training, validation and test data (Art. 10).' });
+    obligations.push({ level: 'high', icon: '📝', text: 'Prepare and maintain Technical Documentation (Annex IV) before market placement (Art. 11).' });
+    obligations.push({ level: 'high', icon: '📊', text: 'Enable automatic recording of events/logs (logging capability) throughout the system lifecycle (Art. 12).' });
+    obligations.push({ level: 'high', icon: '🪟', text: 'Ensure transparency so deployers can understand how to use the system safely (Art. 13).' });
+    obligations.push({ level: 'high', icon: '👤', text: 'Design for effective human oversight — enable human intervention and monitoring (Art. 14).' });
+    obligations.push({ level: 'high', icon: '🎯', text: 'Ensure appropriate levels of accuracy, robustness and cybersecurity (Art. 15).' });
+    obligations.push({ level: 'high', icon: '✅', text: 'Implement Quality Management System (Art. 17) and undergo conformity assessment (Art. 43).' });
+    obligations.push({ level: 'high', icon: '🏷️', text: 'Affix CE marking and draw up EU Declaration of Conformity (Art. 47/48).' });
+    obligations.push({ level: 'medium', icon: '📑', text: 'Register the AI system in the EU database for high-risk AI systems (Art. 49).' });
+    obligations.push({ level: 'medium', icon: '🔔', text: 'Report serious incidents to market surveillance authorities (Art. 73).' });
+    obligations.push({ level: 'medium', icon: '📬', text: 'Provide instructions for use to deployers (Art. 13(3)).' });
+    obligations.push({ level: 'info', icon: '🔄', text: 'Maintain post-market monitoring plan and collect performance data (Art. 72).' });
+  }
+
+  // === HIGH RISK (Deployer) ===
+  if (cls.key === 'high-risk' && role === 'deployer') {
+    obligations.push({ level: 'high', icon: '📖', text: 'Use the AI system only according to the provider\'s instructions for use (Art. 26(1)).' });
+    obligations.push({ level: 'high', icon: '👤', text: 'Ensure human oversight measures are in place during operation (Art. 26(2)).' });
+    obligations.push({ level: 'high', icon: '📊', text: 'Monitor operation and report serious incidents or malfunctions to the provider (Art. 26(5)).' });
+    obligations.push({ level: 'medium', icon: '🔔', text: 'Inform affected persons about AI decision-making where required (Art. 26(6)).' });
+    obligations.push({ level: 'medium', icon: '⚖️', text: 'Conduct Fundamental Rights Impact Assessment if public body or certain private operator (Art. 27).' });
+    obligations.push({ level: 'medium', icon: '📑', text: 'Register use in the EU database (Art. 26(6)) and maintain logs as applicable (Art. 26(5)).' });
+    obligations.push({ level: 'info', icon: '🏛️', text: 'Cooperate with national competent authorities upon request (Art. 26(7)).' });
+  }
+
+  // === HIGH RISK (Importer) ===
+  if (cls.key === 'high-risk' && role === 'importer') {
+    obligations.push({ level: 'high', icon: '✅', text: 'Verify conformity assessment procedure and CE marking before placing on EU market (Art. 23(1)).' });
+    obligations.push({ level: 'high', icon: '📝', text: 'Ensure technical documentation and instructions for use are available in required EU language (Art. 23(2)).' });
+    obligations.push({ level: 'medium', icon: '🔁', text: 'Ensure provider has implemented corrective actions if AI presents risk (Art. 23(3)).' });
+    obligations.push({ level: 'medium', icon: '📋', text: 'Keep a copy of the conformity assessment and Declaration of Conformity for 10 years (Art. 23(4)).' });
+    obligations.push({ level: 'info', icon: '🔔', text: 'Report serious incidents to market surveillance authorities (Art. 73).' });
+  }
+
+  // === HIGH RISK (Distributor) ===
+  if (cls.key === 'high-risk' && role === 'distributor') {
+    obligations.push({ level: 'high', icon: '✅', text: 'Verify CE marking, Declaration of Conformity and instructions for use before distribution (Art. 24).' });
+    obligations.push({ level: 'medium', icon: '⚠️', text: 'Take corrective actions or withdraw AI from market if it presents a risk (Art. 24(3)).' });
+    obligations.push({ level: 'info', icon: '🏺', text: 'Keep records and cooperate with market surveillance authorities (Art. 24(5)).' });
+  }
+
+  // === GPAI (Standard) ===
+  if ((cls.key === 'gpai' || cls.level === 'gpai') && role === 'provider') {
+    obligations.push({ level: 'high', icon: '📋', text: 'Maintain up-to-date technical documentation including training methodologies and parameters (Art. 53(1a)).' });
+    obligations.push({ level: 'high', icon: '©️', text: 'Implement a policy for compliance with EU copyright law, including text and data mining (Art. 53(1c)).' });
+    obligations.push({ level: 'high', icon: '📰', text: 'Publish and regularly update a sufficiently detailed summary about the training data (Art. 53(1d)).' });
+    obligations.push({ level: 'medium', icon: '🤝', text: 'Provide downstream providers with relevant technical documentation to enable their compliance (Art. 53(1b)).' });
+    if (gpai_systemic === 'yes' || gpai_systemic === 'unknown') {
+      obligations.push({ level: 'high', icon: '🔬', text: 'SYSTEMIC RISK: Perform model evaluations including adversarial testing before and during deployment (Art. 55(1a)).' });
+      obligations.push({ level: 'high', icon: '🚨', text: 'SYSTEMIC RISK: Assess and mitigate systemic risks, including at Union level (Art. 55(1b)).' });
+      obligations.push({ level: 'high', icon: '⚡', text: 'SYSTEMIC RISK: Report serious incidents and corrective actions to the AI Office without delay (Art. 55(1c)).' });
+      obligations.push({ level: 'high', icon: '🔒', text: 'SYSTEMIC RISK: Ensure adequate cybersecurity protection for the model and infrastructure (Art. 55(1d)).' });
+    }
+  }
+
+  // === TRANSPARENCY ===
+  if (transparency.includes('chatbot')) {
+    obligations.push({ level: 'medium', icon: '💬', text: 'Inform users they are interacting with an AI system at the time of first interaction (Art. 50(1)).' });
+  }
+  if (transparency.includes('synthetic_content')) {
+    obligations.push({ level: 'medium', icon: '🏷️', text: 'Mark AI-generated synthetic content (images, audio, video, text) in a machine-readable format (Art. 50(2)).' });
+  }
+  if (transparency.includes('emotion_biometric')) {
+    obligations.push({ level: 'medium', icon: '👁️', text: 'Inform natural persons exposed to emotion recognition or biometric categorisation systems (Art. 50(3)).' });
+  }
+  if (transparency.includes('deepfake')) {
+    obligations.push({ level: 'medium', icon: '🎭', text: 'Disclose that deep fake image, audio or video content has been artificially generated/manipulated (Art. 50(4)).' });
+  }
+  if (transparency.includes('public_info_text')) {
+    obligations.push({ level: 'medium', icon: '📰', text: 'Disclose that text published to inform the public has been AI-generated (Art. 50(4)).' });
+  }
+
+  // === MINIMAL ===
+  if (cls.key === 'minimal-risk') {
+    obligations.push({ level: 'info', icon: '✅', text: 'No mandatory AI Act obligations apply. Voluntary codes of conduct encouraged (Art. 95).' });
+    obligations.push({ level: 'info', icon: '📋', text: 'Other EU and national laws still apply (GDPR, product liability, consumer protection, etc.).' });
+    obligations.push({ level: 'info', icon: '🎓', text: 'Ensure AI literacy of staff using AI systems (Art. 4) — applies to all organisations.' });
+  }
+
+  // === AI Literacy (always) ===
+  if (cls.key !== 'not-applicable' && cls.key !== 'not-ai') {
+    obligations.push({ level: 'info', icon: '📚', text: 'Ensure appropriate AI literacy for all staff working with AI systems (Art. 4 — applies to all organisations).' });
+  }
+
+  if (obligations.length === 0) {
+    obligations.push({ level: 'info', icon: '✅', text: 'No specific AI Act obligations identified for this configuration.' });
+  }
+
+  list.innerHTML = obligations.map(o => `
+    <li class="${o.level}">
+      <span class="ob-icon">${o.icon}</span>
+      <span>${o.text}</span>
+    </li>
+  `).join('');
+}
+
+function renderQA(cls) {
+  const table = document.getElementById('qa-table');
+  const roleMap = { provider: 'Provider', deployer: 'Deployer', importer: 'Importer', distributor: 'Distributor', product_manufacturer: 'Product Manufacturer' };
+  const typeMap = { ml: 'Machine Learning', gpai: 'General-Purpose AI', rule_based: 'Rules-Based', hybrid: 'Hybrid', not_ai: 'Not an AI System' };
+  const gpaiMap = { yes: 'Yes — systemic risk', no: 'No — standard GPAI', unknown: 'Unknown' };
+  const scopeMap = { eu_market: 'EU Market', output_in_eu: 'Output used in EU', research: 'Research only', military: 'Military/Defence', private: 'Private use' };
+
+  const prohibitedLabels = {
+    subliminal: 'Subliminal manipulation', vulnerability: 'Exploiting vulnerabilities',
+    social_scoring: 'Social scoring', predictive_policing: 'Predictive policing',
+    face_scraping: 'Facial image scraping', emotion_work_edu: 'Emotion recognition (work/edu)',
+    biometric_cat_sensitive: 'Biometric categorisation (sensitive)', realtime_biometric: 'Real-time biometric ID (law enforcement)', none: 'None'
+  };
+  const annex3Labels = {
+    biometrics: 'Biometrics', critical_infra: 'Critical Infrastructure', education: 'Education',
+    employment: 'Employment', essential_services: 'Essential Services', law_enforcement: 'Law Enforcement',
+    migration: 'Migration/Asylum', justice: 'Justice/Democracy', none: 'None'
+  };
+  const transLabels = {
+    chatbot: 'Human-AI interaction', synthetic_content: 'Synthetic content generation',
+    emotion_biometric: 'Emotion/biometric recognition', deepfake: 'Deepfakes', public_info_text: 'Public information text', none: 'None'
+  };
+  const annex1Labels = { machinery: 'Machinery', medical: 'Medical Devices', aviation: 'Aviation', automotive: 'Automotive', railway: 'Railway', none: 'Not applicable' };
+
+  const classificationLabels = {
+    'prohibited': 'Prohibited AI System',
+    'high-risk': 'High-Risk AI System',
+    'high-risk-gpai': 'High-Risk GPAI System',
+    'gpai-systemic': 'GPAI Model — Systemic Risk',
+    'gpai': 'General-Purpose AI Model',
+    'limited-risk': 'Limited Risk (Transparency Obligations)',
+    'minimal-risk': 'Minimal / No Risk',
+    'not-applicable': 'AI Act Not Applicable',
+    'research': 'Research & Development (Limited Obligations)',
+    'not-ai': 'Not an AI System'
+  };
+  const classificationLabel = classificationLabels[cls ? cls.level : ''] || '—';
+
+  const rows = [
+    answers.app_name ? { q: 'Application Name', a: answers.app_name } : null,
+    { q: 'Risk Classification', a: classificationLabel },
+    { q: 'Your Role', a: roleMap[answers.role] || '—' },
+    { q: 'AI System Type', a: typeMap[answers.system_type] || '—' },
+    answers.system_type === 'gpai' ? { q: 'GPAI Systemic Risk', a: gpaiMap[answers.gpai_systemic] || '—' } : null,
+    { q: 'Deployment Scope', a: scopeMap[answers.scope] || '—' },
+    { q: 'Prohibited Practices', a: answers.prohibited.map(p => prohibitedLabels[p] || p).join(', ') || '—' },
+    { q: 'Regulated Product (Annex I)', a: annex1Labels[answers.annex1] || '—' },
+    { q: 'High-Risk Domain (Annex III)', a: answers.annex3.map(a => annex3Labels[a] || a).join(', ') || '—' },
+    { q: 'Transparency Triggers', a: answers.transparency.map(t => transLabels[t] || t).join(', ') || '—' }
+  ].filter(Boolean);
+
+  table.innerHTML = rows.map(r => `
+    <div class="qa-row">
+      <div class="qa-q">${r.q}</div>
+      <div class="qa-a">${r.a}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════
+function exportPDF() {
+  const element = document.getElementById('results-screen');
+  const opt = {
+    margin: [12, 10, 12, 10],
+    filename: `AI-Act-Assessment${answers.app_name ? '-' + answers.app_name.replace(/[^a-zA-Z0-9]/g, '-') : ''}-${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, backgroundColor: '#0d0f18', useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  // Temporarily hide export buttons during render
+  const exportRow = element.querySelector('.export-row');
+  exportRow.style.display = 'none';
+  html2pdf().set(opt).from(element).save().then(() => {
+    exportRow.style.display = '';
+  });
+}
+
+function startOver() {
+  // Reset state
+  Object.keys(answers).forEach(k => {
+    if (Array.isArray(answers[k])) answers[k] = [];
+    else answers[k] = null;
+  });
+  // Clear app name field
+  const appNameInput = document.getElementById('app-name-input');
+  if (appNameInput) appNameInput.value = '';
+  // Clear all selected buttons
+  document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+  // Disable all next buttons
+  document.querySelectorAll('[id^="next-"]').forEach(b => b.disabled = true);
+  // Hide results
+  document.getElementById('results-screen').classList.remove('active');
+  document.getElementById('quiz-area').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'none';
+  // Show welcome
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-0').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closePopup() {
+  document.getElementById('article-popup').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+//  ROLE DECISION TREE
+// ═══════════════════════════════════════════
+const ROLE_TREE = {
+  q1: {
+    text: 'Did you design or develop the AI system yourself — or commission its development — and do you have legal responsibility for it?',
+    desc: 'This includes building a model in-house, fine-tuning a foundation model under your own brand, or contracting a third party to build it while you own the result.',
+    yes: 'q2',
+    no:  'q4'
+  },
+  q2: {
+    text: 'Do you make the AI system available to other people or organisations — for example by selling it, licensing it, offering it as a service (SaaS/API), or releasing it as open-source?',
+    desc: 'If you deploy it only internally for your own workflows without making it available to external parties, answer No.',
+    yes: { role: 'provider' },
+    no:  'q3'
+  },
+  q3: {
+    text: 'Do you embed or integrate the AI system as a safety-relevant component into a physical product that you then sell or distribute under your own brand name?',
+    desc: 'Examples: integrating a vision AI into machinery, embedding AI into a medical device, or adding AI to a vehicle system you manufacture.',
+    yes: { role: 'product_manufacturer' },
+    no:  { role: 'provider' }   // developed + using internally = still provider
+  },
+  q4: {
+    text: 'Do you use the AI system within your own organisation or professional activities — for example to support your business processes, serve your customers, or make decisions affecting others?',
+    desc: 'Examples: using an AI recruitment tool, deploying a customer-facing chatbot, applying AI for credit scoring, or using AI assisted diagnostics tools.',
+    yes: { role: 'deployer' },
+    no:  'q5'
+  },
+  q5: {
+    text: 'Is the AI system developed by a provider based outside the European Union, and are you the first party to bring it onto the EU market — placing it there on behalf of or under the name of that non-EU provider?',
+    desc: 'An importer acts as the bridge between a third-country provider and the EU market, placing the product there while the provider retains their name/branding.',
+    yes: { role: 'importer' },
+    no:  { role: 'distributor' }
+  }
+};
+
+const ROLE_META = {
+  provider:             { icon: '🏭', name: 'Provider',             hint: 'Providers face the most extensive obligations: risk management, technical documentation, conformity assessment, CE marking, post-market monitoring and more (Art. 16–49).' },
+  deployer:             { icon: '🏢', name: 'Deployer',             hint: 'Deployers must follow provider instructions, ensure human oversight, monitor operation, and in some cases conduct a fundamental rights impact assessment (Art. 26–27).' },
+  importer:             { icon: '🚢', name: 'Importer',             hint: 'Importers must verify conformity, CE marking and documentation before placing the system on the EU market, and report serious incidents (Art. 23).' },
+  distributor:          { icon: '📦', name: 'Distributor',          hint: 'Distributors must verify CE marking and instructions for use are in place before making the system available, and take corrective action where needed (Art. 24).' },
+  product_manufacturer: { icon: '🔧', name: 'Product Manufacturer', hint: 'Product manufacturers who integrate AI as a safety component are treated as providers with respect to that AI system, meaning full provider obligations apply (Art. 25).' }
+};
+
+let roleHistory = [];   // stack of question IDs visited
+let roleCurrent = 'q1';
+
+function initRoleTree() {
+  roleHistory = [];
+  roleCurrent = 'q1';
+  answers.role = null;
+  document.getElementById('role-trail').style.display = 'none';
+  document.getElementById('role-trail-items').innerHTML = '';
+  document.getElementById('role-result-card').style.display = 'none';
+  document.getElementById('role-subq-card').style.display = 'block';
+  document.getElementById('role-back-btn').style.display = 'none';
+  document.getElementById('next-2').disabled = true;
+  renderRoleSubQ('q1');
+}
+
+function renderRoleSubQ(qid) {
+  const q = ROLE_TREE[qid];
+  const num = roleHistory.length + 1;
+  document.getElementById('role-subq-counter').textContent = `Question ${num} of up to 3`;
+  document.getElementById('role-subq-text').textContent = q.text;
+  document.getElementById('role-subq-desc').textContent = q.desc;
+
+  const opts = document.getElementById('role-subq-opts');
+  opts.innerHTML = `
+    <button class="option-btn" onclick="answerRoleQ('yes',this)">
+      <div class="option-radio"></div>
+      <div class="option-text"><strong>✅ Yes</strong></div>
+    </button>
+    <button class="option-btn" onclick="answerRoleQ('no',this)">
+      <div class="option-radio"></div>
+      <div class="option-text"><strong>❌ No</strong></div>
+    </button>
+  `;
+}
+
+function answerRoleQ(answer, btn) {
+  // Highlight selection briefly
+  const opts = document.getElementById('role-subq-opts');
+  opts.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  const q = ROLE_TREE[roleCurrent];
+  const next = q[answer];
+
+  // Push to trail
+  roleHistory.push({ qid: roleCurrent, answer, text: q.text });
+  updateRoleTrail();
+
+  setTimeout(() => {
+    if (typeof next === 'object' && next.role) {
+      // Terminal node — role determined
+      setRoleDetermined(next.role);
+    } else {
+      // Next sub-question
+      roleCurrent = next;
+      renderRoleSubQ(next);
+    }
+  }, 240);
+}
+
+function updateRoleTrail() {
+  const trail = document.getElementById('role-trail');
+  const items = document.getElementById('role-trail-items');
+  trail.style.display = 'block';
+  items.innerHTML = roleHistory.map((h, i) => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:var(--bg-secondary);border-radius:6px;font-size:0.8rem;">
+      <span style="color:var(--text-muted);flex-shrink:0;min-width:18px;">Q${i+1}</span>
+      <span style="color:var(--text-secondary);flex:1;">${truncate(h.text,70)}</span>
+      <span style="font-weight:700;flex-shrink:0;color:${h.answer==='yes'?'var(--success)':'var(--danger)'}">${h.answer === 'yes' ? '✅ Yes' : '❌ No'}</span>
+    </div>
+  `).join('');
+  document.getElementById('role-back-btn').style.display = 'inline-flex';
+}
+
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
+
+function setRoleDetermined(role) {
+  answers.role = role;
+  const meta = ROLE_META[role];
+  document.getElementById('role-subq-card').style.display = 'none';
+  document.getElementById('role-result-card').style.display = 'block';
+  document.getElementById('role-result-icon').textContent = meta.icon;
+  document.getElementById('role-result-name').textContent = meta.name;
+  document.getElementById('role-result-desc').textContent = getRoleFullDesc(role);
+  document.getElementById('role-result-obligation-hint').textContent = meta.hint;
+  document.getElementById('next-2').disabled = false;
+}
+
+function getRoleFullDesc(role) {
+  const map = {
+    provider: 'You develop and are legally responsible for the AI system, placing it on the market or into service under your own name or trademark.',
+    deployer: 'You use an AI system developed by someone else within your own professional activities or processes.',
+    importer: 'You bring an AI system from a non-EU provider onto the EU market, acting as the legal bridge to the Union.',
+    distributor: 'You make an existing AI system available on the EU market but are neither the provider, importer, nor deployer in the primary sense.',
+    product_manufacturer: 'You integrate an AI system as a safety component into a physical product you place on the EU market under your own name — you are treated as a Provider under the AI Act.'
+  };
+  return map[role] || '';
+}
+
+function roleBack() {
+  if (roleHistory.length === 0) return;
+  const prev = roleHistory.pop();
+  roleCurrent = prev.qid;
+  answers.role = null;
+  document.getElementById('role-result-card').style.display = 'none';
+  document.getElementById('role-subq-card').style.display = 'block';
+  document.getElementById('next-2').disabled = true;
+  // Refresh trail
+  if (roleHistory.length === 0) {
+    document.getElementById('role-trail').style.display = 'none';
+    document.getElementById('role-back-btn').style.display = 'none';
+  } else {
+    updateRoleTrail();
+  }
+  renderRoleSubQ(prev.qid);
+}
+
+// Hide progress on welcome screen
+document.getElementById('progress-wrap').style.display = 'none';
+</script>
+</body>
+</html>

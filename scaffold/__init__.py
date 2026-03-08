@@ -106,6 +106,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             "current_locale": get_locale(),
             "available_locales": i18n_manager.available_locales(),
             "csp_nonce": getattr(g, "csp_nonce", ""),
+            "registered_blueprints": lambda: set(app.blueprints.keys()),
         }
 
     def _contact_details() -> dict[str, str]:

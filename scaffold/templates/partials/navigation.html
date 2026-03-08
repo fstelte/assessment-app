@@ -19,6 +19,55 @@
         {% for entry in entries %}
           {{ render_nav_item(entry) }}
         {% endfor %}
+        {% if 'tools' in registered_blueprints() %}
+        <li class="list-none relative" id="tools-dropdown-wrapper">
+          <button id="tools-dropdown-btn" type="button" aria-haspopup="true" aria-expanded="false"
+            class="nav-link text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors inline-flex items-center gap-1{% if request.endpoint and request.endpoint.startswith('tools.') %} text-[var(--color-text)]{% endif %}">
+            {{ _('app.navigation.tools') }}
+            <svg class="w-3.5 h-3.5 transition-transform" id="tools-dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="tools-dropdown-menu"
+            class="hidden absolute top-full left-0 mt-1 w-56 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md shadow-lg z-50 py-1">
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.index' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.index') }}">{{ _('tools.nav.overview') }}</a>
+            <hr class="border-[var(--color-border)] my-1">
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.cvss_calculator' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.cvss_calculator') }}">{{ _('tools.nav.cvss_calculator') }}</a>
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.risk_tool' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.risk_tool') }}">{{ _('tools.nav.risk_tool') }}</a>
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.ai_act_checker' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.ai_act_checker') }}">{{ _('tools.nav.ai_act_checker') }}</a>
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.cloud_sovereignty' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.cloud_sovereignty') }}">{{ _('tools.nav.cloud_sovereignty') }}</a>
+            <a class="block px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-white/5{% if request.endpoint == 'tools.security_roadmap' %} text-[var(--color-text)]{% endif %}"
+              href="{{ url_for('tools.security_roadmap') }}">{{ _('tools.nav.security_roadmap') }}</a>
+          </div>
+        </li>
+        <script nonce="{{ csp_nonce }}">
+        (function() {
+          var btn = document.getElementById('tools-dropdown-btn');
+          var menu = document.getElementById('tools-dropdown-menu');
+          var chevron = document.getElementById('tools-dropdown-chevron');
+          if (!btn || !menu) return;
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var open = !menu.classList.contains('hidden');
+            menu.classList.toggle('hidden');
+            btn.setAttribute('aria-expanded', String(!open));
+            if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+          });
+          document.addEventListener('click', function(e) {
+            if (!document.getElementById('tools-dropdown-wrapper').contains(e.target)) {
+              menu.classList.add('hidden');
+              btn.setAttribute('aria-expanded', 'false');
+              if (chevron) chevron.style.transform = '';
+            }
+          });
+        })();
+        </script>
+        {% endif %}
       </ul>
       <div class="flex gap-2">
         {% if current_user.is_authenticated %}

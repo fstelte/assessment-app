@@ -27,7 +27,8 @@
       "mfa_setup": "Mfa Setup",
       "start_assessment": "Start Assessment",
       "bia": "BIA",
-      "admin_import_controls": "Importeer Beheersmaatregelen"
+      "admin_import_controls": "Importeer Beheersmaatregelen",
+      "tools": "Tools"
     },
     "home": {
       "subtitle": "Eén omgeving voor assessments."
@@ -2417,6 +2418,20 @@
         "targets": "Hersteldoelen",
         "recovery": "Herstelprocedures"
       }
+    }
+  },
+  "tools": {
+    "nav": {
+      "overview": "Overzicht",
+      "cvss_calculator": "CVSS Calculator",
+      "risk_tool": "Risicobeschrijvingstool",
+      "ai_act_checker": "EU AI Act Checker",
+      "cloud_sovereignty": "Cloud Soevereiniteitsraamwerk",
+      "security_roadmap": "Beveiligingsroadmap"
+    },
+    "index": {
+      "title": "Beveiligingstools",
+      "subtitle": "Een verzameling standalone beveiligings- en compliancetools."
     }
   }
 }
