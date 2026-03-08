@@ -1,0 +1,979 @@
+{% extends "base.html" %}
+{% block title %}Cybersecurity Roadmap{% endblock %}
+
+{% block main_container_class %}w-full px-4 sm:px-6 grow{% endblock %}
+
+{% block extra_css %}
+    <style nonce="{{ csp_nonce }}">
+.tool-body-wrap { font-family: 'Inter', sans-serif; }
+        .smooth-scroll { scroll-behavior: smooth; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 350px; max-height: 50vh; }
+        @media (min-width: 768px) { .chart-container { height: 500px; } }
+        .domain-card { transition: all 0.3s ease; border: 1px solid var(--color-border); background: var(--color-card); }
+        .domain-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2); border-color: var(--color-accent); }
+        .maturity-level-option { transition: all 0.2s ease-in-out; cursor: pointer; color: var(--color-text); border-color: var(--color-border); }
+        .maturity-level-option:hover { background-color: var(--color-surface); }
+        .maturity-level-option.selected-current { background-color: #60a5fa; color: white; border-color: #60a5fa; }
+        .maturity-level-option.selected-target { border: 2px dashed var(--color-accent); background-color: rgba(59,130,246,0.15); color: var(--color-text); }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        .growth-step { border-left-width: 4px; }
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .export-btn {
+            background-color: #16a34a;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+        .export-btn:hover:not(:disabled) {
+            background-color: #15803d;
+        }
+        .export-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-body-wrap py-6">
+<!-- Header -->
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <button id="back-to-main" class="hidden px-4 py-2 rounded-lg transition font-medium text-sm" style="background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border)">← Back to Overview</button>
+    </div>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <!-- Page: Main Overview -->
+        <div id="main-page" class="page active">
+            <section id="intro" class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-[var(--color-text)] mb-4">The Maturity-Driven Growth Path</h2>
+                <p class="max-w-3xl mx-auto text-[var(--color-muted)]">Select a domain to assess your current and target maturity. The tool will then generate a detailed, step-by-step growth plan to achieve your goals.</p>
+            </section>
+
+            <section id="domain-selection" class="mb-16">
+                <div class="text-center mb-12">
+                    <h3 class="text-2xl md:text-3xl font-bold text-[var(--color-text)]">Select a Domain</h3>
+                    <p class="max-w-2xl mx-auto text-[var(--color-muted)] mt-2">Choose one of the domains below to view the analysis and growth plan.</p>
+                </div>
+                <div id="domain-selector-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Domain cards are injected here by JS -->
+                </div>
+            </section>
+
+            <section id="dashboard">
+                 <div class="text-center mb-12">
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-4">
+                        <h3 class="text-2xl md:text-3xl font-bold text-[var(--color-text)]">Overall Dashboard</h3>
+                        <button id="export-full-report-btn" class="export-btn">
+                            <span id="export-full-text">Export Full Report</span>
+                            <span id="export-full-spinner" class="hidden">Exporting...</span>
+                        </button>
+                    </div>
+                    <p class="max-w-2xl mx-auto text-[var(--color-muted)] mt-2">This dashboard visualizes the average scores across all domains for a strategic overview.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-[var(--color-card)] border border-[var(--color-border)] p-6 rounded-lg shadow-md">
+                        <h4 class="font-semibold text-lg mb-1 text-center text-[var(--color-text)]">Current Maturity Snapshot</h4>
+                        <div class="chart-container"><canvas id="maturityRadarChart"></canvas></div>
+                    </div>
+                    <div class="bg-[var(--color-card)] border border-[var(--color-border)] p-6 rounded-lg shadow-md">
+                        <h4 class="font-semibold text-lg mb-1 text-center text-[var(--color-text)]">Maturity Gap Analysis</h4>
+                        <div class="chart-container"><canvas id="maturityBarChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Page: Domain Detail -->
+        <div id="domain-page" class="page">
+             <section id="domain-header" class="mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <h2 id="domain-page-title" class="text-3xl md:text-4xl font-bold text-[var(--color-text)] mb-4 md:mb-0"></h2>
+                    <button id="export-pdf-btn" class="export-btn">
+                        <span id="export-text">Export Domain Report</span>
+                        <span id="export-spinner" class="hidden">Exporting...</span>
+                    </button>
+                </div>
+            </section>
+            <section id="domain-assessment" class="mb-12">
+                <div class="bg-[var(--color-card)] border border-[var(--color-border)] p-6 rounded-lg shadow-md">
+                    <h3 class="font-semibold text-xl mb-4 text-[var(--color-text)]">1. Assess Capabilities</h3>
+                    <p class="text-[var(--color-muted)] mb-6">For each capability below, determine the current and target maturity level. The growth plan below will update automatically.</p>
+                    <div id="assessment-capabilities-container" class="space-y-6">
+                        <!-- Assessment components are injected here by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="domain-growth-path">
+                <div class="bg-[var(--color-card)] border border-[var(--color-border)] p-6 rounded-lg shadow-md">
+                    <h3 class="font-semibold text-xl mb-4 text-[var(--color-text)]">2. Growth Path to Maturity</h3>
+                     <p class="text-[var(--color-muted)] mb-6">Below is a concrete step-by-step plan for each capability with a growth ambition. Click on a step to see the details.</p>
+                    <div id="growth-path-container" class="space-y-8">
+                        <!-- Growth path components are injected here by JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-[var(--color-card)] border-t border-[var(--color-border)] mt-16">
+        <div class="container mx-auto px-8 py-6 text-center text-sm text-[var(--color-muted)]">
+            <p>Interactive Cybersecurity Roadmap Tool</p>
+            <p>&copy; 2025. This tool is for informational and planning purposes only.</p>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script nonce="{{ csp_nonce }}">
+// Prevent 'ReferenceError' on reload in some environments
+var radarChart;
+var barChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- DATA STORE (NOW FULLY POPULATED) ---
+    const appData = {
+        frameworkLevels: {
+            1: { title: "Level 1: Initial (Ad-Hoc & Reactive)", description: "Processes are unpredictable, poorly controlled, and reactive. Security is chaotic, with a 'firefighting' mentality. There are no standardized processes, and success depends on individual effort." },
+            2: { title: "Level 2: Managed (Developing & Repeatable)", description: "Processes are characterized for projects and are often reactive. Basic security practices are in place, but they are inconsistent across the organization. Success is repeatable at the project or team level." },
+            3: { title: "Level 3: Defined (Proactive & Standardized)", description: "Processes are characterized for the organization and are proactive. The organization has a set of standard, documented security processes and policies that are followed enterprise-wide." },
+            4: { title: "Level 4: Quantitatively Managed (Measured & Integrated)", description: "Processes are measured and controlled. The organization uses quantitative data to understand the performance of its security processes and controls, enabling data-driven decision-making." },
+            5: { title: "Level 5: Optimizing (Adaptive & Resilient)", description: "Processes focus on continuous improvement. The organization is capable of rapid adaptation, using data and feedback to proactively optimize its security posture and enable business innovation securely." }
+        },
+        roadmapProcess: {
+            1: { title: "Phase 1: Assess & Analyze", description: "Conduct a current state assessment against a chosen framework, define your target maturity state based on business objectives and risk appetite, and perform a gap analysis to identify the specific areas for improvement." },
+            2: { title: "Phase 2: Prioritize & Define", description: "Translate the identified gaps into a portfolio of actionable projects or initiatives. Prioritize these initiatives using a risk-based approach, balancing foundational improvements, quick wins, and long-term strategic goals." },
+            3: { title: "Phase 3: Develop & Communicate", description: "Visualize the prioritized initiatives on a timeline, creating a clear multi-year roadmap. Develop a compelling narrative around the plan to secure executive buy-in and communicate the vision to all stakeholders." },
+            4: { title: "Phase 4: Execute & Measure", description: "Implement the roadmap initiatives while tracking progress against meaningful KPIs and KRIs. The roadmap should be a living document, reviewed and adapted regularly to reflect changes in the business and threat landscape." }
+        },
+        domains: {
+            "gov_compliance": {
+                name: "Governance & Compliance",
+                icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+                capabilities: {
+                    "policy_mgmt": { name: "Policy & Standard Management", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Central storage, basic templates, and a review process per project.", actions: ["Establish a central location (e.g., SharePoint) for all security documentation.", "Develop standard templates for policies and procedures.", "Require every project to document and have its security requirements reviewed."], involved: ["IT Manager", "Project Leaders", "Security Officer"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal policy framework (hierarchy), a Security Steering Committee, and a formal approval process.", actions: ["Define the structure: Policy > Standard > Procedure.", "Establish a Cybersecurity Steering Committee for formal approval.", "Rewrite existing documentation into the new format and have it formally approved."], involved: ["CISO/Security Manager", "Executive/Management", "Legal & Compliance"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A GRC tool for management and linking to controls, and KPIs for policy compliance.", actions: ["Implement a GRC tool to link policies, controls, and risks.", "Define and measure KPIs, such as 'percentage of systems compliant with hardening standard'.", "Conduct periodic, data-driven measurements of policy compliance."], involved: ["GRC Analyst", "Security Architect", "Internal Audit"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Automated measurement of policy compliance and a continuous improvement process.", actions: ["Automate the measurement of control effectiveness (e.g., via scripts, CSPM).", "Use the measurement results as input for a PDCA cycle (Plan-Do-Check-Act) to continuously improve policies.", "Integrate feedback loops from incidents and audits directly into the policy process."], involved: ["Security Automation Engineer", "CISO", "Risk Management Team"] }
+                    }},
+                    "awareness_training": { name: "Security Awareness & Training", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "An annual, general awareness training and ad-hoc phishing simulations.", actions: ["Purchase a standard e-learning module for annual security awareness.", "Conduct a general phishing simulation at least twice a year.", "Communicate about current threats via internal newsletters."], involved: ["HR", "IT Support", "Communications"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal training program with role-based modules and a Security Champions network.", actions: ["Develop specific training for high-risk groups (e.g., developers, finance).", "Start a 'Security Champions' program to have ambassadors in teams.", "Measure the effectiveness of training with tests and improved phishing results."], involved: ["Security Officer", "Team Leaders", "HR Development"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Continuous, data-driven training and measurement of behavioral change.", actions: ["Implement a platform that offers training based on individual risk behavior (e.g., after clicking a phishing link).", "Measure the impact of training on the number of security incidents per employee.", "Use KPIs like 'reduction in click-rate' and 'time to report phishing'."], involved: ["Security Awareness Specialist", "Data Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A deeply embedded security culture that proactively influences and rewards behavior.", actions: ["Integrate security-conscious behavior into performance reviews.", "Gamify the learning process with leaderboards and rewards for proactive behavior.", "Analyze 'near misses' and successes to further strengthen the culture."], involved: ["Entire Organization", "Management", "HR"] }
+                    }}
+                }
+            },
+            "data_protection": {
+                name: "Data Protection",
+                icon: 'M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 001.414 0l2.414-2.414a1 1 0 01.707-.293H17',
+                capabilities: {
+                    "classification": { name: "Data Classification & Inventory", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A basic data classification policy (e.g., Public, Internal, Confidential) and manual inventories of critical data stores.", actions: ["Write and approve a simple, 3-4 level data classification policy.", "Manually identify and document the location of the top 5 most critical data assets.", "Train data owners on how to classify their data."], involved: ["Data Owners", "IT Management", "Legal"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "An enterprise-wide classification policy integrated with handling standards, and automated data discovery tools.", actions: ["Expand the policy to include specific handling requirements for each level (e.g., encryption, access controls).", "Deploy a data discovery and classification tool to scan and tag data across key repositories.", "Establish a central data asset inventory."], involved: ["Data Governance Team", "Security Architect", "Compliance Officer"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Automated enforcement of policies based on data classification tags and metrics on data exposure.", actions: ["Integrate classification tags with other security tools (e.g., DLP, CASB) to automatically apply controls.", "Measure and report on metrics like 'volume of unclassified sensitive data' or 'number of policy violations per data type'.", "Use quantitative analysis to prioritize protection efforts."], involved: ["Data Protection Specialist", "Security Engineer", "Data Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A self-correcting data protection ecosystem where misclassified or mishandled data is automatically identified and remediated.", actions: ["Use machine learning to improve classification accuracy and suggest corrections.", "Implement automated workflows that remediate policy violations in near real-time.", "Continuously analyze data flows to predict and prevent future data exposure risks."], involved: ["Data Scientist", "Automation Engineer", "Security Operations"] }
+                    }},
+                    "dlp": { name: "Data Loss Prevention (DLP)", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Basic keyword-based detection on a single channel, typically corporate email.", actions: ["Enable the basic DLP functionality in the corporate email system (e.g., Office 365, Google Workspace).", "Create simple rules to detect obvious sensitive data like credit card numbers or social security numbers.", "Configure rules to log and alert only, without blocking, to understand the baseline."], involved: ["Email Administrator", "IT Support"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal DLP program with policies for multiple channels (email, web, endpoint) and a defined incident response process.", actions: ["Deploy a dedicated DLP solution covering email, web, and endpoint channels.", "Develop policies based on the official data classification scheme.", "Define and train a process for investigating and escalating DLP alerts."], involved: ["DLP Analyst", "Security Officer", "Incident Response Team"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "High-fidelity policies, integration with other security tools, and metrics-driven tuning.", actions: ["Fine-tune DLP policies to reduce false positives, using techniques like exact data matching and indexed document matching.", "Integrate DLP with encryption and rights management tools to apply protection automatically.", "Track KPIs like 'false positive rate', 'number of true positive incidents by channel', and 'mean time to contain'. "], involved: ["Senior DLP Analyst", "Security Architect", "SOC Manager"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "User Behavior Analytics (UBA) to detect insider threats and adaptive, risk-based DLP controls.", actions: ["Integrate DLP with a UBA platform to detect anomalous data handling that may indicate a threat, even if it doesn't violate a specific rule.", "Implement adaptive policies that become more restrictive based on user risk score or context.", "Use DLP insights to drive improvements in business processes and security awareness training."], involved: ["Insider Threat Analyst", "Data Scientist", "HR"] }
+                    }}
+                }
+            },
+            "risk_mgmt": {
+                name: "Security Risk Management",
+                icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+                capabilities: {
+                    "risk_id": { name: "Risk Identification & Assessment", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "An informal process to discuss risks for major projects and a simple risk spreadsheet.", actions: ["During major project kick-offs, include 'discussing potential risks' as an agenda item.", "Create a shared spreadsheet to list identified risks, a simple high/medium/low rating, and an owner.", "Perform ad-hoc vulnerability scans."], involved: ["Project Managers", "IT Manager", "System Owners"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal, documented risk assessment methodology (e.g., based on NIST 800-30) and a central risk register.", actions: ["Formally adopt and document a risk assessment methodology.", "Establish a central risk register in a tool (e.g., GRC platform, SharePoint list).", "Mandate and schedule regular risk assessments for all critical systems."], involved: ["Risk Manager", "Compliance Officer", "Internal Audit"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A quantitative risk analysis framework (e.g., FAIR) and data-driven inputs for assessments.", actions: ["Train staff on a quantitative risk analysis framework like FAIR (Factor Analysis of Information Risk).", "Integrate data from security tools (e.g., SIEM, vulnerability scanner) to inform risk analysis.", "Express risk in financial terms to enable better business decisions and define a formal risk appetite."], involved: ["Quantitative Risk Analyst", "Business Unit Leaders", "Finance Department"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Continuous risk monitoring, predictive risk modeling, and automated risk reporting.", actions: ["Develop key risk indicators (KRIs) that are monitored in near real-time.", "Use historical data and threat intelligence to build predictive models for future risks.", "Automate the generation of risk dashboards for different audiences (e.g., technical, executive)."], involved: ["Data Scientist", "CISO", "Board of Directors"] }
+                    }},
+                    "risk_treatment": { name: "Risk Treatment & Mitigation", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Action items assigned to risks in the spreadsheet, with informal tracking.", actions: ["For each risk in the register, assign an owner and a high-level action.", "Project managers track risk mitigation tasks as part of their project plans.", "Discuss the status of top risks in team meetings."], involved: ["System Owners", "Project Managers"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal risk treatment process with options (Accept, Mitigate, Transfer, Avoid) and tracked mitigation plans.", actions: ["Document a formal process for risk treatment decisions.", "Create formal risk treatment plans with defined timelines, resources, and success criteria.", "Track the progress and effectiveness of treatment plans in the central risk register."], involved: ["Risk Manager", "Control Owners", "Project Management Office (PMO)"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Cost-benefit analysis for mitigation options and metrics on risk reduction.", actions: ["Perform a cost-benefit analysis for different control options to ensure investments are effective.", "Measure the actual risk reduction achieved by implemented controls.", "Track KPIs like 'percentage of risks mitigated on time' and 'aggregate risk score reduction over time'."], involved: ["Financial Analyst", "Security Architect", "Risk Manager"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "An integrated approach where risk treatment informs budgets and strategic planning, with continuous optimization.", actions: ["Use the risk register and treatment costs as direct input for the annual budgeting cycle.", "Continuously evaluate the control environment to identify inefficient or ineffective controls for replacement or retirement.", "Automate control testing to provide real-time assurance of mitigation effectiveness."], involved: ["CISO", "CFO", "Strategic Planning Committee"] }
+                    }}
+                }
+            },
+            "iam": {
+                name: "Identity & Access Management",
+                icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+                capabilities: {
+                    "auth": { name: "Authentication", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A password policy and MFA (Multi-Factor Authentication) for administrators.", actions: ["Establish an organization-wide password policy (complexity, length, history).", "Implement and enforce MFA for all IT administrators and external access (VPN).", "Offer MFA as an option for all users."], involved: ["System Administration", "IT Manager", "Helpdesk"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "Mandatory MFA for all employees, and a central Identity Provider (IdP) platform.", actions: ["Roll out MFA for the entire organization on all major applications.", "Implement a central IdP (like Azure AD, Okta) for Single Sign-On (SSO).", "Connect the top 10 most important applications to the IdP for SSO."], involved: ["IAM Specialist", "Application Owners", "Project Management"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Risk-based (adaptive) authentication and measurement of authentication events.", actions: ["Configure adaptive authentication in the IdP (e.g., require MFA when logging in from an unknown location).", "Monitor and analyze login attempts, location data, and device status.", "Establish KPIs like 'number of impossible travel scenarios detected' and 'percentage of successful logins after MFA prompt'."], involved: ["Security Architect", "SOC Analyst", "IAM Engineer"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Fully passwordless authentication and continuous, frictionless verification.", actions: ["Implement passwordless options like FIDO2/WebAuthn, Windows Hello for Business, or authenticator apps.", "Aim to phase out passwords for most applications.", "Experiment with continuous authentication based on biometrics or behavior."], involved: ["Innovation Team", "Security Architect", "User Experience (UX) Specialist"] }
+                    }},
+                    "pam": { name: "Privileged Access Management (PAM)", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A secure password vault for administrator credentials and separate admin accounts.", actions: ["Implement a central, encrypted password vault (e.g., KeePass, Bitwarden, CyberArk) for all 'shared' admin accounts.", "Enforce the use of separate, non-personal accounts for administrative tasks.", "Document who has access to which privileged accounts."], involved: ["System Administrators", "IT Manager"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal PAM solution with Just-in-Time (JIT) access and session recording.", actions: ["Implement a full-fledged PAM solution (e.g., CyberArk, Delinea, Teleport).", "Configure Just-in-Time (JIT) access, where rights are granted only for a specific task and duration.", "Enable session recording for all privileged sessions for audit purposes."], involved: ["IAM Specialist", "Security Engineer", "Internal Audit"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Automation of privileged access workflows and analysis of privileged activities.", actions: ["Integrate the PAM solution with the ITSM system (e.g., ServiceNow) for automated JIT requests.", "Analyze privileged sessions for anomalous behavior with User Behavior Analytics (UBA).", "Measure KPIs like 'time to grant JIT rights' and 'number of standing privileged accounts' (goal: 0)."], involved: ["PAM Specialist", "SOC/Security Analyst", "Automation Engineer"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A fully automated, zero-standing-privilege model and proactive threat detection.", actions: ["Automate the revocation and rotation of all secrets and credentials, including for applications and services (secrets management).", "Implement a 'Zero Standing Privilege' model where no one has default administrative rights.", "Use AI/ML to proactively detect and block risky patterns in privileged access."], involved: ["Cloud Security Architect", "DevSecOps Engineer", "AI/ML Specialist"] }
+                    }}
+                }
+            },
+            "incident_response": {
+                name: "Incident Response",
+                icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                capabilities: {
+                    "ir_planning": { name: "IR Planning & Preparation", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A basic, high-level IR plan and a designated point of contact.", actions: ["Draft a simple 1-2 page IR plan outlining basic steps (Identify, Report, Escalate).", "Designate a primary contact for all security incidents.", "Compile a contact list for key personnel (IT, management, legal)."], involved: ["IT Manager", "Senior System Administrator"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal, documented IR plan with defined roles, responsibilities, and specific playbooks.", actions: ["Develop a comprehensive IR plan based on a standard framework (e.g., NIST SP 800-61).", "Formally establish a Computer Security Incident Response Team (CSIRT) with defined roles.", "Create detailed playbooks for common incident types (e.g., phishing, malware, ransomware)."], involved: ["Security Officer", "CSIRT Lead", "HR", "Legal"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Regular tabletop exercises, a third-party IR retainer, and metrics for response readiness.", actions: ["Conduct quarterly tabletop exercises with the CSIRT and executive leadership.", "Establish a retainer with a professional IR firm for major incidents.", "Track readiness KPIs like 'CSIRT training hours' and 'playbook update frequency'."], involved: ["Incident Response Manager", "CISO", "Procurement"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Full-scale breach simulation exercises (purple teaming) and automated playbook execution.", actions: ["Conduct annual purple team exercises to test detection and response capabilities against a live adversary.", "Integrate IR playbooks into a SOAR platform to automate initial triage and response steps.", "Use insights from exercises and incidents to continuously refine the IR plan and security controls."], involved: ["Red Team", "Blue Team", "SOAR Engineer", "Threat Intelligence Analyst"] }
+                    }},
+                    "detection_analysis": { name: "Detection & Analysis", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Basic alerting from endpoint protection and firewalls, reviewed ad-hoc.", actions: ["Ensure antivirus/anti-malware solutions are configured to send email alerts on detection.", "Review firewall logs for significant anomalies on a weekly basis.", "Rely on user reports to identify most incidents."], involved: ["System Administrator", "Helpdesk"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A centralized logging solution (SIEM) with basic correlation rules.", actions: ["Deploy a SIEM and onboard logs from critical sources (e.g., Active Directory, firewalls, endpoints).", "Write and enable basic correlation rules for common attack techniques.", "Dedicate staff time to reviewing and triaging SIEM alerts."], involved: ["Security Analyst", "SOC Tier 1", "System Engineers"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "An EDR solution, threat intelligence integration, and formal threat hunting.", actions: ["Deploy an Endpoint Detection and Response (EDR) tool for deep visibility into endpoint activity.", "Integrate threat intelligence feeds into the SIEM to enrich alerts.", "Establish a formal threat hunting program, dedicating time for hypothesis-driven investigations.", "Track MTTD (Mean Time to Detect)."], involved: ["Threat Hunter", "SOC Tier 2/3", "Threat Intelligence Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Advanced behavior analytics (UBA), deception technology, and AI/ML-driven detection.", actions: ["Use UBA to identify suspicious user and entity behavior that deviates from baseline activity.", "Deploy deception technology (honeypots, honeytokens) as high-fidelity detection sources.", "Leverage AI/ML in the SIEM/SOAR platform to identify novel threats and automate triage, continuously improving MTTD."], involved: ["Data Scientist", "Senior Security Architect", "SOC Manager"] }
+                    }}
+                }
+            },
+            "tpr_mgmt": {
+                name: "Third-Party Risk Management",
+                icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a3.001 3.001 0 015.644 0M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                capabilities: {
+                    "inventory_tiering": { name: "Vendor Inventory & Risk Tiering", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A spreadsheet-based inventory of known vendors, with informal risk ratings.", actions: ["Create a central spreadsheet to list all known third parties.", "Add columns for a business owner and a simple High/Medium/Low risk rating based on gut feel.", "Review the list quarterly with department heads to find missing vendors."], involved: ["Procurement/Finance", "IT Manager"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal TPRM policy and standard, documented risk tiering criteria, and a central inventory.", actions: ["Write and approve a formal TPRM policy.", "Define objective criteria for risk tiering (e.g., type of data accessed, business criticality of the service).", "Establish a definitive vendor inventory, potentially in a SharePoint list or simple database, owned by a specific role."], involved: ["Risk Manager", "Compliance Officer", "Procurement Lead"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A dedicated TPRM/GRC tool and automated feeds to maintain the inventory.", actions: ["Implement a TPRM tool to manage the entire vendor lifecycle.", "Integrate with procurement or financial systems to automatically identify new vendors.", "Use quantitative scoring for risk tiering, weighting different factors.", "Track KPIs on inventory completeness."], involved: ["TPRM Analyst", "GRC Administrator", "Finance Systems Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A fully automated and dynamic inventory and risk tiering process.", actions: ["Use API integrations to create a self-updating 'service catalog' of all third-party connections.", "Implement dynamic risk tiering that automatically adjusts a vendor's risk level based on changes in service usage or external risk posture.", "Optimize the tiering model based on historical incident data."], involved: ["Enterprise Architect", "Automation Engineer", "TPRM Program Manager"] }
+                    }},
+                    "due_diligence": { name: "Due Diligence & Onboarding", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Informal security questions sent via email for the most critical new vendors.", actions: ["Develop a short list of 5-10 security questions to email to vendors handling sensitive data.", "Store the responses in a shared folder.", "The business owner makes the final risk decision."], involved: ["Business Owners", "IT Support"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A standardized security questionnaire process for all high and medium-risk vendors.", actions: ["Adopt a standard questionnaire framework (e.g., CAIQ-Lite, SIG Lite).", "Define a formal process: send questionnaire, review responses, identify gaps, and create a risk memo.", "Establish clear SLAs for the review process."], involved: ["TPRM Analyst", "Security Officer", "Business Owners"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A TPRM platform to automate questionnaires and a tiered due diligence approach.", actions: ["Use a TPRM platform to send, track, and score questionnaires automatically.", "Implement a tiered approach: light review for low-risk, standard questionnaire for medium-risk, and enhanced review (e.g., evidence review, interviews) for high-risk.", "Track metrics on time-to-onboard and identified risks per vendor."], involved: ["Senior TPRM Analyst", "GRC Platform Owner"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A continuous due diligence model leveraging external data and automated evidence analysis.", actions: ["Integrate security ratings services directly into the onboarding decision.", "Use AI/ML tools to analyze questionnaire responses and uploaded evidence for completeness and accuracy.", "Continuously update vendor risk profiles based on new information, moving away from point-in-time assessments."], involved: ["TPRM Program Manager", "AI/ML Specialist", "Security Architect"] }
+                    }}
+                }
+            },
+            "host_endpoint": {
+                name: "Host & Endpoint Protection",
+                icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+                capabilities: {
+                    "hardening": { name: "Hardening & Configuration Mgmt", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A manual build document or 'golden image' for new servers and workstations.", actions: ["Create a checklist-style build document for new servers and workstations.", "Use this document to manually configure new systems.", "Perform ad-hoc checks to see if systems deviate."], involved: ["System Administrators", "Desktop Support"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "Formal hardening standards based on an industry benchmark and automated configuration deployment.", actions: ["Adopt and customize an industry benchmark (e.g., CIS Benchmarks, DISA STIGs) as the official standard.", "Use tools like Group Policy (GPO), Ansible, or SCCM to automatically apply these settings.", "Establish a formal process for managing exceptions to the standard."], involved: ["Security Engineer", "Server/Endpoint Architects"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Automated configuration drift detection and compliance reporting.", actions: ["Deploy a tool that continuously scans all endpoints for compliance with the hardening standards.", "Generate regular compliance reports and dashboards (e.g., % of compliant endpoints).", "Track KPIs for configuration drift and time-to-remediate deviations."], involved: ["Compliance Analyst", "Security Automation Engineer"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A self-healing configuration management system and a fully Infrastructure-as-Code (IaC) approach.", actions: ["Implement tools that not only detect configuration drift but automatically remediate it.", "Manage all infrastructure configurations as code in a version control system (e.g., Git).", "Use the compliance data to proactively identify and improve weak points in the hardening standard itself."], involved: ["DevSecOps Engineer", "Cloud Engineer", "Senior Security Architect"] }
+                    }},
+                    "patching": { name: "Vulnerability & Patch Management", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A centralized patch deployment tool and a regular 'Patch Tuesday' process.", actions: ["Use a tool like WSUS, SCCM, or a third-party equivalent to deploy OS patches.", "Establish a monthly routine to test and deploy patches for Microsoft and other major vendors.", "Manually patch high-profile vulnerabilities when they are announced."], involved: ["System Administrators", "Desktop Support"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal vulnerability management program with a dedicated scanner, risk-based prioritization, and defined patching SLAs.", actions: ["Deploy a vulnerability scanner (e.g., Tenable, Qualys, Rapid7) and run regular, authenticated scans.", "Create a formal policy defining patching SLAs based on vulnerability severity (e.g., Critical: 14 days, High: 30 days).", "Prioritize patching based on scanner-reported risk scores, not just vendor ratings."], involved: ["Vulnerability Manager", "Security Analyst", "System Owners"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Integration of threat intelligence and asset criticality into prioritization, and comprehensive metrics.", actions: ["Enrich vulnerability data with threat intelligence (e.g., is this vulnerability being actively exploited in the wild?).", "Factor in asset criticality to further prioritize vulnerabilities on critical systems.", "Track KPIs like 'mean time to patch by severity', 'vulnerability reopen rate', and 'coverage of the scanning program'."], involved: ["Senior Vulnerability Analyst", "Threat Intelligence Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A fully automated, risk-based patching program with predictive capabilities.", actions: ["Automate the entire lifecycle from detection to patch deployment for a majority of vulnerabilities.", "Use predictive models to identify which types of vulnerabilities are most likely to pose a risk to the organization in the future.", "Continuously tune the program to reduce the overall risk exposure, not just close individual CVEs."], involved: ["Vulnerability Management Lead", "Automation Engineer", "Data Scientist"] }
+                    }}
+                }
+            },
+            "logging_monitoring": {
+                name: "App Logging & Threat Monitoring",
+                icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                capabilities: {
+                    "log_collection": { name: "Log Generation & Collection", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Logging enabled on critical devices, stored locally with no centralization.", actions: ["Ensure logging is enabled on key systems like domain controllers, firewalls, and critical servers.", "Configure logs to be stored on the local device.", "Check logs manually and reactively when an issue is reported."], involved: ["System Administrators"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A centralized logging solution (SIEM/log aggregator) and a formal logging standard.", actions: ["Deploy a central log aggregator or SIEM.", "Write a logging standard that defines what events must be logged for different system types.", "Onboard all critical infrastructure and security tools to the central solution.", "Establish a log retention policy."], involved: ["Security Engineer", "System Owners", "Compliance Officer"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Comprehensive log source coverage, parsing and normalization, and metrics on log health.", actions: ["Expand log collection to include all relevant sources, including cloud, applications, and non-standard devices.", "Ensure all incoming logs are parsed and normalized to a common schema (e.g., CIM).", "Track KPIs for 'log volume by source', 'events per second (EPS)', and 'monitoring coverage gaps'."], involved: ["SIEM Engineer", "Data Engineer", "SOC Manager"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "An optimized and cost-efficient logging pipeline with automated quality checks.", actions: ["Implement a tiered logging pipeline, sending only high-value logs to the expensive SIEM and others to cheaper cold storage.", "Automate the process of identifying and fixing broken or misconfigured log sources.", "Use log data analytics to optimize logging verbosity at the source, reducing noise."], involved: ["Senior SIEM Architect", "Cloud FinOps", "Automation Engineer"] }
+                    }},
+                    "alerting_hunting": { name: "Alerting & Threat Hunting", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Default alerts from individual security tools (e.g., antivirus), with informal review.", actions: ["Rely on the out-of-the-box alerts generated by firewalls and AV.", "Review alert emails or consoles on an ad-hoc basis.", "Investigation is limited to the information in the alert itself."], involved: ["IT Support", "System Administrators"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A SIEM with a baseline set of correlation rules and a formal alert triage process.", actions: ["Activate a set of 10-20 high-fidelity correlation rules in the SIEM (e.g., 'brute force login attempt', 'malware detected on server').", "Establish a formal process for Tier 1 analysts to review, document, and escalate alerts.", "Create a simple ticketing system for tracking alerts."], involved: ["SOC Analyst (Tier 1)", "Security Engineer"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Advanced, custom correlation rules, threat intelligence integration, and a formal threat hunting program.", actions: ["Develop custom correlation rules based on the MITRE ATT&CK framework and organization-specific risks.", "Integrate threat intelligence to enrich alerts with context.", "Dedicate scheduled time for hypothesis-driven threat hunting (e.g., 'Let's search for signs of PowerShell abuse').", "Track MTTD/MTTR."], involved: ["SOC Analyst (Tier 2/3)", "Threat Hunter", "Threat Intelligence Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Automated alert triage and response (SOAR), user behavior analytics (UBA), and proactive threat modeling.", actions: ["Use a SOAR platform to automate the enrichment and initial response for common alerts.", "Deploy UBA to detect anomalous behavior that traditional rules would miss.", "Use threat modeling to anticipate future attack paths and build hunts and detections proactively."], involved: ["SOAR Engineer", "Data Scientist", "Senior Threat Hunter"] }
+                    }}
+                }
+            },
+            "net_cloud_dc": {
+                name: "Network, Cloud & Datacenter",
+                icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h8a2 2 0 002-2v-1a2 2 0 012-2h1.945C19.955 9.584 21 7.978 21 6c0-1.978-1.045-3.584-2.945-3.584A3.974 3.974 0 0015 6c0 .598.115 1.168.32 1.697C14.53 8.243 13.344 9 12 9s-2.53-0.757-3.32-1.303C9.115 7.168 9.23 6.598 9.23 6c0-2.43-1.97-4.416-4.416-4.416A3.974 3.974 0 002 6c0 1.978 1.045 3.584 2.945 3.584H5v1a2 2 0 002 2h10v-1a2 2 0 012-2h1.945a.5.5 0 01.38.814L16 16.5V18a2 2 0 01-2 2h-4a2 2 0 01-2-2v-1.5L4.675 11.814a.5.5 0 01.38-.814z',
+                capabilities: {
+                    "segmentation": { name: "Network Architecture & Segmentation", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A physically flat network with some VLANs for separation (e.g., Guest Wi-Fi, Servers).", actions: ["Create a separate VLAN and IP subnet for Guest Wi-Fi with a firewall rule blocking access to the internal network.", "Create a separate VLAN for servers.", "Rely on firewall rules at the internet edge for protection."], involved: ["Network Administrator"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formally designed segmented network with documented zones and traffic flow policies.", actions: ["Design a network architecture with multiple security zones (e.g., DMZ, Production, Development, Corporate).", "Implement firewall rules between all zones, adopting a default-deny policy.", "Document all allowed traffic flows between zones."], involved: ["Network Architect", "Security Architect"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Micro-segmentation within zones and automated policy enforcement.", actions: ["Implement micro-segmentation, especially for critical application environments, to prevent lateral movement between servers in the same zone.", "Use an orchestrator or SDN controller to manage and deploy firewall policies as code.", "Measure and report on unauthorized traffic attempts between segments."], involved: ["Cloud Network Engineer", "Security Automation Engineer"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A fully implemented Zero Trust network architecture based on identity.", actions: ["Move away from network location as a trust indicator.", "Implement identity-aware proxies and access controls where every request is authenticated and authorized, regardless of its origin.", "Continuously monitor and adapt policies based on device posture and user identity risk."], involved: ["Zero Trust Architect", "IAM Specialist", "Senior Security Architect"] }
+                    }},
+                    "cspm": { name: "Cloud Security Posture Management (CSPM)", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Manual checks of critical security settings in the cloud provider console.", actions: ["Manually check for major misconfigurations like public S3 buckets or open RDP ports on a monthly basis.", "Rely on the cloud provider's basic security recommendations (e.g., AWS Trusted Advisor).", "Fix issues as they are found on an ad-hoc basis."], involved: ["Cloud Administrator", "Developers"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A dedicated CSPM tool and a formal process for reviewing and remediating findings.", actions: ["Deploy a commercial or open-source CSPM tool to continuously scan cloud environments against a compliance baseline (e.g., CIS).", "Establish a formal process to assign CSPM findings to owners and track them to remediation.", "Integrate findings into a central ticketing system."], involved: ["Cloud Security Engineer", "Compliance Analyst"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Automated remediation of common misconfigurations and quantitative posture scoring.", actions: ["Use the CSPM tool's capabilities or custom scripts to automatically remediate common, low-risk findings.", "Develop a quantitative cloud security posture score based on CSPM findings, weighted by severity and asset criticality.", "Track the posture score over time as a key metric."], involved: ["Cloud Automation Engineer", "Senior Cloud Security Engineer"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Preventative controls using Infrastructure-as-Code (IaC) scanning and a fully automated, self-healing posture.", actions: ["Integrate IaC scanning into the CI/CD pipeline to prevent misconfigurations from ever being deployed.", "Expand automated remediation to cover a wide range of findings.", "Use posture data to predict future areas of risk and proactively improve templates and standards."], involved: ["DevSecOps Engineer", "Cloud Architect"] }
+                    }}
+                }
+            },
+            "trust_office": {
+                name: "Trust Office",
+                icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+                capabilities: {
+                    "transparency": { name: "Security & Compliance Transparency", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "A simple, static security overview document available upon request.", actions: ["Create a 1-2 page PDF summarizing the company's security approach.", "Provide this document to sales teams to share with prospective customers when asked.", "Answer customer security questions reactively via email."], involved: ["Sales", "Security Officer"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A public-facing Trust Center webpage and a library of standardized security documentation.", actions: ["Launch a 'Trust Center' or 'Security' page on the corporate website.", "Publish high-level information about security programs, policies, and obtained certifications (e.g., SOC 2, ISO 27001).", "Create a library of pre-written answers to common security questions (FAQs)."], involved: ["Marketing", "Web Team", "Compliance Manager"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A secure portal for customers to access detailed security documentation and audit reports under NDA.", actions: ["Implement a secure portal where customers can self-serve access to compliance reports (SOC 2, ISO), penetration test summaries, and detailed policy documents after signing an NDA.", "Track metrics on documentation access and customer engagement.", "Proactively share compliance updates with customers."], involved: ["Customer Success", "Legal", "Security GRC Analyst"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A dynamic, real-time trust platform with automated assurance.", actions: ["Provide customers with a dashboard showing near real-time status of key security controls and compliance checks.", "Automate the process of providing assurance, potentially via APIs.", "Use customer feedback and engagement metrics to continuously improve the transparency program."], involved: ["Product Management", "Engineering", "Head of Trust"] }
+                    }},
+                    "sales_enablement": { name: "Sales Enablement & Due Diligence", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Reactive, ad-hoc support for sales calls and manual completion of security questionnaires.", actions: ["Security team members manually fill out customer security questionnaires as they come in.", "A security expert joins sales calls on an as-needed basis to answer questions.", "Time spent on sales support is not tracked."], involved: ["Security Engineers", "Sales Representatives"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A central repository of pre-answered questionnaire responses and training for the sales team.", actions: ["Create a knowledge base with vetted answers to hundreds of common security questions.", "Train the sales team on how to answer basic security questions and when to escalate to the security team.", "Establish a formal process and SLA for handling questionnaires that cannot be self-served."], involved: ["Sales Enablement Team", "Security Officer", "Solutions Architects"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A dedicated questionnaire automation tool and metrics on the sales support process.", actions: ["Implement a tool (e.g., Loopio, HyperComply) that uses AI/ML to automate the completion of security questionnaires.", "Track KPIs like 'percentage of questions answered automatically', 'time to complete questionnaire', and 'security-related deal blockers'.", "Designate a 'BISO' (Business Information Security Officer) role to liaise with sales."], involved: ["BISO", "Sales Operations", "TPRM Analyst (for questionnaires)"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A proactive approach where security is a key value proposition and a competitive differentiator.", actions: ["Integrate security and trust content directly into sales and marketing materials.", "Analyze questionnaire data to identify market trends and inform the product roadmap.", "Use strong security posture to actively pursue customers with high security requirements, turning security into a revenue generator."], involved: ["Head of Sales", "CMO", "CISO", "Product Management"] }
+                    }}
+                }
+            },
+             "mfg_security": {
+                name: "Manufacturing Security",
+                icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.363-.472a6.002 6.002 0 00-5.207 0l-2.363.472a2 2 0 00-1.022.547H3V12h18v3.428h-1.572zM6 12L4 6h16l-2 6H6z',
+                capabilities: {
+                    "ot_governance": { name: "OT Governance & Risk Management", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Recognition that OT systems have security needs, with informal responsibility assigned to plant engineers.", actions: ["Plant engineers are responsible for the availability and safety of OT systems, including basic security.", "IT security policies are considered not applicable to OT.", "Risks are discussed only after a production-impacting event."], involved: ["Plant Manager", "Control Engineers"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "A formal IT/OT governance body and a dedicated OT security policy based on a relevant framework.", actions: ["Establish a joint committee with members from both IT and OT to oversee OT security.", "Adapt IT security policies or create a new OT-specific policy, referencing a standard like ISA/IEC 62443.", "Conduct a high-level risk assessment of the OT environment."], involved: ["OT Security Manager", "IT Security Manager", "Head of Operations"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "A comprehensive OT asset inventory and quantitative risk assessments for critical production lines.", actions: ["Deploy a passive OT asset discovery tool to create a detailed inventory of all devices.", "Perform detailed risk assessments on the most critical production lines, modeling the potential impact of cyber events.", "Track metrics on OT asset patching and vulnerability levels."], involved: ["OT Security Engineer", "Risk Analyst", "Process Control Lead"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "A fully integrated IT/OT security program where security enables operational resilience and optimization.", actions: ["Use security data to improve operational efficiency and predict maintenance needs (e.g., identifying failing devices).", "Integrate the IT SOC and OT SOC (or have a single, converged SOC).", "Continuously optimize security controls to improve both safety and production uptime."], involved: ["Head of Smart Manufacturing", "CISO", "Chief Operating Officer"] }
+                    }},
+                    "ot_detection": { name: "OT Threat Detection & Monitoring", current: 1, target: 1, growthPath: {
+                        "1_to_2": { title: "Growth to Level 2: Managed", needed: "Network traffic is not monitored; reliance on device-level alerts if they exist.", actions: ["Engineers rely on HMI alarms or device failure alerts to know something is wrong.", "No visibility into the network traffic between OT devices.", "IT security monitoring tools are not deployed in the OT network."], involved: ["Control Engineers", "Maintenance Staff"] },
+                        "2_to_3": { title: "Growth to Level 3: Defined", needed: "Deployment of a passive OT network monitoring/threat detection tool.", actions: ["Deploy a specialized OT threat detection platform (e.g., Dragos, Nozomi, Claroty) connected to a network SPAN port.", "Establish a baseline of normal OT network traffic and protocols.", "Configure basic alerts for known threats and anomalous communication patterns."], involved: ["OT Security Engineer", "Network Administrator"] },
+                        "3_to_4": { title: "Growth to Level 4: Quantitatively Managed", needed: "Integration of OT alerts into the central SIEM and a formal OT incident response process.", actions: ["Forward high-priority alerts from the OT monitoring tool to the corporate SIEM.", "Develop specific IR playbooks for OT incidents, focusing on safety and containment without disrupting operations.", "Track detection metrics like 'anomalies detected per zone' and 'time to alert'."], involved: ["SOC Analyst", "OT Security Engineer", "Incident Response Team"] },
+                        "4_to_5": { title: "Growth to Level 5: Optimizing", needed: "Proactive threat hunting in the OT environment and a predictive security posture.", actions: ["Use the visibility from the monitoring tool to actively hunt for adversary TTPs within the OT network.", "Integrate with asset inventory and vulnerability data to prioritize threats against the most critical and vulnerable systems.", "Use threat intelligence specific to industrial control systems to pre-emptively hunt for new threats."], involved: ["OT Threat Hunter", "Threat Intelligence Analyst", "Senior OT Security Architect"] }
+                    }}
+                }
+            }
+        }
+    };
+
+    let activeDomainKey = null;
+
+    // --- PAGE NAVIGATION & EVENT LISTENERS ---
+    const mainPage = document.getElementById('main-page');
+    const domainPage = document.getElementById('domain-page');
+    const backToMainBtn = document.getElementById('back-to-main');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    const exportFullReportBtn = document.getElementById('export-full-report-btn');
+
+    function showMainPage() {
+        domainPage.classList.remove('active');
+        mainPage.classList.add('active');
+        backToMainBtn.classList.add('hidden');
+        activeDomainKey = null;
+    }
+
+    function showDomainPage(domainKey) {
+        activeDomainKey = domainKey;
+        mainPage.classList.remove('active');
+        renderDomainPage(domainKey);
+        domainPage.classList.add('active');
+        backToMainBtn.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    backToMainBtn.addEventListener('click', showMainPage);
+    exportPdfBtn.addEventListener('click', () => {
+        if (activeDomainKey) {
+            generateDomainReport(activeDomainKey);
+        }
+    });
+    exportFullReportBtn.addEventListener('click', generateFullReport);
+
+
+    // --- INITIALIZATION ---
+    function init() {
+        initDomainSelector();
+        initCharts();
+        showMainPage();
+    }
+
+    // --- MAIN PAGE ---
+    function initDomainSelector() {
+        const container = document.getElementById('domain-selector-container');
+        container.innerHTML = '';
+        Object.keys(appData.domains).forEach(key => {
+            const domain = appData.domains[key];
+            const card = document.createElement('div');
+            card.className = 'domain-card p-6 rounded-lg shadow-sm cursor-pointer flex items-start space-x-4';
+            card.innerHTML = `
+                <div>
+                    <svg class="w-8 h-8 text-[var(--color-accent)]" style="color:var(--color-accent)" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${domain.icon}"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg" style="color:var(--color-text)">${domain.name}</h4>
+                    <p class="text-sm" style="color:var(--color-muted)">Click to assess and see the growth plan.</p>
+                </div>
+            `;
+            card.addEventListener('click', () => showDomainPage(key));
+            container.appendChild(card);
+        });
+    }
+
+    // --- DOMAIN PAGE ---
+    function renderDomainPage(domainKey) {
+        const domain = appData.domains[domainKey];
+        document.getElementById('domain-page-title').textContent = domain.name;
+        renderAssessmentCapabilities(domainKey);
+        renderGrowthPath(domainKey);
+    }
+
+    function renderAssessmentCapabilities(domainKey) {
+        const container = document.getElementById('assessment-capabilities-container');
+        const domain = appData.domains[domainKey];
+        let html = '';
+        Object.keys(domain.capabilities).forEach(capKey => {
+            const capability = domain.capabilities[capKey];
+            html += `
+                <div class="p-4 border rounded-lg" style="border-color:var(--color-border);background:var(--color-surface)">
+                    <p class="font-semibold mb-3" style="color:var(--color-text)">${capability.name}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color:var(--color-muted)">Current Level:</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${[1,2,3,4,5].map(level => `
+                                    <div class="maturity-level-option flex-1 text-center p-2 border rounded-md text-xs ${capability.current === level ? 'selected-current' : ''}" data-capability="${capKey}" data-type="current" data-level="${level}">L${level}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2" style="color:var(--color-muted)">Target Level:</label>
+                             <div class="flex flex-wrap gap-2">
+                                ${[1,2,3,4,5].map(level => `
+                                    <div class="maturity-level-option flex-1 text-center p-2 border rounded-md text-xs ${capability.target === level ? 'selected-target' : ''}" data-capability="${capKey}" data-type="target" data-level="${level}">L${level}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        addCapabilityListeners();
+    }
+
+    function renderGrowthPath(domainKey) {
+        const container = document.getElementById('growth-path-container');
+        const domain = appData.domains[domainKey];
+        let html = '';
+        let hasGaps = false;
+
+        Object.keys(domain.capabilities).forEach(capKey => {
+            const capability = domain.capabilities[capKey];
+            if (capability.target > capability.current) {
+                hasGaps = true;
+                let capabilityHtml = `<div class="capability-growth-path">
+                                        <h4 class="text-lg font-semibold" style="color:var(--color-text)">${capability.name}</h4>
+                                        <div class="mt-4 space-y-4">`;
+
+                for (let level = capability.current; level < capability.target; level++) {
+                    const stepKey = `${level}_to_${level + 1}`;
+                    const stepData = capability.growthPath[stepKey];
+                    if (stepData) {
+                         capabilityHtml += `
+                            <div class="growth-step" style="border-color:var(--color-border)">
+                                <details class="group">
+                                    <summary class="flex items-center justify-between p-4 cursor-pointer rounded-r-md transition" style="background:var(--color-surface)">
+                                        <span class="font-semibold" style="color:var(--color-text)">${stepData.title} (Step from L${level} to L${level + 1})</span>
+                                        <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </summary>
+                                    <div class="p-4 rounded-b-md" style="background:var(--color-card);border:1px solid var(--color-border);border-top:none">
+                                        <h5 class="font-semibold mb-2" style="color:var(--color-text)">What is needed:</h5>
+                                        <p class="mb-4 text-sm" style="color:var(--color-muted)">${stepData.needed}</p>
+                                        <h5 class="font-semibold mb-2" style="color:var(--color-text)">Concrete actions:</h5>
+                                        <ul class="list-disc list-inside space-y-1 mb-4 text-sm" style="color:var(--color-muted)">
+                                            ${stepData.actions.map(action => `<li>${action}</li>`).join('')}
+                                        </ul>
+                                        <h5 class="font-semibold mb-2" style="color:var(--color-text)">Who should be involved:</h5>
+                                        <div class="flex flex-wrap gap-2">
+                                            ${stepData.involved.map(role => `<span class="text-xs px-2 py-1 rounded-full" style="background:rgba(96,165,250,0.15);color:var(--color-accent)">${role}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        `;
+                    }
+                }
+                capabilityHtml += `</div></div>`;
+                html += capabilityHtml;
+            }
+        });
+
+        if (!hasGaps) {
+            html = `<p class="text-center py-8" style="color:var(--color-muted)">There are no gaps between the current and target levels. Adjust the assessment above to see a growth plan.</p>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function addCapabilityListeners() {
+        document.querySelectorAll('.maturity-level-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const { capability, type, level } = e.currentTarget.dataset;
+                const levelNum = parseInt(level);
+
+                appData.domains[activeDomainKey].capabilities[capability][type] = levelNum;
+                const currentLevel = appData.domains[activeDomainKey].capabilities[capability].current;
+                const targetLevel = appData.domains[activeDomainKey].capabilities[capability].target;
+
+                if (type === 'current' && currentLevel > targetLevel) {
+                     appData.domains[activeDomainKey].capabilities[capability].target = currentLevel;
+                }
+                if (type === 'target' && targetLevel < currentLevel) {
+                    appData.domains[activeDomainKey].capabilities[capability].current = targetLevel;
+                }
+
+                renderAssessmentCapabilities(activeDomainKey);
+                updateCharts();
+                renderGrowthPath(activeDomainKey);
+            });
+        });
+    }
+
+    // --- DASHBOARD CHARTS ---
+    function getDomainAverage(domainKey, type) {
+        const domain = appData.domains[domainKey];
+        if (!domain || !domain.capabilities) return 0;
+        const capabilities = Object.values(domain.capabilities);
+        if (capabilities.length === 0) return 0;
+        const total = capabilities.reduce((sum, cap) => sum + (cap[type] || 0), 0);
+        return total / capabilities.length;
+    }
+
+    function updateCharts() {
+        if (!radarChart || !barChart) return;
+        const labels = Object.values(appData.domains).map(d => d.name);
+        const currentData = Object.keys(appData.domains).map(key => getDomainAverage(key, 'current'));
+        const targetData = Object.keys(appData.domains).map(key => getDomainAverage(key, 'target'));
+
+        radarChart.data.labels = labels;
+        radarChart.data.datasets[0].data = currentData;
+        radarChart.update();
+
+        barChart.data.labels = labels;
+        barChart.data.datasets[0].data = currentData;
+        barChart.data.datasets[1].data = targetData;
+        barChart.update();
+    }
+
+    function initCharts() {
+        const style = getComputedStyle(document.documentElement);
+        const textColor = style.getPropertyValue('--color-text').trim() || '#f8fafc';
+        const mutedColor = style.getPropertyValue('--color-muted').trim() || '#94a3b8';
+        const borderColor = style.getPropertyValue('--color-border').trim() || '#1f2937';
+
+        if (document.getElementById('maturityRadarChart')) {
+            const radarCtx = document.getElementById('maturityRadarChart').getContext('2d');
+            radarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: { labels: [], datasets: [{ label: 'Current Maturity', data: [], backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(59, 130, 246, 1)' }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: textColor } } },
+                    scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, color: mutedColor, backdropColor: 'transparent' }, grid: { color: borderColor }, angleLines: { color: borderColor }, pointLabels: { font: { size: 10 }, color: textColor } } }
+                }
+            });
+        }
+        if (document.getElementById('maturityBarChart')) {
+            const barCtx = document.getElementById('maturityBarChart').getContext('2d');
+            barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [ { label: 'Current', data: [], backgroundColor: 'rgba(147, 197, 253, 0.8)' }, { label: 'Target', data: [], backgroundColor: 'rgba(59, 130, 246, 0.8)' } ] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: textColor } } },
+                    scales: {
+                        y: { beginAtZero: true, max: 5, ticks: { stepSize: 1, color: mutedColor }, grid: { color: borderColor } },
+                        x: { ticks: { color: mutedColor }, grid: { color: borderColor } }
+                    }
+                }
+            });
+        }
+        updateCharts();
+    }
+
+    // --- PDF EXPORT FUNCTIONALITY ---
+    async function generateDomainReport(domainKey) {
+        const exportButton = document.getElementById('export-pdf-btn');
+        const exportText = document.getElementById('export-text');
+        const exportSpinner = document.getElementById('export-spinner');
+
+        exportButton.disabled = true;
+        exportText.classList.add('hidden');
+        exportSpinner.classList.remove('hidden');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const domain = appData.domains[domainKey];
+        const date = new Date().toLocaleDateString('en-CA');
+
+        let y = 20;
+        const pageMargin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const usableWidth = pageWidth - (pageMargin * 2);
+
+        const addHeaderFooter = (reportTitle) => {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8).setTextColor(128);
+                doc.text(reportTitle, pageMargin, 10);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text(`Exported on: ${date}`, pageWidth - pageMargin, pageHeight - 10, { align: 'right' });
+            }
+        };
+
+        const checkY = (neededHeight) => {
+            if (y + neededHeight > pageHeight - 20) {
+                doc.addPage();
+                y = 20;
+            }
+        };
+
+        // Page 1: Title
+        doc.setFontSize(22).setFont(undefined, 'bold');
+        doc.text("Cybersecurity Growth Plan", pageWidth / 2, 40, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text(domain.name, pageWidth / 2, 55, { align: 'center' });
+        doc.setFontSize(12).setFont(undefined, 'normal');
+        doc.text(`Report generated on: ${date}`, pageWidth / 2, 70, { align: 'center' });
+
+        // Page 2: Executive Summary & Overall Posture
+        doc.addPage();
+        y=20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("Executive Summary: Overall Posture", pageMargin, y);
+        y += 10;
+        doc.setFontSize(10).setFont(undefined, 'normal');
+        const summaryText = `This report details the cybersecurity maturity assessment for the ${domain.name} domain. It provides a comprehensive growth plan based on the gap between the current and target maturity levels. The following chart summarizes the current maturity across all organizational security domains for strategic context.`;
+        const summaryLines = doc.splitTextToSize(summaryText, usableWidth);
+        doc.text(summaryLines, pageMargin, y);
+        y += (summaryLines.length * 5) + 10;
+
+        const chartImage = radarChart.toBase64Image('image/png', 1.0);
+        doc.addImage(chartImage, 'PNG', pageMargin, y, usableWidth, usableWidth * 0.75);
+
+        // Page 3: Strategic Context
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("The Strategic Roadmap Process", pageMargin, y);
+        y += 10;
+        Object.values(appData.roadmapProcess).forEach(step => {
+            checkY(20);
+            doc.setFontSize(11).setFont(undefined, 'bold');
+            doc.text(step.title, pageMargin, y);
+            y += 5;
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            const descLines = doc.splitTextToSize(step.description, usableWidth);
+            doc.text(descLines, pageMargin, y);
+            y += (descLines.length * 5) + 5;
+        });
+
+        y += 5;
+        doc.setDrawColor(200);
+        doc.line(pageMargin, y, pageWidth - pageMargin, y);
+        y += 10;
+
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("The Unified Maturity Framework", pageMargin, y);
+        y += 10;
+         Object.values(appData.frameworkLevels).forEach(level => {
+            checkY(20);
+            doc.setFontSize(11).setFont(undefined, 'bold');
+            doc.text(level.title, pageMargin, y);
+            y += 5;
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            const descLines = doc.splitTextToSize(level.description, usableWidth);
+            doc.text(descLines, pageMargin, y);
+            y += (descLines.length * 5) + 5;
+        });
+
+        // Page 4: Domain Assessment Summary
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text(`Assessment Summary: ${domain.name}`, pageMargin, y);
+        y += 10;
+
+        doc.setFontSize(10).setFont(undefined, 'normal');
+        Object.values(domain.capabilities).forEach(cap => {
+            checkY(8);
+            doc.setFont(undefined, 'bold');
+            doc.text(cap.name + ":", pageMargin, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Current Level: ${cap.current} | Target Level: ${cap.target}`, pageMargin + 75, y);
+            y += 7;
+        });
+
+        // Page 5+: Detailed Growth Path
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("Detailed Growth Path", pageMargin, y);
+        y += 10;
+
+        Object.values(domain.capabilities).forEach(cap => {
+            if(cap.target > cap.current) {
+                checkY(25);
+                doc.setDrawColor(200);
+                doc.line(pageMargin, y - 5, pageWidth - pageMargin, y - 5);
+                doc.setFontSize(14).setFont(undefined, 'bold');
+                doc.text(cap.name, pageMargin, y);
+                y += 8;
+
+                for (let level = cap.current; level < cap.target; level++) {
+                    const stepKey = `${level}_to_${level + 1}`;
+                    const stepData = cap.growthPath[stepKey];
+                    if (stepData) {
+                        checkY(40);
+                        doc.setFontSize(11).setFont(undefined, 'italic');
+                        doc.text(stepData.title, pageMargin, y);
+                        y += 7;
+
+                        doc.setFontSize(9).setFont(undefined, 'bold');
+                        doc.text("What is needed:", pageMargin + 5, y);
+                        doc.setFont(undefined, 'normal');
+                        let neededLines = doc.splitTextToSize(stepData.needed, usableWidth - 10);
+                        doc.text(neededLines, pageMargin + 5, y + 4);
+                        y += (neededLines.length * 4) + 5;
+
+                        checkY(20);
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Concrete actions:", pageMargin + 5, y);
+                        doc.setFont(undefined, 'normal');
+                        let actionsText = stepData.actions.map(a => `- ${a}`).join('\n');
+                        let actionLines = doc.splitTextToSize(actionsText, usableWidth - 10);
+                        doc.text(actionLines, pageMargin + 5, y + 4);
+                        y += (actionLines.length * 4) + 5;
+
+                        checkY(15);
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Who should be involved:", pageMargin + 5, y);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(stepData.involved.join(', '), pageMargin + 5, y+4);
+                        y += 10;
+                    }
+                }
+            }
+        });
+
+        addHeaderFooter(`Cybersecurity Growth Plan: ${domain.name}`);
+        const filename = `Cybersecurity-Report-${domain.name.replace(/\s/g, '_')}-${date}.pdf`;
+        doc.save(filename);
+
+        exportButton.disabled = false;
+        exportText.classList.remove('hidden');
+        exportSpinner.classList.add('hidden');
+    }
+
+    async function generateFullReport() {
+        const exportButton = document.getElementById('export-full-report-btn');
+        const exportText = document.getElementById('export-full-text');
+        const exportSpinner = document.getElementById('export-full-spinner');
+
+        exportButton.disabled = true;
+        exportText.classList.add('hidden');
+        exportSpinner.classList.remove('hidden');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const date = new Date().toLocaleDateString('en-CA');
+
+        let y = 20;
+        const pageMargin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const usableWidth = pageWidth - (pageMargin * 2);
+
+        const addHeaderFooter = (reportTitle) => {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8).setTextColor(128);
+                doc.text(reportTitle, pageMargin, 10);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text(`Exported on: ${date}`, pageWidth - pageMargin, pageHeight - 10, { align: 'right' });
+            }
+        };
+
+        const checkY = (neededHeight) => {
+            if (y + neededHeight > pageHeight - 25) { // Increased margin for safety
+                doc.addPage();
+                y = 20;
+            }
+        };
+
+        // --- CONTENT GENERATION ---
+
+        // Page 1: Title
+        doc.setFontSize(22).setFont(undefined, 'bold');
+        doc.text("Full Cybersecurity Maturity Report", pageWidth / 2, 40, { align: 'center' });
+        doc.setFontSize(12).setFont(undefined, 'normal');
+        doc.text(`Report generated on: ${date}`, pageWidth / 2, 55, { align: 'center' });
+
+        // Page 2: Executive Summary & Overall Posture
+        doc.addPage();
+        y=20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("Executive Summary: Overall Posture", pageMargin, y);
+        y += 10;
+        doc.setFontSize(10).setFont(undefined, 'normal');
+        const summaryText = `This report provides a comprehensive overview of the organization's cybersecurity maturity across all assessed domains. It includes contextual information on the strategic framework, a summary of all domain scores, and a detailed growth plan for every identified gap. The following chart summarizes the current maturity across all domains for a high-level strategic view.`;
+        const summaryLines = doc.splitTextToSize(summaryText, usableWidth);
+        doc.text(summaryLines, pageMargin, y);
+        y += (summaryLines.length * 5) + 10;
+
+        const chartImage = radarChart.toBase64Image('image/png', 1.0);
+        doc.addImage(chartImage, 'PNG', pageMargin, y, usableWidth, usableWidth * 0.75);
+
+        // Page 3: Strategic Context
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("The Strategic Roadmap Process", pageMargin, y);
+        y += 10;
+        Object.values(appData.roadmapProcess).forEach(step => {
+            checkY(20);
+            doc.setFontSize(11).setFont(undefined, 'bold');
+            doc.text(step.title, pageMargin, y);
+            y += 5;
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            const descLines = doc.splitTextToSize(step.description, usableWidth);
+            doc.text(descLines, pageMargin, y);
+            y += (descLines.length * 5) + 5;
+        });
+
+        y += 5;
+        doc.setDrawColor(200);
+        doc.line(pageMargin, y, pageWidth - pageMargin, y);
+        y += 10;
+
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("The Unified Maturity Framework", pageMargin, y);
+        y += 10;
+         Object.values(appData.frameworkLevels).forEach(level => {
+            checkY(20);
+            doc.setFontSize(11).setFont(undefined, 'bold');
+            doc.text(level.title, pageMargin, y);
+            y += 5;
+            doc.setFontSize(10).setFont(undefined, 'normal');
+            const descLines = doc.splitTextToSize(level.description, usableWidth);
+            doc.text(descLines, pageMargin, y);
+            y += (descLines.length * 5) + 5;
+        });
+
+        // Page 4: All Domains Assessment Summary
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text(`Overall Assessment Summary`, pageMargin, y);
+        y += 10;
+
+        doc.setFontSize(10).setFont(undefined, 'normal');
+        Object.keys(appData.domains).forEach(domainKey => {
+            checkY(10);
+            const domain = appData.domains[domainKey];
+            const avgCurrent = getDomainAverage(domainKey, 'current').toFixed(1);
+            const avgTarget = getDomainAverage(domainKey, 'target').toFixed(1);
+            doc.setFont(undefined, 'bold');
+            doc.text(domain.name + ":", pageMargin, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Average Current: ${avgCurrent} | Average Target: ${avgTarget}`, pageMargin + 75, y);
+            y += 7;
+        });
+
+        // Page 5+: Detailed Growth Path for ALL domains
+        doc.addPage();
+        y = 20;
+        doc.setFontSize(16).setFont(undefined, 'bold');
+        doc.text("Full Detailed Growth Path", pageMargin, y);
+        y += 10;
+
+        Object.keys(appData.domains).forEach(domainKey => {
+            const domain = appData.domains[domainKey];
+            let domainHasGaps = Object.values(domain.capabilities).some(c => c.target > c.current);
+
+            if (domainHasGaps) {
+                checkY(20);
+                doc.setDrawColor(150);
+                doc.line(pageMargin, y-2, pageWidth - pageMargin, y-2);
+                doc.setFontSize(14).setFont(undefined, 'bold');
+                doc.text(`Domain: ${domain.name}`, pageMargin, y);
+                y += 10;
+
+                Object.values(domain.capabilities).forEach(cap => {
+                    if(cap.target > cap.current) {
+                        checkY(25);
+                        doc.setFontSize(12).setFont(undefined, 'bold');
+                        doc.text(cap.name, pageMargin, y);
+                        y += 8;
+
+                        for (let level = cap.current; level < cap.target; level++) {
+                            const stepKey = `${level}_to_${level + 1}`;
+                            const stepData = cap.growthPath[stepKey];
+                            if (stepData) {
+                                checkY(40);
+                                doc.setFontSize(10).setFont(undefined, 'italic');
+                                doc.text(stepData.title, pageMargin, y);
+                                y += 6;
+
+                                doc.setFontSize(9).setFont(undefined, 'bold');
+                                doc.text("What is needed:", pageMargin + 5, y);
+                                doc.setFont(undefined, 'normal');
+                                let neededLines = doc.splitTextToSize(stepData.needed, usableWidth - 10);
+                                doc.text(neededLines, pageMargin + 5, y + 4);
+                                y += (neededLines.length * 4) + 5;
+
+                                checkY(20);
+                                doc.setFont(undefined, 'bold');
+                                doc.text("Concrete actions:", pageMargin + 5, y);
+                                doc.setFont(undefined, 'normal');
+                                let actionsText = stepData.actions.map(a => `- ${a}`).join('\n');
+                                let actionLines = doc.splitTextToSize(actionsText, usableWidth - 10);
+                                doc.text(actionLines, pageMargin + 5, y + 4);
+                                y += (actionLines.length * 4) + 5;
+
+                                checkY(15);
+                                doc.setFont(undefined, 'bold');
+                                doc.text("Who should be involved:", pageMargin + 5, y);
+                                doc.setFont(undefined, 'normal');
+                                doc.text(stepData.involved.join(', '), pageMargin + 5, y+4);
+                                y += 10;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        addHeaderFooter("Full Cybersecurity Maturity Report");
+        const filename = `Cybersecurity-Full-Report-${date}.pdf`;
+        doc.save(filename);
+
+        exportButton.disabled = false;
+        exportText.classList.remove('hidden');
+        exportSpinner.classList.add('hidden');
+    }
+
+    init();
+});
+
+</script>
+{% endblock %}
