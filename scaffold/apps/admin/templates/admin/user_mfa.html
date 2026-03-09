@@ -6,6 +6,7 @@
   <p class="text-[var(--color-muted)] mb-0">{{ _('admin.user_mfa.email') }}: {{ target_user.email }}</p>
 </div>
 
+{# TOTP section #}
 {% if provisioning %}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm mb-4">
     <div class="px-5 py-4">
@@ -18,22 +19,51 @@
   <div class="rounded-xl px-4 py-3 text-sm border bg-blue-500/10 border-blue-400/40 text-blue-200 mb-4">{{ _('admin.user_mfa.not_provisioned') }}</div>
 {% endif %}
 
-<div class="flex flex-wrap gap-2">
+<div class="flex flex-wrap gap-2 mb-6">
   <form method="post" class="inline">
-    {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="enable">
     <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-green-500/50 text-green-500 hover:bg-green-500/10 px-2.5 py-1 text-xs">{{ _('admin.user_mfa.actions.enable_refresh') }}</button>
   </form>
   <form method="post" class="inline">
-    {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="regenerate">
     <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-yellow-400 text-yellow-400 hover:bg-yellow-400/10 px-2.5 py-1 text-xs">{{ _('admin.user_mfa.actions.regenerate') }}</button>
   </form>
   <form method="post" class="inline">
-    {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="disable">
     <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-red-400 text-red-400 hover:bg-red-400/10 px-2.5 py-1 text-xs">{{ _('admin.user_mfa.actions.disable') }}</button>
   </form>
   <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 px-2.5 py-1 text-xs" href="{{ url_for('admin.list_users') }}">{{ _('admin.user_mfa.actions.back_to_users') }}</a>
 </div>
+
+{# Passkeys section #}
+<h2 class="text-lg font-semibold mb-3">🔑 Registered Passkeys</h2>
+{% if passkeys %}
+<ul class="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] overflow-hidden mb-4">
+  {% for pk in passkeys %}
+  <li class="flex items-center justify-between px-4 py-3 bg-[var(--color-surface)]">
+    <div>
+      <span class="text-sm font-medium">{{ pk.name }}</span>
+      <span class="ml-2 text-xs text-[var(--color-muted)]">
+        Added {{ pk.created_at.strftime('%Y-%m-%d') if pk.created_at else '—' }}
+        {% if pk.last_used_at %}· Last used {{ pk.last_used_at.strftime('%Y-%m-%d') }}{% endif %}
+      </span>
+    </div>
+    <form method="post"
+          action="{{ url_for('admin.admin_passkey_delete', user_id=target_user.id, credential_id=pk.id) }}"
+          onsubmit="return confirm('Revoke passkey \'{{ pk.name }}\' for {{ target_user.email }}?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit"
+              class="inline-flex items-center font-medium rounded-md px-3 py-1 text-xs border border-red-400/40 text-red-400 hover:bg-red-500/10 transition-colors">
+        Revoke
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm text-[var(--color-muted)] italic mb-4">No passkeys registered for this user.</p>
+{% endif %}
 {% endblock %}

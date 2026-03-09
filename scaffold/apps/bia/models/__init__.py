@@ -121,10 +121,16 @@ class Component(db.Model):
         db.ForeignKey("bia_authentication_methods.id"),
         nullable=True,
     )
+    info_label_id = db.Column(
+        db.Integer,
+        db.ForeignKey("bia_information_labels.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     context_scope_id = db.Column(db.Integer, db.ForeignKey("bia_context_scope.id"), nullable=False)
 
     context_scope = db.relationship("ContextScope", back_populates="components")
     authentication_method = db.relationship("AuthenticationMethod", back_populates="components")
+    info_label = db.relationship("InformationLabel", back_populates="components")
     consequences = db.relationship(
         "Consequences",
         back_populates="component",
@@ -312,6 +318,28 @@ class AuthenticationMethod(db.Model):
         return translate_authentication_label(self.slug, locale, fallbacks)
 
 
+class InformationLabel(db.Model):
+    """Lookup table of sensitivity / information classification labels for components."""
+
+    __tablename__ = "bia_information_labels"
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(64), unique=True, nullable=False)
+    label_en = db.Column(db.String(255), nullable=False)
+    label_nl = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    severity = db.Column(db.Integer, nullable=False, default=0)
+
+    components = db.relationship("Component", back_populates="info_label")
+
+    def get_label(self, locale: str | None = None) -> str:
+        """Return the display label for the configured locale."""
+
+        if locale and locale.startswith("nl"):
+            return self.label_nl or self.label_en or self.slug
+        return self.label_en or self.label_nl or self.slug
+
+
 _TRACKED_MODELS = [
     BiaTier,
     ContextScope,
@@ -321,6 +349,7 @@ _TRACKED_MODELS = [
     AvailabilityRequirements,
     AIIdentificatie,
     Summary,
+    InformationLabel,
 ]
 
 

@@ -2,19 +2,107 @@
 {% block title %}MFA Verification{% endblock %}
 {% block content %}
 <div class="max-w-md mx-auto mt-8">
-    <h1 class="mb-4 text-2xl font-bold">{{ _('auth.mfa.verify.title') }}</h1>
-    <p class="mb-4 text-[var(--color-muted)]">{{ _('auth.mfa.verify.instructions_body') }}</p>
-    <form method="post">
-        {{ form.hidden_tag() }}
-        <div class="mb-4">
-            {{ form.otp_token.label(class="block text-sm mb-1.5") }}
-            {{ form.otp_token(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-        </div>
-        <div class="flex items-center gap-2 mb-4">
-            {{ form.remember_device(class="w-4 h-4 accent-primary-500 rounded border-[var(--color-border)] bg-[var(--color-surface)]") }}
-            {{ form.remember_device.label(class="text-sm") }}
-        </div>
-        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 w-full") }}
-    </form>
+  <h1 class="mb-4 text-2xl font-bold">{{ _('auth.mfa.verify.title') }}</h1>
+  <p class="mb-6 text-[var(--color-muted)]">{{ _('auth.mfa.verify.instructions_body') }}</p>
+
+  {% if has_passkeys %}
+  <div id="passkey-status" class="hidden mb-4 rounded-xl px-4 py-3 text-sm border"></div>
+  <button id="sign-in-passkey-btn" type="button"
+          class="inline-flex items-center justify-center gap-2 font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 w-full mb-4">
+    🔑 Sign in with Passkey
+  </button>
+  {% endif %}
+
+  {% if has_totp and form %}
+  {% if has_passkeys %}<p class="text-center text-xs text-[var(--color-muted)] mb-4">— or enter your authenticator code —</p>{% endif %}
+  <form method="post">
+    {{ form.hidden_tag() }}
+    <div class="mb-4">
+      {{ form.otp_token.label(class="block text-sm mb-1.5") }}
+      {{ form.otp_token(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+    </div>
+    <div class="flex items-center gap-2 mb-4">
+      {{ form.remember_device(class="w-4 h-4 accent-primary-500 rounded border-[var(--color-border)] bg-[var(--color-surface)]") }}
+      {{ form.remember_device.label(class="text-sm") }}
+    </div>
+    {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 w-full") }}
+  </form>
+  {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if has_passkeys %}
+<script nonce="{{ csp_nonce }}">
+  function b64urlToBuffer(b64url) {
+    const base64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '=='.slice(0, (4 - base64.length % 4) % 4);
+    return Uint8Array.from(atob(padded), c => c.charCodeAt(0)).buffer;
+  }
+  function bufferToB64url(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+  function prepareRequestOptions(opts) {
+    opts.challenge = b64urlToBuffer(opts.challenge);
+    if (opts.allowCredentials) {
+      opts.allowCredentials = opts.allowCredentials.map(c => ({...c, id: b64urlToBuffer(c.id)}));
+    }
+    return opts;
+  }
+  function assertionToJSON(cred) {
+    const json = {
+      id: cred.id,
+      rawId: bufferToB64url(cred.rawId),
+      type: cred.type,
+      response: {
+        authenticatorData: bufferToB64url(cred.response.authenticatorData),
+        clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
+        signature: bufferToB64url(cred.response.signature),
+      },
+    };
+    if (cred.response.userHandle) {
+      json.response.userHandle = bufferToB64url(cred.response.userHandle);
+    }
+    return json;
+  }
+
+  document.getElementById('sign-in-passkey-btn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('passkey-status');
+    const btn = document.getElementById('sign-in-passkey-btn');
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.className = 'mb-4 rounded-xl px-4 py-3 text-sm border ' +
+        (isError ? 'bg-red-500/10 border-red-400/40 text-red-200'
+                 : 'bg-blue-500/10 border-blue-400/40 text-blue-200');
+      statusEl.classList.remove('hidden');
+    }
+    btn.disabled = true;
+    btn.textContent = '⏳ Waiting for passkey…';
+    try {
+      const beginResp = await fetch('{{ url_for("auth.mfa_passkey_verify_begin") }}', {method: 'POST'});
+      if (!beginResp.ok) { throw new Error((await beginResp.json()).error || 'Failed to begin verification'); }
+      const opts = prepareRequestOptions(await beginResp.json());
+
+      const credential = await navigator.credentials.get({publicKey: opts});
+      if (!credential) throw new Error('No credential returned');
+
+      const completeResp = await fetch('{{ url_for("auth.mfa_passkey_verify_complete") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(assertionToJSON(credential)),
+      });
+      const result = await completeResp.json();
+      if (!completeResp.ok || !result.success) { throw new Error(result.error || 'Verification failed'); }
+
+      setStatus('Verified! Redirecting…', false);
+      window.location.href = result.redirect;
+    } catch (err) {
+      setStatus(err.message || 'Passkey verification failed. Try again or use your authenticator code.', true);
+      btn.disabled = false;
+      btn.textContent = '🔑 Sign in with Passkey';
+    }
+  });
+</script>
+{% endif %}
 {% endblock %}

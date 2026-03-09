@@ -19,7 +19,7 @@ for concrete steps when upgrading an existing deployment.
 from __future__ import annotations
 
 # Import identity models first so user relationships are available.
-from ..apps.identity.models import MFASetting, Role, TimestampMixin, User, UserStatus
+from ..apps.identity.models import MFASetting, PasskeyCredential, Role, TimestampMixin, User, UserStatus
 
 # Domain-specific models.
 from ..apps.bia.models import (
@@ -60,6 +60,7 @@ __all__ = [
     "UserStatus",
     "Role",
     "MFASetting",
+    "PasskeyCredential",
     "ContextScope",
     "Component",
     "Consequences",

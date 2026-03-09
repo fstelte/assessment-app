@@ -235,7 +235,7 @@
               </td>
               <td class="px-3 py-3">
                 <div class="text-[var(--color-text)] text-xs">{{ component.info_owner or '-' }}</div>
-                <div class="text-[var(--color-muted)] text-xs mt-0.5">{{ component.info_type or '-' }}</div>
+                <div class="text-[var(--color-muted)] text-xs mt-0.5">{{ component.info_label.get_label() if component.info_label else (component.info_type or '-') }}</div>
               </td>
               <td class="px-3 py-3">
                 <div class="flex flex-wrap gap-1">

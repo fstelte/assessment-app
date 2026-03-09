@@ -35,9 +35,9 @@ from ..csa.services import (
     upsert_control,
 )
 from ...models import AuditLog
-from ..identity.models import MFASetting, Role, User, UserStatus, ROLE_CONTROL_OWNER
+from ..identity.models import MFASetting, PasskeyCredential, Role, User, UserStatus, ROLE_CONTROL_OWNER
 from ..bia.localization import translate_authentication_label
-from ..bia.models import AuthenticationMethod, BiaTier, Component
+from ..bia.models import AuthenticationMethod, BiaTier, Component, InformationLabel
 from ..bia.services.authentication import clear_authentication_cache
 from ..risk.forms import RiskForm, RiskThresholdForm
 from ..risk.models import (
@@ -68,6 +68,9 @@ from .forms import (
     ControlDeleteForm,
     ControlImportForm,
     ControlUpdateForm,
+    InformationLabelDeleteForm,
+    InformationLabelForm,
+    InformationLabelToggleForm,
 )
 from ...core.audit import log_event
 
@@ -124,15 +127,16 @@ def _method_display_name(method: AuthenticationMethod, locale: str | None = None
 def controls():
     _require_control_admin()
 
-    controls = (
+    # Stats always computed over all controls
+    all_controls = (
         Control.query.options(selectinload(Control.templates))
         .order_by(sa.func.coalesce(Control.section, ""), Control.domain.asc())
         .all()
     )
 
-    total_controls = len(controls)
-    total_templates = sum(len(control.templates) for control in controls)
-    described_controls = sum(1 for control in controls if (control.description or "").strip())
+    total_controls = len(all_controls)
+    total_templates = sum(len(c.templates) for c in all_controls)
+    described_controls = sum(1 for c in all_controls if (c.description or "").strip())
     described_pct = int(round((described_controls / total_controls) * 100)) if total_controls else 0
     control_stats = {
         "total": total_controls,
@@ -144,8 +148,25 @@ def controls():
     import_form = ControlImportForm()
     create_form = ControlCreateForm()
 
+    # Filtered + paginated query for the table
+    identifier_filter = (request.args.get("identifier") or "").strip()
+    keyword_filter = (request.args.get("keyword") or "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    query = Control.query.order_by(sa.func.coalesce(Control.section, ""), Control.domain.asc())
+    if identifier_filter:
+        query = query.filter(Control.identifier.ilike(f"%{identifier_filter}%"))
+    if keyword_filter:
+        query = query.filter(
+            sa.or_(
+                Control.title.ilike(f"%{keyword_filter}%"),
+                Control.description.ilike(f"%{keyword_filter}%"),
+            )
+        )
+    pagination = query.paginate(page=page, per_page=50, error_out=False)
+
     delete_forms: dict[int, ControlDeleteForm] = {}
-    for control in controls:
+    for control in pagination.items:
         delete_form = ControlDeleteForm(prefix=f"delete-{control.id}")
         delete_form.control_id.data = str(control.id)
         delete_forms[control.id] = delete_form
@@ -210,7 +231,8 @@ def controls():
         import_form=import_form,
         create_form=create_form,
         delete_forms=delete_forms,
-        controls=controls,
+        pagination=pagination,
+        has_controls=total_controls > 0,
         control_stats=control_stats,
     )
 
@@ -303,14 +325,17 @@ def edit_control(control_id: int):
     if control is None:
         abort(404)
 
-    form = ControlUpdateForm()
+    form = ControlUpdateForm(
+        formdata=None,
+        code=control.section or "",
+        name=control.domain,
+        description=control.description or "",
+    )
     form.control_id.data = str(control.id)
-    form.code.data = control.section or ""
-    form.name.data = control.domain
-    form.description.data = control.description or ""
 
     return render_template(
         "admin/control_edit.html",
+        title=_("admin.controls.edit.heading"),
         control=control,
         form=form,
     )
@@ -1374,7 +1399,30 @@ def user_mfa(user_id: int):
         "admin/user_mfa.html",
         target_user=user,
         provisioning=provisioning,
+        passkeys=user.passkey_credentials or [],
     )
+
+
+@bp.post("/users/<int:user_id>/mfa/passkey/<int:credential_id>/delete")
+@login_required
+@require_fresh_login()
+def admin_passkey_delete(user_id: int, credential_id: int):
+    """Allow an administrator to revoke a specific passkey for a user."""
+    _require_admin()
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    passkey = PasskeyCredential.query.filter_by(id=credential_id, user_id=user.id).first_or_404()
+    db.session.delete(passkey)
+    log_event(
+        action="admin_passkey_revoked",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email, "passkey_name": passkey.name},
+        commit=True,
+    )
+    flash(f"Passkey \u2018{passkey.name}\u2019 removed from {user.email}.", "success")
+    return redirect(url_for("admin.user_mfa", user_id=user.id))
 
 
 @bp.route("/bia/tiers")
@@ -1407,3 +1455,218 @@ def edit_bia_tier(tier_id: int):
         return redirect(url_for("admin.list_bia_tiers"))
 
     return render_template("admin/bia_tier_form.html", form=form, tier=tier)
+
+
+# ---------------------------------------------------------------------------
+# Information Labels (sensitivity labels) admin
+# ---------------------------------------------------------------------------
+
+def _get_information_label(label_id: int) -> InformationLabel:
+    label = db.session.get(InformationLabel, label_id)
+    if label is None:
+        abort(404)
+    return label
+
+
+@bp.route("/bia/information-labels", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def list_information_labels():
+    _require_admin()
+
+    create_form = InformationLabelForm()
+    if create_form.validate_on_submit():
+        label_en = (create_form.label_en.data or "").strip()
+        label_nl = (create_form.label_nl.data or "").strip()
+        slug = label_en.lower().replace(" ", "-")
+        existing = InformationLabel.query.filter(
+            sa.func.lower(InformationLabel.slug) == slug
+        ).first()
+        if existing:
+            flash(_("admin.information_labels.errors.slug_exists"), "danger")
+        else:
+            severity = create_form.severity.data if create_form.severity.data is not None else 0
+            label = InformationLabel(slug=slug, label_en=label_en, label_nl=label_nl, is_active=True, severity=severity)
+            db.session.add(label)
+            db.session.flush()
+            log_event(
+                action="information_label_created",
+                entity_type="information_label",
+                entity_id=label.id,
+                details={"slug": label.slug},
+            )
+            db.session.commit()
+            flash(_("admin.information_labels.flash.created", name=label_en), "success")
+            return redirect(url_for("admin.list_information_labels"))
+    else:
+        for errors in create_form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    labels = InformationLabel.query.order_by(InformationLabel.id.asc()).all()
+    locale = get_locale()
+
+    edit_forms: dict[int, InformationLabelForm] = {}
+    toggle_forms: dict[int, InformationLabelToggleForm] = {}
+    delete_forms: dict[int, InformationLabelDeleteForm] = {}
+    component_usage: dict[int, int] = {}
+
+    for lbl in labels:
+        ef = InformationLabelForm(obj=lbl)
+        ef.submit.label.text = _("admin.information_labels.form.update_submit")
+        edit_forms[lbl.id] = ef
+
+        tf = InformationLabelToggleForm()
+        tf.label_id.data = str(lbl.id)
+        tf.submit.label.text = (
+            _("admin.information_labels.form.deactivate")
+            if lbl.is_active
+            else _("admin.information_labels.form.activate")
+        )
+        toggle_forms[lbl.id] = tf
+
+        df = InformationLabelDeleteForm()
+        df.label_id.data = str(lbl.id)
+        df.submit.label.text = _("admin.information_labels.form.delete")
+        delete_forms[lbl.id] = df
+
+        component_usage[lbl.id] = Component.query.filter(
+            Component.info_label_id == lbl.id
+        ).count()
+
+    return render_template(
+        "admin/bia_information_labels.html",
+        labels=labels,
+        create_form=create_form,
+        edit_forms=edit_forms,
+        toggle_forms=toggle_forms,
+        delete_forms=delete_forms,
+        component_usage=component_usage,
+        locale=locale,
+    )
+
+
+@bp.post("/bia/information-labels/<int:label_id>")
+@login_required
+@require_fresh_login()
+def update_information_label(label_id: int):
+    _require_admin()
+    lbl = _get_information_label(label_id)
+
+    form = InformationLabelForm()
+    if form.validate_on_submit():
+        label_en = (form.label_en.data or "").strip()
+        label_nl = (form.label_nl.data or "").strip()
+        lbl.label_en = label_en
+        lbl.label_nl = label_nl
+        if form.severity.data is not None:
+            lbl.severity = form.severity.data
+        db.session.flush()
+        log_event(
+            action="information_label_updated",
+            entity_type="information_label",
+            entity_id=lbl.id,
+            details={"slug": lbl.slug},
+        )
+        db.session.commit()
+        flash(_("admin.information_labels.flash.updated", name=label_en), "success")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    return redirect(url_for("admin.list_information_labels"))
+
+
+@bp.post("/bia/information-labels/<int:label_id>/toggle")
+@login_required
+@require_fresh_login()
+def toggle_information_label(label_id: int):
+    _require_admin()
+    lbl = _get_information_label(label_id)
+
+    form = InformationLabelToggleForm()
+    submitted_id: int | None = None
+    if form.validate_on_submit():
+        try:
+            submitted_id = int(form.label_id.data)
+        except (TypeError, ValueError):
+            submitted_id = None
+    if submitted_id == label_id:
+        lbl.is_active = not lbl.is_active
+        db.session.flush()
+        log_event(
+            action="information_label_toggled",
+            entity_type="information_label",
+            entity_id=lbl.id,
+            details={"is_active": lbl.is_active},
+        )
+        db.session.commit()
+        flash(
+            _(
+                "admin.information_labels.flash.toggled",
+                name=lbl.label_en,
+                state=_("admin.information_labels.state.active")
+                if lbl.is_active
+                else _("admin.information_labels.state.inactive"),
+            ),
+            "info",
+        )
+    else:
+        flash(_("admin.information_labels.errors.toggle_failed"), "danger")
+
+    return redirect(url_for("admin.list_information_labels"))
+
+
+@bp.post("/bia/information-labels/<int:label_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_information_label(label_id: int):
+    _require_admin()
+    lbl = _get_information_label(label_id)
+
+    form = InformationLabelDeleteForm()
+    submitted_id: int | None = None
+    if form.validate_on_submit():
+        try:
+            submitted_id = int(form.label_id.data)
+        except (TypeError, ValueError):
+            submitted_id = None
+    if submitted_id != label_id:
+        flash(_("admin.information_labels.errors.delete_failed"), "danger")
+        return redirect(url_for("admin.list_information_labels"))
+
+    usage_count = Component.query.filter(Component.info_label_id == lbl.id).count()
+    if usage_count:
+        lbl.is_active = False
+        db.session.flush()
+        log_event(
+            action="information_label_deactivated",
+            entity_type="information_label",
+            entity_id=lbl.id,
+            details={"slug": lbl.slug, "reason": "in_use", "usage_count": usage_count},
+        )
+        db.session.commit()
+        flash(
+            _(
+                "admin.information_labels.flash.deactivated_instead_of_deleted",
+                name=lbl.label_en,
+                count=usage_count,
+            ),
+            "warning",
+        )
+        return redirect(url_for("admin.list_information_labels"))
+
+    lbl_id = lbl.id
+    lbl_slug = lbl.slug
+    lbl_name = lbl.label_en
+    db.session.delete(lbl)
+    log_event(
+        action="information_label_deleted",
+        entity_type="information_label",
+        entity_id=lbl_id,
+        details={"slug": lbl_slug},
+    )
+    db.session.commit()
+    flash(_("admin.information_labels.flash.deleted", name=lbl_name), "success")
+    return redirect(url_for("admin.list_information_labels"))

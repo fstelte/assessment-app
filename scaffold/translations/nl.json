@@ -1257,6 +1257,64 @@
     }
   },
   "admin": {
+    "information_labels": {
+      "title": "Gevoeligheidslabels",
+      "heading": "Gevoeligheidslabels",
+      "subtitle": "Beheer de informatieclassificatielabels beschikbaar voor BIA-componenten.",
+      "back_to_admin": "Terug naar beheer",
+      "create": {
+        "title": "Nieuw label toevoegen",
+        "submit": "Label toevoegen"
+      },
+      "list": {
+        "title": "Geconfigureerde labels",
+        "columns": {
+          "label_en": "Engelse label",
+          "label_nl": "Nederlandse label",
+          "severity": "Prioriteit",
+          "status": "Status",
+          "usage": "Gebruik",
+          "actions": "Acties"
+        },
+        "in_use": "In gebruik ({count})",
+        "not_in_use": "Niet in gebruik",
+        "actions": {
+          "delete_confirm": "Dit gevoeligheidslabel verwijderen?"
+        },
+        "empty": "Nog geen gevoeligheidslabels geconfigureerd."
+      },
+      "state": {
+        "active": "Actief",
+        "inactive": "Inactief"
+      },
+      "form": {
+        "label_en": "Engelse label",
+        "label_nl": "Nederlandse label",
+        "severity": "Prioriteit",
+        "severity_hint": "Hogere waarden worden als gevoeliger beschouwd (bijv. Openbaar = 1, Beperkt = 4).",
+        "submit": "Label toevoegen",
+        "update_submit": "Wijzigingen opslaan",
+        "edit": "Bewerken",
+        "deactivate": "Deactiveren",
+        "activate": "Activeren",
+        "delete": "Verwijderen"
+      },
+      "edit": {
+        "title": "{name} bewerken"
+      },
+      "errors": {
+        "slug_exists": "Er bestaat al een label met deze naam.",
+        "toggle_failed": "Kon de labelstatus niet bijwerken.",
+        "delete_failed": "Kon het label niet verwijderen."
+      },
+      "flash": {
+        "created": "Label '{name}' aangemaakt.",
+        "updated": "Label '{name}' bijgewerkt.",
+        "toggled": "Label '{name}' is nu {state}.",
+        "deactivated_instead_of_deleted": "Label '{name}' wordt nog gebruikt door {count} componenten en is gedeactiveerd in plaats van verwijderd.",
+        "deleted": "Label '{name}' verwijderd."
+      }
+    },
     "bia_tiers": {
       "list": {
         "title": "BIA Niveau Beheer",
@@ -1282,6 +1340,19 @@
       }
     },
     "controls": {
+      "manage_availability_tiers": "Beschikbaarheidsniveaus beheren",
+      "import_iso": "ISO 27002 importeren",
+      "import_nist": "NIST SP 800-53 importeren",
+      "new_control": "Nieuwe control",
+      "filter": {
+        "identifier": "Identiteitscode",
+        "keyword": {
+          "label": "Trefwoord",
+          "placeholder": "Zoek op naam of omschrijving\u2026"
+        },
+        "search": "Zoeken",
+        "clear": "Filters wissen"
+      },
       "page": {
         "title": "Beheer van controls",
         "heading": "Beheer van de controlcatalogus",
@@ -1320,7 +1391,8 @@
       "edit": {
         "title": "Control bewerken",
         "heading": "Control bewerken",
-        "subtitle": "Werk de metadata bij voor {name}."
+        "subtitle": "Werk de metadata bij voor {name}.",
+        "button": "Bewerken"
       },
       "list": {
         "title": "Controlcatalogus",
@@ -1439,6 +1511,7 @@
       "link_csa_dashboard": "CSA-dashboard",
       "link_bia_dashboard": "BIA-dashboard",
       "link_authentication_methods": "Authenticatiemethoden",
+      "link_sensitivity_labels": "Gevoeligheidslabels",
       "link_audit_trail": "Audittrail",
       "button": {
         "import_controls": "Controls importeren"

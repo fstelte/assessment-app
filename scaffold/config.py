@@ -77,6 +77,10 @@ class Settings:
     audit_log_retention_days: int = 90
     audit_log_prune_interval_hours: int = 24
     audit_log_model_events: str = ""
+    mfa_issuer_name: str = "Scaffold Platform"
+    webauthn_rp_id: str = ""
+    webauthn_rp_name: str = ""
+    webauthn_origin: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -145,6 +149,10 @@ class Settings:
                 defaults.audit_log_prune_interval_hours,
             ),
             audit_log_model_events=os.getenv("AUDIT_LOG_MODEL_EVENTS", defaults.audit_log_model_events),
+            mfa_issuer_name=os.getenv("MFA_ISSUER_NAME", defaults.mfa_issuer_name),
+            webauthn_rp_id=os.getenv("WEBAUTHN_RP_ID", defaults.webauthn_rp_id),
+            webauthn_rp_name=os.getenv("WEBAUTHN_RP_NAME", defaults.webauthn_rp_name),
+            webauthn_origin=os.getenv("WEBAUTHN_ORIGIN", defaults.webauthn_origin),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -204,6 +212,10 @@ class Settings:
             "AUDIT_LOG_RETENTION_DAYS": self.audit_log_retention_days,
             "AUDIT_LOG_PRUNE_INTERVAL_HOURS": self.audit_log_prune_interval_hours,
             "AUDIT_LOG_MODEL_EVENTS": self.audit_log_model_events,
+            "MFA_ISSUER_NAME": self.mfa_issuer_name,
+            "WEBAUTHN_RP_ID": self.webauthn_rp_id or None,
+            "WEBAUTHN_RP_NAME": self.webauthn_rp_name or None,
+            "WEBAUTHN_ORIGIN": self.webauthn_origin or None,
         }
 
     def saml_allowed_groups(self) -> List[str]:

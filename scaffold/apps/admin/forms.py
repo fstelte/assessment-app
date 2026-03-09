@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import HiddenField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional, Regexp
+from wtforms import HiddenField, IntegerField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp
 
 from scaffold.core.i18n import lazy_gettext as _l
 
@@ -99,3 +99,36 @@ class BiaTierForm(FlaskForm):
     """Update a BIA tier's name."""
 
     submit = SubmitField(_label("actions.save"))
+
+
+class InformationLabelForm(FlaskForm):
+    """Create or update a sensitivity / information classification label."""
+
+    label_en = StringField(
+        _label("admin.information_labels.form.label_en"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    label_nl = StringField(
+        _label("admin.information_labels.form.label_nl"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    severity = IntegerField(
+        _label("admin.information_labels.form.severity"),
+        validators=[NumberRange(min=0)],
+        default=0,
+    )
+    submit = SubmitField(_label("admin.information_labels.form.submit"))
+
+
+class InformationLabelToggleForm(FlaskForm):
+    """Toggle the active state of an information label."""
+
+    label_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Toggle")
+
+
+class InformationLabelDeleteForm(FlaskForm):
+    """Remove an information label."""
+
+    label_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Delete")

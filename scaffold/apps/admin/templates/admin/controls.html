@@ -1,35 +1,42 @@
 {% extends "base.html" %}
 {% import "macros.html" as macros %}
 
-{% block title %}{{ _('admin.controls.title') }}{% endblock %}
+{% block title %}{{ _('admin.controls.page.title') }}{% endblock %}
 
 {% block content %}
 <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
   <div>
-    <h1 class="text-2xl font-bold mb-1">{{ _('admin.controls.heading') }}</h1>
-    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.controls.subtitle') }}</p>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.controls.page.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.controls.page.subtitle') }}</p>
   </div>
   <div class="flex flex-wrap gap-2">
-      <a href="{{ url_for('admin.bia_tiers_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+      <a href="{{ url_for('admin.list_bia_tiers') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
          {{ _('admin.controls.manage_availability_tiers') }}
+      </a>
+      <a href="{{ url_for('admin.list_information_labels') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+         {{ _('admin.information_labels.title') }}
       </a>
       {% if not has_controls %}
          <div class="flex gap-2">
-             <form method="post" action="{{ url_for('admin.import_default_controls', standard='iso27002') }}">
+             <form method="post" action="{{ url_for('admin.controls') }}">
                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <input type="hidden" name="action" value="import_builtin">
+                 <input type="hidden" name="dataset" value="iso">
                  <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
                      {{ _('admin.controls.import_iso') }}
                  </button>
              </form>
-             <form method="post" action="{{ url_for('admin.import_default_controls', standard='nist80053') }}">
+             <form method="post" action="{{ url_for('admin.controls') }}">
                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <input type="hidden" name="action" value="import_builtin">
+                 <input type="hidden" name="dataset" value="nist80053">
                  <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
                      {{ _('admin.controls.import_nist') }}
                  </button>
              </form>
          </div>
       {% endif %}
-      <a href="{{ url_for('admin.new_control') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
+      <a href="{{ url_for('admin.create_control') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
          {{ _('admin.controls.new_control') }}
       </a>
   </div>
@@ -42,7 +49,7 @@
             <input type="text" name="identifier" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('identifier', '') }}" placeholder="e.g. AC-1">
         </div>
         <div class="w-full lg:w-1/3">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.controls.filter.keyword') }}</label>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.controls.filter.keyword.label') }}</label>
             <input type="text" name="keyword" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('keyword', '') }}" placeholder="{{ _('admin.controls.filter.keyword.placeholder') }}">
         </div>
         <div class="w-full lg:w-auto">
@@ -64,20 +71,20 @@
   <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
     <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
       <tr>
-        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.controls.table.id') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold w-1/4">{{ _('admin.controls.table.name') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.controls.table.description') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold w-24 text-right">{{ _('admin.controls.table.actions') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.controls.list.code') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-1/4">{{ _('admin.controls.list.name') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.controls.list.description') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24 text-right">{{ _('admin.controls.list.actions') }}</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-[var(--color-border)]">
       {% for control in pagination.items %}
       <tr class="hover:bg-slate-500/5 transition-colors">
         <td class="px-4 py-3 align-top font-mono text-primary-400 font-medium">
-            {{ control.identifier }}
+            {{ control.section }}
         </td>
         <td class="px-4 py-3 align-top font-medium">
-            {{ control.title }}
+            {{ control.domain }}
         </td>
         <td class="px-4 py-3 align-top text-[var(--color-muted)]">
             <div class="line-clamp-2" title="{{ control.description }}">
@@ -86,14 +93,14 @@
         </td>
         <td class="px-4 py-3 align-top text-right">
             <a href="{{ url_for('admin.edit_control', control_id=control.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
-                {{ _('admin.controls.edit') }}
+                {{ _('admin.controls.edit.button') }}
             </a>
         </td>
       </tr>
       {% else %}
       <tr>
           <td colspan="4" class="px-4 py-8 text-center text-[var(--color-muted)]">
-              {{ _('admin.controls.no_controls') }}
+              {{ _('admin.controls.list.empty') }}
           </td>
       </tr>
       {% endfor %}
