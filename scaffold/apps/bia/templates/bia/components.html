@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_help %}
+{% from "bia/_it_dep_picker.html" import render_it_dep_picker with context %}
 
 {% block title %}{{ _('bia.components.heading') }}{% endblock %}
 
@@ -105,7 +106,7 @@
         {{ _('bia.components.add_title') }}
       </div>
       <div class="p-6">
-        <form action="{{ url_for('bia.add_component') }}" method="POST">
+        <form id="add-component-form" action="{{ url_for('bia.add_component') }}" method="POST">
           {{ component_form.hidden_tag() }}
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -148,6 +149,39 @@
              <!-- Owner -->
             <div>
                {{ render_field_with_help(component_form.info_owner, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+
+            <!-- Dependencies (IT Systems / Applications) -->
+            <div>
+              {{ render_it_dep_picker(component_form.dependencies_it_systems_applications, all_components, 'add-it-dep') }}
+            </div>
+            <div>
+              {{ render_field_with_help(component_form.dependencies_equipment, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            </div>
+            <div>
+              {{ render_field_with_help(component_form.dependencies_suppliers, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            </div>
+            <div>
+              {{ render_field_with_help(component_form.dependencies_people, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            </div>
+            <div>
+              {{ render_field_with_help(component_form.dependencies_facilities, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            </div>
+            <div>
+              {{ render_field_with_help(component_form.dependencies_others, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            </div>
+          </div>
+
+          <!-- AI Identification -->
+          <div class="mb-6">
+            <h4 class="text-base font-semibold text-[var(--color-text)] mb-3">{{ _('bia.components.modal.title') }}</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                {{ render_field_with_help(component_form.ai_category, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+              </div>
+              <div>
+                {{ render_field_with_help(component_form.ai_motivatie, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3, placeholder=_("bia.components.modal.placeholder")) }}
+              </div>
             </div>
           </div>
 

@@ -1,0 +1,198 @@
+{#
+  IT Dependency Picker macro.
+
+  Renders a dynamic multi-row selector for IT system / application dependencies.
+  Each row lets the user either pick an existing component from a dropdown
+  or type a free-form custom name.  Custom entries are NOT saved as components.
+
+  Usage:
+    {% from "bia/_it_dep_picker.html" import render_it_dep_picker with context %}
+    {{ render_it_dep_picker(field, all_components, picker_id='my-picker') }}
+
+  Parameters:
+    field           – WTForms TextAreaField (dependencies_it_systems_applications)
+    all_components  – list of Component models available for selection
+    picker_id       – unique CSS-id prefix (default: 'it-deps')
+
+  Requires `csp_nonce` to be available in the template context.
+#}
+{% macro render_it_dep_picker(field, all_components, picker_id='it-deps') %}
+<div class="it-dep-picker-widget">
+  {# --- Label + optional tooltip ------------------------------------------ #}
+  <div class="flex items-center gap-1.5 mb-1.5">
+    <label for="{{ picker_id }}-value" class="block text-sm font-medium text-[var(--color-text)]">
+      {{ field.label.text }}
+    </label>
+    {% if field.description %}
+    <span class="text-[var(--color-muted)] text-xs"
+          title="{{ field.description }}"
+          tabindex="0"
+          aria-label="{{ field.description }}">
+      <i class="fas fa-question-circle"></i>
+    </span>
+    {% endif %}
+  </div>
+
+  {# --- Actual WTForms textarea – hidden, written by JS before submit ------- #}
+  {{ field(id=picker_id ~ '-value', class='sr-only') }}
+
+  {# --- Dynamic rows – built by JS on init ---------------------------------- #}
+  <div id="{{ picker_id }}-rows" class="space-y-2 mb-2"></div>
+
+  <button type="button"
+          id="{{ picker_id }}-add-btn"
+          class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
+    <i class="fas fa-plus text-xs"></i>
+    Add another
+  </button>
+</div>
+
+{# --- JSON data island: component options (no CSP nonce needed) ----------- #}
+<script type="application/json" id="{{ picker_id }}-options">[
+{%- for comp in all_components -%}
+{%- if not loop.first %},{% endif %}
+{"v":{{ comp.name | tojson }},"l":{{ (comp.name ~ (' (' ~ comp.context_scope.name ~ ')' if comp.context_scope else '')) | tojson }}}
+{%- endfor %}
+]</script>
+
+{# --- Picker initialisation script ---------------------------------------- #}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var pid      = {{ picker_id | tojson }};
+  var hiddenEl = document.getElementById(pid + '-value');
+  var rowsEl   = document.getElementById(pid + '-rows');
+  var addBtn   = document.getElementById(pid + '-add-btn');
+  if (!hiddenEl || !rowsEl || !addBtn) { return; }
+
+  /* Parse component options from the data island */
+  var opts = [];
+  try {
+    var dataEl = document.getElementById(pid + '-options');
+    opts = JSON.parse(dataEl ? (dataEl.textContent || '[]') : '[]');
+  } catch (e) { /* no-op */ }
+
+  /* Safely escape a value for use in an HTML attribute */
+  function escAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Build and append one picker row                                      */
+  /* ------------------------------------------------------------------ */
+  function buildRow(val) {
+    /* Is this value not in the existing-component list? → custom entry */
+    var isCustom = Boolean(val) && !opts.some(function (o) { return o.v === val; });
+
+    var row   = document.createElement('div');
+    row.className = 'it-dep-row flex gap-2 items-start';
+
+    var inner = document.createElement('div');
+    inner.className = 'flex-1 space-y-1.5';
+
+    /* --- select dropdown ------------------------------------------- */
+    var sel = document.createElement('select');
+    sel.className = 'it-dep-select w-full bg-[var(--color-surface)] border border-[var(--color-border)] '
+      + 'rounded-lg px-3.5 py-2.5 text-[var(--color-text)] text-sm transition '
+      + 'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30';
+
+    var optHtml  = '<option value="">\u2014 Select component \u2014</option>';
+    optHtml += '<option value="__custom__"' + (isCustom ? ' selected' : '') + '>'
+             + '\u2014 Enter manually \u2014</option>';
+    opts.forEach(function (o) {
+      var selected = (!isCustom && o.v === val) ? ' selected' : '';
+      optHtml += '<option value="' + escAttr(o.v) + '"' + selected + '>'
+               + escAttr(o.l) + '</option>';
+    });
+    sel.innerHTML = optHtml;
+
+    /* --- manual-entry text input ----------------------------------- */
+    var customIn = document.createElement('input');
+    customIn.type        = 'text';
+    customIn.className   = 'it-dep-custom w-full bg-[var(--color-surface)] border border-[var(--color-border)] '
+      + 'rounded-lg px-3.5 py-2.5 text-[var(--color-text)] text-sm transition '
+      + 'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30';
+    customIn.placeholder = 'Enter system / application name\u2026';
+    customIn.style.display = isCustom ? '' : 'none';
+    if (isCustom) { customIn.value = val; }
+
+    sel.addEventListener('change', function () {
+      if (sel.value === '__custom__') {
+        customIn.style.display = '';
+        customIn.focus();
+      } else {
+        customIn.style.display = 'none';
+        customIn.value = '';
+      }
+    });
+
+    /* --- remove button --------------------------------------------- */
+    var removeBtn = document.createElement('button');
+    removeBtn.type      = 'button';
+    removeBtn.className = 'it-dep-remove mt-2.5 flex-shrink-0 text-[var(--color-muted)] '
+      + 'hover:text-red-500 transition-colors';
+    removeBtn.setAttribute('aria-label', 'Remove entry');
+    removeBtn.innerHTML = '<i class="fas fa-times-circle"></i>';
+    removeBtn.addEventListener('click', function () {
+      row.remove();
+      syncRemoveBtns();
+    });
+
+    inner.appendChild(sel);
+    inner.appendChild(customIn);
+    row.appendChild(inner);
+    row.appendChild(removeBtn);
+    rowsEl.appendChild(row);
+    syncRemoveBtns();
+  }
+
+  /* Show/hide remove buttons – only visible when more than one row */
+  function syncRemoveBtns() {
+    var rows = rowsEl.querySelectorAll('.it-dep-row');
+    rows.forEach(function (r) {
+      var btn = r.querySelector('.it-dep-remove');
+      if (btn) { btn.style.display = rows.length > 1 ? '' : 'none'; }
+    });
+  }
+
+  /* Collect all row values into the hidden textarea before submit */
+  function collect() {
+    var vals = [];
+    rowsEl.querySelectorAll('.it-dep-row').forEach(function (r) {
+      var s = r.querySelector('.it-dep-select');
+      var c = r.querySelector('.it-dep-custom');
+      var v = (s && s.value === '__custom__')
+        ? (c ? c.value.trim() : '')
+        : (s ? s.value.trim() : '');
+      if (v) { vals.push(v); }
+    });
+    hiddenEl.value = vals.join('\n');
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Initialise rows from the existing field value                        */
+  /* ------------------------------------------------------------------ */
+  var existing = (hiddenEl.value || '').trim();
+  var entries  = existing
+    ? existing.split('\n').map(function (s) { return s.trim(); }).filter(Boolean)
+    : [];
+  (entries.length ? entries : ['']).forEach(buildRow);
+
+  addBtn.addEventListener('click', function () { buildRow(''); });
+
+  /* Hook into native form submit (works for full-page POST forms) */
+  var form = hiddenEl.closest('form');
+  if (form) {
+    form.addEventListener('submit', collect, { capture: true });
+  }
+
+  /* Expose collect() globally so AJAX-based callers can invoke it before
+     building FormData.  Key format: __itDepCollect_<picker_id with - → _> */
+  var safeId = pid.replace(/-/g, '_');
+  window['__itDepCollect_' + safeId] = collect;
+}());
+</script>
+{% endmacro %}

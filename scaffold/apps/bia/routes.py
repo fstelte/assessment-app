@@ -364,12 +364,21 @@ def new_item():
         db.session.commit()
         flash(_("bia.flash.created"), "success")
         return redirect(url_for("bia.view_item", item_id=context.id))
+    all_components = (
+        Component.query
+        .options(joinedload(Component.context_scope))
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
+        .order_by(Component.name.asc())
+        .all()
+    )
     return render_template(
         "bia/context_form.html",
         form=form,
         component_form=component_form,
         item=None,
         can_assign_owner=can_assign_owner,
+        all_components=all_components,
     )
 
 
@@ -426,12 +435,21 @@ def edit_item(item_id: int):
         flash(_("bia.flash.updated"), "success")
         return redirect(url_for("bia.view_item", item_id=item.id))
 
+    all_components = (
+        Component.query
+        .options(joinedload(Component.context_scope))
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
+        .order_by(Component.name.asc())
+        .all()
+    )
     return render_template(
         "bia/context_form.html",
         form=form,
         component_form=component_form,
         item=item,
         can_assign_owner=can_assign_owner,
+        all_components=all_components,
     )
 
 
@@ -716,11 +734,20 @@ def edit_component_form(component_id: int):
             flash(_("bia.flash.updated"), "success")
             return redirect(url_for("bia.view_components", scope=context.name))
 
+    all_components = (
+        Component.query
+        .options(joinedload(Component.context_scope))
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False, Component.id != component.id)
+        .order_by(Component.name.asc())
+        .all()
+    )
     return render_template(
         "bia/edit_component.html",
         form=form,
         component=component,
         contexts=contexts,
+        all_components=all_components,
     )
 
 
@@ -770,6 +797,14 @@ def view_components():
     contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()
     _configure_component_form(component_form)
+    all_components = (
+        Component.query
+        .options(joinedload(Component.context_scope))
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
+        .order_by(Component.name.asc())
+        .all()
+    )
     view_functions = current_app.view_functions
     dpia_enabled = "dpia.start_from_component" in view_functions and "dpia.dashboard" in view_functions
     if pagination.total:
@@ -795,6 +830,111 @@ def view_components():
         dpia_enabled=dpia_enabled,
         search_term=search_term,
         current_view_url=current_view_url,
+        selected_bia_id=selected_bia_id,
+        all_components=all_components,
+    )
+
+
+@bp.route("/consequences")
+@login_required
+def view_all_consequences():
+    search_term = request.args.get("q", "").strip()
+    selected_bia_id = request.args.get("bia_id", type=int)
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        page = 1
+    per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
+
+    query = (
+        Consequences.query.options(
+            joinedload(Consequences.component).joinedload(Component.context_scope)
+        )
+        .join(Component, Consequences.component_id == Component.id)
+        .join(ContextScope, Component.context_scope_id == ContextScope.id)
+        .filter(ContextScope.is_archived == False)
+    )
+    if selected_bia_id:
+        query = query.filter(ContextScope.id == selected_bia_id)
+    if search_term:
+        query = query.filter(Component.name.ilike(f"%{search_term}%"))
+
+    pagination = query.order_by(Component.name.asc(), Consequences.id.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    if pagination.total and page > pagination.pages:
+        return redirect(
+            url_for("bia.view_all_consequences", page=pagination.pages, q=search_term, bia_id=selected_bia_id)
+        )
+
+    contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
+
+    if pagination.total:
+        page_start = (pagination.page - 1) * pagination.per_page + 1
+        page_end = min(pagination.total, pagination.page * pagination.per_page)
+    else:
+        page_start = 0
+        page_end = 0
+
+    return render_template(
+        "bia/all_consequences.html",
+        consequences=pagination.items,
+        pagination=pagination,
+        page_start=page_start,
+        page_end=page_end,
+        contexts=contexts,
+        search_term=search_term,
+        selected_bia_id=selected_bia_id,
+    )
+
+
+@bp.route("/requirements")
+@login_required
+def view_requirements():
+    search_term = request.args.get("q", "").strip()
+    selected_bia_id = request.args.get("bia_id", type=int)
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        page = 1
+    per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
+
+    query = (
+        AvailabilityRequirements.query.options(
+            joinedload(AvailabilityRequirements.component).joinedload(Component.context_scope)
+        )
+        .join(Component, AvailabilityRequirements.component_id == Component.id)
+        .join(ContextScope, Component.context_scope_id == ContextScope.id)
+        .filter(ContextScope.is_archived == False)
+    )
+    if selected_bia_id:
+        query = query.filter(ContextScope.id == selected_bia_id)
+    if search_term:
+        query = query.filter(Component.name.ilike(f"%{search_term}%"))
+
+    pagination = query.order_by(Component.name.asc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    if pagination.total and page > pagination.pages:
+        return redirect(
+            url_for("bia.view_requirements", page=pagination.pages, q=search_term, bia_id=selected_bia_id)
+        )
+
+    contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
+
+    if pagination.total:
+        page_start = (pagination.page - 1) * pagination.per_page + 1
+        page_end = min(pagination.total, pagination.page * pagination.per_page)
+    else:
+        page_start = 0
+        page_end = 0
+
+    return render_template(
+        "bia/requirements.html",
+        availability_requirements=pagination.items,
+        pagination=pagination,
+        page_start=page_start,
+        page_end=page_end,
+        contexts=contexts,
+        search_term=search_term,
         selected_bia_id=selected_bia_id,
     )
 
@@ -983,6 +1123,20 @@ def delete_consequence(consequence_id: int):
     db.session.delete(consequence)
     db.session.commit()
     return jsonify({"success": True, "message": "Consequence deleted."})
+
+
+@bp.route("/delete_availability_requirement/<int:requirement_id>", methods=["POST"])
+@login_required
+def delete_availability_requirement(requirement_id: int):
+    requirement = AvailabilityRequirements.query.get_or_404(requirement_id)
+    if not _can_edit_context(requirement.component.context_scope):
+        return (
+            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
+            403,
+        )
+    db.session.delete(requirement)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Availability requirement deleted."})
 
 
 @bp.route("/consequences/<int:component_id>")

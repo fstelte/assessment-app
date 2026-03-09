@@ -22,6 +22,7 @@
   if (addForm) {
     addForm.addEventListener('submit', function (event) {
       event.preventDefault();
+      if (window.__itDepCollect_add_it_dep) { window.__itDepCollect_add_it_dep(); }
       const formData = new FormData(addForm);
       fetch(addForm.action, {
         method: 'POST',
