@@ -274,7 +274,7 @@
                   {% for component in item.components %}
                   <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ component.name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.info_type or 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.info_label.get_label() if component.info_label else (component.info_type or 'N/A') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {% set auth_label = bia_component_authentication(component) %}
                       {% if auth_label %}

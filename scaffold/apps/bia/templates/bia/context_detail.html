@@ -166,10 +166,19 @@
           {% if item.tier %}
           <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-white/20 text-white/90">{{ item.tier.get_label() }}</span>
           {% endif %}
+          {% set _ns = namespace(top_label=none, top_severity=-1) %}
+          {% for comp in item.components %}
+            {% if comp.info_label and comp.info_label.severity > _ns.top_severity %}
+              {% set _ns.top_severity = comp.info_label.severity %}
+              {% set _ns.top_label = comp.info_label %}
+            {% endif %}
+          {% endfor %}
+          {% if _ns.top_label %}
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-white/15 text-white/80 border border-white/20">{{ _ns.top_label.get_label() }}</span>
+          {% endif %}
           {% if item.is_archived %}
           <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-400/30 text-yellow-200"><i class="fas fa-lock mr-1"></i> {{ _('bia.archived.badge') }}</span>
-          {% endif %}
-        </h1>
+          {% endif %}        </h1>
         <p class="text-white/60 text-sm mb-0 flex flex-wrap items-center gap-x-4 gap-y-1">
           {% if item.responsible %}<span><i class="fas fa-user mr-1.5"></i>{{ item.responsible }}</span>{% endif %}
           {% if item.last_update %}<span><i class="fas fa-clock mr-1.5"></i>{{ item.last_update }}</span>{% endif %}
@@ -250,6 +259,20 @@
         <div></div>
         {% endif %}
       </div>
+      {% set _il_ns = namespace(top_label=none, top_severity=-1) %}
+      {% for comp in item.components %}
+        {% if comp.info_label and comp.info_label.severity > _il_ns.top_severity %}
+          {% set _il_ns.top_severity = comp.info_label.severity %}
+          {% set _il_ns.top_label = comp.info_label %}
+        {% endif %}
+      {% endfor %}
+      {% if _il_ns.top_label %}
+      <div class="bia-hero-metric">
+        <p class="text-white/50 uppercase text-xs tracking-wider mb-1">{{ _('bia.components.labels.information_type') }}</p>
+        <strong class="text-lg">{{ _il_ns.top_label.get_label() }}</strong>
+        <small>highest sensitivity</small>
+      </div>
+      {% endif %}
       <div class="grid grid-cols-3 gap-3">
         {% for property in ['confidentiality', 'integrity', 'availability'] %}
         {% set value = max_cia_impact.get(property) %}
@@ -314,6 +337,7 @@
             <thead class="bg-[var(--color-surface)]">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Name</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.components.labels.information_type') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Owner</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Users</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Consequences</th>
@@ -325,6 +349,13 @@
               {% for component in item.components %}
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
+                <td class="px-4 py-3">
+                  {% if component.info_label %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ component.info_label.get_label() }}</span>
+                  {% else %}
+                    <span class="text-[var(--color-muted)] text-xs">—</span>
+                  {% endif %}
+                </td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.info_owner or 'Not set' }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.user_type or 'Not set' }}</td>
                 <td class="px-4 py-3">

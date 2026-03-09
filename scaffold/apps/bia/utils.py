@@ -299,7 +299,7 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
         components_writer.writerow(
             [
                 stringify(component.name),
-                stringify(component.info_type),
+                stringify(component.info_label.get_label() if component.info_label else component.info_type),
                 stringify(component.info_owner),
                 stringify(component.user_type),
                 stringify(component.dependencies_it_systems_applications),
@@ -722,7 +722,7 @@ def export_to_sql(context: ContextScope) -> str:
                 {
                     "id": component.id,
                     "name": component.name,
-                    "info_type": component.info_type,
+                    "info_type": component.info_label.get_label() if component.info_label else (component.info_type or ""),
                     "info_owner": component.info_owner,
                     "user_type": component.user_type,
                     "dependencies_it_systems_applications": component.dependencies_it_systems_applications,

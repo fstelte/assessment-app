@@ -9,7 +9,7 @@ from wtforms.form import Form
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, NumberRange, ValidationError
 import sqlalchemy as sa
 from ...extensions import db
-from .models import BiaTier
+from .models import BiaTier, InformationLabel, InformationLabel
 from scaffold.core.i18n import lazy_gettext as _l, get_locale
 
 
@@ -194,9 +194,10 @@ class ComponentForm(FlaskForm):
         validators=[DataRequired(), Length(max=255)],
         description=_l("bia.components.tooltips.name"),
     )
-    info_type = StringField(
+    info_type = SelectField(
         _l("bia.components.labels.information_type"),
-        validators=[Optional(), Length(max=255)],
+        validators=[Optional()],
+        coerce=_optional_int,
         description=_l("bia.components.tooltips.info_type"),
     )
     info_owner = StringField(
@@ -260,6 +261,16 @@ class ComponentForm(FlaskForm):
         validators=[Optional()],
     )
     submit = SubmitField("Save component")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        locale = get_locale()
+        labels = db.session.scalars(
+            sa.select(InformationLabel)
+            .where(InformationLabel.is_active == True)
+            .order_by(InformationLabel.id)
+        ).all()
+        self.info_type.choices = [(None, "-")] + [(lbl.id, lbl.get_label(locale)) for lbl in labels]
 
 
 class ConsequenceForm(FlaskForm):

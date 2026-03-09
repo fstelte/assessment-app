@@ -329,3 +329,128 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var getComponentUrl = '{{ url_for("bia.get_component", component_id=0) }}'.replace('/0', '/');
+  var deleteComponentUrl = '{{ url_for("bia.delete_component", component_id=0) }}'.replace('/0', '/');
+  var editComponentUrl = '{{ url_for("bia.edit_component_form", component_id=0) }}'.replace('/0', '/');
+  var viewConsequencesUrl = '{{ url_for("bia.view_consequences", component_id=0) }}'.replace('/0', '/');
+  var csrfToken = '{{ csrf_token() }}';
+
+  function openModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('opacity-0', 'invisible');
+    void modal.offsetWidth;
+    var dialog = modal.querySelector('.modal-dialog');
+    if (dialog) {
+      dialog.classList.remove('opacity-0', 'scale-95');
+      dialog.classList.add('opacity-100', 'scale-100');
+    }
+  }
+
+  function closeModal(modal) {
+    var dialog = modal.querySelector('.modal-dialog');
+    if (dialog) {
+      dialog.classList.add('opacity-0', 'scale-95');
+      dialog.classList.remove('opacity-100', 'scale-100');
+    }
+    setTimeout(function () {
+      modal.classList.add('opacity-0', 'invisible');
+    }, 150);
+  }
+
+  // Close on backdrop or [data-modal-close] click
+  document.addEventListener('click', function (e) {
+    var closeBtn = e.target.closest('[data-modal-close]');
+    if (closeBtn) {
+      var modal = closeBtn.closest('.modal');
+      if (modal) closeModal(modal);
+      return;
+    }
+    // Click directly on modal backdrop (not dialog content)
+    if (e.target.classList.contains('modal')) {
+      closeModal(e.target);
+      return;
+    }
+
+    // View button on component card
+    var viewBtn = e.target.closest('.bia-view-component');
+    if (viewBtn) {
+      var componentId = viewBtn.getAttribute('data-component-id');
+      fetch(getComponentUrl + componentId)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          document.getElementById('bia-view-component-name').textContent = data.name || '-';
+          document.getElementById('bia-view-component-info-type').textContent = data.info_type || '-';
+          document.getElementById('bia-view-component-info-owner').textContent = data.info_owner || '-';
+          document.getElementById('bia-view-component-user-type').textContent = data.user_type || '-';
+          document.getElementById('bia-view-component-environments').textContent =
+            (data.environments && data.environments.length)
+              ? data.environments.map(function (e) { return e.name || e; }).join(', ')
+              : '-';
+          document.getElementById('bia-view-component-dependencies-it-systems-applications').textContent = data.dependencies_it_systems_applications || '-';
+          document.getElementById('bia-view-component-dependencies-equipment').textContent = data.dependencies_equipment || '-';
+          document.getElementById('bia-view-component-dependencies-suppliers').textContent = data.dependencies_suppliers || '-';
+          document.getElementById('bia-view-component-dependencies-people').textContent = data.dependencies_people || '-';
+          document.getElementById('bia-view-component-dependencies-facilities').textContent = data.dependencies_facilities || '-';
+          document.getElementById('bia-view-component-dependencies-others').textContent = data.dependencies_others || '-';
+          document.getElementById('bia-view-component-description').textContent = data.description || '-';
+          document.getElementById('bia-view-component-consequences').textContent = data.consequences_count || 0;
+          var editLink = document.getElementById('bia-edit-component-launch');
+          if (editLink) editLink.href = editComponentUrl + componentId + '/edit';
+          var consLink = document.getElementById('bia-view-consequences-link');
+          if (consLink) consLink.href = viewConsequencesUrl + componentId;
+          var delBtn = document.getElementById('bia-delete-component-launch');
+          if (delBtn) delBtn.setAttribute('data-component-id', componentId);
+          openModal('biaViewComponentModal');
+        });
+      return;
+    }
+
+    // Delete button on component card
+    var deleteCardBtn = e.target.closest('.bia-delete-component');
+    if (deleteCardBtn) {
+      doDeleteComponent(deleteCardBtn.getAttribute('data-component-id'));
+      return;
+    }
+
+    // Delete button inside view modal
+    var modalDelBtn = e.target.closest('#bia-delete-component-launch');
+    if (modalDelBtn) {
+      doDeleteComponent(modalDelBtn.getAttribute('data-component-id'));
+      return;
+    }
+  });
+
+  function removeComponentCard(componentId) {
+    var card = document.querySelector('#bia-component-list [data-component-id="' + componentId + '"]');
+    if (card) card.remove();
+    if (!document.querySelector('#bia-component-list [data-component-id]')) {
+      var list = document.getElementById('bia-component-list');
+      if (list) {
+        list.innerHTML = '<div class="col-span-full"><div class="rounded-lg p-4 text-sm border border-dashed border-[var(--color-border)] bg-[var(--color-surface-hover)] text-[var(--color-muted)] text-center">{{ _('bia.context_form.components.empty') }}</div></div>';
+      }
+    }
+  }
+
+  function doDeleteComponent(componentId) {
+    if (!confirm('{{ _('bia.actions.confirm_delete') }}')) return;
+    fetch(deleteComponentUrl + componentId, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        removeComponentCard(componentId);
+        var modal = document.getElementById('biaViewComponentModal');
+        if (modal && !modal.classList.contains('invisible')) closeModal(modal);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

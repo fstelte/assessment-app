@@ -119,7 +119,7 @@
                   <td class="px-4 py-3">
                     <div class="flex flex-col gap-1">
                       <div class="font-semibold text-[var(--color-text)]">{{ row.component.name }}</div>
-                      <div class="text-[var(--color-muted)] text-xs">{{ row.component.info_type or 'Details pending' }}</div>
+                      <div class="text-[var(--color-muted)] text-xs">{{ row.component.info_label.get_label() if row.component.info_label else (row.component.info_type or 'Details pending') }}</div>
                       <div>
                         <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)] mt-1">
                           <i class="fas fa-pencil-alt mr-1"></i> {{ _('bia.actions.edit') }}

@@ -581,7 +581,7 @@ def add_component():
             )
         component = Component(
             name=form.name.data,
-            info_type=form.info_type.data,
+            info_label_id=form.info_type.data,
             info_owner=form.info_owner.data,
             user_type=form.user_type.data,
             dependencies_it_systems_applications=form.dependencies_it_systems_applications.data,
@@ -624,7 +624,7 @@ def update_component(component_id: int):
     _configure_component_form(form, component=component)
     if form.validate_on_submit():
         component.name = form.name.data
-        component.info_type = form.info_type.data
+        component.info_label_id = form.info_type.data
         component.info_owner = form.info_owner.data
         component.user_type = form.user_type.data
         component.dependencies_it_systems_applications = form.dependencies_it_systems_applications.data
@@ -678,6 +678,7 @@ def edit_component_form(component_id: int):
         if existing_ai:
             form.ai_category.data = existing_ai.category
             form.ai_motivatie.data = existing_ai.motivatie
+        form.info_type.data = component.info_label_id
 
     if form.validate_on_submit():
         context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
@@ -690,7 +691,7 @@ def edit_component_form(component_id: int):
         else:
             component.context_scope = context
             component.name = form.name.data
-            component.info_type = form.info_type.data
+            component.info_label_id = form.info_type.data
             component.info_owner = form.info_owner.data
             component.user_type = form.user_type.data
             component.dependencies_it_systems_applications = form.dependencies_it_systems_applications.data
@@ -873,7 +874,7 @@ def get_component(component_id: int):
         {
             "id": component.id,
             "name": component.name,
-            "info_type": component.info_type,
+            "info_type": component.info_label.get_label() if component.info_label else (component.info_type or ""),
             "info_owner": component.info_owner,
             "user_type": component.user_type,
             "description": component.description,
@@ -1491,7 +1492,7 @@ def export_data_inventory():
             [
                 component.context_scope.name if component.context_scope else "",
                 component.name,
-                component.info_type or "N/A",
+                component.info_label.get_label() if component.info_label else (component.info_type or "N/A"),
                 component.info_owner or "N/A",
                 authentication_label,
                 component.context_scope.technical_administrator if component.context_scope else "N/A",

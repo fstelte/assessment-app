@@ -1087,6 +1087,64 @@
     }
   },
   "admin": {
+    "information_labels": {
+      "title": "Sensitivity Labels",
+      "heading": "Sensitivity Labels",
+      "subtitle": "Manage the information classification labels available for BIA components.",
+      "back_to_admin": "Back to admin",
+      "create": {
+        "title": "Add a new label",
+        "submit": "Add label"
+      },
+      "list": {
+        "title": "Configured labels",
+        "columns": {
+          "label_en": "English label",
+          "label_nl": "Dutch label",
+          "severity": "Severity",
+          "status": "Status",
+          "usage": "Usage",
+          "actions": "Actions"
+        },
+        "in_use": "In use ({count})",
+        "not_in_use": "Not in use",
+        "actions": {
+          "delete_confirm": "Delete this sensitivity label?"
+        },
+        "empty": "No sensitivity labels configured yet."
+      },
+      "state": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "form": {
+        "label_en": "English label",
+        "label_nl": "Dutch label",
+        "severity": "Severity",
+        "severity_hint": "Higher numbers appear as more sensitive (e.g. Public = 1, Restricted = 4).",
+        "submit": "Add label",
+        "update_submit": "Save changes",
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "activate": "Activate",
+        "delete": "Delete"
+      },
+      "edit": {
+        "title": "Edit {name}"
+      },
+      "errors": {
+        "slug_exists": "A label with this name already exists.",
+        "toggle_failed": "Unable to update the label state.",
+        "delete_failed": "Unable to delete the label."
+      },
+      "flash": {
+        "created": "Label '{name}' created.",
+        "updated": "Label '{name}' updated.",
+        "toggled": "Label '{name}' is now {state}.",
+        "deactivated_instead_of_deleted": "Label '{name}' is still used by {count} components and was deactivated instead of deleted.",
+        "deleted": "Label '{name}' deleted."
+      }
+    },
     "bia_tiers": {
       "list": {
         "title": "BIA Tier Management",
@@ -1184,6 +1242,7 @@
       "link_bia_dashboard": "BIA dashboard",
       "link_authentication_methods": "Authentication methods",
       "link_risk_management": "Risk management",
+      "link_sensitivity_labels": "Sensitivity labels",
       "link_audit_trail": "Audit trail",
       "button": {
         "import_controls": "Import controls"

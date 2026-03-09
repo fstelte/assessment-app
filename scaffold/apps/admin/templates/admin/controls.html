@@ -13,6 +13,9 @@
       <a href="{{ url_for('admin.bia_tiers_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
          {{ _('admin.controls.manage_availability_tiers') }}
       </a>
+      <a href="{{ url_for('admin.list_information_labels') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+         {{ _('admin.information_labels.title') }}
+      </a>
       {% if not has_controls %}
          <div class="flex gap-2">
              <form method="post" action="{{ url_for('admin.import_default_controls', standard='iso27002') }}">
