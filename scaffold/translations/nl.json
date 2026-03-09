@@ -1340,6 +1340,19 @@
       }
     },
     "controls": {
+      "manage_availability_tiers": "Beschikbaarheidsniveaus beheren",
+      "import_iso": "ISO 27002 importeren",
+      "import_nist": "NIST SP 800-53 importeren",
+      "new_control": "Nieuwe control",
+      "filter": {
+        "identifier": "Identiteitscode",
+        "keyword": {
+          "label": "Trefwoord",
+          "placeholder": "Zoek op naam of omschrijving\u2026"
+        },
+        "search": "Zoeken",
+        "clear": "Filters wissen"
+      },
       "page": {
         "title": "Beheer van controls",
         "heading": "Beheer van de controlcatalogus",
@@ -1378,7 +1391,8 @@
       "edit": {
         "title": "Control bewerken",
         "heading": "Control bewerken",
-        "subtitle": "Werk de metadata bij voor {name}."
+        "subtitle": "Werk de metadata bij voor {name}.",
+        "button": "Bewerken"
       },
       "list": {
         "title": "Controlcatalogus",

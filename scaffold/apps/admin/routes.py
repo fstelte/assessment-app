@@ -35,7 +35,7 @@ from ..csa.services import (
     upsert_control,
 )
 from ...models import AuditLog
-from ..identity.models import MFASetting, Role, User, UserStatus, ROLE_CONTROL_OWNER
+from ..identity.models import MFASetting, PasskeyCredential, Role, User, UserStatus, ROLE_CONTROL_OWNER
 from ..bia.localization import translate_authentication_label
 from ..bia.models import AuthenticationMethod, BiaTier, Component, InformationLabel
 from ..bia.services.authentication import clear_authentication_cache
@@ -127,15 +127,16 @@ def _method_display_name(method: AuthenticationMethod, locale: str | None = None
 def controls():
     _require_control_admin()
 
-    controls = (
+    # Stats always computed over all controls
+    all_controls = (
         Control.query.options(selectinload(Control.templates))
         .order_by(sa.func.coalesce(Control.section, ""), Control.domain.asc())
         .all()
     )
 
-    total_controls = len(controls)
-    total_templates = sum(len(control.templates) for control in controls)
-    described_controls = sum(1 for control in controls if (control.description or "").strip())
+    total_controls = len(all_controls)
+    total_templates = sum(len(c.templates) for c in all_controls)
+    described_controls = sum(1 for c in all_controls if (c.description or "").strip())
     described_pct = int(round((described_controls / total_controls) * 100)) if total_controls else 0
     control_stats = {
         "total": total_controls,
@@ -147,8 +148,25 @@ def controls():
     import_form = ControlImportForm()
     create_form = ControlCreateForm()
 
+    # Filtered + paginated query for the table
+    identifier_filter = (request.args.get("identifier") or "").strip()
+    keyword_filter = (request.args.get("keyword") or "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    query = Control.query.order_by(sa.func.coalesce(Control.section, ""), Control.domain.asc())
+    if identifier_filter:
+        query = query.filter(Control.identifier.ilike(f"%{identifier_filter}%"))
+    if keyword_filter:
+        query = query.filter(
+            sa.or_(
+                Control.title.ilike(f"%{keyword_filter}%"),
+                Control.description.ilike(f"%{keyword_filter}%"),
+            )
+        )
+    pagination = query.paginate(page=page, per_page=50, error_out=False)
+
     delete_forms: dict[int, ControlDeleteForm] = {}
-    for control in controls:
+    for control in pagination.items:
         delete_form = ControlDeleteForm(prefix=f"delete-{control.id}")
         delete_form.control_id.data = str(control.id)
         delete_forms[control.id] = delete_form
@@ -213,7 +231,8 @@ def controls():
         import_form=import_form,
         create_form=create_form,
         delete_forms=delete_forms,
-        controls=controls,
+        pagination=pagination,
+        has_controls=total_controls > 0,
         control_stats=control_stats,
     )
 
@@ -306,14 +325,17 @@ def edit_control(control_id: int):
     if control is None:
         abort(404)
 
-    form = ControlUpdateForm()
+    form = ControlUpdateForm(
+        formdata=None,
+        code=control.section or "",
+        name=control.domain,
+        description=control.description or "",
+    )
     form.control_id.data = str(control.id)
-    form.code.data = control.section or ""
-    form.name.data = control.domain
-    form.description.data = control.description or ""
 
     return render_template(
         "admin/control_edit.html",
+        title=_("admin.controls.edit.heading"),
         control=control,
         form=form,
     )
@@ -1377,7 +1399,30 @@ def user_mfa(user_id: int):
         "admin/user_mfa.html",
         target_user=user,
         provisioning=provisioning,
+        passkeys=user.passkey_credentials or [],
     )
+
+
+@bp.post("/users/<int:user_id>/mfa/passkey/<int:credential_id>/delete")
+@login_required
+@require_fresh_login()
+def admin_passkey_delete(user_id: int, credential_id: int):
+    """Allow an administrator to revoke a specific passkey for a user."""
+    _require_admin()
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    passkey = PasskeyCredential.query.filter_by(id=credential_id, user_id=user.id).first_or_404()
+    db.session.delete(passkey)
+    log_event(
+        action="admin_passkey_revoked",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email, "passkey_name": passkey.name},
+        commit=True,
+    )
+    flash(f"Passkey \u2018{passkey.name}\u2019 removed from {user.email}.", "success")
+    return redirect(url_for("admin.user_mfa", user_id=user.id))
 
 
 @bp.route("/bia/tiers")

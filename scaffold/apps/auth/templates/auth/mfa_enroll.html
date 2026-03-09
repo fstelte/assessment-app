@@ -1,17 +1,149 @@
 {% extends "base.html" %}
-{% block title %}MFA Enrollment{% endblock %}
+{% block title %}Set Up MFA{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-2xl font-bold">{{ _('auth.mfa.enroll.title') }}</h1>
-<p class="mb-4">{{ _('auth.mfa.enroll.instructions_body') }}</p>
-<div class="mb-5 p-3 bg-slate-100 dark:bg-slate-900 rounded border border-[var(--color-border)] inline-block">
-    <code class="text-sm font-mono text-pink-500">{{ provisioning.uri }}</code>
-</div>
-<form method="post" class="max-w-md">
-    {{ form.hidden_tag() }}
-    <div class="mb-4">
+<div class="max-w-lg mx-auto mt-6">
+  <h1 class="mb-2 text-2xl font-bold">{{ _('auth.mfa.enroll.title') }}</h1>
+  <p class="mb-6 text-[var(--color-muted)]">{{ _('auth.mfa.enroll.instructions_body') }}</p>
+
+  {# Tab navigation #}
+  <div class="flex gap-2 mb-6 border-b border-[var(--color-border)]">
+    <button id="tab-passkey"
+            onclick="switchTab('passkey')"
+            class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-primary-500 text-primary-400 -mb-px transition">
+      🔑 Passkey
+    </button>
+    <button id="tab-totp"
+            onclick="switchTab('totp')"
+            class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)] -mb-px transition">
+      📱 Authenticator App
+    </button>
+  </div>
+
+  {# Passkey panel #}
+  <div id="panel-passkey">
+    <p class="mb-4 text-sm text-[var(--color-muted)]">
+      Register a passkey using your device's biometrics, PIN, or a hardware security key.
+      No code to type — just touch, scan, or press.
+    </p>
+    <div id="passkey-status" class="hidden mb-4 rounded-xl px-4 py-3 text-sm border"></div>
+    <div class="flex flex-col gap-3">
+      <input id="passkey-name" type="text" placeholder="Give your passkey a name (e.g. MacBook Touch ID)"
+             class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
+             autocomplete="off" maxlength="100">
+      <button id="register-passkey-btn" type="button"
+              class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 w-full">
+        Register Passkey
+      </button>
+    </div>
+  </div>
+
+  {# TOTP panel (hidden by default) #}
+  <div id="panel-totp" class="hidden">
+    <p class="mb-4 text-sm text-[var(--color-muted)]">
+      Scan the URI below with an authenticator app (e.g. Google Authenticator, Authy), then enter the 6‑digit code to confirm.
+    </p>
+    <div class="mb-5 p-3 bg-slate-100 dark:bg-slate-900 rounded border border-[var(--color-border)] overflow-x-auto">
+      <code class="text-xs font-mono text-pink-500 break-all">{{ provisioning.uri }}</code>
+    </div>
+    <form method="post" class="max-w-sm">
+      {{ form.hidden_tag() }}
+      <div class="mb-4">
         {{ form.otp_token.label(class="block text-sm mb-1.5") }}
         {{ form.otp_token(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-    </div>
-    {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
-</form>
+      </div>
+      {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+  /* ---------- helpers for base64url encoding/decoding ---------- */
+  function b64urlToBuffer(b64url) {
+    const base64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '=='.slice(0, (4 - base64.length % 4) % 4);
+    return Uint8Array.from(atob(padded), c => c.charCodeAt(0)).buffer;
+  }
+  function bufferToB64url(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+  function prepareCreationOptions(opts) {
+    opts.challenge = b64urlToBuffer(opts.challenge);
+    opts.user.id = b64urlToBuffer(opts.user.id);
+    if (opts.excludeCredentials) {
+      opts.excludeCredentials = opts.excludeCredentials.map(c => ({...c, id: b64urlToBuffer(c.id)}));
+    }
+    return opts;
+  }
+  function credentialToJSON(cred) {
+    const transports = cred.response.getTransports ? cred.response.getTransports() : [];
+    return {
+      id: cred.id,
+      rawId: bufferToB64url(cred.rawId),
+      type: cred.type,
+      response: {
+        attestationObject: bufferToB64url(cred.response.attestationObject),
+        clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
+        transports: transports,
+      },
+      name: document.getElementById('passkey-name').value.trim(),
+    };
+  }
+
+  /* ---------- tab switching ---------- */
+  function switchTab(name) {
+    ['passkey', 'totp'].forEach(t => {
+      document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+      const btn = document.getElementById('tab-' + t);
+      btn.classList.toggle('border-primary-500', t === name);
+      btn.classList.toggle('text-primary-400', t === name);
+      btn.classList.toggle('border-transparent', t !== name);
+      btn.classList.toggle('text-[var(--color-muted)]', t !== name);
+    });
+  }
+
+  /* ---------- passkey registration flow ---------- */
+  document.getElementById('register-passkey-btn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('passkey-status');
+    const btn = document.getElementById('register-passkey-btn');
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.className = 'mb-4 rounded-xl px-4 py-3 text-sm border ' +
+        (isError ? 'bg-red-500/10 border-red-400/40 text-red-200'
+                 : 'bg-blue-500/10 border-blue-400/40 text-blue-200');
+      statusEl.classList.remove('hidden');
+    }
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+    try {
+      /* 1. Get options from server */
+      const beginResp = await fetch('{{ url_for("auth.mfa_passkey_register_begin") }}', {method: 'POST'});
+      if (!beginResp.ok) { throw new Error((await beginResp.json()).error || 'Failed to begin registration'); }
+      const opts = prepareCreationOptions(await beginResp.json());
+
+      /* 2. Browser passkey dialog */
+      const credential = await navigator.credentials.create({publicKey: opts});
+      if (!credential) throw new Error('No credential returned');
+
+      /* 3. Send to server */
+      const completeResp = await fetch('{{ url_for("auth.mfa_passkey_register_complete") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(credentialToJSON(credential)),
+      });
+      const result = await completeResp.json();
+      if (!completeResp.ok || !result.success) { throw new Error(result.error || 'Registration failed'); }
+
+      /* 4. Redirect */
+      setStatus('Passkey registered! Redirecting…', false);
+      window.location.href = result.redirect;
+    } catch (err) {
+      setStatus(err.message || 'Registration failed. Please try again.', true);
+      btn.disabled = false;
+      btn.textContent = 'Register Passkey';
+    }
+  });
+</script>
 {% endblock %}

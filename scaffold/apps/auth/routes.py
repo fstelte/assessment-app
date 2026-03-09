@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import secrets
 from datetime import UTC, datetime
 from typing import Any, Iterable, Mapping, cast
 
-from flask import Blueprint, current_app, flash, make_response, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, jsonify, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 from onelogin.saml2.errors import OneLogin_Saml2_Error
 
 from ...extensions import db, csrf
-from ..identity.models import User, UserStatus
+from ..identity.models import PasskeyCredential, User, UserStatus
 from ...core.i18n import get_locale, session_storage_key, set_locale, gettext as _
 from .flow import (
     clear_mfa_state,
@@ -34,6 +35,16 @@ from .saml import (
     metadata_response,
     prepare_request,
     SamlSettings,
+)
+from .webauthn_helpers import (
+    begin_passkey_authentication,
+    begin_passkey_registration,
+    challenge_from_session,
+    challenge_to_session,
+    complete_passkey_authentication,
+    complete_passkey_registration,
+    find_passkey_by_raw_id,
+    parse_auth_credential_raw_id,
 )
 
 bp = Blueprint("auth", __name__, template_folder="templates", url_prefix="/auth")
@@ -145,6 +156,15 @@ def login():
                 if user.mfa_is_enabled and not user.mfa_is_enrolled:
                     queue_mfa_enrolment(user, remember)
                     flash(_("auth.login.notices.mfa_enrol"), "info")
+                    return redirect(url_for("auth.mfa_enroll"))
+                # Enforce MFA setup for all local (non-federated) accounts
+                if user.azure_oid is None and user.aad_upn is None:
+                    queue_mfa_enrolment(user, remember)
+                    flash(
+                        "Your account requires multi-factor authentication. "
+                        "Please register at least one MFA method before continuing.",
+                        "warning",
+                    )
                     return redirect(url_for("auth.mfa_enroll"))
                 finalise_login(user, remember, method="password")
                 _flash_login_result(user)
@@ -388,7 +408,7 @@ def mfa_enroll():
             db.session.commit()
             finalise_login(user, current_remember_me(), method="mfa_enroll")
             _flash_login_result(user)
-            flash("Multi-factor authentication enabled.", "success")
+            flash("Authenticator app registered successfully.", "success")
             return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
         flash("Invalid code. Try again.", "danger")
 
@@ -398,24 +418,219 @@ def mfa_enroll():
 @bp.route("/mfa/verify", methods=["GET", "POST"])
 def mfa_verify():
     user = get_pending_user()
-    if user is None or not user.mfa_is_enrolled or user.mfa_setting is None:
+    if user is None or not user.mfa_is_enrolled:
         clear_mfa_state()
         flash("MFA verification is unavailable.", "warning")
         return redirect(url_for("auth.login"))
 
-    form = MFAVerifyForm()
-    if form.validate_on_submit():
-        if validate_token(user.mfa_setting.secret, form.otp_token.data or ""):
-            user.mfa_setting.mark_verified()
-            db.session.commit()
-            remember = bool(current_remember_me() or form.remember_device.data)
-            finalise_login(user, remember, method="mfa_verify")
-            _flash_login_result(user)
-            flash("MFA verification successful.", "success")
-            return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
-        flash("Invalid code. Try again.", "danger")
+    has_totp = bool(user.mfa_setting and user.mfa_setting.enrolled_at)
+    has_passkeys = bool(user.passkey_credentials)
+    form = MFAVerifyForm() if has_totp else None
 
-    return render_template("auth/mfa_verify.html", form=form, user=user)
+    if request.method == "POST" and form is not None and form.validate_on_submit():
+        if has_totp and user.mfa_setting:
+            if validate_token(user.mfa_setting.secret, form.otp_token.data or ""):
+                user.mfa_setting.mark_verified()
+                db.session.commit()
+                remember = bool(current_remember_me() or form.remember_device.data)
+                finalise_login(user, remember, method="mfa_verify")
+                _flash_login_result(user)
+                flash("MFA verification successful.", "success")
+                return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
+            flash("Invalid code. Try again.", "danger")
+
+    return render_template(
+        "auth/mfa_verify.html",
+        form=form,
+        user=user,
+        has_totp=has_totp,
+        has_passkeys=has_passkeys,
+    )
+
+
+@bp.get("/mfa/manage")
+@login_required
+def mfa_manage():
+    passkeys = current_user.passkey_credentials or []
+    has_totp = bool(current_user.mfa_setting and current_user.mfa_setting.enrolled_at)
+    return render_template("auth/mfa_manage.html", passkeys=passkeys, has_totp=has_totp)
+
+
+@bp.post("/mfa/passkey/delete/<int:credential_id>")
+@login_required
+def mfa_passkey_delete(credential_id: int):
+    passkey = PasskeyCredential.query.filter_by(
+        id=credential_id, user_id=current_user.id
+    ).first_or_404()
+    # Prevent removing the last MFA method when TOTP is not enrolled
+    if not current_user.mfa_setting or not current_user.mfa_setting.enrolled_at:
+        remaining = len(current_user.passkey_credentials or [])
+        if remaining <= 1:
+            flash("Cannot remove your only MFA method. Add another method first.", "danger")
+            return redirect(url_for("auth.mfa_manage"))
+    db.session.delete(passkey)
+    db.session.commit()
+    flash("Passkey removed.", "success")
+    return redirect(url_for("auth.mfa_manage"))
+
+
+@bp.post("/mfa/totp/disable")
+@login_required
+def mfa_totp_disable():
+    if not current_user.passkey_credentials:
+        flash("Cannot remove TOTP while it is your only MFA method. Register a passkey first.", "danger")
+        return redirect(url_for("auth.mfa_manage"))
+    if current_user.mfa_setting:
+        current_user.mfa_setting.enabled = False
+        current_user.mfa_setting.enrolled_at = None
+        db.session.commit()
+        flash("Authenticator app removed.", "success")
+    return redirect(url_for("auth.mfa_manage"))
+
+
+@bp.get("/mfa/totp/setup")
+@login_required
+def mfa_totp_setup():
+    """Start TOTP enrollment from the MFA management page."""
+    queue_mfa_enrolment(current_user, remember=False)
+    return redirect(url_for("auth.mfa_enroll"))
+
+
+# ---------------------------------------------------------------------------
+# Passkey JSON API endpoints — used by the browser WebAuthn ceremony
+# ---------------------------------------------------------------------------
+
+@bp.post("/mfa/passkey/register/begin")
+@csrf.exempt
+def mfa_passkey_register_begin():
+    """Return PublicKeyCredentialCreationOptions for a new passkey registration."""
+    if current_user.is_authenticated:
+        user = current_user._get_current_object()
+    else:
+        user = get_enrolment_user()
+    if user is None:
+        return jsonify({"error": "No user context for passkey registration"}), 401
+
+    options_json, challenge = begin_passkey_registration(user, current_app.config)
+    session["passkey_reg_challenge"] = challenge_to_session(challenge)
+    session["passkey_reg_user_id"] = user.id
+    return options_json, 200, {"Content-Type": "application/json"}
+
+
+@bp.post("/mfa/passkey/register/complete")
+@csrf.exempt
+def mfa_passkey_register_complete():
+    """Verify and persist a newly registered passkey credential."""
+    challenge_encoded = session.pop("passkey_reg_challenge", None)
+    user_id = session.pop("passkey_reg_user_id", None)
+    if not challenge_encoded or not user_id:
+        return jsonify({"error": "No pending passkey registration in session"}), 400
+
+    user: User | None = db.session.get(User, user_id)
+    if user is None:
+        return jsonify({"error": "User not found"}), 404
+
+    credential_data = request.get_json(silent=True)
+    if not credential_data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    challenge = challenge_from_session(challenge_encoded)
+    try:
+        verification = complete_passkey_registration(
+            json.dumps(credential_data), challenge, current_app.config
+        )
+    except Exception as exc:
+        current_app.logger.warning("Passkey registration verification failed: %s", exc)
+        return jsonify({"error": "Passkey verification failed. Please try again."}), 400
+
+    friendly_name = (
+        (credential_data.get("name") or "").strip()
+        or f"Passkey {len(user.passkey_credentials or []) + 1}"
+    )
+
+    passkey = PasskeyCredential()
+    passkey.user_id = user.id
+    passkey.credential_id = verification.credential_id
+    passkey.public_key = verification.credential_public_key
+    passkey.sign_count = verification.sign_count
+    passkey.aaguid = str(verification.aaguid) if verification.aaguid else None
+    passkey.name = friendly_name
+    passkey.transports = (
+        credential_data.get("response", {}).get("transports") or []
+    )
+    db.session.add(passkey)
+    db.session.commit()
+
+    # If this was a login-time enrollment flow, finalise the login
+    is_enrollment = bool(session.get("mfa_enroll_user_id"))
+    if is_enrollment:
+        finalise_login(user, current_remember_me(), method="passkey_enroll")
+        flash(f"Passkey \"{friendly_name}\" registered. You are now signed in.", "success")
+        redirect_url = url_for(LOGIN_REDIRECT_ENDPOINT)
+    else:
+        flash(f"Passkey \"{friendly_name}\" added to your account.", "success")
+        redirect_url = url_for("auth.mfa_manage")
+
+    return jsonify({"success": True, "redirect": redirect_url})
+
+
+@bp.post("/mfa/passkey/verify/begin")
+@csrf.exempt
+def mfa_passkey_verify_begin():
+    """Return PublicKeyCredentialRequestOptions for a passkey authentication ceremony."""
+    user = get_pending_user()
+    if user is None:
+        return jsonify({"error": "No pending MFA verification in session"}), 401
+    if not user.passkey_credentials:
+        return jsonify({"error": "No passkeys registered for this account"}), 400
+
+    options_json, challenge = begin_passkey_authentication(user, current_app.config)
+    session["passkey_auth_challenge"] = challenge_to_session(challenge)
+    return options_json, 200, {"Content-Type": "application/json"}
+
+
+@bp.post("/mfa/passkey/verify/complete")
+@csrf.exempt
+def mfa_passkey_verify_complete():
+    """Verify a passkey assertion and finalise the login."""
+    challenge_encoded = session.pop("passkey_auth_challenge", None)
+    user = get_pending_user()
+    if not challenge_encoded or user is None:
+        return jsonify({"error": "No pending passkey verification in session"}), 400
+
+    credential_data = request.get_json(silent=True)
+    if not credential_data:
+        return jsonify({"error": "Invalid request body"}), 400
+
+    challenge = challenge_from_session(challenge_encoded)
+
+    # Identify which credential the authenticator used
+    try:
+        raw_id = parse_auth_credential_raw_id(json.dumps(credential_data))
+        passkey = find_passkey_by_raw_id(user, raw_id)
+    except Exception as exc:
+        current_app.logger.warning("Could not parse passkey assertion: %s", exc)
+        return jsonify({"error": "Invalid credential data"}), 400
+
+    if passkey is None:
+        return jsonify({"error": "Passkey not recognised for this account"}), 400
+
+    try:
+        verification = complete_passkey_authentication(
+            json.dumps(credential_data), challenge, passkey, current_app.config
+        )
+    except Exception as exc:
+        current_app.logger.warning("Passkey authentication verification failed: %s", exc)
+        return jsonify({"error": "Passkey verification failed. Please try again."}), 400
+
+    passkey.sign_count = verification.new_sign_count
+    passkey.last_used_at = datetime.now(UTC)
+    db.session.commit()
+
+    remember = bool(current_remember_me())
+    finalise_login(user, remember, method="passkey_verify")
+    flash("Signed in with passkey.", "success")
+    return jsonify({"success": True, "redirect": url_for(LOGIN_REDIRECT_ENDPOINT)})
 
 
 @bp.route("/profile", methods=["GET", "POST"])
@@ -469,13 +684,6 @@ def profile():
         return redirect(url_for("auth.profile"))
 
     return render_template("auth/profile.html", form=form)
-
-
-@bp.get("/mfa/manage")
-@login_required
-def mfa_manage():
-    queue_mfa_enrolment(current_user, remember=False)
-    return redirect(url_for("auth.mfa_enroll"))
 
 
 def register(app):

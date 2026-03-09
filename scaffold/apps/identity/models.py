@@ -197,6 +197,12 @@ class User(TimestampMixin, UserMixin, db.Model):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    passkey_credentials = db.relationship(
+        "PasskeyCredential",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="PasskeyCredential.created_at",
+    )
     assignments = db.relationship(
         "AssessmentAssignment",
         back_populates="assignee",
@@ -291,11 +297,15 @@ class User(TimestampMixin, UserMixin, db.Model):
 
     @property
     def mfa_is_enabled(self) -> bool:
-        return bool(self.mfa_setting and self.mfa_setting.enabled)
+        totp_enabled = bool(self.mfa_setting and self.mfa_setting.enabled)
+        passkey_enrolled = bool(self.passkey_credentials)
+        return totp_enabled or passkey_enrolled
 
     @property
     def mfa_is_enrolled(self) -> bool:
-        return bool(self.mfa_setting and self.mfa_setting.enabled and self.mfa_setting.enrolled_at)
+        totp_enrolled = bool(self.mfa_setting and self.mfa_setting.enabled and self.mfa_setting.enrolled_at)
+        passkey_enrolled = bool(self.passkey_credentials)
+        return totp_enrolled or passkey_enrolled
 
     @classmethod
     def find_by_email(cls, email: str) -> "User | None":
@@ -342,3 +352,32 @@ class MFASetting(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostic helper
         return f"<MFASetting user_id={self.user_id} enabled={self.enabled}>"
+
+
+class PasskeyCredential(TimestampMixin, db.Model):
+    """Stores a WebAuthn passkey credential registered by a user."""
+
+    __tablename__ = "passkey_credentials"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Raw credential ID bytes from the authenticator (up to 1023 bytes per spec)
+    credential_id = db.Column(db.LargeBinary(1024), unique=True, nullable=False)
+    # COSE-encoded public key bytes
+    public_key = db.Column(db.LargeBinary(2048), nullable=False)
+    sign_count = db.Column(db.Integer, default=0, nullable=False)
+    # JSON list of AuthenticatorTransport values ("usb", "nfc", "ble", "internal")
+    transports = db.Column(db.JSON)
+    aaguid = db.Column(db.String(36))
+    name = db.Column(db.String(255), default="Passkey", nullable=False)
+    last_used_at = db.Column(db.DateTime(timezone=True))
+
+    user = db.relationship("User", back_populates="passkey_credentials")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<PasskeyCredential id={self.id} user_id={self.user_id} name={self.name!r}>"
