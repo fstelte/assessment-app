@@ -7,6 +7,7 @@ Create Date: 2026-03-09 00:00:01.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,8 +18,12 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('bia_information_labels', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('severity', sa.Integer(), nullable=False, server_default='0'))
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_columns = [col['name'] for col in inspector.get_columns('bia_information_labels')]
+    if 'severity' not in existing_columns:
+        with op.batch_alter_table('bia_information_labels', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('severity', sa.Integer(), nullable=False, server_default='0'))
 
     # Set severity for the default seeded labels
     op.execute("""
