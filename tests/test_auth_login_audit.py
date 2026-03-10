@@ -85,4 +85,3 @@ def test_finalise_login_includes_request_metadata(app):
             assert session["last_activity"]
 
             logout_user()
-*** End File
