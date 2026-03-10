@@ -1403,6 +1403,8 @@
         "previous": "Previous",
         "next": "Next"
       },
+      "show_more": "Show more",
+      "show_less": "Show less",
       "empty": "No audit events match the selected filters."
     },
     "authentication_methods": {

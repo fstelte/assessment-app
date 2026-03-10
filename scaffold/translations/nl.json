@@ -1659,6 +1659,8 @@
         "previous": "Vorige",
         "next": "Volgende"
       },
+      "show_more": "Meer weergeven",
+      "show_less": "Minder weergeven",
       "empty": "Geen auditgebeurtenissen voor deze selectie."
     },
     "authentication_methods": {
