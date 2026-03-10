@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 {% import "macros.html" as macros %}
 
-{% block title %}{{ _('admin.audit_trail.title') }}{% endblock %}
+{% block title %}{{ _('admin.audit.title') }}{% endblock %}
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="text-2xl font-bold mb-1">{{ _('admin.audit_trail.heading') }}</h1>
-  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.audit_trail.subtitle') }}</p>
+  <h1 class="text-2xl font-bold mb-1">{{ _('admin.audit.heading') }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.audit.subtitle') }}</p>
 </div>
 
 <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] mb-4 p-4">
     <form method="get" class="flex flex-wrap lg:flex-nowrap gap-4 items-end">
         <div class="w-full lg:w-1/4">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.user') }}</label>
-            <input type="text" name="user" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('user', '') }}" placeholder="{{ _('admin.audit_trail.filter.user.placeholder') }}">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit.filters.actor') }}</label>
+            <input type="text" name="actor" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ filters.actor }}" placeholder="{{ _('admin.audit.filters.actor_placeholder') }}">
         </div>
         <div class="w-full lg:w-1/4">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.action') }}</label>
-            <input type="text" name="action" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('action', '') }}" placeholder="{{ _('admin.audit_trail.filter.action.placeholder') }}">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit.filters.action') }}</label>
+            <input type="text" name="action" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ filters.action }}">
         </div>
         <div class="w-full lg:w-1/4">
-            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit_trail.filter.target') }}</label>
-            <input type="text" name="target" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ request.args.get('target', '') }}" placeholder="{{ _('admin.audit_trail.filter.target.placeholder') }}">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('admin.audit.filters.entity') }}</label>
+            <input type="text" name="entity_type" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" value="{{ filters.entity_type }}">
         </div>
         <div class="w-full lg:w-auto">
             <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 w-full lg:w-auto">
-                {{ _('admin.audit_trail.filter.apply') }}
+                {{ _('admin.audit.filters.submit') }}
             </button>
         </div>
         {% if request.args %}
         <div class="w-full lg:w-auto">
             <a href="{{ url_for('admin.audit_trail') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 w-full lg:w-auto">
-                {{ _('admin.audit_trail.filter.clear') }}
+                {{ _('admin.audit.filters.reset') }}
             </a>
         </div>
         {% endif %}
@@ -42,62 +42,64 @@
   <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
     <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
       <tr>
-        <th scope="col" class="px-4 py-3 font-semibold w-40">{{ _('admin.audit_trail.table.timestamp') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.user') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.action') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.target') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit_trail.table.details') }}</th>
-        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.audit_trail.table.ip') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-40">{{ _('admin.audit.table.timestamp') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit.table.user') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit.table.action') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit.table.entity') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.audit.table.details') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-24">{{ _('admin.audit.table.ip') }}</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-[var(--color-border)]">
-      {% for event in events %}
+      {% for event in entries %}
       <tr class="hover:bg-slate-500/5 transition-colors">
         <td class="px-4 py-3 align-top whitespace-nowrap text-[var(--color-muted)] text-xs">
-          {{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+          {{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
         </td>
         <td class="px-4 py-3 align-top">
-          {% if event.user %}
-             <span class="font-medium">{{ event.user.full_name }}</span>
-             <br><span class="text-[var(--color-muted)] text-xs">{{ event.user.email }}</span>
+          {% if event.actor_name or event.actor_email %}
+             <span class="font-medium">{{ event.actor_name or event.actor_email }}</span>
+             {% if event.actor_name and event.actor_email %}
+             <br><span class="text-[var(--color-muted)] text-xs">{{ event.actor_email }}</span>
+             {% endif %}
           {% else %}
-             <span class="text-[var(--color-muted)]">{{ _('admin.audit_trail.system') }}</span>
+             <span class="text-[var(--color-muted)]">{{ _('admin.audit.table.anonymous') }}</span>
           {% endif %}
         </td>
         <td class="px-4 py-3 align-top">
           <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-500/20 text-[var(--color-text)]">
-            {{ event.action }}
+            {{ event.event_type }}
           </span>
         </td>
         <td class="px-4 py-3 align-top font-mono text-xs text-[var(--color-primary)]">
           {{ event.target_type }} #{{ event.target_id }}
         </td>
         <td class="px-4 py-3 align-top">
-          {% if event.details %}
+          {% if event.payload %}
             <div x-data="{ expanded: false }" class="relative">
                 <div class="text-xs font-mono text-[var(--color-muted)] break-all max-h-16 overflow-hidden transition-all"
                      :class="{ 'max-h-full': expanded, 'max-h-16': !expanded }">
-                    {{ event.details }}
+                    {{ event.payload | tojson(indent=2) }}
                 </div>
-                {% if event.details|length > 100 %}
+                {% if event.payload | tojson | length > 100 %}
                     <button @click="expanded = !expanded" class="text-[var(--color-primary)] text-xs mt-1 hover:underline focus:outline-none">
-                        <span x-show="!expanded">{{ _('admin.audit_trail.show_more') }}</span>
-                        <span x-show="expanded">{{ _('admin.audit_trail.show_less') }}</span>
+                        <span x-show="!expanded">{{ _('admin.audit.show_more') }}</span>
+                        <span x-show="expanded">{{ _('admin.audit.show_less') }}</span>
                     </button>
                 {% endif %}
             </div>
           {% else %}
-            <span class="text-[var(--color-muted)] text-xs">-</span>
+            <span class="text-[var(--color-muted)] text-xs">{{ _('admin.audit.table.no_details') }}</span>
           {% endif %}
         </td>
         <td class="px-4 py-3 align-top text-xs text-[var(--color-muted)] font-mono">
-            {{ event.ip_address or '-' }}
+            {{ event.actor_ip or '-' }}
         </td>
       </tr>
       {% else %}
       <tr>
           <td colspan="6" class="px-4 py-8 text-center text-[var(--color-muted)]">
-              {{ _('admin.audit_trail.no_events') }}
+              {{ _('admin.audit.empty') }}
           </td>
       </tr>
       {% endfor %}
