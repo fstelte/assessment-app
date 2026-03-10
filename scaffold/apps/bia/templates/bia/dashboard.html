@@ -229,6 +229,18 @@ body[data-theme="dark"] .bia-chip {
 							{{ _('bia.dashboard.sidebar.components') }}
 						</a>
 					</li>
+					<li class="nav-item">
+						<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors {{ nav_link_color }} flex items-center" href="{{ url_for('bia.view_requirements') }}">
+							<i class="fas fa-clipboard-list mr-2 text-primary-400"></i>
+							{{ _('bia.dashboard.sidebar.requirements') }}
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-text)] px-2 py-1 rounded-md transition-colors {{ nav_link_color }} flex items-center" href="{{ url_for('bia.view_all_consequences') }}">
+							<i class="fas fa-exclamation-triangle mr-2 text-primary-400"></i>
+							{{ _('bia.dashboard.sidebar.all_consequences') }}
+						</a>
+					</li>
 				</ul>
 			</div>
 		</div>

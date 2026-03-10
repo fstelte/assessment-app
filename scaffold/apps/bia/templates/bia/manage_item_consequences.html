@@ -120,10 +120,13 @@
                     <div class="flex flex-col gap-1">
                       <div class="font-semibold text-[var(--color-text)]">{{ row.component.name }}</div>
                       <div class="text-[var(--color-muted)] text-xs">{{ row.component.info_label.get_label() if row.component.info_label else (row.component.info_type or 'Details pending') }}</div>
-                      <div>
-                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)] mt-1">
+                      <div class="flex gap-1 mt-1">
+                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)]">
                           <i class="fas fa-pencil-alt mr-1"></i> {{ _('bia.actions.edit') }}
                         </a>
+                        <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30" data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=row.consequence.id) }}" title="{{ _('bia.actions.delete') }}">
+                          <i class="fas fa-trash mr-1"></i> {{ _('bia.actions.delete') }}
+                        </button>
                       </div>
                     </div>
                   </td>
@@ -180,4 +183,32 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-delete-url]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!window.confirm('{{ _('bia.components.table.confirm_delete') }}')) return;
+            var url = btn.getAttribute('data-delete-url');
+            var row = btn.closest('tr');
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    row.remove();
+                } else {
+                    alert('Delete failed.');
+                }
+            })
+            .catch(function () { alert('Delete failed.'); });
+        });
+    });
+});
+</script>
 {% endblock %}

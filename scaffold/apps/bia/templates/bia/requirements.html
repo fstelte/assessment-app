@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('bia.requirements.heading') }}{% endblock %}
+
+{% block extra_css %}
+{% include "bia/_badge_styles.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 to-cyan-700 p-8 md:p-10 shadow-xl text-white">
+    <div class="absolute -right-20 -top-16 h-80 w-80 rounded-full bg-white/20 blur-xl"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <nav aria-label="breadcrumb" class="mb-4">
+          <ol class="flex items-center gap-2 text-sm text-teal-100">
+            <li>
+              <a href="{{ url_for('bia.dashboard') }}" class="flex items-center hover:text-white transition-colors no-underline text-inherit">
+                <span>&larr;</span> <span class="ml-1">{{ _('bia.dashboard.header.title') }}</span>
+              </a>
+            </li>
+            <li class="text-teal-300 select-none">/</li>
+            <li class="font-medium text-white" aria-current="page">{{ _('bia.requirements.heading') }}</li>
+          </ol>
+        </nav>
+        <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ _('bia.requirements.heading') }}</h1>
+        <p class="text-teal-100 text-lg max-w-2xl">
+          {% if pagination.total %}
+            {{ _('bia.requirements.showing_count', start=page_start, end=page_end, total=pagination.total) }}
+          {% else %}
+            {{ _('bia.requirements.no_requirements') }}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-4">
+    <form action="{{ url_for('bia.view_requirements') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
+      <input type="hidden" name="page" value="1">
+
+      <div class="w-full md:w-1/2">
+        <label for="bia-select" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.dashboard.header.title') }}</label>
+        <select name="bia_id" id="bia-select" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <option value="">{{ _('bia.common.all_items') }}</option>
+          {% for context in contexts %}
+            <option value="{{ context.id }}" {% if selected_bia_id == context.id %}selected{% endif %}>{{ context.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="w-full md:w-1/2">
+        <label for="search-input" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.components.filter.component') }}</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="text" name="q" id="search-input" value="{{ search_term }}" placeholder="{{ _('bia.components.filter.search_placeholder') }}" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+        </div>
+      </div>
+
+      <div class="flex gap-2 shrink-0">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm h-[42px]">
+          {{ _('bia.components.filter.apply') }}
+        </button>
+        {% if search_term or selected_bia_id %}
+          <a href="{{ url_for('bia.view_requirements') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 h-[42px]">
+            {{ _('bia.components.filter.reset') }}
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Availability Requirements Table -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+      <h2 class="text-base font-semibold text-[var(--color-text)]">{{ _('bia.requirements.availability.title') }}</h2>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">
+        {{ pagination.total }} {{ _('bia.requirements.availability.count_suffix') }}
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left align-middle">
+        <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
+          <tr>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.component') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.context') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.mtd') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.rto') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.rpo') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.masl') }}</th>
+            <th scope="col" class="px-3 py-3 text-right">{{ _('bia.common.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for req in availability_requirements %}
+            <tr class="hover:bg-[var(--color-surface)]/50 transition-colors group">
+              <td class="px-3 py-3 font-medium text-[var(--color-text)]">{{ req.component.name }}</td>
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
+                  {{ req.component.context_scope.name }}
+                </span>
+              </td>
+              <td class="px-3 py-3">
+                {% if req.mtd %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">{{ req.mtd }}</span>
+                {% else %}
+                  <span class="text-[var(--color-muted)] italic text-xs">{{ _('bia.components.not_set') }}</span>
+                {% endif %}
+              </td>
+              <td class="px-3 py-3">
+                <span class="text-[var(--color-text)] text-xs">{{ req.rto or '-' }}</span>
+              </td>
+              <td class="px-3 py-3">
+                <span class="text-[var(--color-text)] text-xs">{{ req.rpo or '-' }}</span>
+              </td>
+              <td class="px-3 py-3">
+                <span class="text-[var(--color-text)] text-xs">{{ req.masl or '-' }}</span>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <a href="{{ url_for('bia.manage_component_availability', component_id=req.component_id) }}?return_to={{ url_for('bia.view_requirements', q=search_term, bia_id=selected_bia_id or '') }}"
+                     class="text-[var(--color-muted)] hover:text-green-600 transition-colors p-1"
+                     title="{{ _('bia.components.actions.availability') }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </a>
+                  <button class="text-[var(--color-muted)] hover:text-red-600 transition-colors p-1"
+                          data-delete-availability
+                          data-delete-url="{{ url_for('bia.delete_availability_requirement', requirement_id=req.id) }}"
+                          title="{{ _('bia.actions.delete') }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not availability_requirements %}
+            <tr>
+              <td colspan="7" class="px-3 py-12 text-center text-[var(--color-muted)]">
+                <svg class="h-12 w-12 mx-auto mb-3 text-[var(--color-border)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {{ _('bia.requirements.availability.empty') }}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="px-4 py-3 border-t border-[var(--color-border)] flex items-center justify-between">
+      <div class="hidden sm:block">
+        <p class="text-sm text-[var(--color-muted)]">
+          {{ _('bia.pagination.showing') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_start }}</span>
+          {{ _('bia.pagination.to') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_end }}</span>
+          {{ _('bia.pagination.of') }}
+          <span class="font-medium text-[var(--color-text)]">{{ pagination.total }}</span>
+          {{ _('bia.pagination.results') }}
+        </p>
+      </div>
+      <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+        {% if pagination.has_prev %}
+          <a href="{{ url_for('bia.view_requirements', page=pagination.prev_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+          </a>
+        {% else %}
+          <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+          </span>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+          {% if page_num %}
+            {% if page_num == pagination.page %}
+              <span aria-current="page" class="relative z-10 inline-flex items-center bg-primary-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">{{ page_num }}</span>
+            {% else %}
+              <a href="{{ url_for('bia.view_requirements', page=page_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-text)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+            {% endif %}
+          {% else %}
+            <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] focus:outline-offset-0">...</span>
+          {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+          <a href="{{ url_for('bia.view_requirements', page=pagination.next_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </a>
+        {% else %}
+          <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </span>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script nonce="{{ csp_nonce }}">
+  document.body.classList.add('page-bia-requirements');
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-delete-availability]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!window.confirm('{{ _('bia.components.table.confirm_delete') }}')) return;
+        var url = btn.getAttribute('data-delete-url');
+        var row = btn.closest('tr');
+        fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            row.remove();
+          } else {
+            alert('Delete failed.');
+          }
+        })
+        .catch(function () { alert('Delete failed.'); });
+      });
+    });
+  });
+</script>
+{% endblock %}

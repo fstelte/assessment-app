@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_help %}
+{% from "bia/_it_dep_picker.html" import render_it_dep_picker with context %}
 
 {% block title %}{{ _('bia.components.edit.title', name=component.name) }}{% endblock %}
 
@@ -60,9 +61,9 @@
             {{ render_field_with_help(form.info_owner, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
           </div>
 
-          <!-- Dependencies -->
+          <!-- Dependencies (IT Systems / Applications) -->
           <div>
-            {{ render_field_with_help(form.dependencies_it_systems_applications, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+            {{ render_it_dep_picker(form.dependencies_it_systems_applications, all_components, 'edit-it-dep') }}
           </div>
           <div>
             {{ render_field_with_help(form.dependencies_equipment, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}

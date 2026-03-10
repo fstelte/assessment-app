@@ -266,7 +266,9 @@
         "export_cia_summary": "CIA-gevolgen exporteren (samenvatting)",
         "export_availability_detailed": "Beschikbaarheid exporteren (gedetailleerd)",
         "export_availability_summary": "Beschikbaarheid exporteren (samenvatting)",
-        "export_authentication": "Authenticatieoverzicht exporteren"
+        "export_authentication": "Authenticatieoverzicht exporteren",
+        "requirements": "Bekijk eisen",
+        "all_consequences": "Bekijk gevolgen"
       },
       "header": {
         "title": "Business Impact Analyses",
@@ -685,7 +687,7 @@
         "scope": "Scope",
         "search": "Zoeken",
         "component": "Component",
-        "search_placeholder": "Componenten zoeken\u2026",
+        "search_placeholder": "Componenten zoeken…",
         "apply": "Toepassen",
         "reset": "Wissen"
       },
@@ -697,7 +699,7 @@
         "start_dpia": "DPIA starten",
         "dpia_short": "DPIA"
       },
-      "showing_count": "Weergave {start}\u2013{end} van {total} componenten",
+      "showing_count": "Weergave {start}–{end} van {total} componenten",
       "no_components": "Nog geen componenten geregistreerd.",
       "add_button": "Component toevoegen",
       "export_inventory": "Inventaris exporteren",
@@ -717,7 +719,7 @@
       "no_results": "Geen componenten gevonden voor dit filter.",
       "dpia_count_tooltip": "{count} actieve DPIA",
       "no_dpia_tooltip": "Geen actieve DPIA",
-      "delete_confirm": "\u2018{name}\u2019 verwijderen?",
+      "delete_confirm": "‘{name}’ verwijderen?",
       "tooltips": {
         "name": "Geef een beknopte, beschrijvende naam van het component zodat teamgenoten het snel herkennen.",
         "scope": "Selecteer de BIA waartoe dit component behoort voordat u andere details invoert.",
@@ -945,6 +947,37 @@
       "unknown": "Onbekend",
       "very_high": "Zeer hoog",
       "very_low": "Zeer laag"
+    },
+    "requirements": {
+      "heading": "Beschikbaarheidseisen",
+      "table": {
+        "component": "Component",
+        "context": "Context",
+        "category": "Categorie",
+        "security_property": "Beveiligingseigenschap",
+        "worst_case": "Worst Case",
+        "realistic_case": "Realistisch geval",
+        "mtd": "MTD",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "masl": "MASL"
+      },
+      "showing_count": "{start}–{end} van {total} eisen",
+      "no_requirements": "Nog geen beschikbaarheidseisen geregistreerd.",
+      "availability": {
+        "title": "Beschikbaarheidseisen",
+        "count_suffix": "records",
+        "empty": "Nog geen beschikbaarheidseisen geregistreerd."
+      }
+    },
+    "all_consequences": {
+      "heading": "CIA-gevolgen",
+      "showing_count": "{start}–{end} van {total} gevolgen",
+      "no_consequences": "Nog geen gevolgen geregistreerd.",
+      "list_title": "Alle gevolgen",
+      "count_suffix": "gevolgen",
+      "no_results": "Geen gevolgen gevonden voor dit filter.",
+      "confirm_delete": "Dit gevolg verwijderen? Deze actie kan niet ongedaan worden gemaakt."
     }
   },
   "csa": {
@@ -1348,7 +1381,7 @@
         "identifier": "Identiteitscode",
         "keyword": {
           "label": "Trefwoord",
-          "placeholder": "Zoek op naam of omschrijving\u2026"
+          "placeholder": "Zoek op naam of omschrijving…"
         },
         "search": "Zoeken",
         "clear": "Filters wissen"

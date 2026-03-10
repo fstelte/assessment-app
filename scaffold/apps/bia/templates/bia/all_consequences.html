@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('bia.all_consequences.heading') }}{% endblock %}
+
+{% block extra_css %}
+{% include "bia/_badge_styles.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 to-amber-700 p-8 md:p-10 shadow-xl text-white">
+    <div class="absolute -right-20 -top-16 h-80 w-80 rounded-full bg-white/20 blur-xl"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <nav aria-label="breadcrumb" class="mb-4">
+          <ol class="flex items-center gap-2 text-sm text-orange-100">
+            <li>
+              <a href="{{ url_for('bia.dashboard') }}" class="flex items-center hover:text-white transition-colors no-underline text-inherit">
+                <span>&larr;</span> <span class="ml-1">{{ _('bia.dashboard.header.title') }}</span>
+              </a>
+            </li>
+            <li class="text-orange-300 select-none">/</li>
+            <li class="font-medium text-white" aria-current="page">{{ _('bia.all_consequences.heading') }}</li>
+          </ol>
+        </nav>
+        <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ _('bia.all_consequences.heading') }}</h1>
+        <p class="text-orange-100 text-lg max-w-2xl">
+          {% if pagination.total %}
+            {{ _('bia.all_consequences.showing_count', start=page_start, end=page_end, total=pagination.total) }}
+          {% else %}
+            {{ _('bia.all_consequences.no_consequences') }}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm p-4">
+    <form action="{{ url_for('bia.view_all_consequences') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
+      <input type="hidden" name="page" value="1">
+
+      <div class="w-full md:w-1/2">
+        <label for="bia-select" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.dashboard.header.title') }}</label>
+        <select name="bia_id" id="bia-select" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <option value="">{{ _('bia.common.all_items') }}</option>
+          {% for context in contexts %}
+            <option value="{{ context.id }}" {% if selected_bia_id == context.id %}selected{% endif %}>{{ context.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="w-full md:w-1/2">
+        <label for="search-input" class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.components.filter.component') }}</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-[var(--color-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input type="text" name="q" id="search-input" value="{{ search_term }}" placeholder="{{ _('bia.components.filter.search_placeholder') }}" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+        </div>
+      </div>
+
+      <div class="flex gap-2 shrink-0">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm h-[42px]">
+          {{ _('bia.components.filter.apply') }}
+        </button>
+        {% if search_term or selected_bia_id %}
+          <a href="{{ url_for('bia.view_all_consequences') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 h-[42px]">
+            {{ _('bia.components.filter.reset') }}
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Consequences Table -->
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)]">
+      <h2 class="text-base font-semibold text-[var(--color-text)]">{{ _('bia.all_consequences.list_title') }}</h2>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">
+        {{ pagination.total }} {{ _('bia.all_consequences.count_suffix') }}
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left align-middle">
+        <thead class="text-xs uppercase bg-[var(--color-surface)] text-[var(--color-muted)] font-semibold border-b border-[var(--color-border)]">
+          <tr>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.component') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.context') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.category') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.security_property') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.worst_case') }}</th>
+            <th scope="col" class="px-3 py-3 text-right">{{ _('bia.common.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for consequence in consequences %}
+            <tr class="hover:bg-[var(--color-surface)]/50 transition-colors group">
+              <td class="px-3 py-3">
+                <div class="font-medium text-[var(--color-text)]">{{ consequence.component.name }}</div>
+              </td>
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
+                  {{ consequence.component.context_scope.name }}
+                </span>
+              </td>
+              <td class="px-3 py-3">
+                {% set raw_categories = consequence.consequence_category %}
+                {% if raw_categories %}
+                  {% if raw_categories is sequence and raw_categories is not string %}
+                    {% set categories = raw_categories %}
+                  {% else %}
+                    {% set categories = raw_categories.split(',') %}
+                  {% endif %}
+                  <div class="flex flex-wrap gap-1">
+                    {% for category in categories %}
+                      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.manage_consequences.empty.not_set') }}</span>
+                {% endif %}
+              </td>
+              <td class="px-3 py-3">
+                {% if consequence.security_property %}
+                  <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ consequence.security_property }}</span>
+                {% else %}
+                  <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.manage_consequences.empty.not_set') }}</span>
+                {% endif %}
+              </td>
+              <td class="px-3 py-3">
+                {% set worst = consequence.consequence_worstcase or 'N/A' %}
+                <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
+                {% if consequence.justification_worstcase %}
+                  <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_worstcase }}">{{ consequence.justification_worstcase }}</div>
+                {% endif %}
+              </td>
+              <td class="px-3 py-3 text-right">
+                <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <a href="{{ url_for('bia.view_consequences', component_id=consequence.component_id) }}"
+                     class="text-[var(--color-muted)] hover:text-primary-600 transition-colors p-1"
+                     title="{{ _('bia.actions.edit') }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </a>
+                  <form method="POST" action="{{ url_for('bia.delete_consequence', consequence_id=consequence.id) }}" onsubmit="return confirm('{{ _('bia.all_consequences.confirm_delete') }}');" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="text-[var(--color-muted)] hover:text-red-600 transition-colors p-1"
+                            title="{{ _('bia.actions.delete') }}">
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not consequences %}
+            <tr>
+              <td colspan="6" class="px-3 py-12 text-center text-[var(--color-muted)]">
+                <svg class="h-12 w-12 mx-auto mb-3 text-[var(--color-border)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                {{ _('bia.all_consequences.no_results') }}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="px-4 py-3 border-t border-[var(--color-border)] flex items-center justify-between">
+      <div class="hidden sm:block">
+        <p class="text-sm text-[var(--color-muted)]">
+          {{ _('bia.pagination.showing') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_start }}</span>
+          {{ _('bia.pagination.to') }}
+          <span class="font-medium text-[var(--color-text)]">{{ page_end }}</span>
+          {{ _('bia.pagination.of') }}
+          <span class="font-medium text-[var(--color-text)]">{{ pagination.total }}</span>
+          {{ _('bia.pagination.results') }}
+        </p>
+      </div>
+      <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+        {% if pagination.has_prev %}
+          <a href="{{ url_for('bia.view_all_consequences', page=pagination.prev_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+            <span class="sr-only">{{ _('bia.pagination.previous') }}</span>
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+          </a>
+        {% else %}
+          <span class="relative inline-flex items-center rounded-l-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+          </span>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+          {% if page_num %}
+            {% if page_num == pagination.page %}
+              <span aria-current="page" class="relative z-10 inline-flex items-center bg-primary-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">{{ page_num }}</span>
+            {% else %}
+              <a href="{{ url_for('bia.view_all_consequences', page=page_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-text)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">{{ page_num }}</a>
+            {% endif %}
+          {% else %}
+            <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] focus:outline-offset-0">...</span>
+          {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+          <a href="{{ url_for('bia.view_all_consequences', page=pagination.next_num, q=search_term, bia_id=selected_bia_id) }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-muted)] ring-1 ring-inset ring-[var(--color-border)] hover:bg-[var(--color-surface)] focus:z-20 focus:outline-offset-0">
+            <span class="sr-only">{{ _('bia.pagination.next') }}</span>
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </a>
+        {% else %}
+          <span class="relative inline-flex items-center rounded-r-md px-2 py-2 text-[var(--color-border)] ring-1 ring-inset ring-[var(--color-border)] cursor-not-allowed">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+          </span>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script nonce="{{ csp_nonce }}">
+  document.body.classList.add('page-bia-all-consequences');
+</script>
+{% endblock %}

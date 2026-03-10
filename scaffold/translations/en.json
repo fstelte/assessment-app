@@ -114,7 +114,9 @@
         "export_cia_summary": "Export CIA consequences (summary)",
         "export_availability_detailed": "Export availability (detailed)",
         "export_availability_summary": "Export availability (summary)",
-        "export_authentication": "Export authentication overview"
+        "export_authentication": "Export authentication overview",
+        "requirements": "View requirements",
+        "all_consequences": "View consequences"
       },
       "header": {
         "title": "Business Impact Analyses",
@@ -521,7 +523,7 @@
         "scope": "Scope",
         "search": "Search",
         "component": "Component",
-        "search_placeholder": "Search components\u2026",
+        "search_placeholder": "Search components…",
         "apply": "Apply",
         "reset": "Reset"
       },
@@ -533,7 +535,7 @@
         "start_dpia": "Start DPIA",
         "dpia_short": "DPIA"
       },
-      "showing_count": "Showing {start}\u2013{end} of {total} components",
+      "showing_count": "Showing {start}–{end} of {total} components",
       "no_components": "No components registered yet.",
       "add_button": "Add component",
       "export_inventory": "Export inventory",
@@ -553,7 +555,7 @@
       "no_results": "No components match this filter.",
       "dpia_count_tooltip": "{count} active DPIA",
       "no_dpia_tooltip": "No active DPIA",
-      "delete_confirm": "Delete \u2018{name}\u2019?"
+      "delete_confirm": "Delete ‘{name}’?"
     },
     "manage_availability": {
       "title": "Availability Requirements",
@@ -813,6 +815,37 @@
         "risk_owner": "Risk owner",
         "components": "Components"
       }
+    },
+    "requirements": {
+      "heading": "Availability Requirements",
+      "table": {
+        "component": "Component",
+        "context": "Context",
+        "category": "Category",
+        "security_property": "Security Property",
+        "worst_case": "Worst Case",
+        "realistic_case": "Realistic Case",
+        "mtd": "MTD",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "masl": "MASL"
+      },
+      "showing_count": "{start}–{end} of {total} requirements",
+      "no_requirements": "No availability requirements registered yet.",
+      "availability": {
+        "title": "Availability Requirements",
+        "count_suffix": "records",
+        "empty": "No availability requirements registered yet."
+      }
+    },
+    "all_consequences": {
+      "heading": "CIA Consequences",
+      "showing_count": "{start}–{end} of {total} consequences",
+      "no_consequences": "No consequences registered yet.",
+      "list_title": "All consequences",
+      "count_suffix": "consequences",
+      "no_results": "No consequences match this filter.",
+      "confirm_delete": "Delete this consequence? This action cannot be undone."
     }
   },
   "csa": {
@@ -1178,7 +1211,7 @@
         "identifier": "Identifier",
         "keyword": {
           "label": "Keyword",
-          "placeholder": "Search by name or description\u2026"
+          "placeholder": "Search by name or description…"
         },
         "search": "Search",
         "clear": "Clear filters"
