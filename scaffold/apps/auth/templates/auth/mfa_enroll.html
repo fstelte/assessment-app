@@ -8,12 +8,10 @@
   {# Tab navigation #}
   <div class="flex gap-2 mb-6 border-b border-[var(--color-border)]">
     <button id="tab-passkey"
-            onclick="switchTab('passkey')"
             class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-primary-500 text-primary-400 -mb-px transition">
       🔑 Passkey
     </button>
     <button id="tab-totp"
-            onclick="switchTab('totp')"
             class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)] -mb-px transition">
       📱 Authenticator App
     </button>
@@ -103,6 +101,15 @@
       btn.classList.toggle('text-[var(--color-muted)]', t !== name);
     });
   }
+
+  /* ---------- tab switching even listener ---------- */
+  document.addEventListener('DOMContentLoaded', function () {
+    const tabPasskey = document.getElementById('tab-passkey');
+    const tabTotp = document.getElementById('tab-totp');
+
+    if (tabPasskey) tabPasskey.addEventListener('click', () => switchTab('passkey'));
+    if (tabTotp) tabTotp.addEventListener('click', () => switchTab('totp'));
+  });
 
   /* ---------- passkey registration flow ---------- */
   document.getElementById('register-passkey-btn').addEventListener('click', async () => {
