@@ -790,9 +790,11 @@ def view_components():
         query = query.filter(ContextScope.name.ilike(f"%{scope_filter}%"))
     if search_term:
         query = query.filter(Component.name.ilike(f"%{search_term}%"))
+    if selected_bia_id:
+        query = query.filter(ContextScope.id == selected_bia_id)
     pagination = query.order_by(Component.name.asc()).paginate(page=page, per_page=per_page, error_out=False)
     if pagination.total and page > pagination.pages:
-        return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter, q=search_term))
+        return redirect(url_for("bia.view_components", page=pagination.pages, scope=scope_filter, q=search_term, bia_id=selected_bia_id))
     components = pagination.items
     contexts = ContextScope.query.filter(ContextScope.is_archived == False).order_by(ContextScope.name.asc()).all()
     component_form = ComponentForm()

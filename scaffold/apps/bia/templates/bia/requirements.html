@@ -96,13 +96,22 @@
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.rto') }}</th>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.rpo') }}</th>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.masl') }}</th>
-            <th scope="col" class="px-3 py-3 text-right">{{ _('bia.common.actions') }}</th>
+            <th scope="col" class="px-3 py-3 text-right sticky right-0 bg-[var(--color-surface)]">{{ _('bia.common.actions') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[var(--color-border)]">
           {% for req in availability_requirements %}
             <tr class="hover:bg-[var(--color-surface)]/50 transition-colors group">
-              <td class="px-3 py-3 font-medium text-[var(--color-text)]">{{ req.component.name }}</td>
+              <td class="px-3 py-3 w-[200px] max-w-[200px]">
+                <div class="font-medium text-[var(--color-text)] break-words">{{ req.component.name }}</div>
+                <div class="mt-1">
+                  {% if req.component.info_label %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ req.component.info_label.get_label() }}</span>
+                  {% else %}
+                    <span class="text-[var(--color-muted)] text-xs">—</span>
+                  {% endif %}
+                </div>
+              </td>
               <td class="px-3 py-3">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
                   {{ req.component.context_scope.name }}
@@ -124,7 +133,7 @@
               <td class="px-3 py-3">
                 <span class="text-[var(--color-text)] text-xs">{{ req.masl or '-' }}</span>
               </td>
-              <td class="px-3 py-3 text-right">
+              <td class="px-3 py-3 text-right sticky right-0 bg-[var(--color-card)] group-hover:bg-[var(--color-surface)]/50 transition-colors">
                 <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <a href="{{ url_for('bia.manage_component_availability', component_id=req.component_id) }}?return_to={{ url_for('bia.view_requirements', q=search_term, bia_id=selected_bia_id or '') }}"
                      class="text-[var(--color-muted)] hover:text-green-600 transition-colors p-1"
