@@ -28,7 +28,8 @@
       "start_assessment": "Start Assessment",
       "bia": "BIA",
       "admin_import_controls": "Importeer Beheersmaatregelen",
-      "tools": "Tools"
+      "tools": "Tools",
+      "threat": "Dreigingsmodellering"
     },
     "home": {
       "subtitle": "Eén omgeving voor assessments."
@@ -1941,6 +1942,7 @@
     "close": "Sluiten",
     "delete": "Verwijderen",
     "edit": "Bewerken",
+    "new": "Nieuw",
     "export": "Exporteren",
     "view": "Bekijken",
     "back": "Terug",
@@ -2540,6 +2542,179 @@
     "index": {
       "title": "Beveiligingstools",
       "subtitle": "Een verzameling standalone beveiligings- en compliancetools."
+    }
+  },
+  "threat": {
+    "dashboard": {
+      "title": "Dreigingsmodellen",
+      "subtitle": "STRIDE-LM dreigingsmodellering.",
+      "new_model": "Nieuw dreigingsmodel",
+      "no_models": "Geen dreigingsmodellen gevonden. Maak uw eerste aan.",
+      "scenarios": "scenario's",
+      "archived": "Gearchiveerd",
+      "view": "Bekijken",
+      "view_archived": "Bekijk gearchiveerde"
+    },
+    "model_detail": {
+      "archive": "Archiveren",
+      "unarchive": "Dearchiveren",
+      "export_csv": "CSV",
+      "export_html": "HTML",
+      "export_pdf": "PDF",
+      "stat_total": "Totaal",
+      "stat_critical": "Kritiek",
+      "stat_high": "Hoog",
+      "stat_assets": "Assets",
+      "assets_heading": "Assets",
+      "add_asset": "Asset toevoegen",
+      "no_assets": "Nog geen assets.",
+      "delete_asset_confirm": "Asset verwijderen?",
+      "scenarios_heading": "Dreigingsscenario's",
+      "new_scenario": "Nieuw scenario",
+      "no_scenarios": "Nog geen scenario's.",
+      "create_first_scenario": "Eerste scenario aanmaken"
+    },
+    "model_form": {
+      "title_new": "Nieuw dreigingsmodel",
+      "title_edit": "Dreigingsmodel bewerken",
+      "breadcrumb_new": "Nieuw",
+      "breadcrumb_edit": "Bewerken",
+      "label_title": "Titel",
+      "label_description": "Beschrijving",
+      "label_scope": "Scope",
+      "help_scope": "Beschrijf welke systemen en assets in scope zijn.",
+      "bia_import_heading": "Assets importeren vanuit BIA (optioneel)",
+      "bia_import_hint": "Selecteer een Business Impact Analyse om de componenten automatisch als assets toe te voegen. Laat leeg voor een zelfstandig dreigingsmodel."
+    },
+    "asset_form": {
+      "title_new": "Nieuw asset",
+      "title_edit": "Asset bewerken",
+      "breadcrumb_new": "Nieuw asset",
+      "breadcrumb_edit": "Asset bewerken",
+      "label_name": "Naam",
+      "label_type": "Assettype",
+      "label_description": "Beschrijving",
+      "label_order": "Volgorde",
+      "help": {
+        "name": "Een korte, beschrijvende naam voor het asset (bijv. \"Klantendatabase\", \"Betalings-API\").",
+        "asset_type": "De categorie die dit asset het best omschrijft. <strong>Component</strong>: een proces, dienst of software-element (bijv. webserver, microservice). <strong>Data Flow</strong>: gegevens onderweg tussen componenten (bijv. API-aanroep, berichtenwachtrij). <strong>Trust Boundary</strong>: een grens waar vertrouwensniveaus veranderen (bijv. DMZ, netwerkperimeter, gebruikers-/kernelgrens). <strong>External Entity</strong>: een persoon of systeem buiten uw beheer dat interactie heeft met het model (bijv. eindgebruiker, externe API). <strong>Data Store</strong>: gegevens in rust (bijv. database, bestandsshare, cache).",
+        "description": "Optionele details over het asset: wat het doet, wie het beheert, waar het zich bevindt of waarom het in scope is.",
+        "order": "Bepaalt de weergavevolgorde van assets in lijsten. Lagere nummers verschijnen eerst."
+      }
+    },
+    "scenario_form": {
+      "title_new": "Nieuw dreigingsscenario",
+      "title_edit": "Dreigingsscenario bewerken",
+      "breadcrumb_new": "Nieuw scenario",
+      "breadcrumb_edit": "Scenario bewerken",
+      "section_identity": "Identiteit",
+      "section_analysis": "Analyse",
+      "section_treatment": "Behandeling",
+      "label_stride": "STRIDE-LM categorie",
+      "label_asset": "Bedreigd asset",
+      "label_title": "Scenario titel",
+      "label_description": "Beschrijving",
+      "label_actor": "Dreigingsactor",
+      "label_vector": "Aanvalsvector",
+      "label_preconditions": "Voorwaarden",
+      "label_impact_desc": "Impactbeschrijving",
+      "label_cia": "Getroffen CIA-eigenschappen",
+      "label_likelihood": "Waarschijnlijkheid (1-5)",
+      "label_impact": "Impact (1-5)",
+      "label_treatment": "Behandeling",
+      "label_mitigation": "Mitigatie / maatregelen",
+      "label_residual": "Restrisico",
+      "label_status": "Status",
+      "label_owner": "Eigenaar",
+      "label_csa_controls": "CSA-beheersmaatregelen",
+      "help": {
+        "stride_category": "Selecteer de STRIDE-LM categorie die de aard van deze dreiging het best beschrijft. Spoofing (identiteit), Tampering (data), Repudiation (acties), Information Disclosure (blootstelling), Denial of Service (beschikbaarheid), Elevation of Privilege (toegang), Lateral Movement (verspreiding).",
+        "asset_id": "Het specifieke asset dat dit scenario treft. Koppel het aan een asset uit het model voor een volledig overzicht van het aanvalsoppervlak.",
+        "title": "Een beknopte, beschrijvende naam voor dit dreigingsscenario (bijv. \"Niet-geauthenticeerde API-toegang\", \"SQL-injectie op inlogformulier\").",
+        "description": "Een verhalende beschrijving van de dreiging: wat er gebeurt, wie erbij betrokken is en waarom het relevant is.",
+        "threat_actor": "Wie of wat initieert deze dreiging? Voorbeelden: externe aanvaller, kwaadwillende insider, geautomatiseerde bot, natiestaat.",
+        "attack_vector": "Beschrijf het technische pad of de methode die een aanvaller zou gebruiken om deze dreiging te misbruiken (bijv. netwerkverzoek, phishing-e-mail, fysieke toegang).",
+        "preconditions": "Noem eventuele voorwaarden die aanwezig moeten zijn voordat deze aanval kan slagen (bijv. geldige inloggegevens vereist, openbaar eindpunt blootgesteld, niet-gepatchte bibliotheek).",
+        "impact_description": "Beschrijf de gevolgen als dit scenario werkelijkheid wordt: gegevensverlies, uitval van diensten, schending van regelgeving, reputatieschade, enzovoort.",
+        "likelihood": "Hoe waarschijnlijk is het dat deze dreiging zich voordoet? 1 = Zeldzaam, 2 = Onwaarschijnlijk, 3 = Mogelijk, 4 = Waarschijnlijk, 5 = Bijna zeker.",
+        "impact_score": "Hoe ernstig zouden de gevolgen zijn als dit scenario zich voordoet? 1 = Verwaarloosbaar, 2 = Gering, 3 = Matig, 4 = Aanzienlijk, 5 = Kritiek.",
+        "residual_likelihood": "Hoe waarschijnlijk is het na het treffen van maatregelen dat deze dreiging zich nog voordoet? Laat leeg als de maatregelen nog niet zijn beoordeeld.",
+        "residual_impact": "Hoe ernstig zou de impact na het treffen van maatregelen nog zijn? Laat leeg als de maatregelen nog niet zijn beoordeeld.",
+        "treatment": "Hoe wordt dit risico aangepakt? Accepteren (risico tolereren), Mitigeren (kans of impact verlagen), Overdragen (bijv. verzekeren of uitbesteden), of Vermijden (activiteit elimineren).",
+        "status": "De huidige levenscyclusfase van dit scenario: Identified (ingepland), Analysed (beoordeeld), Mitigated (maatregelen getroffen), of Closed (geaccepteerd of opgelost).",
+        "owner_id": "De persoon die verantwoordelijk is voor het bewaken en oplossen van dit dreigingsscenario.",
+        "csa_control_ids": "Koppel een of meer CSA-beheersmaatregelen die dit scenario aanpakken of beperken. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren."
+      }
+    },
+    "scenario_detail": {
+      "back": "Terug naar model",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "confirm_delete": "Weet u zeker dat u dit scenario wilt verwijderen?",
+      "risk_score": "Risicowaarde",
+      "risk_level": "Risiconiveau",
+      "stride_category": "STRIDE-LM categorie",
+      "asset": "Asset",
+      "description": "Beschrijving",
+      "threat_actor": "Dreigingsactor",
+      "attack_vector": "Aanvalsvector",
+      "preconditions": "Voorwaarden",
+      "impact_description": "Impactbeschrijving",
+      "affected_cia": "Getroffen CIA",
+      "likelihood_impact": "Waarschijnlijkheid: {likelihood} \u00d7 Impact: {impact}",
+      "treatment": "Behandeling",
+      "mitigation": "Mitigatie",
+      "residual_risk": "Restrisico",
+      "status": "Status",
+      "owner": "Eigenaar",
+      "linked_controls": "Gekoppelde CSA-beheersmaatregelen"
+    },
+    "export": {
+      "title": "Dreigingsmodel rapport",
+      "generated": "Gegenereerd",
+      "owner": "Eigenaar",
+      "scope": "Scope",
+      "toc": "Inhoudsopgave",
+      "summary": "Samenvatting",
+      "by_stride": "Scenario's per STRIDE-LM categorie",
+      "by_risk": "Scenario's per risiconiveau",
+      "by_status": "Scenario's per status",
+      "asset_appendix": "Bijlage: Assetlijst"
+    },
+    "flash": {
+      "created": "Dreigingsmodel succesvol aangemaakt.",
+      "updated": "Dreigingsmodel bijgewerkt.",
+      "archived": "Dreigingsmodel gearchiveerd.",
+      "unarchived": "Dreigingsmodel hersteld.",
+      "deleted": "Dreigingsmodel verwijderd.",
+      "asset_created": "Asset toegevoegd.",
+      "asset_updated": "Asset bijgewerkt.",
+      "asset_deleted": "Asset verwijderd.",
+      "scenario_created": "Scenario aangemaakt.",
+      "scenario_updated": "Scenario bijgewerkt.",
+      "scenario_deleted": "Scenario verwijderd."
+    },
+    "stride": {
+      "spoofing": "Spoofing",
+      "tampering": "Manipulatie",
+      "repudiation": "Ontkenning",
+      "information_disclosure": "Informatieschending",
+      "denial_of_service": "Denial of Service",
+      "elevation_of_privilege": "Escalatie van rechten",
+      "lateral_movement": "Zijwaartse beweging"
+    },
+    "risk_level": {
+      "low": "Laag",
+      "medium": "Gemiddeld",
+      "high": "Hoog",
+      "critical": "Kritiek"
+    },
+    "status": {
+      "identified": "Geïdentificeerd",
+      "analysed": "Geanalyseerd",
+      "mitigated": "Gemitigeerd",
+      "accepted": "Geaccepteerd",
+      "closed": "Gesloten"
     }
   }
 }

@@ -27,7 +27,8 @@
       "mfa_setup": "Mfa Setup",
       "start_assessment": "Start Assessment",
       "admin_import_controls": "Import Controls",
-      "tools": "Tools"
+      "tools": "Tools",
+      "threat": "Threat Modeling"
     },
     "home": {
       "subtitle": "Unified workspace for assessments."
@@ -1678,6 +1679,7 @@
     "close": "Close",
     "delete": "Delete",
     "edit": "Edit",
+    "new": "New",
     "back": "Back",
     "export": "Export",
     "view": "View",
@@ -2470,6 +2472,179 @@
     "index": {
       "title": "Security Tools",
       "subtitle": "A collection of standalone security and compliance tools."
+    }
+  },
+  "threat": {
+    "dashboard": {
+      "title": "Threat Models",
+      "subtitle": "STRIDE-LM based threat modeling workspace.",
+      "new_model": "New threat model",
+      "no_models": "No threat models found. Create your first one.",
+      "scenarios": "scenarios",
+      "archived": "Archived",
+      "view": "View",
+      "view_archived": "View archived"
+    },
+    "model_detail": {
+      "archive": "Archive",
+      "unarchive": "Unarchive",
+      "export_csv": "CSV",
+      "export_html": "HTML",
+      "export_pdf": "PDF",
+      "stat_total": "Total",
+      "stat_critical": "Critical",
+      "stat_high": "High",
+      "stat_assets": "Assets",
+      "assets_heading": "Assets",
+      "add_asset": "Add asset",
+      "no_assets": "No assets yet.",
+      "delete_asset_confirm": "Delete asset?",
+      "scenarios_heading": "Threat Scenarios",
+      "new_scenario": "New scenario",
+      "no_scenarios": "No scenarios yet.",
+      "create_first_scenario": "Create first scenario"
+    },
+    "model_form": {
+      "title_new": "New Threat Model",
+      "title_edit": "Edit Threat Model",
+      "breadcrumb_new": "New",
+      "breadcrumb_edit": "Edit",
+      "label_title": "Title",
+      "label_description": "Description",
+      "label_scope": "Scope",
+      "help_scope": "Describe what systems and assets are in scope.",
+      "bia_import_heading": "Import assets from BIA (optional)",
+      "bia_import_hint": "Select a Business Impact Analysis to automatically add its components as assets. Leave blank for a standalone threat model."
+    },
+    "asset_form": {
+      "title_new": "New Asset",
+      "title_edit": "Edit Asset",
+      "breadcrumb_new": "New asset",
+      "breadcrumb_edit": "Edit asset",
+      "label_name": "Name",
+      "label_type": "Asset type",
+      "label_description": "Description",
+      "label_order": "Display order",
+      "help": {
+        "name": "A short, descriptive name for the asset (e.g. \"Customer database\", \"Payment API\").",
+        "asset_type": "The category that best describes this asset. <strong>Component</strong>: a process, service, or software element (e.g. web server, microservice). <strong>Data Flow</strong>: data in transit between components (e.g. API call, message queue). <strong>Trust Boundary</strong>: a boundary where trust levels change (e.g. DMZ, network perimeter, user/kernel boundary). <strong>External Entity</strong>: a person or system outside your control that interacts with the model (e.g. end user, third-party API). <strong>Data Store</strong>: data at rest (e.g. database, file share, cache).",
+        "description": "Optional details about the asset: what it does, who owns it, where it resides, or why it is in scope.",
+        "order": "Controls the display order of assets in lists. Lower numbers appear first."
+      }
+    },
+    "scenario_form": {
+      "title_new": "New Threat Scenario",
+      "title_edit": "Edit Threat Scenario",
+      "breadcrumb_new": "New scenario",
+      "breadcrumb_edit": "Edit scenario",
+      "section_identity": "Identity",
+      "section_analysis": "Analysis",
+      "section_treatment": "Treatment",
+      "label_stride": "STRIDE-LM category",
+      "label_asset": "Threatened asset",
+      "label_title": "Scenario title",
+      "label_description": "Description",
+      "label_actor": "Threat actor",
+      "label_vector": "Attack vector",
+      "label_preconditions": "Preconditions",
+      "label_impact_desc": "Impact description",
+      "label_cia": "Affected CIA properties",
+      "label_likelihood": "Likelihood (1-5)",
+      "label_impact": "Impact (1-5)",
+      "label_treatment": "Treatment",
+      "label_mitigation": "Mitigation / controls",
+      "label_residual": "Residual risk",
+      "label_status": "Status",
+      "label_owner": "Owner",
+      "label_csa_controls": "CSA controls",
+      "help": {
+        "stride_category": "Select the STRIDE-LM category that best describes the nature of this threat. Spoofing (identity), Tampering (data), Repudiation (actions), Information Disclosure (exposure), Denial of Service (availability), Elevation of Privilege (access), Lateral Movement (spreading).",
+        "asset_id": "The specific asset this scenario targets. Link it to an asset from the model to build a complete attack surface overview.",
+        "title": "A concise, descriptive name for this threat scenario (e.g. \"Unauthenticated API access\", \"SQL injection on login form\").",
+        "description": "A narrative description of the threat: what happens, who is involved, and why it matters.",
+        "threat_actor": "Who or what initiates this threat? Examples: external attacker, malicious insider, automated bot, nation-state.",
+        "attack_vector": "Describe the technical path or method an attacker would use to exploit this threat (e.g. network request, phishing email, physical access).",
+        "preconditions": "List any conditions that must be true for this attack to succeed (e.g. valid credentials required, public endpoint exposed, unpatched library).",
+        "impact_description": "Describe the real-world consequences if this scenario is realised: data loss, service downtime, regulatory breach, reputational damage, etc.",
+        "likelihood": "How probable is it that this threat will materialise? 1 = Rare, 2 = Unlikely, 3 = Possible, 4 = Likely, 5 = Almost certain.",
+        "impact_score": "How severe would the consequences be if this scenario occurs? 1 = Negligible, 2 = Minor, 3 = Moderate, 4 = Significant, 5 = Critical.",
+        "residual_likelihood": "After controls are applied, how likely is this threat to still materialise? Leave blank if controls have not yet been assessed.",
+        "residual_impact": "After controls are applied, how severe would the impact still be? Leave blank if controls have not yet been assessed.",
+        "treatment": "How will this risk be handled? Accept (tolerate the risk), Mitigate (reduce likelihood or impact), Transfer (e.g. insure or outsource), or Avoid (eliminate the activity).",
+        "status": "The current lifecycle stage of this scenario: Identified (logged), Analysed (assessed), Mitigated (controls in place), or Closed (accepted or resolved).",
+        "owner_id": "The person accountable for monitoring and resolving this threat scenario.",
+        "csa_control_ids": "Link one or more CSA controls that address or mitigate this scenario. Hold Ctrl / Cmd to select multiple."
+      }
+    },
+    "scenario_detail": {
+      "back": "Back to model",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm_delete": "Are you sure you want to delete this scenario?",
+      "risk_score": "Risk score",
+      "risk_level": "Risk level",
+      "stride_category": "STRIDE-LM category",
+      "asset": "Asset",
+      "description": "Description",
+      "threat_actor": "Threat actor",
+      "attack_vector": "Attack vector",
+      "preconditions": "Preconditions",
+      "impact_description": "Impact description",
+      "affected_cia": "Affected CIA",
+      "likelihood_impact": "Likelihood: {likelihood} \u00d7 Impact: {impact}",
+      "treatment": "Treatment",
+      "mitigation": "Mitigation",
+      "residual_risk": "Residual risk",
+      "status": "Status",
+      "owner": "Owner",
+      "linked_controls": "Linked CSA controls"
+    },
+    "export": {
+      "title": "Threat Model Report",
+      "generated": "Generated",
+      "owner": "Owner",
+      "scope": "Scope",
+      "toc": "Table of Contents",
+      "summary": "Executive Summary",
+      "by_stride": "Scenarios by STRIDE-LM category",
+      "by_risk": "Scenarios by risk level",
+      "by_status": "Scenarios by status",
+      "asset_appendix": "Appendix: Asset list"
+    },
+    "flash": {
+      "created": "Threat model created successfully.",
+      "updated": "Threat model updated.",
+      "archived": "Threat model archived.",
+      "unarchived": "Threat model restored.",
+      "deleted": "Threat model deleted.",
+      "asset_created": "Asset added.",
+      "asset_updated": "Asset updated.",
+      "asset_deleted": "Asset deleted.",
+      "scenario_created": "Scenario created.",
+      "scenario_updated": "Scenario updated.",
+      "scenario_deleted": "Scenario deleted."
+    },
+    "stride": {
+      "spoofing": "Spoofing",
+      "tampering": "Tampering",
+      "repudiation": "Repudiation",
+      "information_disclosure": "Information Disclosure",
+      "denial_of_service": "Denial of Service",
+      "elevation_of_privilege": "Elevation of Privilege",
+      "lateral_movement": "Lateral Movement"
+    },
+    "risk_level": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "status": {
+      "identified": "Identified",
+      "analysed": "Analysed",
+      "mitigated": "Mitigated",
+      "accepted": "Accepted",
+      "closed": "Closed"
     }
   }
 }
