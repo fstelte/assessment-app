@@ -42,6 +42,20 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 - `MaturityAnswer`: captures the compliance status (`compliant`/`non-compliant`) and evidence for specific CMMI requirements within an assessment.
 - `MaturityLevel`: an IntEnum defining the 5 CMMI levels (Initial, Managed, Defined, Quantitatively Managed, Optimizing).
 
+## Threat Modeling Domain
+
+- `ThreatModel`: top-level container for a threat model, scoped with a title, description, scope narrative, and optional owner. Supports archiving.
+- `ThreatModelAsset`: assets within a model (components, data flows, trust boundaries, external entities, data stores), ordered by position.
+- `ThreatScenario`: core record per identified threat. Captures STRIDE-LM category, likelihood (1-5), impact (1-5), computed risk score and level (`low`/`medium`/`high`/`critical`), treatment option (`accept`/`mitigate`/`transfer`/`avoid`), residual risk breakdown (likelihood, impact, score, level), affected CIA aspects, lifecycle status (`identified` → `analysed` → `mitigated` → `accepted` → `closed`), and optional links to BIA `Component` records and CSA `Control` entries via the `threat_scenario_controls` join table.
+- `threat_scenario_controls`: many-to-many join between `ThreatScenario` and CSA `Control`.
+
+Risk scoring follows `likelihood × impact_score`; `RiskLevel` thresholds are hardcoded (`low ≤ 4`, `medium ≤ 9`, `high ≤ 14`, `critical ≥ 15`). The `services.py` module exposes `apply_risk_score` and `apply_residual_risk_score` helpers, plus a `export_scenarios_csv` function.
+
+### Threat Model Migrations
+
+- `20260317_0001_add_threat_modeling_module`: creates `threat_models`, `threat_model_assets`, `threat_scenarios`, and `threat_scenario_controls`.
+- `20260317_0002_threat_scenario_residual_risk_breakdown`: replaces the single `residual_risk` text column with structured `residual_likelihood`, `residual_impact`, `residual_risk_score`, and `residual_risk_level` columns.
+
 ```mermaid
 erDiagram
     User ||--o{ MaturityAssessment : conducts
@@ -89,6 +103,6 @@ erDiagram
 
 ## Next Actions
 
-1. Reconcile legacy Alembic history into unified revisions.
-2. Implement data-migration scripts for BIA roles and CSA MFA settings.
+1. ~~Reconcile legacy Alembic history into unified revisions.~~ ✓ Complete.
+2. ~~Implement data-migration scripts for BIA roles and CSA MFA settings.~~ ✓ Complete.
 3. Add model-level tests covering key relationships and event listeners.

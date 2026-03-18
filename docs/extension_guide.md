@@ -26,8 +26,8 @@ This guide explains how to add new domain applications to the scaffold platform.
 ## 4. Templates and Static Assets
 
 - Place templates under `scaffold/apps/<your_app>/templates/<your_app>/`.
-- Inherit from the shared base template (`layout.html`) to get Bootstrap dark mode and navigation.
-- Add static files under `scaffold/apps/<your_app>/static/` and ensure they integrate with the asset pipeline.
+- Inherit from the shared base template (`base.html`) to get the Tailwind dark-mode layout and navigation.
+- Add static files under `scaffold/apps/<your_app>/static/` and rebuild `app.css` with `poetry run tailwind` to include new template classes in the Tailwind output.
 
 ## 5. Forms and Services
 

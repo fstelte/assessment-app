@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}{{ scenario.title }}{% endblock %}
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+.stride-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.stride-S  { background: #3b82f6; color: #fff; }
+.stride-T  { background: #f59e0b; color: #fff; }
+.stride-R  { background: #8b5cf6; color: #fff; }
+.stride-I  { background: #06b6d4; color: #fff; }
+.stride-D  { background: #ef4444; color: #fff; }
+.stride-E  { background: #10b981; color: #fff; }
+.stride-LM { background: #f97316; color: #fff; }
+.risk-low      { background: #10b981; color: #fff; }
+.risk-medium   { background: #f59e0b; color: #fff; }
+.risk-high     { background: #f97316; color: #fff; }
+.risk-critical { background: #ef4444; color: #fff; }
+.detail-row { display: grid; grid-template-columns: 180px 1fr; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--bs-border-color-translucent); }
+.detail-row:last-child { border-bottom: none; }
+.detail-label { font-size: 0.8rem; font-weight: 600; color: var(--bs-secondary-color); }
+.threat-panel {
+  border-radius: 1.25rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+  padding: 1.25rem 1.5rem;
+}
+body[data-theme="dark"] .threat-panel {
+  background: rgba(18, 18, 18, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
+}
+</style>
+{% endblock %}
+{% block main_container_class %}container mx-auto max-w-5xl px-4 sm:px-6{% endblock %}
+
+{% macro stride_code(cat) %}
+  {% if cat.value == 'spoofing' %}S
+  {% elif cat.value == 'tampering' %}T
+  {% elif cat.value == 'repudiation' %}R
+  {% elif cat.value == 'information_disclosure' %}I
+  {% elif cat.value == 'denial_of_service' %}D
+  {% elif cat.value == 'elevation_of_privilege' %}E
+  {% elif cat.value == 'lateral_movement' %}LM
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ model.title }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ scenario.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="threat-panel">
+    <!-- Title row -->
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        {% set code = stride_code(scenario.stride_category) | trim %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="stride-pill stride-{{ code }}">{{ code }}</span>
+          <span class="stride-pill risk-{{ scenario.risk_level.value }}">{{ _("threat.risk_level." + scenario.risk_level.value) }}</span>
+        </div>
+        <h1 class="fs-3 fw-bold mb-0">{{ scenario.title }}</h1>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('threat.scenario_edit', model_id=model.id, scenario_id=scenario.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
+          {{ _("threat.scenario_detail.edit") }}
+        </a>
+        <form method="post" action="{{ url_for('threat.scenario_delete', model_id=model.id, scenario_id=scenario.id) }}"
+              data-confirm="{{ _('threat.scenario_detail.confirm_delete') }}"
+              onsubmit="return confirm(this.dataset.confirm)">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10">{{ _("threat.scenario_detail.delete") }}</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Detail rows -->
+    <div class="detail-row">
+      <div class="detail-label">{{ _("threat.scenario_detail.stride_category") }}</div>
+      <div>{{ _("threat.stride." + scenario.stride_category.value) }}</div>
+    </div>
+    {% if scenario.asset %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.asset") }}</div>
+        <div>{{ scenario.asset.name }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.threat_actor %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.threat_actor") }}</div>
+        <div>{{ scenario.threat_actor }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.description %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.description") }}</div>
+        <div>{{ scenario.description }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.attack_vector %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.attack_vector") }}</div>
+        <div>{{ scenario.attack_vector }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.preconditions %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.preconditions") }}</div>
+        <div>{{ scenario.preconditions }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.impact_description %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.impact_description") }}</div>
+        <div>{{ scenario.impact_description }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.affected_cia %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.affected_cia") }}</div>
+        <div>
+          {% for char in scenario.affected_cia %}
+            <span class="badge bg-secondary">{{ char }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <div class="detail-row">
+      <div class="detail-label">{{ _("threat.scenario_detail.risk_score") }}</div>
+      <div class="d-flex align-items-center gap-2">
+        <strong class="fs-5">{{ scenario.risk_score }}</strong>
+        <span class="stride-pill risk-{{ scenario.risk_level.value }}">{{ _("threat.risk_level." + scenario.risk_level.value) }}</span>
+        <span class="text-[var(--color-muted)] small">
+          ({{ _("threat.scenario_detail.likelihood_impact").format(likelihood=scenario.likelihood, impact=scenario.impact_score) }})
+        </span>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">{{ _("threat.scenario_detail.status") }}</div>
+      <div>{{ _("threat.status." + scenario.status.value) if ("threat.status." + scenario.status.value) else scenario.status.value | replace('_', ' ') | title }}</div>
+    </div>
+    {% if scenario.treatment %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.treatment") }}</div>
+        <div>{{ scenario.treatment.value | title }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.mitigation %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.mitigation") }}</div>
+        <div>{{ scenario.mitigation }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.residual_risk_score %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.residual_risk") }}</div>
+        <div class="d-flex align-items-center gap-2">
+          <strong class="fs-5">{{ scenario.residual_risk_score }}</strong>
+          <span class="stride-pill risk-{{ scenario.residual_risk_level.value }}">{{ _("threat.risk_level." + scenario.residual_risk_level.value) }}</span>
+          <span class="text-[var(--color-muted)] small">
+            ({{ _("threat.scenario_detail.likelihood_impact").format(likelihood=scenario.residual_likelihood, impact=scenario.residual_impact) }})
+          </span>
+        </div>
+      </div>
+    {% endif %}
+    {% if scenario.owner %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.owner") }}</div>
+        <div>{{ scenario.owner.email }}</div>
+      </div>
+    {% endif %}
+    {% if scenario.controls %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.linked_controls") }}</div>
+        <div class="d-flex flex-wrap gap-1">
+          {% for control in scenario.controls %}
+            <span class="badge bg-info text-dark">{{ control.domain }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="mt-2">
+    <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
+      ← {{ _("threat.scenario_detail.back") }}
+    </a>
+  </div>
+</div>
+{% endblock %}

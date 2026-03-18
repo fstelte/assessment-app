@@ -18,6 +18,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.maturity",
     "scaffold.apps.template",
     "scaffold.apps.tools",
+    "scaffold.apps.threat",
 ]
 
 

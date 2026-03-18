@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
+{% block title %}{% if scenario %}{{ _("threat.scenario_form.title_edit") }}{% else %}{{ _("threat.scenario_form.title_new") }}{% endif %}{% endblock %}
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+.stride-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.stride-option-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--bs-border-color);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  gap: 0.35rem;
+}
+.stride-option-label:hover { border-color: #6366f1; }
+.stride-select-hidden { display: none; }
+.stride-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+.threat-form-panel {
+  border-radius: 1.25rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+body[data-theme="dark"] .threat-form-panel {
+  background: rgba(18, 18, 18, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
+}
+</style>
+{% endblock %}
+{% block main_container_class %}container mx-auto max-w-4xl px-4 sm:px-6{% endblock %}
+
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ model.title }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">
+        {% if scenario %}{{ _("threat.scenario_form.breadcrumb_edit") }}{% else %}{{ _("threat.scenario_form.breadcrumb_new") }}{% endif %}
+      </li>
+    </ol>
+  </nav>
+
+  <div class="threat-form-panel">
+    <h1 class="fs-4 fw-bold mb-4">
+      {% if scenario %}{{ _("threat.scenario_form.title_edit") }}{% else %}{{ _("threat.scenario_form.title_new") }}{% endif %}
+    </h1>
+
+    <form method="post">
+      {{ form.hidden_tag() }}
+
+      <!-- STRIDE-LM visual picker -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">{{ _("threat.scenario_form.label_stride") }} <span class="text-danger">*</span></label>
+        <div class="stride-option-grid">
+          {% set stride_data = [
+            ('spoofing', 'S', '#3b82f6'),
+            ('tampering', 'T', '#f59e0b'),
+            ('repudiation', 'R', '#8b5cf6'),
+            ('information_disclosure', 'I', '#06b6d4'),
+            ('denial_of_service', 'D', '#ef4444'),
+            ('elevation_of_privilege', 'E', '#10b981'),
+            ('lateral_movement', 'LM', '#f97316'),
+          ] %}
+          {% for value, code, color in stride_data %}
+            <label class="stride-option-label" id="stride-lbl-{{ loop.index }}" data-stride="{{ value }}">
+              <span class="stride-badge" style="background:{{ color }};color:#fff">{{ code }}</span>
+              <span>{{ _("threat.stride." + value) }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {{ form.stride_category(class="stride-select-hidden", id="stride_category_field") }}
+      </div>
+
+      <!-- Asset + title row -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-5">
+          {{ render_field_with_help(form.asset_id) }}
+        </div>
+        <div class="col-12 col-md-7">
+          {{ render_field_with_help(form.title) }}
+        </div>
+      </div>
+
+      <!-- Section: Identity -->
+      <h2 class="fs-6 fw-semibold mb-3 mt-2 text-muted text-uppercase" style="letter-spacing:0.06em">
+        {{ _("threat.scenario_form.section_identity") }}
+      </h2>
+      <div class="row g-3">
+        <div class="col-12">{{ render_field_with_help(form.description) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.threat_actor) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.attack_vector) }}</div>
+        <div class="col-12">{{ render_field_with_help(form.preconditions) }}</div>
+        <div class="col-12">{{ render_field_with_help(form.impact_description) }}</div>
+      </div>
+
+      <!-- CIA -->
+      <div class="mb-3 mt-2">
+        <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_cia") }}</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            {{ form.cia_c(class="form-check-input") }}
+            {{ form.cia_c.label(class="form-check-label") }}
+          </div>
+          <div class="form-check">
+            {{ form.cia_i(class="form-check-input") }}
+            {{ form.cia_i.label(class="form-check-label") }}
+          </div>
+          <div class="form-check">
+            {{ form.cia_a(class="form-check-input") }}
+            {{ form.cia_a.label(class="form-check-label") }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Analysis -->
+      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+        {{ _("threat.scenario_form.section_analysis") }}
+      </h2>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.likelihood) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.impact_score) }}</div>
+      </div>
+
+      <!-- Section: Residual Risk Analysis -->
+      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+        {{ _("threat.scenario_form.section_residual_risk") }}
+      </h2>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.residual_likelihood) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.residual_impact) }}</div>
+      </div>
+
+      <!-- Section: Treatment -->
+      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+        {{ _("threat.scenario_form.section_treatment") }}
+      </h2>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.treatment) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.status) }}</div>
+        <div class="col-12 col-md-6">{{ render_field_with_help(form.owner_id) }}</div>
+        <div class="col-12">{{ render_field_with_help(form.csa_control_ids) }}</div>
+      </div>
+
+      <div class="d-flex gap-2 mt-4">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
+        <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.cancel") }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  function selectStride(value, el) {
+    document.getElementById('stride_category_field').value = value;
+    document.querySelectorAll('.stride-option-label').forEach(function (lbl) {
+      lbl.style.borderColor = '';
+      lbl.style.background = '';
+    });
+    el.style.borderColor = '#6366f1';
+    el.style.background = 'rgba(99,102,241,0.08)';
+  }
+
+  // Attach click handlers via event listeners (CSP-safe)
+  document.querySelectorAll('.stride-option-label[data-stride]').forEach(function (lbl) {
+    lbl.addEventListener('click', function () {
+      selectStride(this.dataset.stride, this);
+    });
+  });
+
+  // Pre-select on page load
+  var currentVal = document.getElementById('stride_category_field').value;
+  if (currentVal) {
+    var matching = document.querySelector('.stride-option-label[data-stride="' + currentVal + '"]');
+    if (matching) selectStride(currentVal, matching);
+  }
+})();
+</script>
+{% endblock %}

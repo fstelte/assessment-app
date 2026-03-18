@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en" data-theme="{{ theme | default('dark') }}">
+<head>
+<meta charset="utf-8">
+<title>{{ _("threat.export.title") }} — {{ model.title }}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #1e293b; margin: 0; padding: 0; }
+  .page { max-width: 900px; margin: 0 auto; padding: 40px; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  h2 { font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-top: 32px; }
+  h3 { font-size: 15px; margin-top: 24px; }
+  .meta { color: #64748b; font-size: 12px; margin-bottom: 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 12px; }
+  th { background: #f1f5f9; text-align: left; padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 6px 10px; border: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .risk-low      { background: #10b981; color: #fff; }
+  .risk-medium   { background: #f59e0b; color: #fff; }
+  .risk-high     { background: #f97316; color: #fff; }
+  .risk-critical { background: #ef4444; color: #fff; }
+  .stride-S  { background: #3b82f6; color: #fff; }
+  .stride-T  { background: #f59e0b; color: #fff; }
+  .stride-R  { background: #8b5cf6; color: #fff; }
+  .stride-I  { background: #06b6d4; color: #fff; }
+  .stride-D  { background: #ef4444; color: #fff; }
+  .stride-E  { background: #10b981; color: #fff; }
+  .stride-LM { background: #f97316; color: #fff; }
+  .cover { background: linear-gradient(135deg, #1e3a5f, #0f2027); color: #fff; padding: 60px 40px; border-radius: 12px; margin-bottom: 40px; }
+  .cover h1 { color: #fff; font-size: 32px; }
+  .cover .meta { color: rgba(255,255,255,0.7); }
+  .scenario-block { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .scenario-block h4 { margin-top: 0; margin-bottom: 8px; font-size: 14px; }
+  .detail-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 12px; margin-top: 8px; }
+  .detail-label { font-weight: 600; color: #64748b; }
+  .summary-stat { display: inline-block; text-align: center; padding: 12px 20px; border: 1px solid #e2e8f0; border-radius: 8px; margin: 4px; min-width: 80px; }
+  .summary-stat .num { font-size: 22px; font-weight: 700; }
+  .summary-stat .lbl { font-size: 10px; color: #64748b; text-transform: uppercase; }
+  @media print { .page { padding: 20px; } }
+
+  /* Dark mode overrides */
+  html[data-theme="dark"] body {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  html[data-theme="dark"] h2 {
+    border-bottom-color: #334155;
+  }
+  html[data-theme="dark"] .meta {
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] th {
+    background: #1e293b;
+    color: #cbd5e1;
+    border-color: #334155;
+  }
+  html[data-theme="dark"] td {
+    border-color: #334155;
+  }
+  html[data-theme="dark"] tr:nth-child(even) td {
+    background: #1e293b;
+  }
+  html[data-theme="dark"] .scenario-block {
+    border-color: #334155;
+    background: #1e293b;
+  }
+  html[data-theme="dark"] .detail-label {
+    color: #94a3b8;
+  }
+  html[data-theme="dark"] .summary-stat {
+    border-color: #334155;
+    background: #1e293b;
+  }
+  html[data-theme="dark"] .summary-stat .lbl {
+    color: #94a3b8;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;margin-bottom:8px">
+      {{ _("threat.export.title") }}
+    </div>
+    <h1>{{ model.title }}</h1>
+    {% if model.description %}
+      <p style="opacity:0.8;margin-top:8px">{{ model.description }}</p>
+    {% endif %}
+    <div class="meta" style="margin-top:16px">
+      {% if model.owner %}<div>{{ _("threat.export.owner") }}: {{ model.owner.email }}</div>{% endif %}
+      <div>{{ _("threat.export.generated") }}: {{ now().strftime('%Y-%m-%d') if now is defined else '' }}</div>
+    </div>
+    {% if model.scope %}
+      <div style="margin-top:16px;font-size:12px;opacity:0.8">
+        <strong>{{ _("threat.export.scope") }}:</strong> {{ model.scope }}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Executive Summary -->
+  <h2>{{ _("threat.export.summary") }}</h2>
+  <div>
+    {% set total = model.scenarios | length %}
+    {% set critical_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'critical') | list | length %}
+    {% set high_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'high') | list | length %}
+    {% set medium_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'medium') | list | length %}
+    {% set low_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'low') | list | length %}
+    <div class="summary-stat"><div class="num">{{ total }}</div><div class="lbl">Total</div></div>
+    <div class="summary-stat"><div class="num" style="color:#ef4444">{{ critical_count }}</div><div class="lbl">Critical</div></div>
+    <div class="summary-stat"><div class="num" style="color:#f97316">{{ high_count }}</div><div class="lbl">High</div></div>
+    <div class="summary-stat"><div class="num" style="color:#f59e0b">{{ medium_count }}</div><div class="lbl">Medium</div></div>
+    <div class="summary-stat"><div class="num" style="color:#10b981">{{ low_count }}</div><div class="lbl">Low</div></div>
+  </div>
+
+  <!-- By STRIDE category -->
+  <h3>{{ _("threat.export.by_stride") }}</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Code</th>
+        <th>Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cat in StrideCategory %}
+        {% set cat_scenarios = model.scenarios | selectattr('stride_category', 'equalto', cat) | list %}
+        {% if cat_scenarios %}
+          {% set codes = {'spoofing':'S','tampering':'T','repudiation':'R','information_disclosure':'I','denial_of_service':'D','elevation_of_privilege':'E','lateral_movement':'LM'} %}
+          {% set code = codes[cat.value] %}
+          <tr>
+            <td>{{ _("threat.stride." + cat.value) }}</td>
+            <td><span class="badge stride-{{ code }}">{{ code }}</span></td>
+            <td>{{ cat_scenarios | length }}</td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Scenarios by STRIDE category -->
+  {% set codes = {'spoofing':'S','tampering':'T','repudiation':'R','information_disclosure':'I','denial_of_service':'D','elevation_of_privilege':'E','lateral_movement':'LM'} %}
+  {% for cat in StrideCategory %}
+    {% set cat_scenarios = model.scenarios | selectattr('stride_category', 'equalto', cat) | list %}
+    {% if cat_scenarios %}
+      {% set code = codes[cat.value] %}
+      <h2>
+        <span class="badge stride-{{ code }}" style="margin-right:8px">{{ code }}</span>
+        {{ _("threat.stride." + cat.value) }}
+      </h2>
+      {% for scenario in cat_scenarios %}
+        <div class="scenario-block">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="badge risk-{{ scenario.risk_level.value }}">{{ scenario.risk_level.value }}</span>
+            <strong>{{ scenario.title }}</strong>
+          </div>
+          {% if scenario.asset %}
+            <div class="meta">Asset: {{ scenario.asset.name }}</div>
+          {% endif %}
+          <div class="detail-grid">
+            {% if scenario.description %}
+              <div class="detail-label">Description</div>
+              <div>{{ scenario.description }}</div>
+            {% endif %}
+            {% if scenario.threat_actor %}
+              <div class="detail-label">Threat actor</div>
+              <div>{{ scenario.threat_actor }}</div>
+            {% endif %}
+            {% if scenario.attack_vector %}
+              <div class="detail-label">Attack vector</div>
+              <div>{{ scenario.attack_vector }}</div>
+            {% endif %}
+            {% if scenario.affected_cia %}
+              <div class="detail-label">CIA impact</div>
+              <div>{{ scenario.affected_cia }}</div>
+            {% endif %}
+            <div class="detail-label">Risk score</div>
+            <div>{{ scenario.risk_score }} (L: {{ scenario.likelihood }} × I: {{ scenario.impact_score }})</div>
+            {% if scenario.treatment %}
+              <div class="detail-label">Treatment</div>
+              <div>{{ scenario.treatment.value | title }}</div>
+            {% endif %}
+            {% if scenario.mitigation %}
+              <div class="detail-label">Mitigation</div>
+              <div>{{ scenario.mitigation }}</div>
+            {% endif %}
+            <div class="detail-label">Status</div>
+            <div>{{ scenario.status.value | replace('_', ' ') | title }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+
+  <!-- Asset appendix -->
+  {% if model.assets %}
+    <h2>{{ _("threat.export.asset_appendix") }}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in model.assets %}
+          <tr>
+            <td>{{ asset.name }}</td>
+            <td>{{ asset.asset_type.value | replace('_', ' ') | title }}</td>
+            <td>{{ asset.description or '' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+</div>
+</body>
+</html>

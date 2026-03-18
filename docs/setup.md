@@ -6,7 +6,7 @@ Follow these steps to provision a local development environment for the scaffold
 
 - Python 3.11.x
 - Poetry 1.6+ (`pipx install poetry` recommended)
-- Node.js (optional) if you plan to rebuild Bootstrap assets
+- Node.js is **not** required. Tailwind CSS uses a standalone CLI binary downloaded automatically by `poetry run tailwind`.
 - Docker (optional) for container-based databases
 
 ## Installation
@@ -22,7 +22,7 @@ Follow these steps to provision a local development environment for the scaffold
 | --- | --- | --- |
 | `SECRET_KEY` | Flask secret for sessions and CSRF | `change-me` |
 | `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///instance/scaffold.db` |
-| `SCAFFOLD_APP_MODULES` | Comma-separated list of app modules to load | `scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.template` |
+| `SCAFFOLD_APP_MODULES` | Comma-separated list of app modules to load | `scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.dpia,scaffold.apps.risk,scaffold.apps.risk.api,scaffold.apps.pages,scaffold.apps.maturity,scaffold.apps.template,scaffold.apps.tools,scaffold.apps.threat` |
 | `SESSION_COOKIE_SECURE` | Marks cookies as secure (HTTPS only) | `true` |
 | `PASSWORD_LOGIN_ENABLED` | Enable the legacy email/password login form for break-glass access | `false` |
 

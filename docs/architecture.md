@@ -11,7 +11,7 @@ This document captures the target architecture for the scaffold application that
 
 ## Layered Design
 
-1. **Presentation** – Flask blueprints per domain, mounted under a shared Bootstrap 5 dark-mode layout. A navigation registry exposes all registered apps and renders contextual menu items (BIA, CSA, Template by default).
+1. **Presentation** – Flask blueprints per domain, mounted under a shared Tailwind CSS dark-mode layout. A navigation registry exposes all registered apps and renders contextual menu items.
 2. **Application Services** – Shared service layer for authentication, role management, notifications, exports, and background tasks. Domain-specific services live alongside their module but follow shared interfaces.
 3. **Domain & Persistence** – SQLAlchemy models grouped by domain (`scaffold/apps/bia`, `scaffold/apps/csa`) and joined through a common metadata registry. Alembic migrations operate on the unified metadata.
 4. **Infrastructure** – Centralised configuration, logging, dependency management, and environment bootstrapping. Optional integrations (Celery/RQ, email, observability) plug into the same layer.
@@ -23,12 +23,18 @@ scaffold/
     __init__.py          # Application factory
     config.py            # Settings loader
     extensions.py        # Flask extension instances
+    tailwind_cli.py      # Tailwind CSS standalone-CLI build helper
     core/
         registry.py      # Discovery and registration of app modules
     apps/
         bia/             # BIA domain integration
         csa/             # CSA domain integration
         dpia/            # DPIA / FRIA assessments integrated with BIA components
+        risk/            # Risk workspace with severity matrix and CSA control links
+        maturity/        # CMMI maturity assessments per CSA control
+        incident/        # Incident response plans linked to BIA components
+        tools/           # Interactive utilities (AI Act Checker, CVSS, etc.)
+        threat/          # STRIDE-LM threat modeling with scenario lifecycle
         template/        # Starter template for future domains
 ```
 
@@ -64,8 +70,8 @@ Each module exposes a `register(app)` function or a `blueprints` collection so t
 
 ## Roadmap
 
-1. Port existing models and migrations into the unified metadata layer.
-2. Merge authentication flows and session security primitives.
-3. Harmonise templates and static assets under the Bootstrap dark-mode theme.
-4. Deliver smoke tests covering cross-domain navigation and MFA flows.
-5. Publish migration and deployment guidance for PostgreSQL.
+1. ~~Port existing models and migrations into the unified metadata layer.~~ ✓ Complete.
+2. ~~Merge authentication flows and session security primitives.~~ ✓ Complete.
+3. ~~Migrate templates and static assets to Tailwind CSS dark-mode theme.~~ ✓ Complete (Bootstrap removed 2026-02-27).
+4. Expand smoke-test coverage for cross-domain navigation, MFA flows, and threat modeling.
+5. Publish database migration and deployment guidance for PostgreSQL at scale.

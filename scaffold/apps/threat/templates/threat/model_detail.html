@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}{{ model.title }}{% endblock %}
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+.stride-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.stride-S  { background: #3b82f6; color: #fff; }
+.stride-T  { background: #f59e0b; color: #fff; }
+.stride-R  { background: #8b5cf6; color: #fff; }
+.stride-I  { background: #06b6d4; color: #fff; }
+.stride-D  { background: #ef4444; color: #fff; }
+.stride-E  { background: #10b981; color: #fff; }
+.stride-LM { background: #f97316; color: #fff; }
+.risk-low      { background: #10b981; color: #fff; }
+.risk-medium   { background: #f59e0b; color: #fff; }
+.risk-high     { background: #f97316; color: #fff; }
+.risk-critical { background: #ef4444; color: #fff; }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(148,163,184,0.2);
+  color: var(--bs-body-color);
+}
+.threat-panel {
+  border-radius: 1.25rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+  padding: 1.25rem;
+}
+body[data-theme="dark"] .threat-panel {
+  background: rgba(18, 18, 18, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
+}
+.threat-stat-card {
+  border-radius: 1rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06);
+  padding: 1rem 1.5rem;
+  text-align: center;
+  min-width: 100px;
+}
+body[data-theme="dark"] .threat-stat-card {
+  background: rgba(18, 18, 18, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.threat-scenario-card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06);
+  padding: 0.85rem 1rem;
+}
+body[data-theme="dark"] .threat-scenario-card {
+  background: rgba(18, 18, 18, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+</style>
+{% endblock %}
+{% block main_container_class %}container mx-auto max-w-7xl px-4 sm:px-6{% endblock %}
+
+{% macro stride_code(cat) %}
+  {% if cat.value == 'spoofing' %}S
+  {% elif cat.value == 'tampering' %}T
+  {% elif cat.value == 'repudiation' %}R
+  {% elif cat.value == 'information_disclosure' %}I
+  {% elif cat.value == 'denial_of_service' %}D
+  {% elif cat.value == 'elevation_of_privilege' %}E
+  {% elif cat.value == 'lateral_movement' %}LM
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="py-6 flex flex-col gap-5">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ model.title }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header card -->
+  <div class="threat-panel">
+    <div class="flex justify-between items-start flex-wrap gap-3 mb-3">
+      <div>
+        <h1 class="text-2xl font-bold mb-1">{{ model.title }}</h1>
+        {% if model.is_archived %}
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/30 text-slate-300 me-2">{{ _("threat.dashboard.archived") }}</span>
+        {% endif %}
+        {% if model.owner %}
+          <span class="text-[var(--color-muted)] text-sm">{{ _("threat.export.owner") }}: {{ model.owner.email }}</span>
+        {% endif %}
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <a href="{{ url_for('threat.model_edit', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.edit") }}</a>
+        <form method="post" action="{{ url_for('threat.model_archive', model_id=model.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-yellow-400 text-yellow-400 hover:bg-yellow-400/10">
+            {% if model.is_archived %}{{ _("threat.model_detail.unarchive") }}{% else %}{{ _("threat.model_detail.archive") }}{% endif %}
+          </button>
+        </form>
+        <a href="{{ url_for('threat.export_csv', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("threat.model_detail.export_csv") }}</a>
+        <a href="{{ url_for('threat.export_html', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("threat.model_detail.export_html") }}</a>
+        <a href="{{ url_for('threat.export_pdf', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("threat.model_detail.export_pdf") }}</a>
+      </div>
+    </div>
+    {% if model.description %}
+      <p class="mb-2">{{ model.description }}</p>
+    {% endif %}
+    {% if model.scope %}
+      <div class="text-[var(--color-muted)] text-sm"><strong>{{ _("threat.export.scope") }}:</strong> {{ model.scope }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Stat chips -->
+  <div class="flex flex-wrap gap-3">
+    {% set total = model.scenarios | length %}
+    {% set critical_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'critical') | list | length %}
+    {% set high_count = model.scenarios | selectattr('risk_level.value', 'equalto', 'high') | list | length %}
+    <div class="threat-stat-card">
+      <div class="text-2xl font-bold">{{ total }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.model_detail.stat_total") }}</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="text-2xl font-bold text-red-500">{{ critical_count }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.model_detail.stat_critical") }}</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="text-2xl font-bold text-yellow-400">{{ high_count }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.model_detail.stat_high") }}</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="text-2xl font-bold">{{ model.assets | length }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.model_detail.stat_assets") }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_3fr] gap-4">
+    <!-- Assets sidebar -->
+    <div>
+      <div class="threat-panel">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-semibold mb-0">{{ _("threat.model_detail.assets_heading") }}</h2>
+          <a href="{{ url_for('threat.asset_new', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">+ {{ _("threat.model_detail.add_asset") }}</a>
+        </div>
+        {% if model.assets %}
+          <ul class="divide-y divide-[var(--bs-border-color-translucent)]">
+            {% for asset in model.assets %}
+              <li class="flex justify-between items-center py-2">
+                <div>
+                  <div class="text-sm font-medium">{{ asset.name }}</div>
+                  <div class="text-[var(--color-muted)]" style="font-size:0.68rem">{{ asset.asset_type.value | replace('_', ' ') | title }}</div>
+                </div>
+                <div class="flex gap-1">
+                  <a href="{{ url_for('threat.asset_edit', model_id=model.id, asset_id=asset.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2 py-0.5 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.edit") }}</a>
+                  <form method="post" action="{{ url_for('threat.asset_delete', model_id=model.id, asset_id=asset.id) }}" style="display:inline" onsubmit="return confirm('{{ _("threat.model_detail.delete_asset_confirm") }}')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2 py-0.5 text-xs border-red-400 text-red-400 hover:bg-red-400/10">✕</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-[var(--color-muted)] text-sm mb-0">{{ _("threat.model_detail.no_assets") }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Scenarios -->
+    <div>
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-semibold">{{ _("threat.model_detail.scenarios_heading") }}</h2>
+        <a href="{{ url_for('threat.scenario_new', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">+ {{ _("threat.model_detail.new_scenario") }}</a>
+      </div>
+
+      {% for cat in StrideCategory %}
+        {% set cat_scenarios = scenarios_by_category[cat.value] %}
+        {% if cat_scenarios %}
+          {% set code = stride_code(cat) | trim %}
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold mb-2 flex items-center gap-2">
+              <span class="stride-pill stride-{{ code }}">{{ code }}</span>
+              {{ _("threat.stride." + cat.value) }}
+              <span class="text-[var(--color-muted)]" style="font-size:0.75rem">({{ cat_scenarios | length }})</span>
+            </h3>
+            <div class="flex flex-col gap-2">
+              {% for scenario in cat_scenarios %}
+                <div class="threat-scenario-card">
+                  <div class="flex justify-between items-start flex-wrap gap-2">
+                    <div>
+                      <a href="{{ url_for('threat.scenario_detail', model_id=model.id, scenario_id=scenario.id) }}" class="font-medium no-underline">
+                        {{ scenario.title }}
+                      </a>
+                      {% if scenario.asset %}
+                        <span class="text-[var(--color-muted)] text-sm ms-2">/ {{ scenario.asset.name }}</span>
+                      {% endif %}
+                    </div>
+                    <div class="flex gap-2 items-center">
+                      <span class="stride-pill risk-{{ scenario.risk_level.value }}">{{ _("threat.risk_level." + scenario.risk_level.value) }}</span>
+                      <span class="status-pill">{{ scenario.status.value | replace('_', ' ') }}</span>
+                      <span class="text-[var(--color-muted)] text-sm font-semibold">{{ scenario.risk_score }}</span>
+                    </div>
+                  </div>
+                  {% if scenario.description %}
+                    <p class="text-[var(--color-muted)] small mb-0 mt-1">{{ scenario.description | truncate(100) }}</p>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {% if not model.scenarios %}
+        <div class="text-center text-[var(--color-muted)] py-4">
+          <p>{{ _("threat.model_detail.no_scenarios") }}</p>
+          <a href="{{ url_for('threat.scenario_new', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">{{ _("threat.model_detail.create_first_scenario") }}</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

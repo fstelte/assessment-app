@@ -262,21 +262,70 @@ body[data-theme="dark"] .bia-chip {
 			<div class="bia-quick-card h-full flex flex-col gap-2">
 				<h2>{{ _('bia.dashboard.sidebar.exports') }}</h2>
 				<div class="grid gap-2">
-					<a href="{{ url_for('bia.export_data_inventory') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
-					<a href="{{ url_for('bia.export_all_consequences') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_cia_detailed') }}</a>
-					<a href="{{ url_for('bia.export_all_consequences', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> {{ _('bia.dashboard.sidebar.export_cia_detailed') }} (PDF)</a>
-					<a href="{{ url_for('bia.export_all_consequences', type='summary') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_cia_summary') }}</a>
-					<a href="{{ url_for('bia.export_all_consequences', type='summary', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> {{ _('bia.dashboard.sidebar.export_cia_summary') }} (PDF)</a>
-					<a href="{{ url_for('bia.export_availability_requirements') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_availability_detailed') }}</a>
-					<a href="{{ url_for('bia.export_availability_requirements', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> {{ _('bia.dashboard.sidebar.export_availability_detailed') }} (PDF)</a>
-					<a href="{{ url_for('bia.export_availability_requirements', type='summary') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_availability_summary') }}</a>
-					<a href="{{ url_for('bia.export_availability_requirements', type='summary', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> {{ _('bia.dashboard.sidebar.export_availability_summary') }} (PDF)</a>
-					<a href="{{ url_for('bia.export_all_dependencies') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">Export Dependencies</a>
-					<a href="{{ url_for('bia.export_all_dependencies', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> Export Dependencies (PDF)</a>
-					<a href="{{ url_for('bia.export_all_tiers') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">Export Tiers</a>
-					<a href="{{ url_for('bia.export_all_tiers', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> Export Tiers (PDF)</a>
-					<a href="{{ url_for('bia.export_authentication_overview') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs">{{ _('bia.dashboard.sidebar.export_authentication') }}</a>
-					<a href="{{ url_for('bia.export_authentication_overview', format='pdf') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 px-2.5 py-1 text-xs"><i class="fas fa-file-pdf mr-1"></i> {{ _('bia.dashboard.sidebar.export_authentication') }} (PDF)</a>
+					<a href="{{ url_for('bia.export_data_inventory') }}" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							{{ _('bia.dashboard.sidebar.export_cia_detailed') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_consequences') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_consequences', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							{{ _('bia.dashboard.sidebar.export_cia_summary') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_consequences', type='summary') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_consequences', type='summary', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							{{ _('bia.dashboard.sidebar.export_availability_detailed') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_availability_requirements') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_availability_requirements', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							{{ _('bia.dashboard.sidebar.export_availability_summary') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_availability_requirements', type='summary') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_availability_requirements', type='summary', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							Export Dependencies <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_dependencies') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_dependencies', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							Export Tiers <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_tiers') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_all_tiers', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
+					<div class="relative" data-export-dropdown>
+						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
+							{{ _('bia.dashboard.sidebar.export_authentication') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
+						</button>
+						<ul class="export-menu absolute left-0 z-50 mt-1 min-w-full rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_authentication_overview') }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+							<li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('bia.export_authentication_overview', format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+						</ul>
+					</div>
 				</div>
 			</div>
 		</div>
