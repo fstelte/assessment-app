@@ -4,6 +4,7 @@ This log tracks major decisions and milestones as the scaffold application evolv
 
 | Date | Change | Notes |
 | --- | --- | --- |
+| 2026-03-18 | Dependency security fixes (2026.3.13) | Pinned `pyopenssl>=26.0.0` (fixes CVE buffer overflow via `webauthn`, CVSS 9.2) and `pyasn1>=0.6.3` (fixes uncontrolled recursion on crafted ASN.1 data via `webauthn`, CVSS 8.7) as explicit dependencies to override vulnerable transitive versions. |
 | 2026-03-18 | Threat Modeling module (2026.3.12) | Added a new **Threat Modeling** module with full STRIDE-LM support. Introduces `ThreatModel`, `ThreatModelAsset`, and `ThreatScenario` models with risk scoring (likelihood × impact → level), treatment options (accept/mitigate/transfer/avoid), scenario lifecycle statuses, and M2M links to CSA controls and BIA components. Full CRUD routes, archive support, and CSV/HTML/PDF export of scenarios. Two Alembic migrations added; module registered as a default. BIA dashboard export sidebar refactored into collapsible dropdown menus. Translations expanded and tests added. |
 | 2026-03-13 | BIA templates and utils cleanup | Polished `all_consequences`, `components`, and `requirements` templates; fixed a minor routing issue in BIA routes and corrected a utility function edge case. |
 | 2026-03-10 | Audit trail fixes and translation refresh | Fixed the audit trail page layout and corrected missing/broken translation keys across the application (release 2026.3.10). |
