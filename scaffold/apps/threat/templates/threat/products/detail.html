@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-6xl px-4 sm:px-6{% endblock %}
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.product_list') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.product.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-5 flex justify-between items-start flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">{{ product.name }}</h1>
+      {% if product.description %}<p class="text-[var(--color-muted)] mb-1">{{ product.description }}</p>{% endif %}
+      {% if product.owner %}<p class="text-[var(--color-muted)] text-sm mb-0">{{ _("threat.export.owner") }}: {{ product.owner.email }}</p>{% endif %}
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{{ url_for('threat.product_edit', product_id=product.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.edit") }}</a>
+      <form method="post" action="{{ url_for('threat.product_archive', product_id=product.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-yellow-400 text-yellow-400 hover:bg-yellow-400/10">
+          {% if product.is_archived %}{{ _("threat.model_detail.unarchive") }}{% else %}{{ _("threat.model_detail.archive") }}{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  {% set all_scenarios = models | map(attribute='scenarios') | sum(start=[]) %}
+  {% set critical = all_scenarios | selectattr('risk_level', 'equalto', RiskLevel.CRITICAL) | list | length %}
+  <div class="flex flex-wrap gap-3">
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-4 text-center min-w-[100px]">
+      <div class="text-2xl font-bold">{{ models | length }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.product.models") }}</div>
+    </div>
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-4 text-center min-w-[100px]">
+      <div class="text-2xl font-bold">{{ all_scenarios | length }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.dashboard.scenarios") }}</div>
+    </div>
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-4 text-center min-w-[100px]">
+      <div class="text-2xl font-bold text-red-500">{{ critical }}</div>
+      <div class="text-[var(--color-muted)] text-sm">{{ _("threat.model_detail.stat_critical") }}</div>
+    </div>
+  </div>
+
+  <!-- Threat models in this product -->
+  {% if models %}
+    <h2 class="text-lg font-semibold mb-0">{{ _("threat.product.linked_models") }}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      {% for model in models %}
+        <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-4 flex flex-col gap-2">
+          <div class="font-semibold">{{ model.title }}</div>
+          <div class="text-[var(--color-muted)] text-sm">{{ model.scenarios | length }} {{ _("threat.dashboard.scenarios") }}</div>
+          <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">{{ _("threat.dashboard.view") }}</a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-[var(--color-muted)]">{{ _("threat.product.no_models_linked") }}</p>
+  {% endif %}
+
+  <!-- Add unlinked model -->
+  {% if unlinked_models %}
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-4">
+      <h3 class="text-sm font-semibold mb-3">{{ _("threat.product.add_model") }}</h3>
+      <div class="flex flex-wrap gap-2">
+        {% for model in unlinked_models %}
+          <form method="post" action="{{ url_for('threat.product_add_model', product_id=product.id, model_id=model.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
+              + {{ model.title }}
+            </button>
+          </form>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

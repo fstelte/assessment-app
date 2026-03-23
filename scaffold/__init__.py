@@ -267,6 +267,57 @@ def _register_cli_commands(app: Flask) -> None:
             f"Removed {outcome.get('db_deleted', 0)} audit log rows and {outcome.get('files_deleted', 0)} log files."
         )
 
+    @app.cli.command("seed-threat-library")
+    def seed_threat_library() -> None:
+        """Seed the threat knowledge-base from scaffold/apps/threat/data/library.json (idempotent)."""
+
+        import json as _json
+        from pathlib import Path as _Path
+        from .apps.threat.models import ThreatFramework, ThreatLibraryEntry
+        from .extensions import db as _db
+
+        library_path = _Path(app.root_path) / "apps" / "threat" / "data" / "library.json"
+        if not library_path.exists():
+            click.echo(f"Library data not found at {library_path}", err=True)
+            return
+
+        data = _json.loads(library_path.read_text(encoding="utf-8"))
+        created_fw = 0
+        created_entries = 0
+
+        for fw_data in data:
+            fw = ThreatFramework.query.filter_by(name=fw_data["framework"]).first()
+            if fw is None:
+                fw = ThreatFramework(
+                    name=fw_data["framework"],
+                    description=fw_data.get("description", ""),
+                    is_builtin=fw_data.get("is_builtin", True),
+                )
+                _db.session.add(fw)
+                _db.session.flush()
+                created_fw += 1
+
+            for entry_data in fw_data.get("entries", []):
+                existing = ThreatLibraryEntry.query.filter_by(
+                    framework_id=fw.id,
+                    name=entry_data["name"],
+                ).first()
+                if existing is None:
+                    entry = ThreatLibraryEntry(
+                        framework_id=fw.id,
+                        name=entry_data["name"],
+                        description=entry_data.get("description", ""),
+                        category=entry_data.get("category", ""),
+                        suggested_mitigation=entry_data.get("suggested_mitigation", ""),
+                        stride_hint=entry_data.get("stride_hint"),
+                        is_custom=False,
+                    )
+                    _db.session.add(entry)
+                    created_entries += 1
+
+        _db.session.commit()
+        click.echo(f"Seeded {created_fw} framework(s) and {created_entries} library entr{'y' if created_entries == 1 else 'ies'}.")
+
 
 @lru_cache(maxsize=1)
 def _load_app_metadata() -> dict[str, str]:

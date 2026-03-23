@@ -2553,7 +2553,10 @@
       "scenarios": "scenario's",
       "archived": "Gearchiveerd",
       "view": "Bekijken",
-      "view_archived": "Bekijk gearchiveerde"
+      "view_archived": "Bekijk gearchiveerde",
+      "models": "Modellen",
+      "open_critical": "Open kritiek",
+      "all_threats": "Alle dreigingen"
     },
     "model_detail": {
       "archive": "Archiveren",
@@ -2627,6 +2630,9 @@
       "label_status": "Status",
       "label_owner": "Eigenaar",
       "label_csa_controls": "CSA-beheersmaatregelen",
+      "pick_from_library": "Kies uit bibliotheek",
+      "label_methodology": "Methodologie",
+      "label_pasta_stage": "PASTA-fase",
       "help": {
         "stride_category": "Selecteer de STRIDE-LM categorie die de aard van deze dreiging het best beschrijft. Spoofing (identiteit), Tampering (data), Repudiation (acties), Information Disclosure (blootstelling), Denial of Service (beschikbaarheid), Elevation of Privilege (toegang), Lateral Movement (verspreiding).",
         "asset_id": "Het specifieke asset dat dit scenario treft. Koppel het aan een asset uit het model voor een volledig overzicht van het aanvalsoppervlak.",
@@ -2667,7 +2673,9 @@
       "residual_risk": "Restrisico",
       "status": "Status",
       "owner": "Eigenaar",
-      "linked_controls": "Gekoppelde CSA-beheersmaatregelen"
+      "linked_controls": "Gekoppelde CSA-beheersmaatregelen",
+      "library_source": "Bibliotheekbron",
+      "methodology": "Methodologie"
     },
     "export": {
       "title": "Dreigingsmodel rapport",
@@ -2702,6 +2710,78 @@
       "denial_of_service": "Denial of Service",
       "elevation_of_privilege": "Escalatie van rechten",
       "lateral_movement": "Zijwaartse beweging"
+    },
+    "library": {
+      "title": "Dreigingsbibliotheek",
+      "subtitle": "Blader en zoek door vooraf gedefinieerde dreigingen en mitigaties per framework.",
+      "builtin": "Ingebouwd",
+      "entries": "vermeldingen",
+      "browse": "Bladeren",
+      "add_entry": "Vermelding toevoegen",
+      "no_frameworks": "Geen frameworks gevonden.",
+      "seed_hint": "Voer 'flask seed-threat-library' uit om de ingebouwde frameworks te laden.",
+      "no_entries": "Geen vermeldingen gevonden.",
+      "search": "Zoeken",
+      "search_placeholder": "Dreigingen zoeken...",
+      "filter_category": "Categorie",
+      "all_categories": "Alle categorieën",
+      "col_name": "Naam",
+      "col_category": "Categorie",
+      "col_description": "Beschrijving",
+      "custom": "Aangepast",
+      "view": "Bekijken",
+      "entry_detail": "Vermelding detail",
+      "loading": "Laden...",
+      "confirm_delete": "Deze vermelding verwijderen?",
+      "new_entry": "Nieuwe vermelding",
+      "edit_entry": "Vermelding bewerken",
+      "help": {
+        "name": "Een korte, beschrijvende naam voor deze dreiging.",
+        "category": "De subcategorie binnen het framework (bijv. 'Spoofing', 'Injectie')."
+      },
+      "flash": {
+        "entry_created": "Bibliotheekvermeld ing aangemaakt.",
+        "entry_updated": "Bibliotheekvermelding bijgewerkt.",
+        "entry_deleted": "Bibliotheekvermelding verwijderd."
+      }
+    },
+    "product": {
+      "title": "Producten",
+      "new": "Nieuw product",
+      "edit": "Product bewerken",
+      "models": "modellen",
+      "no_products": "Geen producten gevonden.",
+      "linked_models": "Gekoppelde dreigingsmodellen",
+      "no_models_linked": "Nog geen modellen gekoppeld aan dit product.",
+      "add_model": "Bestaand model toevoegen",
+      "flash": {
+        "created": "Product aangemaakt.",
+        "updated": "Product bijgewerkt.",
+        "archived": "Product gearchiveerd.",
+        "unarchived": "Product hersteld.",
+        "model_added": "Model toegevoegd aan product."
+      }
+    },
+    "mitigation": {
+      "heading": "Mitigatiemaatregelen",
+      "new": "Nieuwe maatregel",
+      "edit": "Maatregel bewerken",
+      "add_first": "Eerste mitigatiemaatregel toevoegen",
+      "no_actions": "Nog geen mitigatiemaatregelen.",
+      "confirm_delete": "Deze maatregel verwijderen?",
+      "assigned_to": "Toegewezen aan",
+      "due_date": "Deadline",
+      "flash": {
+        "created": "Mitigatiemaatregel aangemaakt.",
+        "updated": "Mitigatiemaatregel bijgewerkt.",
+        "deleted": "Mitigatiemaatregel verwijderd."
+      },
+      "status": {
+        "proposed": "Voorgesteld",
+        "in_progress": "In uitvoering",
+        "implemented": "Geïmplementeerd",
+        "verified": "Geverifieerd"
+      }
     },
     "risk_level": {
       "low": "Laag",

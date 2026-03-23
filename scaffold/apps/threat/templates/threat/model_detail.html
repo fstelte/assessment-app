@@ -33,11 +33,11 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   background: rgba(148,163,184,0.2);
-  color: var(--bs-body-color);
+  color: var(--color-text);
 }
 .threat-panel {
   border-radius: 1.25rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
   padding: 1.25rem;
@@ -49,7 +49,7 @@ body[data-theme="dark"] .threat-panel {
 }
 .threat-stat-card {
   border-radius: 1rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06);
   padding: 1rem 1.5rem;
@@ -62,7 +62,7 @@ body[data-theme="dark"] .threat-stat-card {
 }
 .threat-scenario-card {
   border-radius: 0.75rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06);
   padding: 0.85rem 1rem;
@@ -104,7 +104,7 @@ body[data-theme="dark"] .threat-scenario-card {
       <div>
         <h1 class="text-2xl font-bold mb-1">{{ model.title }}</h1>
         {% if model.is_archived %}
-          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/30 text-slate-300 me-2">{{ _("threat.dashboard.archived") }}</span>
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/30 text-slate-300 mr-2">{{ _("threat.dashboard.archived") }}</span>
         {% endif %}
         {% if model.owner %}
           <span class="text-[var(--color-muted)] text-sm">{{ _("threat.export.owner") }}: {{ model.owner.email }}</span>
@@ -163,7 +163,7 @@ body[data-theme="dark"] .threat-scenario-card {
           <a href="{{ url_for('threat.asset_new', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700">+ {{ _("threat.model_detail.add_asset") }}</a>
         </div>
         {% if model.assets %}
-          <ul class="divide-y divide-[var(--bs-border-color-translucent)]">
+          <ul class="divide-y divide-[var(--color-border)]">
             {% for asset in model.assets %}
               <li class="flex justify-between items-center py-2">
                 <div>
@@ -212,7 +212,7 @@ body[data-theme="dark"] .threat-scenario-card {
                         {{ scenario.title }}
                       </a>
                       {% if scenario.asset %}
-                        <span class="text-[var(--color-muted)] text-sm ms-2">/ {{ scenario.asset.name }}</span>
+                        <span class="text-[var(--color-muted)] text-sm ml-2">/ {{ scenario.asset.name }}</span>
                       {% endif %}
                     </div>
                     <div class="flex gap-2 items-center">
@@ -222,7 +222,7 @@ body[data-theme="dark"] .threat-scenario-card {
                     </div>
                   </div>
                   {% if scenario.description %}
-                    <p class="text-[var(--color-muted)] small mb-0 mt-1">{{ scenario.description | truncate(100) }}</p>
+                    <p class="text-[var(--color-muted)] text-xs mb-0 mt-1">{{ scenario.description | truncate(100) }}</p>
                   {% endif %}
                 </div>
               {% endfor %}

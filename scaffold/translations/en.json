@@ -2483,7 +2483,10 @@
       "scenarios": "scenarios",
       "archived": "Archived",
       "view": "View",
-      "view_archived": "View archived"
+      "view_archived": "View archived",
+      "models": "Models",
+      "open_critical": "Open Critical",
+      "all_threats": "All Threats"
     },
     "model_detail": {
       "archive": "Archive",
@@ -2557,6 +2560,9 @@
       "label_status": "Status",
       "label_owner": "Owner",
       "label_csa_controls": "CSA controls",
+      "pick_from_library": "Pick from library",
+      "label_methodology": "Methodology",
+      "label_pasta_stage": "PASTA stage",
       "help": {
         "stride_category": "Select the STRIDE-LM category that best describes the nature of this threat. Spoofing (identity), Tampering (data), Repudiation (actions), Information Disclosure (exposure), Denial of Service (availability), Elevation of Privilege (access), Lateral Movement (spreading).",
         "asset_id": "The specific asset this scenario targets. Link it to an asset from the model to build a complete attack surface overview.",
@@ -2597,7 +2603,9 @@
       "residual_risk": "Residual risk",
       "status": "Status",
       "owner": "Owner",
-      "linked_controls": "Linked CSA controls"
+      "linked_controls": "Linked CSA controls",
+      "library_source": "Library source",
+      "methodology": "Methodology"
     },
     "export": {
       "title": "Threat Model Report",
@@ -2632,6 +2640,78 @@
       "denial_of_service": "Denial of Service",
       "elevation_of_privilege": "Elevation of Privilege",
       "lateral_movement": "Lateral Movement"
+    },
+    "library": {
+      "title": "Threat Library",
+      "subtitle": "Browse and search pre-defined threats and mitigations organised by framework.",
+      "builtin": "Built-in",
+      "entries": "entries",
+      "browse": "Browse",
+      "add_entry": "Add entry",
+      "no_frameworks": "No frameworks found.",
+      "seed_hint": "Run 'flask seed-threat-library' to seed the built-in frameworks.",
+      "no_entries": "No entries found.",
+      "search": "Search",
+      "search_placeholder": "Search threats...",
+      "filter_category": "Category",
+      "all_categories": "All categories",
+      "col_name": "Name",
+      "col_category": "Category",
+      "col_description": "Description",
+      "custom": "Custom",
+      "view": "View",
+      "entry_detail": "Entry detail",
+      "loading": "Loading...",
+      "confirm_delete": "Delete this entry?",
+      "new_entry": "New entry",
+      "edit_entry": "Edit entry",
+      "help": {
+        "name": "A short, descriptive name for this threat.",
+        "category": "The sub-category within the framework (e.g. 'Spoofing', 'Injection')."
+      },
+      "flash": {
+        "entry_created": "Library entry created.",
+        "entry_updated": "Library entry updated.",
+        "entry_deleted": "Library entry deleted."
+      }
+    },
+    "product": {
+      "title": "Products",
+      "new": "New product",
+      "edit": "Edit product",
+      "models": "models",
+      "no_products": "No products found.",
+      "linked_models": "Linked threat models",
+      "no_models_linked": "No models linked to this product yet.",
+      "add_model": "Add existing model",
+      "flash": {
+        "created": "Product created.",
+        "updated": "Product updated.",
+        "archived": "Product archived.",
+        "unarchived": "Product restored.",
+        "model_added": "Model added to product."
+      }
+    },
+    "mitigation": {
+      "heading": "Mitigation Actions",
+      "new": "New action",
+      "edit": "Edit action",
+      "add_first": "Add first mitigation action",
+      "no_actions": "No mitigation actions yet.",
+      "confirm_delete": "Delete this action?",
+      "assigned_to": "Assigned to",
+      "due_date": "Due date",
+      "flash": {
+        "created": "Mitigation action created.",
+        "updated": "Mitigation action updated.",
+        "deleted": "Mitigation action deleted."
+      },
+      "status": {
+        "proposed": "Proposed",
+        "in_progress": "In Progress",
+        "implemented": "Implemented",
+        "verified": "Verified"
+      }
     },
     "risk_level": {
       "low": "Low",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import enum
+import json
 
 import sqlalchemy as sa
 
@@ -93,8 +94,20 @@ class ThreatModel(TimestampMixin, db.Model):
     owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     is_archived = db.Column(db.Boolean, default=False, nullable=False)
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    product_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_products.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    suggested_frameworks = db.Column(db.Text, nullable=True)  # JSON array e.g. '["STRIDE","LINDDUN"]'
+    dpia_id = db.Column(
+        db.Integer,
+        db.ForeignKey("dpia_assessments.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     owner = db.relationship("User", foreign_keys=[owner_id])
+    product = db.relationship("ThreatProduct", back_populates="models", foreign_keys=[product_id])
     assets = db.relationship(
         "ThreatModelAsset",
         back_populates="threat_model",
@@ -199,3 +212,110 @@ class ThreatScenario(TimestampMixin, db.Model):
         secondary="threat_scenario_controls",
         backref="threat_scenarios",
     )
+    library_entry_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_library_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    library_entry = db.relationship("ThreatLibraryEntry", foreign_keys=[library_entry_id])
+    methodology = db.Column(db.String(50), default="STRIDE", nullable=False)
+    pasta_stage = db.Column(db.String(100), nullable=True)
+    mitigation_actions = db.relationship(
+        "ThreatMitigationAction",
+        back_populates="scenario",
+        cascade="all, delete-orphan",
+    )
+
+
+class ThreatFramework(TimestampMixin, db.Model):
+    """A named threat-modeling framework (STRIDE, OWASP Top 10, PASTA, LINDDUN, …)."""
+
+    __tablename__ = "threat_frameworks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    is_builtin = db.Column(db.Boolean, default=True, nullable=False)
+
+    entries = db.relationship(
+        "ThreatLibraryEntry",
+        back_populates="framework",
+        cascade="all, delete-orphan",
+    )
+
+
+class ThreatLibraryEntry(TimestampMixin, db.Model):
+    """A reusable threat / mitigation entry from a knowledge-base framework."""
+
+    __tablename__ = "threat_library_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    framework_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_frameworks.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(100))
+    suggested_mitigation = db.Column(db.Text)
+    stride_hint = db.Column(db.String(50), nullable=True)
+    is_custom = db.Column(db.Boolean, default=False, nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    framework = db.relationship("ThreatFramework", back_populates="entries")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+
+class ThreatProduct(TimestampMixin, db.Model):
+    """Optional product-level grouping of multiple ThreatModels."""
+
+    __tablename__ = "threat_products"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    is_archived = db.Column(db.Boolean, default=False, nullable=False)
+
+    owner = db.relationship("User", foreign_keys=[owner_id])
+    models = db.relationship("ThreatModel", back_populates="product")
+
+
+class MitigationStatus(enum.Enum):
+    PROPOSED = "proposed"
+    IN_PROGRESS = "in_progress"
+    IMPLEMENTED = "implemented"
+    VERIFIED = "verified"
+
+
+class ThreatMitigationAction(TimestampMixin, db.Model):
+    """Structured mitigation action, optionally linked to a library entry."""
+
+    __tablename__ = "threat_mitigation_actions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    scenario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_scenarios.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    library_entry_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_library_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(
+        _enum_column(MitigationStatus, name="mitigation_status_enum"),
+        default=MitigationStatus.PROPOSED,
+        nullable=False,
+    )
+    assigned_to_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    due_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(db.Text)
+
+    scenario = db.relationship("ThreatScenario", back_populates="mitigation_actions")
+    library_entry = db.relationship("ThreatLibraryEntry", foreign_keys=[library_entry_id])
+    assigned_to = db.relationship("User", foreign_keys=[assigned_to_id])

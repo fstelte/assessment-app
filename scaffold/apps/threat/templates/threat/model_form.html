@@ -5,7 +5,7 @@
 <style nonce="{{ csp_nonce }}">
 .threat-form-panel {
   border-radius: 1.25rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
   padding: 1.5rem;
@@ -35,7 +35,7 @@ body[data-theme="dark"] .threat-form-panel {
   </nav>
 
   <div class="threat-form-panel">
-    <h1 class="fs-4 fw-bold mb-4">
+    <h1 class="text-2xl font-bold mb-4">
       {% if model %}{{ _("threat.model_form.title_edit") }}{% else %}{{ _("threat.model_form.title_new") }}{% endif %}
     </h1>
 
@@ -45,13 +45,13 @@ body[data-theme="dark"] .threat-form-panel {
       {{ render_field_with_help(form.description) }}
       {{ render_field_with_help(form.scope) }}
       {% if not model %}
-      <div class="mb-3 p-3 rounded" style="background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color-translucent)">
-        <p class="text-sm fw-semibold mb-2">{{ _("threat.model_form.bia_import_heading") }}</p>
+      <div class="mb-3 p-3 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+        <p class="text-sm font-semibold mb-2">{{ _("threat.model_form.bia_import_heading") }}</p>
         <p class="text-xs text-[var(--color-muted)] mb-2">{{ _("threat.model_form.bia_import_hint") }}</p>
         {{ render_field_with_help(form.bia_id) }}
       </div>
       {% endif %}
-      <div class="d-flex gap-2 mt-3">
+      <div class="flex gap-2 mt-3">
         {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
         {% if model %}
           <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.cancel") }}</a>
