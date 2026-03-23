@@ -1,0 +1,345 @@
+[
+  {
+    "framework": "STRIDE",
+    "description": "STRIDE-LM is a threat classification model covering Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege, and Lateral Movement.",
+    "is_builtin": true,
+    "entries": [
+      {
+        "name": "Identity Spoofing via Credential Theft",
+        "description": "An attacker steals or guesses user credentials and impersonates a legitimate user or service.",
+        "category": "Spoofing",
+        "suggested_mitigation": "Enforce multi-factor authentication (MFA). Use short-lived tokens and session timeouts. Monitor for unusual login patterns and alert on anomalous access.",
+        "stride_hint": "spoofing"
+      },
+      {
+        "name": "Service Impersonation (Man-in-the-Middle)",
+        "description": "An attacker intercepts communications and masquerades as a trusted service, causing clients to connect to a rogue endpoint.",
+        "category": "Spoofing",
+        "suggested_mitigation": "Enforce mutual TLS. Use certificate pinning for mobile/internal clients. Deploy HSTS and validate server certificates strictly.",
+        "stride_hint": "spoofing"
+      },
+      {
+        "name": "DNS Spoofing / Cache Poisoning",
+        "description": "An attacker manipulates DNS responses to redirect users to a malicious server that impersonates a legitimate service.",
+        "category": "Spoofing",
+        "suggested_mitigation": "Implement DNSSEC. Use encrypted DNS (DoH/DoT). Monitor DNS resolution anomalies via security tooling.",
+        "stride_hint": "spoofing"
+      },
+      {
+        "name": "Data Tampering in Transit",
+        "description": "An attacker intercepts and modifies data flowing between components, corrupting data integrity without detection.",
+        "category": "Tampering",
+        "suggested_mitigation": "Enforce TLS 1.2+ for all data in transit. Use HMAC or digital signatures for message integrity. Validate checksums at receiving end.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Database Record Manipulation",
+        "description": "An attacker with database access modifies records directly, bypassing application-level controls.",
+        "category": "Tampering",
+        "suggested_mitigation": "Restrict direct database access to service accounts only. Enable audit logging on sensitive tables. Use integrity constraints and triggers to detect unexpected changes.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Configuration File Tampering",
+        "description": "An attacker modifies application configuration files to introduce backdoors or disable security controls.",
+        "category": "Tampering",
+        "suggested_mitigation": "Store configuration in a secrets manager or sealed vault. Restrict file-system write access. Detect unauthorised file changes with a host-based integrity monitor.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Log Deletion / Modification",
+        "description": "An attacker deletes or alters audit logs after a compromise to hide their actions.",
+        "category": "Repudiation",
+        "suggested_mitigation": "Stream logs to an immutable, centralised SIEM in real time. Restrict log write access to the logging agent only. Alert on gaps or unusual log-volume drops.",
+        "stride_hint": "repudiation"
+      },
+      {
+        "name": "Action Repudiation (Missing Audit Trail)",
+        "description": "A user denies performing a sensitive action because the system lacks binding audit evidence.",
+        "category": "Repudiation",
+        "suggested_mitigation": "Log all state-changing actions with user identity, timestamp, source IP, and payload hash. Store logs in a tamper-evident store. Include non-repudiation in API design (signed requests).",
+        "stride_hint": "repudiation"
+      },
+      {
+        "name": "Sensitive Data Exposure via Misconfigured Storage",
+        "description": "Confidential data (PII, credentials, source code) is publicly accessible due to a misconfigured cloud bucket, server, or repository.",
+        "category": "Information Disclosure",
+        "suggested_mitigation": "Enforce private-by-default policies on object storage. Run automated configuration scanners (e.g. CSPM). Classify data and apply appropriate access controls at creation.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Verbose Error Messages Leaking Internals",
+        "description": "Application error responses expose stack traces, SQL queries, or internal paths, enabling reconnaissance.",
+        "category": "Information Disclosure",
+        "suggested_mitigation": "Return generic error messages to clients. Log detailed errors server-side only. Disable debug mode in production. Use a structured exception-handling middleware.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Side-Channel Information Leakage",
+        "description": "Timing differences, power consumption, or cache behaviour reveal secret information (e.g. password length, cryptographic key bits).",
+        "category": "Information Disclosure",
+        "suggested_mitigation": "Use constant-time comparison functions for secrets. Apply padding and timing jitter to sensitive operations. Audit third-party libraries for side-channel vulnerabilities.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Resource Exhaustion via Unbounded Input",
+        "description": "An attacker sends oversized or malformed inputs that exhaust CPU, memory, or disk, rendering the service unavailable.",
+        "category": "Denial of Service",
+        "suggested_mitigation": "Enforce input size limits and rate limiting at the API gateway. Deploy auto-scaling with resource caps. Use circuit breakers to fail-fast under overload.",
+        "stride_hint": "denial_of_service"
+      },
+      {
+        "name": "Distributed Denial of Service (DDoS)",
+        "description": "A coordinated flood of traffic from many sources overwhelms network infrastructure or application endpoints.",
+        "category": "Denial of Service",
+        "suggested_mitigation": "Deploy a CDN with DDoS mitigation. Use upstream traffic scrubbing services. Implement anycast routing and geographic load distribution.",
+        "stride_hint": "denial_of_service"
+      },
+      {
+        "name": "Privilege Escalation via Broken Access Control",
+        "description": "An attacker exploits missing or misconfigured access controls to gain higher privileges than intended.",
+        "category": "Elevation of Privilege",
+        "suggested_mitigation": "Apply the principle of least privilege. Centralise authorisation decisions. Conduct regular privilege audits and automated access control testing.",
+        "stride_hint": "elevation_of_privilege"
+      },
+      {
+        "name": "Kernel or Container Escape",
+        "description": "An attacker escapes from an application sandbox, container, or VM to gain host-level privileges.",
+        "category": "Elevation of Privilege",
+        "suggested_mitigation": "Run containers as non-root. Apply kernel security modules (seccomp, AppArmor). Keep hypervisors and container runtimes patched. Use read-only file systems where possible.",
+        "stride_hint": "elevation_of_privilege"
+      },
+      {
+        "name": "Lateral Movement via Credential Reuse",
+        "description": "After compromising one account or service, an attacker reuses credentials to access other systems in the same environment.",
+        "category": "Lateral Movement",
+        "suggested_mitigation": "Enforce unique credentials per service. Adopt just-in-time (JIT) access provisioning. Segment networks and enforce micro-segmentation to limit blast radius.",
+        "stride_hint": "lateral_movement"
+      },
+      {
+        "name": "Lateral Movement via Exploited Trust Relationships",
+        "description": "An attacker leverages implicit trust between internal systems (SSH keys, service tokens) to move laterally without triggering standard alerts.",
+        "category": "Lateral Movement",
+        "suggested_mitigation": "Audit and rotate all service-to-service credentials regularly. Deploy zero-trust network access (ZTNA). Monitor east-west traffic for anomalous patterns.",
+        "stride_hint": "lateral_movement"
+      }
+    ]
+  },
+  {
+    "framework": "OWASP Top 10 (2021)",
+    "description": "The OWASP Top 10 (2021) identifies the most critical web application security risks, from access control failures to server-side request forgery.",
+    "is_builtin": true,
+    "entries": [
+      {
+        "name": "Broken Access Control — Insecure Direct Object Reference",
+        "description": "A user manipulates a URL parameter or API reference (e.g. `/api/orders/1234`) to access another user's resources without authorisation.",
+        "category": "Broken Access Control",
+        "suggested_mitigation": "Implement server-side authorisation checks on every resource request. Use indirect references (UUIDs or hashed IDs) where possible. Add automated integration tests for access control boundaries.",
+        "stride_hint": "elevation_of_privilege"
+      },
+      {
+        "name": "Broken Access Control — Missing Function-Level Access Control",
+        "description": "Administrative or privileged functions are accessible to lower-privileged users because the server relies solely on client-side UI hiding.",
+        "category": "Broken Access Control",
+        "suggested_mitigation": "Enforce role-based access control (RBAC) on every server-side function. Deny by default. Use a centralised policy-enforcement point for all privileged actions.",
+        "stride_hint": "elevation_of_privilege"
+      },
+      {
+        "name": "Cryptographic Failures — Weak Cipher Suite",
+        "description": "The application uses outdated algorithms (DES, MD5, SHA-1, RC4) that can be broken to expose sensitive data.",
+        "category": "Cryptographic Failures",
+        "suggested_mitigation": "Use TLS 1.2+ with strong cipher suites (e.g. ECDHE-RSA-AES256-GCM-SHA384). Migrate hashing to SHA-256 or better. Regularly audit cryptographic libraries and configurations.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Cryptographic Failures — Plaintext Sensitive Data Storage",
+        "description": "Passwords, API keys, or PII are stored in clear text in databases, logs, or configuration files.",
+        "category": "Cryptographic Failures",
+        "suggested_mitigation": "Hash passwords with bcrypt/Argon2. Store secrets in a dedicated vault. Encrypt sensitive columns at rest. Scan repositories and configs for hard-coded credentials.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Injection — SQL Injection",
+        "description": "Unsanitised user input is concatenated into SQL queries, allowing attackers to read, modify, or delete database content.",
+        "category": "Injection",
+        "suggested_mitigation": "Use parameterised queries or an ORM. Apply input validation and output encoding. Deploy a WAF as a secondary control. Run automated SQL injection scans in CI.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Injection — OS Command Injection",
+        "description": "User-controlled input is passed to a system shell, enabling arbitrary command execution on the host.",
+        "category": "Injection",
+        "suggested_mitigation": "Avoid shell invocation from user input entirely. If unavoidable, use an allowlist of safe arguments. Run services under restricted OS users with minimal permissions.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Insecure Design — Missing Security Controls in Workflow",
+        "description": "Critical business workflows (e.g. password reset, multi-step checkout) lack threat-modelling-backed controls, allowing abuse.",
+        "category": "Insecure Design",
+        "suggested_mitigation": "Conduct threat modelling during design. Define security acceptance criteria per user story. Use reference implementations and security design patterns.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Security Misconfiguration — Default Credentials in Production",
+        "description": "Software is deployed with unchanged default usernames and passwords, granting trivial access to attackers.",
+        "category": "Security Misconfiguration",
+        "suggested_mitigation": "Require credentials to be changed on first deployment. Automate configuration hardening checks in the CI/CD pipeline. Include default-credential scanning in vulnerability assessments.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Security Misconfiguration — Unnecessary Features Enabled",
+        "description": "Debug interfaces, sample applications, or unused features are enabled in production, expanding the attack surface.",
+        "category": "Security Misconfiguration",
+        "suggested_mitigation": "Adopt infrastructure-as-code with a minimal base image. Disable all features not explicitly required. Run CIS Benchmark scans pre-deployment.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Vulnerable and Outdated Components",
+        "description": "Third-party libraries, frameworks, or OS packages with known CVEs are used in production, enabling exploitation of public exploits.",
+        "category": "Vulnerable Components",
+        "suggested_mitigation": "Integrate software composition analysis (SCA) into CI. Subscribe to dependency vulnerability advisories. Enforce an SLA for patching critical CVEs within 72 hours.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Identification and Authentication Failures — Weak Session Management",
+        "description": "Session tokens are guessable, not invalidated on logout, or transmitted over insecure channels, enabling session hijacking.",
+        "category": "Authentication Failures",
+        "suggested_mitigation": "Generate cryptographically random session tokens. Invalidate all sessions on logout and password change. Enforce HTTPS. Apply appropriate session expiry and idle timeouts.",
+        "stride_hint": "spoofing"
+      },
+      {
+        "name": "Software and Data Integrity Failures — Insecure Deserialization",
+        "description": "The application deserialises untrusted data, allowing attackers to inject malicious objects and achieve remote code execution.",
+        "category": "Integrity Failures",
+        "suggested_mitigation": "Never deserialise data from untrusted sources without integrity validation. Use safe serialisation formats (JSON with schema). Apply digital signatures or HMAC to serialised objects.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Security Logging and Monitoring Failures",
+        "description": "Security events (failed logins, access control violations) are not logged or monitored, preventing timely detection and response.",
+        "category": "Logging Failures",
+        "suggested_mitigation": "Log all authentication attempts, authorisation failures, and input validation errors. Centralise logs in a SIEM. Define alerting thresholds and test the detection pipeline regularly.",
+        "stride_hint": "repudiation"
+      },
+      {
+        "name": "Server-Side Request Forgery (SSRF)",
+        "description": "The server fetches a URL supplied by the user, enabling attackers to reach internal systems or cloud metadata endpoints.",
+        "category": "SSRF",
+        "suggested_mitigation": "Validate and allowlist URLs before fetch operations. Block requests to RFC-1918 and link-local ranges at the network layer. Use an egress proxy for all outbound calls.",
+        "stride_hint": "information_disclosure"
+      }
+    ]
+  },
+  {
+    "framework": "PASTA",
+    "description": "PASTA (Process for Attack Simulation and Threat Analysis) is a seven-stage, risk-centric threat-modeling methodology aligned with business objectives.",
+    "is_builtin": true,
+    "entries": [
+      {
+        "name": "Uncontrolled Third-Party Dependencies",
+        "description": "Business objectives rely on external vendors whose security posture is unknown, introducing unmanaged supply-chain risk.",
+        "category": "Asset Analysis",
+        "suggested_mitigation": "Enumerate all third-party dependencies and assess them against your risk criteria. Require security attestations (SOC 2, ISO 27001) from critical vendors. Maintain a software bill of materials (SBOM).",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Unprotected API Endpoints",
+        "description": "Publicly reachable API endpoints expose sensitive business functions without adequate authentication or rate-limiting controls.",
+        "category": "Attack Surface Analysis",
+        "suggested_mitigation": "Inventory all public-facing APIs with an API gateway. Enforce authentication (OAuth 2.0 / OIDC) and rate limiting on all endpoints. Perform automated API security scanning in CI.",
+        "stride_hint": "elevation_of_privilege"
+      },
+      {
+        "name": "Chained Attack via Interconnected Services",
+        "description": "An attacker compromises one low-privilege service and chains vulnerabilities across interconnected microservices to reach high-value targets.",
+        "category": "Attack Modeling",
+        "suggested_mitigation": "Adopt a zero-trust service mesh. Enforce strict inbound/outbound allow-lists per service. Simulate chained attack paths in tabletop exercises and adversarial testing.",
+        "stride_hint": "lateral_movement"
+      },
+      {
+        "name": "Business Logic Abuse",
+        "description": "An attacker exploits legitimate application features (e.g. discount codes, referral systems) in unintended ways to gain financial or data advantage.",
+        "category": "Threat Analysis",
+        "suggested_mitigation": "Model abuse cases alongside normal use cases during design. Add anomaly detection for unusual business-logic patterns. Implement velocity checks for bulk or high-value operations.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Unpatched Vulnerability in Business-Critical Component",
+        "description": "A known CVE in a business-critical component has not been remediated, providing attackers with a reliable public exploit.",
+        "category": "Vulnerability Analysis",
+        "suggested_mitigation": "Maintain a vulnerability management programme with SLAs based on CVSS severity and asset criticality. Use automated scanning and runtime protection (RASP) as compensating controls.",
+        "stride_hint": "tampering"
+      },
+      {
+        "name": "Automated Credential Stuffing Attack",
+        "description": "Attackers use lists of compromised credentials from data breaches to automate login attempts and take over accounts at scale.",
+        "category": "Attack Analysis",
+        "suggested_mitigation": "Enforce MFA. Integrate with breach-credential databases (e.g. HaveIBeenPwned API). Apply CAPTCHA and progressive delays after failed attempts. Alert on anomalous login volumes.",
+        "stride_hint": "spoofing"
+      },
+      {
+        "name": "Data Exfiltration Impact on Business Continuity",
+        "description": "Bulk exfiltration of customer or business data causes regulatory penalties, contractual breaches, and reputational damage.",
+        "category": "Impact Analysis",
+        "suggested_mitigation": "Apply data-loss prevention (DLP) controls on outbound channels. Classify and tag sensitive data. Define and test an incident response and breach-notification plan.",
+        "stride_hint": "information_disclosure"
+      }
+    ]
+  },
+  {
+    "framework": "LINDDUN",
+    "description": "LINDDUN is a privacy threat-modeling framework covering Linkability, Identifiability, Non-repudiation, Detectability, Disclosure of Information, Unawareness, and Non-compliance.",
+    "is_builtin": true,
+    "entries": [
+      {
+        "name": "Cross-Context Data Linkability",
+        "description": "Data items collected in separate contexts can be joined or correlated to build a detailed profile of an individual beyond their reasonable expectation.",
+        "category": "Linkability",
+        "suggested_mitigation": "Apply data minimisation. Use pseudonymous identifiers that differ per context. Evaluate whether data is linkable before collection. Conduct privacy impact assessments for new data flows.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Re-identification via Quasi-Identifiers",
+        "description": "Supposedly anonymised datasets can be de-anonymised by combining quasi-identifiers (e.g. age, postcode, gender), revealing individuals' identities.",
+        "category": "Identifiability",
+        "suggested_mitigation": "Apply k-anonymity, l-diversity, or differential privacy before releasing datasets. Assess re-identification risk formally before publishing. Restrict access to micro-data.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Proof of Action (Non-repudiation of User Activity)",
+        "description": "Detailed system logs enable third parties (including the service provider) to prove that a specific user performed a sensitive action, undermining deniability.",
+        "category": "Non-repudiation",
+        "suggested_mitigation": "Collect the minimum logging required for legitimate purposes. Separate content from metadata where possible. Retain logs only for the legally required minimum period.",
+        "stride_hint": "repudiation"
+      },
+      {
+        "name": "Presence Detectability via Traffic Analysis",
+        "description": "An observer can detect whether a user is using a sensitive service (e.g. an addiction helpline, a medical portal) by analysing encrypted traffic metadata.",
+        "category": "Detectability",
+        "suggested_mitigation": "Apply traffic shaping and constant-rate padding to obscure usage patterns. Use VPN or Tor-friendly designs for highly sensitive services. Avoid exposing distinct URL patterns per feature.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Unauthorised Disclosure to Third Parties",
+        "description": "Personal data is shared with third-party analytics, advertising, or support tools embedded in the application without users' awareness or consent.",
+        "category": "Disclosure of Information",
+        "suggested_mitigation": "Audit all third-party SDKs and integrations for data sharing. Disclose third-party sharing in privacy notices. Obtain explicit consent where required. Use a consent management platform.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Lack of Transparent Privacy Notice",
+        "description": "Users are unaware of how their data is collected, processed, or shared because privacy information is absent, incomplete, or inaccessible.",
+        "category": "Unawareness",
+        "suggested_mitigation": "Provide a clear, layered privacy notice at point of collection. Use plain language and progressive disclosure. Present privacy information before or during data collection, not only in legal terms.",
+        "stride_hint": "information_disclosure"
+      },
+      {
+        "name": "Non-compliance with Data Subject Rights",
+        "description": "The system does not implement mechanisms enabling data subjects to exercise their GDPR/CCPA rights (access, erasure, portability, objection).",
+        "category": "Non-compliance",
+        "suggested_mitigation": "Build data subject rights into the product from inception. Implement an automated DSR workflow with defined SLAs. Keep an up-to-date record of processing activities (RoPA). Conduct periodic DPIA reviews.",
+        "stride_hint": "repudiation"
+      }
+    ]
+  }
+]

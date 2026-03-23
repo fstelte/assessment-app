@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
+{% block title %}{% if entry %}{{ _("threat.library.edit_entry") }}{% else %}{{ _("threat.library.new_entry") }}{% endif %}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-3xl px-4 sm:px-6{% endblock %}
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.library_index') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.library.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.library_entries', fw_id=framework.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ framework.name }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{% if entry %}{{ _("threat.library.edit_entry") }}{% else %}{{ _("threat.library.new_entry") }}{% endif %}</li>
+    </ol>
+  </nav>
+
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-6">
+    <h1 class="text-xl font-bold mb-4">
+      {% if entry %}{{ _("threat.library.edit_entry") }}{% else %}{{ _("threat.library.new_entry") }}{% endif %}
+      <span class="text-[var(--color-muted)] text-base font-normal ml-2">— {{ framework.name }}</span>
+    </h1>
+
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="flex flex-col gap-3">
+        {{ render_field_with_help(form.name) }}
+        {{ render_field_with_help(form.category) }}
+        {{ render_field_with_help(form.description) }}
+        {{ render_field_with_help(form.suggested_mitigation) }}
+      </div>
+      <div class="flex gap-2 mt-4">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
+        <a href="{{ url_for('threat.library_entries', fw_id=framework.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.cancel") }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

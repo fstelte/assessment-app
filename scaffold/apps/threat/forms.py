@@ -5,6 +5,8 @@ from __future__ import annotations
 from flask_wtf import FlaskForm
 from wtforms import (
     BooleanField,
+    DateField,
+    HiddenField,
     IntegerField,
     SelectField,
     SelectMultipleField,
@@ -17,7 +19,7 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 from scaffold.core.i18n import lazy_gettext as _l
 
-from .models import AssetType, ScenarioStatus, StrideCategory, TreatmentOption
+from .models import AssetType, MitigationStatus, ScenarioStatus, StrideCategory, TreatmentOption
 
 
 BIA_CHOICES_PLACEHOLDER: list = []  # populated at runtime in routes
@@ -97,7 +99,7 @@ class ThreatModelAssetForm(FlaskForm):
 class ThreatScenarioForm(FlaskForm):
     stride_category = SelectField(
         "STRIDE-LM category",
-        validators=[DataRequired()],
+        validators=[Optional()],
         choices=STRIDE_CHOICES,
         description=_l("threat.scenario_form.help.stride_category"),
     )
@@ -196,4 +198,109 @@ class ThreatScenarioForm(FlaskForm):
         render_kw={"size": 6},
         description=_l("threat.scenario_form.help.csa_control_ids"),
     )
+    library_entry_id = HiddenField(validators=[Optional()])
+    methodology = SelectField(
+        "Methodology",
+        validators=[DataRequired()],
+        choices=[
+            ("STRIDE", "STRIDE-LM"),
+            ("PASTA", "PASTA"),
+            ("LINDDUN", "LINDDUN"),
+            ("OWASP", "OWASP Top 10"),
+        ],
+        default="STRIDE",
+    )
+    pasta_stage = SelectField(
+        "PASTA stage",
+        validators=[Optional()],
+        choices=[
+            ("", "— not applicable —"),
+            ("Asset Analysis", "Asset Analysis"),
+            ("Attack Surface Analysis", "Attack Surface Analysis"),
+            ("Attack Modeling", "Attack Modeling"),
+            ("Threat Analysis", "Threat Analysis"),
+            ("Vulnerability Analysis", "Vulnerability Analysis"),
+            ("Attack Analysis", "Attack Analysis"),
+            ("Impact Analysis", "Impact Analysis"),
+        ],
+    )
     submit = SubmitField("Save scenario")
+
+
+class ThreatLibraryEntryForm(FlaskForm):
+    name = StringField(
+        "Name",
+        validators=[DataRequired(), Length(max=255)],
+        description=_l("threat.library.help.name"),
+    )
+    category = StringField(
+        "Category",
+        validators=[Optional(), Length(max=100)],
+        description=_l("threat.library.help.category"),
+    )
+    description = TextAreaField(
+        "Description",
+        validators=[Optional()],
+        render_kw={"rows": 4},
+    )
+    suggested_mitigation = TextAreaField(
+        "Suggested mitigation",
+        validators=[Optional()],
+        render_kw={"rows": 4},
+    )
+    submit = SubmitField("Save")
+
+
+class ThreatProductForm(FlaskForm):
+    name = StringField(
+        "Name",
+        validators=[DataRequired(), Length(max=255)],
+    )
+    description = TextAreaField(
+        "Description",
+        validators=[Optional()],
+        render_kw={"rows": 3},
+    )
+    owner_id = SelectField(
+        "Owner",
+        validators=[Optional()],
+        choices=[],
+    )
+    submit = SubmitField("Save")
+
+
+MITIGATION_STATUS_CHOICES = [(s.value, s.value.replace("_", " ").title()) for s in MitigationStatus]
+
+
+class ThreatMitigationActionForm(FlaskForm):
+    title = StringField(
+        "Title",
+        validators=[DataRequired(), Length(max=255)],
+    )
+    description = TextAreaField(
+        "Description",
+        validators=[Optional()],
+        render_kw={"rows": 3},
+    )
+    status = SelectField(
+        "Status",
+        validators=[DataRequired()],
+        choices=MITIGATION_STATUS_CHOICES,
+        default="proposed",
+    )
+    assigned_to_id = SelectField(
+        "Assigned to",
+        validators=[Optional()],
+        choices=[],
+    )
+    due_date = DateField(
+        "Due date",
+        validators=[Optional()],
+        format="%Y-%m-%d",
+    )
+    notes = TextAreaField(
+        "Notes",
+        validators=[Optional()],
+        render_kw={"rows": 2},
+    )
+    submit = SubmitField("Save")

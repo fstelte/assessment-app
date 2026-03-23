@@ -16,7 +16,7 @@
   justify-content: center;
   padding: 0.75rem 0.5rem;
   border-radius: 0.75rem;
-  border: 2px solid var(--bs-border-color);
+  border: 2px solid var(--color-border);
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 600;
@@ -26,6 +26,28 @@
 }
 .stride-option-label:hover { border-color: #6366f1; }
 .stride-select-hidden { display: none; }
+.methodology-option {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--color-border);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  user-select: none;
+}
+.methodology-option:hover { border-color: #6366f1; }
+.methodology-option.active {
+  border-color: #6366f1;
+  background: #6366f1;
+  color: #fff;
+}
+body[data-theme="dark"] .methodology-option.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
 .stride-badge {
   display: inline-block;
   border-radius: 999px;
@@ -36,7 +58,7 @@
 }
 .threat-form-panel {
   border-radius: 1.25rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
   padding: 1.5rem;
@@ -65,15 +87,40 @@ body[data-theme="dark"] .threat-form-panel {
   </nav>
 
   <div class="threat-form-panel">
-    <h1 class="fs-4 fw-bold mb-4">
+    <h1 class="text-2xl font-bold mb-4">
       {% if scenario %}{{ _("threat.scenario_form.title_edit") }}{% else %}{{ _("threat.scenario_form.title_new") }}{% endif %}
     </h1>
 
     <form method="post">
       {{ form.hidden_tag() }}
+      {{ form.library_entry_id() }}
+
+      <!-- Library picker -->
+      <div class="mb-3 flex justify-end">
+        <a href="{{ url_for('threat.library_index') }}" target="_blank" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-hover)]" id="openLibraryModalBtn">
+          <i class="fas fa-book mr-1"></i>{{ _("threat.scenario_form.pick_from_library") }}
+        </a>
+      </div>
+
+      <!-- Methodology selection -->
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_methodology") }}</label>
+        <div class="flex flex-wrap gap-2">
+          {% for value, label in [('STRIDE','STRIDE-LM'), ('PASTA','PASTA'), ('LINDDUN','LINDDUN'), ('OWASP','OWASP Top 10')] %}
+            <span class="methodology-option" data-method="{{ value }}">{{ label }}</span>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="methodology" id="methodology_field" value="{{ form.methodology.data or 'STRIDE' }}">
+      </div>
+
+      <!-- PASTA stage (shown when methodology=PASTA) -->
+      <div class="mb-3" id="pasta_stage_row" style="display:none">
+        <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_pasta_stage") }}</label>
+        {{ form.pasta_stage(class="block w-full rounded-md border border-[var(--color-border)] bg-[var(--bs-body-bg)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500", id="pasta_stage_field") }}
+      </div>
 
       <!-- STRIDE-LM visual picker -->
-      <div class="mb-4">
+      <div class="mb-4" id="stride_category_row">
         <label class="block text-sm font-medium mb-2">{{ _("threat.scenario_form.label_stride") }} <span class="text-danger">*</span></label>
         <div class="stride-option-grid">
           {% set stride_data = [
@@ -96,76 +143,76 @@ body[data-theme="dark"] .threat-form-panel {
       </div>
 
       <!-- Asset + title row -->
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-5">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
+        <div class="md:col-span-5">
           {{ render_field_with_help(form.asset_id) }}
         </div>
-        <div class="col-12 col-md-7">
+        <div class="md:col-span-7">
           {{ render_field_with_help(form.title) }}
         </div>
       </div>
 
       <!-- Section: Identity -->
-      <h2 class="fs-6 fw-semibold mb-3 mt-2 text-muted text-uppercase" style="letter-spacing:0.06em">
+      <h2 class="text-sm font-semibold mb-3 mt-2 text-[var(--color-muted)] uppercase" style="letter-spacing:0.06em">
         {{ _("threat.scenario_form.section_identity") }}
       </h2>
-      <div class="row g-3">
-        <div class="col-12">{{ render_field_with_help(form.description) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.threat_actor) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.attack_vector) }}</div>
-        <div class="col-12">{{ render_field_with_help(form.preconditions) }}</div>
-        <div class="col-12">{{ render_field_with_help(form.impact_description) }}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="md:col-span-2">{{ render_field_with_help(form.description) }}</div>
+        <div>{{ render_field_with_help(form.threat_actor) }}</div>
+        <div>{{ render_field_with_help(form.attack_vector) }}</div>
+        <div class="md:col-span-2">{{ render_field_with_help(form.preconditions) }}</div>
+        <div class="md:col-span-2">{{ render_field_with_help(form.impact_description) }}</div>
       </div>
 
       <!-- CIA -->
       <div class="mb-3 mt-2">
         <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_cia") }}</label>
-        <div class="d-flex gap-3">
-          <div class="form-check">
-            {{ form.cia_c(class="form-check-input") }}
-            {{ form.cia_c.label(class="form-check-label") }}
+        <div class="flex gap-3">
+          <div class="flex items-center gap-2">
+            {{ form.cia_c(class="h-4 w-4") }}
+            {{ form.cia_c.label(class="text-sm cursor-pointer") }}
           </div>
-          <div class="form-check">
-            {{ form.cia_i(class="form-check-input") }}
-            {{ form.cia_i.label(class="form-check-label") }}
+          <div class="flex items-center gap-2">
+            {{ form.cia_i(class="h-4 w-4") }}
+            {{ form.cia_i.label(class="text-sm cursor-pointer") }}
           </div>
-          <div class="form-check">
-            {{ form.cia_a(class="form-check-input") }}
-            {{ form.cia_a.label(class="form-check-label") }}
+          <div class="flex items-center gap-2">
+            {{ form.cia_a(class="h-4 w-4") }}
+            {{ form.cia_a.label(class="text-sm cursor-pointer") }}
           </div>
         </div>
       </div>
 
       <!-- Section: Analysis -->
-      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+      <h2 class="text-sm font-semibold mb-3 mt-3 text-[var(--color-muted)] uppercase" style="letter-spacing:0.06em">
         {{ _("threat.scenario_form.section_analysis") }}
       </h2>
-      <div class="row g-3">
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.likelihood) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.impact_score) }}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>{{ render_field_with_help(form.likelihood) }}</div>
+        <div>{{ render_field_with_help(form.impact_score) }}</div>
       </div>
 
       <!-- Section: Residual Risk Analysis -->
-      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+      <h2 class="text-sm font-semibold mb-3 mt-3 text-[var(--color-muted)] uppercase" style="letter-spacing:0.06em">
         {{ _("threat.scenario_form.section_residual_risk") }}
       </h2>
-      <div class="row g-3">
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.residual_likelihood) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.residual_impact) }}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>{{ render_field_with_help(form.residual_likelihood) }}</div>
+        <div>{{ render_field_with_help(form.residual_impact) }}</div>
       </div>
 
       <!-- Section: Treatment -->
-      <h2 class="fs-6 fw-semibold mb-3 mt-3 text-muted text-uppercase" style="letter-spacing:0.06em">
+      <h2 class="text-sm font-semibold mb-3 mt-3 text-[var(--color-muted)] uppercase" style="letter-spacing:0.06em">
         {{ _("threat.scenario_form.section_treatment") }}
       </h2>
-      <div class="row g-3">
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.treatment) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.status) }}</div>
-        <div class="col-12 col-md-6">{{ render_field_with_help(form.owner_id) }}</div>
-        <div class="col-12">{{ render_field_with_help(form.csa_control_ids) }}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>{{ render_field_with_help(form.treatment) }}</div>
+        <div>{{ render_field_with_help(form.status) }}</div>
+        <div>{{ render_field_with_help(form.owner_id) }}</div>
+        <div class="md:col-span-2">{{ render_field_with_help(form.csa_control_ids) }}</div>
       </div>
 
-      <div class="d-flex gap-2 mt-4">
+      <div class="flex gap-2 mt-4">
         {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}
         <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.cancel") }}</a>
       </div>
@@ -198,6 +245,33 @@ body[data-theme="dark"] .threat-form-panel {
     var matching = document.querySelector('.stride-option-label[data-stride="' + currentVal + '"]');
     if (matching) selectStride(currentVal, matching);
   }
+
+  // Methodology picker
+  function selectMethodology(value) {
+    document.getElementById('methodology_field').value = value;
+    document.querySelectorAll('.methodology-option').forEach(function (el) {
+      el.style.background = '';
+      el.style.borderColor = '';
+      el.style.fontWeight = '';
+    });
+    var active = document.querySelector('.methodology-option[data-method="' + value + '"]');
+    if (active) {
+      active.style.background = 'rgba(99,102,241,0.08)';
+      active.style.borderColor = '#6366f1';
+      active.style.fontWeight = '600';
+    }
+    var pastaRow = document.getElementById('pasta_stage_row');
+    if (pastaRow) pastaRow.style.display = value === 'PASTA' ? '' : 'none';
+    var strideRow = document.getElementById('stride_category_row');
+    if (strideRow) strideRow.style.display = value === 'STRIDE' ? '' : 'none';
+  }
+
+  document.querySelectorAll('.methodology-option[data-method]').forEach(function (el) {
+    el.addEventListener('click', function () { selectMethodology(this.dataset.method); });
+  });
+
+  var currentMethod = document.getElementById('methodology_field').value || 'STRIDE';
+  selectMethodology(currentMethod);
 })();
 </script>
 {% endblock %}

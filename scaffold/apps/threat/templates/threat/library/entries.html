@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ framework.name }} — {{ _("threat.library.title") }}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-6xl px-4 sm:px-6{% endblock %}
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.library_index') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.library.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ framework.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="flex justify-between items-start flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">{{ framework.name }}</h1>
+      {% if framework.description %}
+        <p class="text-[var(--color-muted)] text-sm mb-0">{{ framework.description }}</p>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('threat.library_entry_new', fw_id=framework.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">
+      + {{ _("threat.library.add_entry") }}
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-2 items-end">
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ _("threat.library.search") }}</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="{{ _('threat.library.search_placeholder') }}"
+             class="block rounded-md border border-[var(--color-border)] bg-[var(--bs-body-bg)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" style="min-width:220px">
+    </div>
+    {% if categories %}
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ _("threat.library.filter_category") }}</label>
+        <select name="category" class="block rounded-md border border-[var(--color-border)] bg-[var(--bs-body-bg)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">— {{ _("threat.library.all_categories") }} —</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if cat == selected_cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]">
+      {{ _("actions.filter") }}
+    </button>
+    {% if q or selected_cat %}
+      <a href="{{ url_for('threat.library_entries', fw_id=framework.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors text-[var(--color-muted)] hover:bg-[var(--color-surface-hover)]">
+        {{ _("actions.clear") }}
+      </a>
+    {% endif %}
+  </form>
+
+  {% if entries %}
+    <div class="overflow-hidden rounded-xl border border-[var(--color-border)]">
+      <table class="w-full text-sm">
+          <thead class="bg-[var(--color-surface-hover)]">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold">{{ _("threat.library.col_name") }}</th>
+            <th class="px-4 py-3 text-left font-semibold hidden sm:table-cell">{{ _("threat.library.col_category") }}</th>
+            <th class="px-4 py-3 text-left font-semibold hidden md:table-cell">{{ _("threat.library.col_description") }}</th>
+            <th class="px-4 py-3 text-right font-semibold">{{ _("actions.actions") }}</th>
+          </tr>
+        </thead>
+          <tbody class="divide-y divide-[var(--color-border)]">
+          {% for entry in entries %}
+            <tr class="hover:bg-[var(--color-surface-hover)] transition-colors">
+              <td class="px-4 py-3">
+                <div class="font-medium">{{ entry.name }}</div>
+                {% if entry.is_custom %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-600 text-white mt-1">{{ _("threat.library.custom") }}</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-[var(--color-muted)] hidden sm:table-cell">{{ entry.category or "—" }}</td>
+              <td class="px-4 py-3 text-[var(--color-muted)] hidden md:table-cell">
+                {{ (entry.description or "") | truncate(100) }}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex gap-1 justify-end">
+                  <button type="button"
+                          class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10"
+                          data-library-entry-id="{{ entry.id }}"
+                          data-library-entry-json-url="{{ url_for('threat.library_entry_json', eid=entry.id) }}"
+                          onclick="openLibraryEntryDetail(this)">
+                    {{ _("threat.library.view") }}
+                  </button>
+                  {% if entry.is_custom %}
+                    <a href="{{ url_for('threat.library_entry_edit', eid=entry.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
+                      {{ _("actions.edit") }}
+                    </a>
+                    <form method="post" action="{{ url_for('threat.library_entry_delete', eid=entry.id) }}" onsubmit="return confirm('{{ _('threat.library.confirm_delete') }}')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-red-400 text-red-400 hover:bg-red-400/10">✕</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-center py-8 text-[var(--color-muted)]">
+      <p>{{ _("threat.library.no_entries") }}</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Detail slide-in drawer (vanilla JS, no Bootstrap required) -->
+<div id="libraryDetailBackdrop"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1040;"
+     onclick="closeLibraryPanel()"></div>
+<div id="libraryDetailPanel"
+     style="position:fixed;top:0;right:0;height:100%;width:420px;max-width:100vw;background:var(--bs-body-bg);border-left:1px solid var(--color-border);transform:translateX(100%);transition:transform 0.25s;z-index:1050;overflow-y:auto;"
+     aria-label="{{ _('threat.library.entry_detail') }}">
+  <div class="flex justify-between items-center p-4 border-b border-[var(--color-border)]">
+    <h5 class="font-semibold text-base mb-0">{{ _("threat.library.entry_detail") }}</h5>
+    <button type="button" onclick="closeLibraryPanel()"
+            class="ml-auto text-[var(--color-muted)] hover:text-[var(--color-text)] text-xl leading-none">✕</button>
+  </div>
+  <div class="p-4" id="libraryDetailBody">
+    <p class="text-[var(--color-muted)] text-sm">{{ _("threat.library.loading") }}</p>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+function openLibraryPanel() {
+  var panel = document.getElementById('libraryDetailPanel');
+  var backdrop = document.getElementById('libraryDetailBackdrop');
+  panel.style.transform = 'translateX(0)';
+  backdrop.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+function closeLibraryPanel() {
+  var panel = document.getElementById('libraryDetailPanel');
+  var backdrop = document.getElementById('libraryDetailBackdrop');
+  panel.style.transform = 'translateX(100%)';
+  backdrop.style.display = 'none';
+  document.body.style.overflow = '';
+}
+function openLibraryEntryDetail(btn) {
+  var url = btn.dataset.libraryEntryJsonUrl;
+  var body = document.getElementById('libraryDetailBody');
+  body.innerHTML = '<p class="text-[var(--color-muted)] text-xs">Loading\u2026</p>';
+  openLibraryPanel();
+  fetch(url, {headers: {'Accept': 'application/json'}})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      body.innerHTML =
+        '<dl class="grid text-xs gap-y-1" style="grid-template-columns:auto 1fr">' +
+        '<dt class="font-semibold pr-3">Name</dt><dd>' + escHtml(d.name) + '</dd>' +
+        '<dt class="font-semibold pr-3">Category</dt><dd>' + escHtml(d.category || '\u2014') + '</dd>' +
+        '<dt class="font-semibold pr-3">Framework</dt><dd>' + escHtml(d.framework_name || '\u2014') + '</dd>' +
+        '<dt class="font-semibold pr-3">STRIDE hint</dt><dd>' + escHtml(d.stride_hint || '\u2014') + '</dd>' +
+        '</dl>' +
+        (d.description ? '<p class="text-xs mt-3">' + escHtml(d.description) + '</p>' : '') +
+        (d.suggested_mitigation ? '<h6 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)] mt-4 mb-1">Suggested Mitigation</h6><p class="text-xs">' + escHtml(d.suggested_mitigation) + '</p>' : '');
+    })
+    .catch(function() { body.innerHTML = '<p class="text-red-500 text-xs">Failed to load entry.</p>'; });
+}
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(s));
+  return d.innerHTML;
+}
+</script>
+{% endblock %}

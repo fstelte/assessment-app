@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ _("threat.product.title") }}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-5xl px-4 sm:px-6{% endblock %}
+{% block content %}
+<div class="py-6 flex flex-col gap-4">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ _("threat.dashboard.title") }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ _("threat.product.title") }}</li>
+    </ol>
+  </nav>
+
+  <div class="flex justify-between items-center flex-wrap gap-3">
+    <h1 class="text-2xl font-bold mb-0">{{ _("threat.product.title") }}</h1>
+    <a href="{{ url_for('threat.product_new') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">
+      + {{ _("threat.product.new") }}
+    </a>
+  </div>
+
+  {% if products %}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for product in products %}
+        {% set model_count = product.models | selectattr('is_archived', 'equalto', false) | list | length %}
+        {% set scenario_count = product.models | selectattr('is_archived', 'equalto', false) | map(attribute='scenarios') | map('length') | sum %}
+        <div class="rounded-xl border border-[var(--color-border)] bg-[var(--bs-body-bg)] shadow p-5 flex flex-col gap-3 {% if product.is_archived %}opacity-60{% endif %}">
+          <div class="flex justify-between items-start gap-2">
+            <h2 class="text-base font-semibold mb-0">{{ product.name }}</h2>
+            {% if product.is_archived %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-surface-hover)] text-[var(--color-muted)]">{{ _("threat.dashboard.archived") }}</span>
+            {% endif %}
+          </div>
+          {% if product.description %}
+            <p class="text-[var(--color-muted)] text-sm mb-0">{{ product.description | truncate(120) }}</p>
+          {% endif %}
+          <div class="flex gap-3 text-sm text-[var(--color-muted)]">
+            <span>{{ model_count }} {{ _("threat.product.models") }}</span>
+            <span>{{ scenario_count }} {{ _("threat.dashboard.scenarios") }}</span>
+          </div>
+          <div class="mt-auto pt-2 flex gap-2">
+            <a href="{{ url_for('threat.product_detail', product_id=product.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] flex-1">{{ _("threat.dashboard.view") }}</a>
+            <a href="{{ url_for('threat.product_edit', product_id=product.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.edit") }}</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-8 text-[var(--color-muted)]">
+      <p>{{ _("threat.product.no_products") }}</p>
+      <a href="{{ url_for('threat.product_new') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 mt-2">
+        {{ _("threat.product.new") }}
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

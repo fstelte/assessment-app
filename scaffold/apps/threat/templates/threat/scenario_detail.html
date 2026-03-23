@@ -23,12 +23,12 @@
 .risk-medium   { background: #f59e0b; color: #fff; }
 .risk-high     { background: #f97316; color: #fff; }
 .risk-critical { background: #ef4444; color: #fff; }
-.detail-row { display: grid; grid-template-columns: 180px 1fr; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--bs-border-color-translucent); }
+.detail-row { display: grid; grid-template-columns: 180px 1fr; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--color-border); }
 .detail-row:last-child { border-bottom: none; }
-.detail-label { font-size: 0.8rem; font-weight: 600; color: var(--bs-secondary-color); }
+.detail-label { font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
 .threat-panel {
   border-radius: 1.25rem;
-  border: 1px solid var(--bs-border-color-translucent);
+  border: 1px solid var(--color-border);
   background: var(--bs-body-bg);
   box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
   padding: 1.25rem 1.5rem;
@@ -67,16 +67,16 @@ body[data-theme="dark"] .threat-panel {
 
   <div class="threat-panel">
     <!-- Title row -->
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="flex justify-between items-start flex-wrap gap-3 mb-4">
       <div>
         {% set code = stride_code(scenario.stride_category) | trim %}
-        <div class="d-flex align-items-center gap-2 mb-1">
+        <div class="flex items-center gap-2 mb-1">
           <span class="stride-pill stride-{{ code }}">{{ code }}</span>
           <span class="stride-pill risk-{{ scenario.risk_level.value }}">{{ _("threat.risk_level." + scenario.risk_level.value) }}</span>
         </div>
-        <h1 class="fs-3 fw-bold mb-0">{{ scenario.title }}</h1>
+        <h1 class="text-3xl font-bold mb-0">{{ scenario.title }}</h1>
       </div>
-      <div class="d-flex gap-2">
+      <div class="flex gap-2">
         <a href="{{ url_for('threat.scenario_edit', model_id=model.id, scenario_id=scenario.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
           {{ _("threat.scenario_detail.edit") }}
         </a>
@@ -135,17 +135,17 @@ body[data-theme="dark"] .threat-panel {
         <div class="detail-label">{{ _("threat.scenario_detail.affected_cia") }}</div>
         <div>
           {% for char in scenario.affected_cia %}
-            <span class="badge bg-secondary">{{ char }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-surface-hover)] text-[var(--color-muted)]">{{ char }}</span>
           {% endfor %}
         </div>
       </div>
     {% endif %}
     <div class="detail-row">
       <div class="detail-label">{{ _("threat.scenario_detail.risk_score") }}</div>
-      <div class="d-flex align-items-center gap-2">
-        <strong class="fs-5">{{ scenario.risk_score }}</strong>
+      <div class="flex items-center gap-2">
+        <strong class="text-xl">{{ scenario.risk_score }}</strong>
         <span class="stride-pill risk-{{ scenario.risk_level.value }}">{{ _("threat.risk_level." + scenario.risk_level.value) }}</span>
-        <span class="text-[var(--color-muted)] small">
+        <span class="text-[var(--color-muted)] text-xs">
           ({{ _("threat.scenario_detail.likelihood_impact").format(likelihood=scenario.likelihood, impact=scenario.impact_score) }})
         </span>
       </div>
@@ -169,10 +169,10 @@ body[data-theme="dark"] .threat-panel {
     {% if scenario.residual_risk_score %}
       <div class="detail-row">
         <div class="detail-label">{{ _("threat.scenario_detail.residual_risk") }}</div>
-        <div class="d-flex align-items-center gap-2">
-          <strong class="fs-5">{{ scenario.residual_risk_score }}</strong>
+        <div class="flex items-center gap-2">
+          <strong class="text-xl">{{ scenario.residual_risk_score }}</strong>
           <span class="stride-pill risk-{{ scenario.residual_risk_level.value }}">{{ _("threat.risk_level." + scenario.residual_risk_level.value) }}</span>
-          <span class="text-[var(--color-muted)] small">
+          <span class="text-[var(--color-muted)] text-xs">
             ({{ _("threat.scenario_detail.likelihood_impact").format(likelihood=scenario.residual_likelihood, impact=scenario.residual_impact) }})
           </span>
         </div>
@@ -187,12 +187,81 @@ body[data-theme="dark"] .threat-panel {
     {% if scenario.controls %}
       <div class="detail-row">
         <div class="detail-label">{{ _("threat.scenario_detail.linked_controls") }}</div>
-        <div class="d-flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-1">
           {% for control in scenario.controls %}
-            <span class="badge bg-info text-dark">{{ control.domain }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-500 text-white">{{ control.domain }}</span>
           {% endfor %}
         </div>
       </div>
+    {% endif %}
+
+    {% if scenario.library_entry %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.library_source") }}</div>
+        <div>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-surface-hover)] text-[var(--color-muted)]">{{ scenario.library_entry.framework.name if scenario.library_entry.framework else "" }}</span>
+          {{ scenario.library_entry.name }}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if scenario.methodology and scenario.methodology != 'STRIDE' %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.methodology") }}</div>
+        <div>
+          {{ scenario.methodology }}
+          {% if scenario.pasta_stage %}<span class="text-[var(--color-muted)] ml-2">/ {{ scenario.pasta_stage }}</span>{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Mitigation Actions -->
+  <div class="threat-panel">
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-sm font-semibold mb-0 uppercase" style="letter-spacing:0.06em">{{ _("threat.mitigation.heading") }}</h2>
+      <a href="{{ url_for('threat.mitigation_new', model_id=model.id, scenario_id=scenario.id) }}"
+         class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors bg-primary-600 text-white hover:bg-primary-700">
+        + {{ _("threat.mitigation.new") }}
+      </a>
+    </div>
+    {% if scenario.mitigation_actions %}
+      <div class="flex flex-col gap-2">
+        {% for action in scenario.mitigation_actions %}
+          <div class="rounded-lg border border-[var(--color-border)] p-3">
+              <div class="flex justify-between items-start flex-wrap gap-2">
+                <div>
+                <span class="font-medium">{{ action.title }}</span>
+                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                  {% if action.status.value == 'verified' %}bg-emerald-600 text-white
+                  {% elif action.status.value == 'implemented' %}bg-indigo-600 text-white
+                  {% elif action.status.value == 'in_progress' %}bg-amber-400 text-gray-900
+                  {% else %}bg-[var(--color-surface-hover)] text-[var(--color-muted)]{% endif %}">
+                  {{ action.status.value | replace('_', ' ') | title }}
+                </span>
+              </div>
+              <div class="flex gap-1">
+                <a href="{{ url_for('threat.mitigation_edit', model_id=model.id, scenario_id=scenario.id, action_id=action.id) }}"
+                   class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _("actions.edit") }}</a>
+                <form method="post" action="{{ url_for('threat.mitigation_delete', model_id=model.id, scenario_id=scenario.id, action_id=action.id) }}"
+                      onsubmit="return confirm('{{ _('threat.mitigation.confirm_delete') }}')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-red-400 text-red-400 hover:bg-red-400/10">✕</button>
+                </form>
+              </div>
+            </div>
+            {% if action.description %}
+              <p class="text-[var(--color-muted)] text-xs mb-1 mt-1">{{ action.description }}</p>
+            {% endif %}
+            <div class="flex gap-3 text-xs text-[var(--color-muted)] mt-1">
+              {% if action.assigned_to %}<span>{{ _("threat.mitigation.assigned_to") }}: {{ action.assigned_to.email }}</span>{% endif %}
+              {% if action.due_date %}<span>{{ _("threat.mitigation.due_date") }}: {{ action.due_date.strftime('%Y-%m-%d') }}</span>{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-[var(--color-muted)] text-sm mb-0">{{ _("threat.mitigation.no_actions") }}</p>
     {% endif %}
   </div>
 

@@ -9,6 +9,7 @@ from flask import (
     Blueprint,
     abort,
     flash,
+    jsonify,
     make_response,
     redirect,
     render_template,
@@ -23,14 +24,26 @@ from ...extensions import db
 from ..bia.models import Component as BiaComponent, ContextScope
 from ..csa.models import Control
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER
-from .forms import ThreatModelAssetForm, ThreatModelForm, ThreatScenarioForm
+from .forms import (
+    ThreatLibraryEntryForm,
+    ThreatMitigationActionForm,
+    ThreatModelAssetForm,
+    ThreatModelForm,
+    ThreatProductForm,
+    ThreatScenarioForm,
+)
 from .models import (
     AssetType,
+    MitigationStatus,
     RiskLevel,
     ScenarioStatus,
     StrideCategory,
+    ThreatFramework,
+    ThreatLibraryEntry,
+    ThreatMitigationAction,
     ThreatModel,
     ThreatModelAsset,
+    ThreatProduct,
     ThreatScenario,
     TreatmentOption,
 )
@@ -83,7 +96,46 @@ def dashboard():
         .order_by(ThreatModel.created_at.desc())
         .all()
     )
-    return render_template("threat/dashboard.html", models=models)
+    # Aggregated cross-model stats
+    stats = {
+        "total": db.session.query(sa.func.count(ThreatScenario.id))
+            .filter(ThreatScenario.is_archived == False)  # noqa: E712
+            .scalar() or 0,
+        "by_level": db.session.query(ThreatScenario.risk_level, sa.func.count(ThreatScenario.id))
+            .filter(ThreatScenario.is_archived == False)  # noqa: E712
+            .group_by(ThreatScenario.risk_level)
+            .all(),
+        "by_status": db.session.query(ThreatScenario.status, sa.func.count(ThreatScenario.id))
+            .filter(ThreatScenario.is_archived == False)  # noqa: E712
+            .group_by(ThreatScenario.status)
+            .all(),
+        "open_critical": db.session.query(sa.func.count(ThreatScenario.id))
+            .filter(
+                ThreatScenario.is_archived == False,  # noqa: E712
+                ThreatScenario.risk_level == RiskLevel.CRITICAL,
+                ThreatScenario.status != ScenarioStatus.CLOSED,
+            )
+            .scalar() or 0,
+    }
+    all_scenarios = (
+        ThreatScenario.query
+        .filter(ThreatScenario.is_archived == False)  # noqa: E712
+        .options(
+            sa.orm.joinedload(ThreatScenario.threat_model),
+            sa.orm.joinedload(ThreatScenario.asset),
+        )
+        .order_by(ThreatScenario.risk_score.desc())
+        .limit(100)
+        .all()
+    )
+    return render_template(
+        "threat/dashboard.html",
+        models=models,
+        stats=stats,
+        all_scenarios=all_scenarios,
+        RiskLevel=RiskLevel,
+        ScenarioStatus=ScenarioStatus,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -301,10 +353,11 @@ def scenario_new(model_id: int):
     _configure_scenario_form(form, model)
     if form.validate_on_submit():
         cia = _build_cia(form)
+        stride_cat_value = form.stride_category.data or "spoofing"
         scenario = ThreatScenario(
             threat_model_id=model.id,
             asset_id=int(form.asset_id.data) if form.asset_id.data else None,
-            stride_category=StrideCategory(form.stride_category.data),
+            stride_category=StrideCategory(stride_cat_value),
             title=(form.title.data or "").strip(),
             description=form.description.data,
             threat_actor=(form.threat_actor.data or "").strip() or None,
@@ -319,6 +372,9 @@ def scenario_new(model_id: int):
             residual_impact=int(form.residual_impact.data) if form.residual_impact.data else None,
             status=ScenarioStatus(form.status.data),
             owner_id=int(form.owner_id.data) if form.owner_id.data else None,
+            library_entry_id=int(form.library_entry_id.data) if form.library_entry_id.data else None,
+            methodology=form.methodology.data or "STRIDE",
+            pasta_stage=form.pasta_stage.data or None,
         )
         apply_risk_score(scenario)
         apply_residual_risk_score(scenario)
@@ -374,13 +430,17 @@ def scenario_edit(model_id: int, scenario_id: int):
         form.csa_control_ids.data = [str(c.id) for c in scenario.controls]
         form.residual_likelihood.data = str(scenario.residual_likelihood) if scenario.residual_likelihood else ""
         form.residual_impact.data = str(scenario.residual_impact) if scenario.residual_impact else ""
+        form.library_entry_id.data = str(scenario.library_entry_id) if scenario.library_entry_id else ""
+        form.methodology.data = scenario.methodology or "STRIDE"
+        form.pasta_stage.data = scenario.pasta_stage or ""
         cia = scenario.affected_cia or ""
         form.cia_c.data = "C" in cia
         form.cia_i.data = "I" in cia
         form.cia_a.data = "A" in cia
     if form.validate_on_submit():
         cia = _build_cia(form)
-        scenario.stride_category = StrideCategory(form.stride_category.data)
+        stride_cat_value = form.stride_category.data or "spoofing"
+        scenario.stride_category = StrideCategory(stride_cat_value)
         scenario.asset_id = int(form.asset_id.data) if form.asset_id.data else None
         scenario.title = (form.title.data or "").strip()
         scenario.description = form.description.data
@@ -396,6 +456,9 @@ def scenario_edit(model_id: int, scenario_id: int):
         scenario.residual_impact = int(form.residual_impact.data) if form.residual_impact.data else None
         scenario.status = ScenarioStatus(form.status.data)
         scenario.owner_id = int(form.owner_id.data) if form.owner_id.data else None
+        scenario.library_entry_id = int(form.library_entry_id.data) if form.library_entry_id.data else None
+        scenario.methodology = form.methodology.data or "STRIDE"
+        scenario.pasta_stage = form.pasta_stage.data or None
         apply_risk_score(scenario)
         apply_residual_risk_score(scenario)
         _attach_controls(scenario, form)
@@ -525,3 +588,408 @@ def _attach_controls(scenario: ThreatScenario, form: ThreatScenarioForm) -> None
     else:
         controls = []
     scenario.controls = controls
+
+
+# ---------------------------------------------------------------------------
+# New-from-library scenario shortcut
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/<int:model_id>/scenarios/new-from-library/<int:entry_id>", methods=["GET"])
+@login_required
+def scenario_new_from_library(model_id: int, entry_id: int):
+    _require_access()
+    model = _get_model_or_404(model_id)
+    entry = ThreatLibraryEntry.query.get_or_404(entry_id)
+    form = ThreatScenarioForm()
+    _configure_scenario_form(form, model)
+    # Pre-fill from library entry
+    form.title.data = entry.name
+    form.description.data = entry.description or ""
+    form.mitigation.data = entry.suggested_mitigation or ""
+    form.library_entry_id.data = str(entry.id)
+    if entry.stride_hint:
+        form.stride_category.data = entry.stride_hint
+    if entry.framework and entry.framework.name == "PASTA":
+        form.methodology.data = "PASTA"
+        form.pasta_stage.data = entry.category or ""
+    elif entry.framework and "LINDDUN" in entry.framework.name:
+        form.methodology.data = "LINDDUN"
+    elif entry.framework and "OWASP" in entry.framework.name:
+        form.methodology.data = "OWASP"
+    return render_template("threat/scenario_form.html", form=form, model=model, scenario=None)
+
+
+# ---------------------------------------------------------------------------
+# Threat Library
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/library/")
+@login_required
+def library_index():
+    _require_access()
+    frameworks = ThreatFramework.query.order_by(ThreatFramework.name).all()
+    return render_template("threat/library/index.html", frameworks=frameworks)
+
+
+@bp.route("/library/<int:fw_id>/")
+@login_required
+def library_entries(fw_id: int):
+    _require_access()
+    framework = ThreatFramework.query.get_or_404(fw_id)
+    q = request.args.get("q", "").strip()
+    cat = request.args.get("category", "").strip()
+    query = ThreatLibraryEntry.query.filter_by(framework_id=fw_id)
+    if q:
+        query = query.filter(
+            ThreatLibraryEntry.name.ilike(f"%{q}%") | ThreatLibraryEntry.description.ilike(f"%{q}%")
+        )
+    if cat:
+        query = query.filter_by(category=cat)
+    entries = query.order_by(ThreatLibraryEntry.category, ThreatLibraryEntry.name).all()
+    categories = (
+        db.session.query(ThreatLibraryEntry.category)
+        .filter_by(framework_id=fw_id)
+        .distinct()
+        .order_by(ThreatLibraryEntry.category)
+        .all()
+    )
+    categories = [c[0] for c in categories if c[0]]
+    return render_template(
+        "threat/library/entries.html",
+        framework=framework,
+        entries=entries,
+        categories=categories,
+        q=q,
+        selected_cat=cat,
+    )
+
+
+@bp.route("/library/<int:fw_id>/new", methods=["GET", "POST"])
+@login_required
+def library_entry_new(fw_id: int):
+    _require_access()
+    framework = ThreatFramework.query.get_or_404(fw_id)
+    form = ThreatLibraryEntryForm()
+    if form.validate_on_submit():
+        entry = ThreatLibraryEntry(
+            framework_id=fw_id,
+            name=(form.name.data or "").strip(),
+            category=(form.category.data or "").strip() or None,
+            description=form.description.data,
+            suggested_mitigation=form.suggested_mitigation.data,
+            is_custom=True,
+            created_by_id=current_user.id,
+        )
+        db.session.add(entry)
+        db.session.flush()
+        log_event(
+            action="threat_library_entry_created",
+            entity_type="threat_library_entry",
+            entity_id=entry.id,
+            details={"name": entry.name, "framework": framework.name},
+        )
+        db.session.commit()
+        flash(_("threat.library.flash.entry_created"), "success")
+        return redirect(url_for("threat.library_entries", fw_id=fw_id))
+    return render_template("threat/library/entry_form.html", form=form, framework=framework, entry=None)
+
+
+@bp.route("/library/entries/<int:eid>/edit", methods=["GET", "POST"])
+@login_required
+def library_entry_edit(eid: int):
+    _require_access()
+    entry = ThreatLibraryEntry.query.get_or_404(eid)
+    if not entry.is_custom:
+        abort(403)
+    if entry.created_by_id != current_user.id and not current_user.has_role(ROLE_ADMIN):
+        abort(403)
+    form = ThreatLibraryEntryForm(obj=entry)
+    if form.validate_on_submit():
+        entry.name = (form.name.data or "").strip()
+        entry.category = (form.category.data or "").strip() or None
+        entry.description = form.description.data
+        entry.suggested_mitigation = form.suggested_mitigation.data
+        log_event(
+            action="threat_library_entry_updated",
+            entity_type="threat_library_entry",
+            entity_id=entry.id,
+            details={"name": entry.name},
+        )
+        db.session.commit()
+        flash(_("threat.library.flash.entry_updated"), "success")
+        return redirect(url_for("threat.library_entries", fw_id=entry.framework_id))
+    return render_template("threat/library/entry_form.html", form=form, framework=entry.framework, entry=entry)
+
+
+@bp.route("/library/entries/<int:eid>/delete", methods=["POST"])
+@login_required
+def library_entry_delete(eid: int):
+    _require_access()
+    entry = ThreatLibraryEntry.query.get_or_404(eid)
+    if not entry.is_custom:
+        abort(403)
+    if entry.created_by_id != current_user.id and not current_user.has_role(ROLE_ADMIN):
+        abort(403)
+    fw_id = entry.framework_id
+    db.session.delete(entry)
+    log_event(
+        action="threat_library_entry_deleted",
+        entity_type="threat_library_entry",
+        entity_id=eid,
+        details={"name": entry.name},
+    )
+    db.session.commit()
+    flash(_("threat.library.flash.entry_deleted"), "info")
+    return redirect(url_for("threat.library_entries", fw_id=fw_id))
+
+
+@bp.route("/library/entries/<int:eid>/json")
+@login_required
+def library_entry_json(eid: int):
+    _require_access()
+    entry = ThreatLibraryEntry.query.get_or_404(eid)
+    return jsonify({
+        "id": entry.id,
+        "name": entry.name,
+        "description": entry.description or "",
+        "category": entry.category or "",
+        "suggested_mitigation": entry.suggested_mitigation or "",
+        "stride_hint": entry.stride_hint or "",
+        "framework_name": entry.framework.name if entry.framework else "",
+    })
+
+
+# ---------------------------------------------------------------------------
+# Threat Products
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/products/")
+@login_required
+def product_list():
+    _require_access()
+    products = (
+        ThreatProduct.query
+        .options(sa.orm.selectinload(ThreatProduct.models))
+        .order_by(ThreatProduct.name)
+        .all()
+    )
+    return render_template("threat/products/index.html", products=products)
+
+
+@bp.route("/products/new", methods=["GET", "POST"])
+@login_required
+def product_new():
+    _require_access()
+    form = ThreatProductForm()
+    form.owner_id.choices = user_choices()
+    if form.validate_on_submit():
+        product = ThreatProduct(
+            name=(form.name.data or "").strip(),
+            description=form.description.data,
+            owner_id=int(form.owner_id.data) if form.owner_id.data else None,
+        )
+        db.session.add(product)
+        db.session.flush()
+        log_event(
+            action="threat_product_created",
+            entity_type="threat_product",
+            entity_id=product.id,
+            details={"name": product.name},
+        )
+        db.session.commit()
+        flash(_("threat.product.flash.created"), "success")
+        return redirect(url_for("threat.product_detail", product_id=product.id))
+    return render_template("threat/products/form.html", form=form, product=None)
+
+
+@bp.route("/products/<int:product_id>/")
+@login_required
+def product_detail(product_id: int):
+    _require_access()
+    product = ThreatProduct.query.get_or_404(product_id)
+    models = (
+        ThreatModel.query
+        .filter_by(product_id=product_id, is_archived=False)
+        .options(sa.orm.selectinload(ThreatModel.scenarios))
+        .order_by(ThreatModel.created_at.desc())
+        .all()
+    )
+    unlinked_models = (
+        ThreatModel.query
+        .filter_by(product_id=None, is_archived=False)
+        .order_by(ThreatModel.title)
+        .all()
+    )
+    return render_template(
+        "threat/products/detail.html",
+        product=product,
+        models=models,
+        unlinked_models=unlinked_models,
+        RiskLevel=RiskLevel,
+    )
+
+
+@bp.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
+@login_required
+def product_edit(product_id: int):
+    _require_access()
+    product = ThreatProduct.query.get_or_404(product_id)
+    form = ThreatProductForm(obj=product)
+    form.owner_id.choices = user_choices()
+    if request.method == "GET":
+        form.owner_id.data = str(product.owner_id) if product.owner_id else ""
+    if form.validate_on_submit():
+        product.name = (form.name.data or "").strip()
+        product.description = form.description.data
+        product.owner_id = int(form.owner_id.data) if form.owner_id.data else None
+        log_event(
+            action="threat_product_updated",
+            entity_type="threat_product",
+            entity_id=product.id,
+            details={"name": product.name},
+        )
+        db.session.commit()
+        flash(_("threat.product.flash.updated"), "success")
+        return redirect(url_for("threat.product_detail", product_id=product.id))
+    return render_template("threat/products/form.html", form=form, product=product)
+
+
+@bp.route("/products/<int:product_id>/archive", methods=["POST"])
+@login_required
+def product_archive(product_id: int):
+    _require_access()
+    product = ThreatProduct.query.get_or_404(product_id)
+    product.is_archived = not product.is_archived
+    log_event(
+        action="threat_product_archived" if product.is_archived else "threat_product_unarchived",
+        entity_type="threat_product",
+        entity_id=product.id,
+        details={"name": product.name},
+    )
+    db.session.commit()
+    flash(_("threat.product.flash.archived") if product.is_archived else _("threat.product.flash.unarchived"), "info")
+    return redirect(url_for("threat.product_list"))
+
+
+@bp.route("/products/<int:product_id>/add-model/<int:model_id>", methods=["POST"])
+@login_required
+def product_add_model(product_id: int, model_id: int):
+    _require_access()
+    ThreatProduct.query.get_or_404(product_id)
+    model = ThreatModel.query.get_or_404(model_id)
+    model.product_id = product_id
+    db.session.commit()
+    flash(_("threat.product.flash.model_added"), "success")
+    return redirect(url_for("threat.product_detail", product_id=product_id))
+
+
+# ---------------------------------------------------------------------------
+# Mitigation Actions
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/<int:model_id>/scenarios/<int:scenario_id>/mitigations/new", methods=["GET", "POST"])
+@login_required
+def mitigation_new(model_id: int, scenario_id: int):
+    _require_access()
+    model = _get_model_or_404(model_id)
+    scenario = ThreatScenario.query.get_or_404(scenario_id)
+    if scenario.threat_model_id != model.id:
+        abort(404)
+    form = ThreatMitigationActionForm()
+    form.assigned_to_id.choices = user_choices()
+    if form.validate_on_submit():
+        action = ThreatMitigationAction(
+            scenario_id=scenario.id,
+            title=(form.title.data or "").strip(),
+            description=form.description.data,
+            status=MitigationStatus(form.status.data),
+            assigned_to_id=int(form.assigned_to_id.data) if form.assigned_to_id.data else None,
+            due_date=form.due_date.data,
+            notes=form.notes.data,
+        )
+        db.session.add(action)
+        db.session.flush()
+        log_event(
+            action="threat_mitigation_created",
+            entity_type="threat_mitigation_action",
+            entity_id=action.id,
+            details={"title": action.title, "scenario_id": scenario.id},
+        )
+        db.session.commit()
+        flash(_("threat.mitigation.flash.created"), "success")
+        return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
+    return render_template(
+        "threat/mitigation_form.html",
+        form=form,
+        model=model,
+        scenario=scenario,
+        action=None,
+    )
+
+
+@bp.route("/<int:model_id>/scenarios/<int:scenario_id>/mitigations/<int:action_id>/edit", methods=["GET", "POST"])
+@login_required
+def mitigation_edit(model_id: int, scenario_id: int, action_id: int):
+    _require_access()
+    model = _get_model_or_404(model_id)
+    scenario = ThreatScenario.query.get_or_404(scenario_id)
+    if scenario.threat_model_id != model.id:
+        abort(404)
+    action = ThreatMitigationAction.query.get_or_404(action_id)
+    if action.scenario_id != scenario.id:
+        abort(404)
+    form = ThreatMitigationActionForm(obj=action)
+    form.assigned_to_id.choices = user_choices()
+    if request.method == "GET":
+        form.status.data = action.status.value
+        form.assigned_to_id.data = str(action.assigned_to_id) if action.assigned_to_id else ""
+    if form.validate_on_submit():
+        action.title = (form.title.data or "").strip()
+        action.description = form.description.data
+        action.status = MitigationStatus(form.status.data)
+        action.assigned_to_id = int(form.assigned_to_id.data) if form.assigned_to_id.data else None
+        action.due_date = form.due_date.data
+        action.notes = form.notes.data
+        log_event(
+            action="threat_mitigation_updated",
+            entity_type="threat_mitigation_action",
+            entity_id=action.id,
+            details={"title": action.title},
+        )
+        db.session.commit()
+        flash(_("threat.mitigation.flash.updated"), "success")
+        return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
+    return render_template(
+        "threat/mitigation_form.html",
+        form=form,
+        model=model,
+        scenario=scenario,
+        action=action,
+    )
+
+
+@bp.route("/<int:model_id>/scenarios/<int:scenario_id>/mitigations/<int:action_id>/delete", methods=["POST"])
+@login_required
+def mitigation_delete(model_id: int, scenario_id: int, action_id: int):
+    _require_access()
+    model = _get_model_or_404(model_id)
+    scenario = ThreatScenario.query.get_or_404(scenario_id)
+    if scenario.threat_model_id != model.id:
+        abort(404)
+    action = ThreatMitigationAction.query.get_or_404(action_id)
+    if action.scenario_id != scenario.id:
+        abort(404)
+    db.session.delete(action)
+    log_event(
+        action="threat_mitigation_deleted",
+        entity_type="threat_mitigation_action",
+        entity_id=action_id,
+        details={"title": action.title, "scenario_id": scenario.id},
+    )
+    db.session.commit()
+    flash(_("threat.mitigation.flash.deleted"), "info")
+    return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
