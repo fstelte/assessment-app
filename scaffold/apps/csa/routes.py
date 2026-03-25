@@ -45,6 +45,7 @@ from .models import (
     AssessmentAssignment,
     AssessmentDimension,
     AssessmentResponse,
+    AssessmentResult,
     AssessmentStatus,
     AssessmentTemplate,
     Control,
@@ -76,10 +77,10 @@ STATUS_LABEL_KEYS = {
 
 
 STATUS_BADGE_CLASSES = {
-    AssessmentStatus.ASSIGNED: "secondary",
-    AssessmentStatus.IN_PROGRESS: "info",
-    AssessmentStatus.SUBMITTED: "warning",
-    AssessmentStatus.REVIEWED: "success",
+    AssessmentStatus.ASSIGNED: "bg-slate-500/30 text-slate-200",
+    AssessmentStatus.IN_PROGRESS: "bg-sky-500/30 text-sky-200",
+    AssessmentStatus.SUBMITTED: "bg-amber-500/30 text-amber-200",
+    AssessmentStatus.REVIEWED: "bg-emerald-500/30 text-emerald-200",
 }
 
 
@@ -434,6 +435,29 @@ def view_assessment(assessment_id: int):
                 response.responder = current_user
                 response.responded_at = datetime.now(UTC)
 
+                rating_field = getattr(response_form, f"{question['field_name']}_rating", None)
+                if rating_field is not None:
+                    rating_val = (rating_field.data or "").strip() or None
+                    response.rating = AssessmentResult(rating_val) if rating_val else None
+
+        # Auto-calculate per-dimension ratings from question ratings
+        for section in layout:
+            dimension = section["dimension"]
+            dim_ratings = [
+                existing_responses[(q["dimension"], q["question"])].rating
+                for q in section["questions"]
+                if (q["dimension"], q["question"]) in existing_responses
+                and existing_responses[(q["dimension"], q["question"])].rating is not None
+            ]
+            if dim_ratings:
+                if AssessmentResult.RED in dim_ratings:
+                    dim_result = AssessmentResult.RED
+                elif AssessmentResult.AMBER in dim_ratings:
+                    dim_result = AssessmentResult.AMBER
+                else:
+                    dim_result = AssessmentResult.GREEN
+                setattr(assessment, f"{dimension}_rating", dim_result)
+
         if submit_action == "review":
             assessment.mark_submitted()
             message = _("csa.flash.submitted_for_review")
@@ -474,6 +498,9 @@ def view_assessment(assessment_id: int):
                 existing = existing_responses.get((question["dimension"], question["question"]))
                 if existing:
                     field.data = existing.answer_text or ""
+                    rating_field = getattr(response_form, f"{question['field_name']}_rating", None)
+                    if rating_field is not None and existing.rating is not None:
+                        rating_field.data = existing.rating.value
 
     if not can_edit:
         for section in layout:
@@ -484,6 +511,9 @@ def view_assessment(assessment_id: int):
                     "readonly": True,
                     "disabled": True,
                 }
+                rating_field = getattr(response_form, f"{question['field_name']}_rating", None)
+                if rating_field is not None:
+                    rating_field.render_kw = {**(rating_field.render_kw or {}), "disabled": True}
 
     status_labels = _status_labels()
     status_label = status_labels.get(

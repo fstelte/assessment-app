@@ -8,7 +8,7 @@
         {% set control = assessment.template.control %}
         {% if control %}
           {% set control_display = (control.section ~ " " ~ control.domain).strip() %}
-          <h1 class="h3 mb-1">{{ control_display or assessment.template.name }}</h1>
+          <h1 class="text-2xl font-bold mb-1">{{ control_display or assessment.template.name }}</h1>
           {% if control.section %}
             <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.common.code_label') }} {{ control.section }}</p>
           {% endif %}
@@ -19,10 +19,10 @@
             <p class="text-[var(--color-muted)] text-sm mb-0">{{ control.description }}</p>
           {% endif %}
         {% else %}
-          <h1 class="h3 mb-1">{{ assessment.template.name }}</h1>
+          <h1 class="text-2xl font-bold mb-1">{{ assessment.template.name }}</h1>
         {% endif %}
       </div>
-      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-{{ badge_class }} self-center uppercase">{{ status_label }}</span>
+      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ badge_class }} self-center">{{ status_label }}</span>
     </div>
 
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-[var(--color-border)] mb-4">
@@ -41,16 +41,16 @@
     {% if review_allowed %}
       <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card bg-[var(--color-card)] border-red-400 mb-4">
         <div class="px-5 py-4">
-          <h2 class="h5 text-[var(--color-danger)] mb-2">{{ _('csa.assessments.detail.delete.title') }}</h2>
+          <h2 class="text-base font-semibold text-[var(--color-danger)] mb-2">{{ _('csa.assessments.detail.delete.title') }}</h2>
           <p class="text-[var(--color-muted)] mb-3">{{ _('csa.assessments.detail.delete.body') }}</p>
           <form method="post" action="{{ url_for('csa.delete_assessment', assessment_id=assessment.id) }}" onsubmit="return confirm('{{ _('csa.assessments.detail.delete.confirm') }}');">
-            {% if csrf_token is defined %}{{ csrf_token() }}{% endif %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-red-400 text-red-400 hover:bg-red-400/10">{{ _('csa.assessments.detail.delete.button') }}</button>
           </form>
         </div>
       </div>
     {% endif %}
-    <h2 class="h4 mb-3">{{ _('csa.assessments.detail.questions.title') }}</h2>
+    <h2 class="text-lg font-semibold mb-3">{{ _('csa.assessments.detail.questions.title') }}</h2>
     {% if has_questions %}
       {% if not can_edit %}
         <div class="rounded-xl px-4 py-3 text-sm border bg-blue-500/10 border-blue-400/40 text-blue-200">{{ _('csa.assessments.detail.locked') }}</div>
@@ -64,9 +64,21 @@
               {% if section.questions %}
                 {% for question in section.questions %}
                   {% set field = form[question['field_name']] %}
+                  {% set rating_field = form[question['field_name'] ~ '_rating'] %}
                   <div class="mb-3">
                     <label class="block text-sm mb-1.5 font-semibold" for="{{ field.id }}">{{ field.label.text }}</label>
                     {{ field(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=4) }}
+                    <div class="mt-2 flex items-center gap-2">
+                      <label class="text-xs text-[var(--color-muted)] shrink-0" for="{{ rating_field.id }}">{{ rating_field.label.text }}</label>
+                      {{ rating_field(class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 " ~ ("opacity-50 cursor-not-allowed" if not can_edit else "")) }}
+                      {% if rating_field.data == 'green' %}
+                        <span style="display:inline-block;width:0.75rem;height:0.75rem;border-radius:50%;background:#22c55e;"></span>
+                      {% elif rating_field.data == 'amber' %}
+                        <span style="display:inline-block;width:0.75rem;height:0.75rem;border-radius:50%;background:#f59e0b;"></span>
+                      {% elif rating_field.data == 'red' %}
+                        <span style="display:inline-block;width:0.75rem;height:0.75rem;border-radius:50%;background:#ef4444;"></span>
+                      {% endif %}
+                    </div>
                   </div>
                 {% endfor %}
               {% else %}
@@ -85,8 +97,8 @@
     {% endif %}
 
     {% if review_form %}
-      <hr class="my-4">
-      <h2 class="h4">{{ _('csa.assessments.detail.review.heading') }}</h2>
+      <div class="border-t border-[var(--color-border)] my-4"></div>
+      <h2 class="text-lg font-semibold mb-3">{{ _('csa.assessments.detail.review.heading') }}</h2>
       <form method="post">
         {{ review_form.hidden_tag() }}
         <div class="mb-3">

@@ -19,7 +19,7 @@
         <div class="lg:w-2/3 px-3">
           <div class="flex justify-between items-center mb-3">
             <div>
-              <h1 class="h3 mb-1">{{ control_name }}</h1>
+              <h1 class="text-2xl font-bold mb-1">{{ control_name }}</h1>
               {% if control_code %}
                 <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.export.framework_code') }}: {{ control_code }}</p>
               {% endif %}
@@ -27,7 +27,7 @@
                 <p class="text-[var(--color-muted)] mb-0">{{ _('csa.assessments.export.template_name') }}: {{ assessment.template.name }}</p>
               {% endif %}
             </div>
-            <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-{{ badge_class }} uppercase">{{ status_label }}</span>
+            <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 {{ badge_class }}">{{ status_label }}</span>
           </div>
 
           <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-4">
@@ -65,7 +65,7 @@
             </div>
           </div>
 
-          <h2 class="h4">{{ _('csa.assessments.export.assignments.title') }}</h2>
+          <h2 class="text-lg font-semibold mb-3">{{ _('csa.assessments.export.assignments.title') }}</h2>
           {% if assessment.assignments %}
             <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-4">
               <div class="px-5 py-4">
@@ -97,7 +97,7 @@
             <div class="rounded-xl px-4 py-3 text-sm border bg-slate-500/10 border-[var(--color-border)] text-[var(--color-muted)]">{{ _('csa.assessments.export.assignments.empty') }}</div>
           {% endif %}
 
-          <h2 class="h4">{{ _('csa.assessments.export.qa.title') }}</h2>
+          <h2 class="text-lg font-semibold mb-3">{{ _('csa.assessments.export.qa.title') }}</h2>
           {% if sections %}
             {% for section in sections %}
               <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-3">
@@ -106,7 +106,7 @@
                   {% if section.questions %}
                     {% for question in section.questions %}
                       <div class="mb-4">
-                        <h3 class="h6 font-semibold">{{ question.question }}</h3>
+                        <h3 class="text-sm font-semibold mb-1">{{ question.question }}</h3>
                         <div class="answer-box p-3 border border-[var(--color-border)] rounded {% if theme == 'dark' %}bg-slate-800 text-slate-100{% else %}bg-slate-50{% endif %}">
                           {{ question.answer or _('csa.assessments.export.qa.no_answer') }}
                         </div>

@@ -1073,6 +1073,12 @@
       "form": {
         "answer_placeholder": "Voer je antwoord hier in."
       },
+      "rating": {
+        "label": "Beoordeling",
+        "green": "Groen – effectief",
+        "amber": "Oranje – gedeeltelijk effectief",
+        "red": "Rood – niet effectief"
+      },
       "start": {
         "title": "Assessment starten",
         "heading": "Start een zelfassessment",

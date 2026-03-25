@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple, cast
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, SelectField, SubmitField, TextAreaField
+from wtforms import DateField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Optional
 
 from scaffold.core.i18n import gettext as _, lazy_gettext as _l
@@ -212,6 +212,13 @@ def build_assessment_response_form(question_set: Dict[str, Any]) -> Tuple[type[A
 
     layout = localise_question_set(question_set)
 
+    RATING_CHOICES = [
+        ("", "-"),
+        ("green", _l("csa.assessments.rating.green")),
+        ("amber", _l("csa.assessments.rating.amber")),
+        ("red", _l("csa.assessments.rating.red")),
+    ]
+
     for section in layout:
         for question in section["questions"]:
             field = TextAreaField(
@@ -222,5 +229,13 @@ def build_assessment_response_form(question_set: Dict[str, Any]) -> Tuple[type[A
                 },
             )
             setattr(DynamicAssessmentResponseForm, question["field_name"], field)
+
+            rating_field = SelectField(
+                _l("csa.assessments.rating.label"),
+                choices=RATING_CHOICES,
+                default="",
+                validators=[Optional()],
+            )
+            setattr(DynamicAssessmentResponseForm, f"{question['field_name']}_rating", rating_field)
 
     return DynamicAssessmentResponseForm, layout
