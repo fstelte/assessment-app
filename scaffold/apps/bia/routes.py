@@ -1565,12 +1565,14 @@ def export_csv(item_id: int):
 @bp.route("/download_csv/<path:folder>/<path:filename>")
 @login_required
 def download_csv_file(folder: str, filename: str):
-    export_folder = ensure_export_folder() / folder
-    file_path = export_folder / filename
+    export_root = ensure_export_folder().resolve()
+    file_path = (export_root / folder / filename).resolve()
+    if not str(file_path).startswith(str(export_root) + "/") and file_path != export_root:
+        abort(404)
     if not file_path.exists():
         flash(_("bia.flash.file_not_found"), "danger")
         return redirect(url_for("bia.dashboard"))
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return send_file(file_path, as_attachment=True, download_name=file_path.name)
 
 
 @bp.route("/import_csv", methods=["GET", "POST"])
