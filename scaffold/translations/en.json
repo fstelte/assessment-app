@@ -941,6 +941,12 @@
       "form": {
         "answer_placeholder": "Enter your answer here."
       },
+      "rating": {
+        "label": "Rating",
+        "green": "Green – effective",
+        "amber": "Amber – partially effective",
+        "red": "Red – not effective"
+      },
       "start": {
         "title": "Start Assessment",
         "heading": "Start a self-assessment",

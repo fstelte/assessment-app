@@ -150,15 +150,16 @@ def assess(control_id):
         elif action == "set_target":
             target_level_val = request.form.get("target_level")
             target_level = int(target_level_val) if target_level_val and target_level_val.isdigit() else None
-            assessment.target_level = MaturityLevel(target_level) if target_level else None
+            # Level 1 (INITIAL) has no requirements; treat it as unset.
+            assessment.target_level = MaturityLevel(target_level) if target_level and target_level >= 2 else None
             db.session.commit()
             flash(_("maturity.target_level_updated"), "success")
             return redirect(url_for("maturity.assess", control_id=control.id))
 
         # Default save action
-        target_level_val = request.form.get("target_level")
-        target_level = int(target_level_val) if target_level_val and target_level_val.isdigit() else None
-        assessment.target_level = MaturityLevel(target_level) if target_level else None
+        # Target level is managed exclusively by the set_target action (separate form).
+        # Read the already-persisted value for use in the ignore_level calculation below.
+        target_level = assessment.target_level.value if assessment.target_level else None
 
         compliance_map = {}  # Track compliance for calculation
 
