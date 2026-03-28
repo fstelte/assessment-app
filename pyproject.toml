@@ -37,7 +37,7 @@ sqlalchemy = "^2.0.32"
 werkzeug = ">=3.1.6"
 zipp = ">=3.19.1"
 playwright = ">=1.40.0"
-flask-limiter = { extras = ["redis"], version = "^3.9" }
+flask-limiter = { extras = ["redis"], version = "^4.0" }
 flask-session = "^0.8"
 redis = "^5.0"
 rq = "^1.16"
