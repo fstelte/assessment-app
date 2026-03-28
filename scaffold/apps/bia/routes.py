@@ -2149,10 +2149,25 @@ def _send_export_response(html_content: str, base_filename: str):
     The output format is controlled by the ``format`` query-string parameter:
     ``html`` (default) saves the file and sends it; ``pdf`` converts via
     Playwright and returns a PDF attachment.
+
+    When RQ is configured and ``format=pdf``, the export is performed
+    asynchronously and the caller receives a 202 JSON response with a job ID.
     """
     export_format = request.args.get("format", "html").lower()
     if export_format == "pdf":
+        from ...extensions import task_queue
+
         pdf_filename = base_filename.removesuffix(".html") + ".pdf"
+
+        if task_queue:
+            job = task_queue.enqueue(
+                "scaffold.apps.bia.tasks.generate_pdf_task",
+                0,  # component_id placeholder; html_content carries full context
+                html_content,
+                job_timeout=120,
+            )
+            return jsonify({"job_id": job.id, "filename": pdf_filename}), 202
+
         try:
             pdf_bytes = html_to_pdf_bytes(html_content)
         except RuntimeError as exc:
@@ -2167,6 +2182,26 @@ def _send_export_response(html_content: str, base_filename: str):
     file_path = export_folder / base_filename
     file_path.write_text(html_content, encoding="utf-8")
     return send_file(file_path, as_attachment=True, download_name=base_filename)
+
+
+@bp.get("/export/status/<job_id>")
+@login_required
+def export_status(job_id: str):
+    """Poll the status of an async PDF export job."""
+    from ...extensions import get_redis
+
+    try:
+        from rq.job import Job
+
+        job = Job.fetch(job_id, connection=get_redis())
+    except Exception:
+        return jsonify({"status": "not_found"}), 404
+
+    if job.is_finished:
+        return jsonify({"status": "done", "path": job.result})
+    if job.is_failed:
+        return jsonify({"status": "failed"}), 500
+    return jsonify({"status": "pending"})
 
 
 @bp.route("/item/<int:item_id>/copy", methods=["POST"])

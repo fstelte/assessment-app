@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Callable, TypeVar
 
-from flask import flash, redirect, request, session, url_for
+from flask import current_app, flash, redirect, request, session, url_for
 from flask_login import current_user, logout_user
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Callable[..., object])
 
@@ -85,3 +88,31 @@ def require_fresh_login(max_age_minutes: int = 30) -> Callable[[T], T]:
         return wrapper  # type: ignore[return-value]
 
     return decorator
+
+
+def invalidate_user_sessions(user_id: int) -> None:
+    """Delete all server-side sessions belonging to a user.
+
+    Only has an effect when Flask-Session is using the Redis backend
+    (i.e. ``SESSION_TYPE == "redis"``).
+    """
+    if current_app.config.get("SESSION_TYPE") != "redis":
+        return
+    try:
+        from ..extensions import get_redis
+
+        r = get_redis()
+        prefix = current_app.config.get("SESSION_KEY_PREFIX", "session:")
+        cursor = 0
+        while True:
+            cursor, keys = r.scan(cursor, match=f"{prefix}*", count=100)
+            for key in keys:
+                data = r.get(key)
+                if data and f'"_user_id": "{user_id}"'.encode() in (
+                    data if isinstance(data, bytes) else data.encode()
+                ):
+                    r.delete(key)
+            if cursor == 0:
+                break
+    except Exception:
+        logger.warning("Failed to invalidate server-side sessions for user %s", user_id, exc_info=True)

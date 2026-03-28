@@ -39,7 +39,7 @@ from .core.i18n import (
     session_storage_key,
     set_locale,
 )
-from .extensions import db, login_manager, migrate, csrf
+from .extensions import db, login_manager, migrate, csrf, limiter, server_session, get_redis, init_task_queue
 from .apps.identity.models import ROLE_ADMIN, ensure_default_roles
 
 
@@ -60,6 +60,7 @@ def create_app(settings: Settings | None = None) -> Flask:
         )
     _ensure_instance_folder(app)
     _ensure_sqlite_uri(app)
+    app.config["_settings"] = app_settings
 
     _init_extensions(app)
     from . import models as _models  # noqa: F401 - ensure models are imported for metadata registration
@@ -142,6 +143,17 @@ def create_app(settings: Settings | None = None) -> Flask:
         response.headers.setdefault("Cache-Control", "no-store")
         return response
 
+    from flask_limiter.errors import RateLimitExceeded
+
+    @app.errorhandler(RateLimitExceeded)
+    def rate_limit_exceeded(exc: RateLimitExceeded):  # type: ignore[misc]
+        response = app.make_response(
+            render_template("errors/429.html", **_contact_details())
+        )
+        response.status_code = 429
+        response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
     @app.errorhandler(TemplateError)
     def template_failure(exc: TemplateError):  # type: ignore[misc]
         if app.debug:
@@ -159,8 +171,7 @@ def create_app(settings: Settings | None = None) -> Flask:
             app.logger.debug("Default role provisioning skipped; tables not ready yet.", exc_info=True)
         init_auto_audit(app)
 
-    _start_export_cleanup_worker(app)
-    _start_audit_cleanup_worker(app)
+    _schedule_background_tasks(app)
 
     return app
 
@@ -172,6 +183,23 @@ def _init_extensions(app: Flask) -> None:
     migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
+    if app.config.get("REDIS_URL"):
+        app.config.setdefault("RATELIMIT_STORAGE_URI", app.config["REDIS_URL"])
+    limiter.init_app(app)
+
+    if app_settings := app.config.get("_settings"):
+        use_redis_sessions = getattr(app_settings, "server_side_sessions", False)
+    else:
+        use_redis_sessions = False
+
+    if use_redis_sessions and app.config.get("REDIS_URL"):
+        app.config["SESSION_TYPE"] = "redis"
+        app.config["SESSION_REDIS"] = get_redis()
+        app.config.setdefault("SESSION_KEY_PREFIX", "scaffold:session:")
+        app.config.setdefault("SESSION_USE_SIGNER", True)
+        server_session.init_app(app)
+
+    init_task_queue(app)
 
 
 def _register_apps(app: Flask, settings: Settings) -> None:
@@ -347,6 +375,53 @@ def _load_app_metadata() -> dict[str, str]:
         "repository": repo_url,
         "changelog": changelog_url,
     }
+
+
+def _schedule_background_tasks(app: Flask) -> None:
+    """Schedule periodic background tasks via RQ Scheduler (with daemon-thread fallback)."""
+    from .extensions import task_queue
+
+    if task_queue is None:
+        # No Redis configured — fall back to daemon threads
+        _start_export_cleanup_worker(app)
+        _start_audit_cleanup_worker(app)
+        return
+
+    try:
+        from rq_scheduler import Scheduler
+        import redis as _redis_lib
+
+        scheduler = Scheduler(
+            queue=task_queue,
+            connection=_redis_lib.Redis.from_url(app.config["REDIS_URL"]),
+        )
+
+        if app.config.get("EXPORT_CLEANUP_ENABLED"):
+            interval_minutes = max(1, int(app.config.get("EXPORT_CLEANUP_INTERVAL_MINUTES", 60)))
+            scheduler.schedule(
+                scheduled_time=datetime.now(UTC),
+                func="scaffold.apps.bia.utils.cleanup_export_folder",
+                interval=interval_minutes * 60,
+                repeat=None,
+                id="export_cleanup",
+            )
+
+        retention_days = int(app.config.get("AUDIT_LOG_RETENTION_DAYS", 0))
+        if app.config.get("AUDIT_LOG_ENABLED") and retention_days > 0:
+            interval_hours = max(1, int(app.config.get("AUDIT_LOG_PRUNE_INTERVAL_HOURS", 24)))
+            scheduler.schedule(
+                scheduled_time=datetime.now(UTC),
+                func="scaffold.core.audit.enforce_audit_retention",
+                interval=interval_hours * 3600,
+                repeat=None,
+                id="audit_prune",
+            )
+    except Exception:
+        app.logger.warning(
+            "RQ Scheduler setup failed; falling back to daemon threads", exc_info=True
+        )
+        _start_export_cleanup_worker(app)
+        _start_audit_cleanup_worker(app)
 
 
 def _start_export_cleanup_worker(app: Flask) -> None:

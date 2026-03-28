@@ -1,9 +1,19 @@
 import pytest
+import fakeredis
 
 from scaffold import create_app
 from scaffold.config import Settings
 from scaffold.extensions import db
 from scaffold.apps.identity.models import Role, User, UserStatus
+
+
+@pytest.fixture(autouse=True)
+def fake_redis(monkeypatch):
+    """Replace all Redis connections with an in-memory fake for every test."""
+    server = fakeredis.FakeServer()
+    fake = fakeredis.FakeRedis(server=server, decode_responses=True)
+    monkeypatch.setattr("scaffold.extensions.get_redis", lambda: fake)
+    return fake
 
 
 @pytest.fixture

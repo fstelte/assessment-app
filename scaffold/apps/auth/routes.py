@@ -11,7 +11,7 @@ from flask import Blueprint, current_app, flash, jsonify, make_response, redirec
 from flask_login import current_user, login_required, logout_user
 from onelogin.saml2.errors import OneLogin_Saml2_Error
 
-from ...extensions import db, csrf
+from ...extensions import db, csrf, limiter
 from ..identity.models import PasskeyCredential, User, UserStatus
 from ...core.i18n import get_locale, session_storage_key, set_locale, gettext as _
 from .flow import (
@@ -118,6 +118,7 @@ def register_user():
 
 
 @bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute; 30 per hour")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
@@ -416,6 +417,7 @@ def mfa_enroll():
 
 
 @bp.route("/mfa/verify", methods=["GET", "POST"])
+@limiter.limit("5 per minute; 20 per hour")
 def mfa_verify():
     user = get_pending_user()
     if user is None or not user.mfa_is_enrolled:
@@ -576,6 +578,7 @@ def mfa_passkey_register_complete():
 
 @bp.post("/mfa/passkey/verify/begin")
 @csrf.exempt
+@limiter.limit("10 per minute")
 def mfa_passkey_verify_begin():
     """Return PublicKeyCredentialRequestOptions for a passkey authentication ceremony."""
     user = get_pending_user()
@@ -591,6 +594,7 @@ def mfa_passkey_verify_begin():
 
 @bp.post("/mfa/passkey/verify/complete")
 @csrf.exempt
+@limiter.limit("10 per minute")
 def mfa_passkey_verify_complete():
     """Verify a passkey assertion and finalise the login."""
     challenge_encoded = session.pop("passkey_auth_challenge", None)

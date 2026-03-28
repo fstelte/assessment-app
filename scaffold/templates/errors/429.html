@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="{{ current_locale or 'en' }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Too Many Requests</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+<body class="bg-[var(--color-bg)] text-[var(--color-text)] flex items-center justify-center min-h-screen p-4">
+  <article class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card max-w-lg w-full p-6" role="alert" aria-live="assertive">
+    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-yellow-500/20 text-yellow-400 mb-4">
+        <span class="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse" aria-hidden="true"></span> Rate Limited
+    </span>
+    <h1 class="text-2xl font-bold mb-2">Too Many Requests</h1>
+    <p class="text-[var(--color-muted)] mb-6">
+      You have made too many requests in a short period of time.
+      Please wait a moment before trying again.
+    </p>
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-4 mb-6 text-sm">
+      <strong class="block mb-2 text-[var(--color-text)]">What you can do</strong>
+      <span class="block mb-1 text-[var(--color-muted)]">• Wait a minute and try again.</span>
+      <span class="block text-[var(--color-muted)]">• If you believe this is an error, contact support.</span>
+    </div>
+    <footer class="text-sm text-[var(--color-muted)]">
+      Need assistance? Contact <a href="{{ contact_link }}" class="text-[var(--color-accent)] hover:underline">{{ contact_label }}</a> or
+      <a href="/" class="text-[var(--color-accent)] hover:underline">return to home</a>.
+    </footer>
+  </article>
+</body>
+</html>

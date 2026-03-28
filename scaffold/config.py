@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import List
 
 _DEFAULT_MODULES = [
@@ -82,6 +83,9 @@ class Settings:
     webauthn_rp_id: str = ""
     webauthn_rp_name: str = ""
     webauthn_origin: str = ""
+    redis_url: str = ""
+    server_side_sessions: bool = False
+    session_lifetime_minutes: int = 120
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -154,6 +158,9 @@ class Settings:
             webauthn_rp_id=os.getenv("WEBAUTHN_RP_ID", defaults.webauthn_rp_id),
             webauthn_rp_name=os.getenv("WEBAUTHN_RP_NAME", defaults.webauthn_rp_name),
             webauthn_origin=os.getenv("WEBAUTHN_ORIGIN", defaults.webauthn_origin),
+            redis_url=os.getenv("REDIS_URL", defaults.redis_url),
+            server_side_sessions=_as_bool(os.getenv("SERVER_SIDE_SESSIONS")),
+            session_lifetime_minutes=_int_env("SESSION_LIFETIME_MINUTES", defaults.session_lifetime_minutes),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -217,6 +224,14 @@ class Settings:
             "WEBAUTHN_RP_ID": self.webauthn_rp_id or None,
             "WEBAUTHN_RP_NAME": self.webauthn_rp_name or None,
             "WEBAUTHN_ORIGIN": self.webauthn_origin or None,
+            "REDIS_URL": self.redis_url or None,
+            "SESSION_PERMANENT": True,
+            "PERMANENT_SESSION_LIFETIME": timedelta(minutes=self.session_lifetime_minutes),
+            "SESSION_KEY_PREFIX": "scaffold:session:",
+            "SESSION_USE_SIGNER": True,
+            "SESSION_COOKIE_SECURE": self.session_cookie_secure,
+            "SESSION_COOKIE_HTTPONLY": self.session_cookie_httponly,
+            "SESSION_COOKIE_SAMESITE": self.session_cookie_samesite,
         }
 
     def saml_allowed_groups(self) -> List[str]:

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import enum
 from datetime import date
+from types import SimpleNamespace
 from typing import Iterable, Mapping, Sequence
 from urllib.parse import urlparse
 
 import sqlalchemy as sa
 
+from ...core.cache import cache_json
 from ...core.i18n import gettext as _
 from ...extensions import db
 from ..bia.models import Component, ContextScope
@@ -180,8 +182,26 @@ def treatment_choices() -> list[tuple[str, str]]:
     ]
 
 
-def load_thresholds() -> list[RiskSeverityThreshold]:
-    return RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score.asc()).all()
+@cache_json("risk:thresholds", ttl=300)
+def _load_threshold_dicts() -> list[dict]:
+    """Load thresholds and cache as JSON-serializable dicts (5-minute TTL)."""
+    return [
+        {"id": t.id, "severity": t.severity.value, "min_score": t.min_score, "max_score": t.max_score}
+        for t in RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score.asc()).all()
+    ]
+
+
+def load_thresholds() -> list:
+    """Return cached thresholds as objects compatible with the ORM model interface."""
+    return [
+        SimpleNamespace(
+            id=d["id"],
+            severity=RiskSeverity(d["severity"]),
+            min_score=d["min_score"],
+            max_score=d["max_score"],
+        )
+        for d in _load_threshold_dicts()
+    ]
 
 
 def determine_severity(score: int, thresholds: Sequence[RiskSeverityThreshold] | None = None) -> RiskSeverity | None:
