@@ -30,10 +30,8 @@ services:
       - "9090:9090" # status endpoint
 
   db-restore:
-    build:
-      context: ..
-      dockerfile: docker/restore/Dockerfile
-    image: assessment-app-db-restore:latest
+    image: ${RESTORE_IMAGE:-ghcr.io/fstelte/assessment-app-db-restore:latest}
+    pull_policy: always
     env_file:
       - ../.env.production
     environment:
