@@ -511,6 +511,13 @@ def export_csv(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.csv"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "csv", "title": model.title},
+    )
+    db.session.commit()
     return response
 
 
@@ -535,6 +542,13 @@ def export_html(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.html"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "html", "title": model.title},
+    )
+    db.session.commit()
     return response
 
 
@@ -562,6 +576,13 @@ def export_pdf(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.pdf"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "pdf", "title": model.title},
+    )
+    db.session.commit()
     return response
 
 

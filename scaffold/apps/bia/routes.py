@@ -27,7 +27,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 from urllib.parse import urlparse
 
-from ...core.audit import log_change_event
+from ...core.audit import log_change_event, log_event
 from ...core.pdf_export import html_to_pdf_bytes
 from ...core.security import require_fresh_login
 from ...core.i18n import gettext as _, get_locale
@@ -1530,6 +1530,13 @@ def export_item(item_id: int):
 
     safe_name = _safe_filename(item.name)
     filename = f"BIA_{safe_name}.html"
+    log_event(
+        action="bia.exported",
+        entity_type="bia_context_scope",
+        entity_id=item.id,
+        details={"format": "html", "name": item.name},
+    )
+    db.session.commit()
     return _send_export_response(html_content, filename)
 
 
@@ -1553,6 +1560,13 @@ def export_csv(item_id: int):
                 "size": len(content.encode("utf-8")),
             }
         )
+    log_event(
+        action="bia.exported",
+        entity_type="bia_context_scope",
+        entity_id=item.id,
+        details={"format": "csv", "name": item.name},
+    )
+    db.session.commit()
     flash(_("bia.flash.csv_export_created"), "success")
     return render_template(
         "bia/csv_export_overview.html",
@@ -1660,6 +1674,12 @@ def export_data_inventory():
     export_folder = ensure_export_folder()
     file_path = export_folder / filename
     file_path.write_text(csv_buffer.getvalue(), encoding="utf-8")
+    log_event(
+        action="bia.exported",
+        entity_type="bia_data_inventory",
+        details={"format": "csv", "filename": filename},
+    )
+    db.session.commit()
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 
@@ -1717,6 +1737,12 @@ def export_authentication_overview():
     )
 
     filename = f"Authentication_Overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+    log_event(
+        action="bia.exported",
+        entity_type="bia_authentication_overview",
+        details={"format": "html", "filename": filename},
+    )
+    db.session.commit()
     return _send_export_response(html_content, filename)
 
 
@@ -1773,6 +1799,12 @@ def export_all_consequences():
         )
         filename = f"All_CIA_Consequences_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
+    log_event(
+        action="bia.exported",
+        entity_type="bia_consequences",
+        details={"format": "html", "export_type": export_type, "filename": filename},
+    )
+    db.session.commit()
     return _send_export_response(html_content, filename)
 
 
@@ -1889,6 +1921,12 @@ def export_availability_requirements():
         )
         filename = f"Availability_Requirements_Detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
+    log_event(
+        action="bia.exported",
+        entity_type="bia_availability_requirements",
+        details={"format": "html", "export_type": export_type, "filename": filename},
+    )
+    db.session.commit()
     return _send_export_response(html_content, filename)
 
 
@@ -1932,6 +1970,13 @@ def export_bia_sql(item_id: int):
         export_folder = ensure_export_folder()
         file_path = export_folder / filename
         file_path.write_text(sql_text, encoding="utf-8")
+        log_event(
+            action="bia.exported",
+            entity_type="bia_context_scope",
+            entity_id=item.id,
+            details={"format": "sql", "name": item.name, "filename": filename},
+        )
+        db.session.commit()
         return send_file(file_path, as_attachment=True, download_name=filename)
     except Exception as e:
         current_app.logger.exception("Failed to export BIA to SQL")
@@ -1954,6 +1999,12 @@ def export_all_dependencies():
         )
 
         filename = f"BIA_Dependencies_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        log_event(
+            action="bia.exported",
+            entity_type="bia_dependencies",
+            details={"format": "html", "filename": filename},
+        )
+        db.session.commit()
         return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Dependency export failed")
@@ -1976,6 +2027,12 @@ def export_all_tiers():
         )
 
         filename = f"BIA_Tiers_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        log_event(
+            action="bia.exported",
+            entity_type="bia_tiers",
+            details={"format": "html", "filename": filename},
+        )
+        db.session.commit()
         return _send_export_response(html_content, filename)
     except Exception as exc:
         current_app.logger.exception("Tiers export failed")
