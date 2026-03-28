@@ -558,6 +558,27 @@
       "no_dpia_tooltip": "No active DPIA",
       "delete_confirm": "Delete ‘{name}’?"
     },
+    "manage_component_availability": {
+      "title": "Availability \u2013 {component}",
+      "back": "Back to Components",
+      "no_context": "No context",
+      "badge": "Availability Targets",
+      "placeholders": {
+        "mtd": "e.g. 1 week",
+        "rto": "e.g. 4 hours",
+        "rpo": "e.g. 1 hour",
+        "masl": "e.g. 99.5%"
+      },
+      "help": {
+        "mtd": "The maximum time this component can be unavailable before causing unacceptable impact.",
+        "rto": "The target time to restore this component after a disruption.",
+        "rpo": "The maximum acceptable amount of data loss measured in time.",
+        "masl": "The minimum performance level required for this component to be considered operational."
+      },
+      "actions": {
+        "submit": "Save"
+      }
+    },
     "manage_availability": {
       "title": "Availability Requirements",
       "subtitle": "Availability",
@@ -613,13 +634,34 @@
       }
     },
     "view_consequences": {
+      "title": "Consequences \u2013 {component}",
+      "back": "Back to Components",
+      "heading": "Consequences for {component}",
+      "empty": "No consequences have been added yet.",
       "actions": {
         "save": "Save",
-        "save_changes": "Save changes"
+        "save_changes": "Save changes",
+        "add": "Add Consequence"
       },
       "table": {
+        "category": "Category",
+        "security_property": "Security Property",
         "worst_case": "Worst Case",
-        "realistic_case": "Realistic Case"
+        "realistic_case": "Realistic Case",
+        "actions": "Actions"
+      }
+    },
+    "manage_component_consequence": {
+      "title": "Consequence \u2013 {component}",
+      "back": "Back to Components",
+      "view_existing": "View existing consequences",
+      "no_context": "No context",
+      "cia_badge": "CIA Assessment",
+      "category_help": "Select one or more consequence categories that apply.",
+      "justification_worst_placeholder": "Explain why this is the worst-case impact...",
+      "justification_realistic_placeholder": "Describe the realistic impact...",
+      "actions": {
+        "submit": "Save"
       }
     },
     "authentication_methods": {

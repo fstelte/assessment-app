@@ -24,6 +24,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
 from ...extensions import db
+from ...core.audit import log_event
 from ...core.i18n import gettext as _
 from ...core.pdf_export import html_to_pdf_bytes
 from ..identity.models import (
@@ -651,11 +652,25 @@ def export_assessment(assessment_id: int):
             return redirect(url_for("csa.overview_assessments"))
         response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = f'attachment; filename="{pdf_filename}"'
+        log_event(
+            action="csa.assessment.exported",
+            entity_type="csa_assessment",
+            entity_id=assessment.id,
+            details={"format": "pdf", "filename": pdf_filename},
+        )
+        db.session.commit()
         return response
 
     filename = f"{safe_name} - {date_suffix}.html"
     response = current_app.response_class(html, mimetype="text/html")
     response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    log_event(
+        action="csa.assessment.exported",
+        entity_type="csa_assessment",
+        entity_id=assessment.id,
+        details={"format": "html", "filename": filename},
+    )
+    db.session.commit()
     return response
 
 

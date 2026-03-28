@@ -50,6 +50,7 @@ from ..risk.models import (
     RiskTreatmentOption,
 )
 from ..risk.services import (
+    _load_threshold_dicts,
     configure_risk_form,
     determine_severity as determine_risk_severity,
     load_thresholds,
@@ -73,6 +74,7 @@ from .forms import (
     InformationLabelToggleForm,
 )
 from ...core.audit import log_event
+from ...core.security import invalidate_user_sessions
 
 bp = Blueprint("admin", __name__, url_prefix="/admin", template_folder="templates")
 
@@ -1049,6 +1051,7 @@ def risk_thresholds():
                 db.session.rollback()
             else:
                 db.session.commit()
+                _load_threshold_dicts.invalidate()
                 flash(
                     _(
                         "admin.risks.thresholds.flash.updated",
@@ -1188,6 +1191,7 @@ def deactivate_user(user_id: int):
             details={"email": user.email},
         )
         db.session.commit()
+        invalidate_user_sessions(user.id)
         flash(_("admin.users.flash.user_deactivated"), "success")
 
     return redirect(url_for("admin.list_users"))

@@ -9,6 +9,7 @@ from scaffold.apps.identity.models import (
 )
 from scaffold.core.i18n import gettext as _
 from scaffold.core.pdf_export import html_to_pdf_bytes
+from scaffold.core.audit import log_event
 from scaffold.extensions import db
 from scaffold.models import (
     Control,
@@ -355,6 +356,12 @@ def export_html():
 
     average_maturity = round(total_maturity / assessments_finished, 1) if assessments_finished else 0
 
+    log_event(
+        action="maturity.exported",
+        entity_type="maturity_assessment",
+        details={"format": "html"},
+    )
+    db.session.commit()
     return render_template(
         "maturity/export_report.html",
         controls=results,
@@ -407,4 +414,10 @@ def export_pdf():
     filename = f"Maturity_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
     response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    log_event(
+        action="maturity.exported",
+        entity_type="maturity_assessment",
+        details={"format": "pdf", "filename": filename},
+    )
+    db.session.commit()
     return response

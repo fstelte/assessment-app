@@ -511,6 +511,13 @@ def export_csv(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.csv"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "csv", "title": model.title},
+    )
+    db.session.commit()
     return response
 
 
@@ -535,6 +542,13 @@ def export_html(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.html"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "html", "title": model.title},
+    )
+    db.session.commit()
     return response
 
 
@@ -562,7 +576,89 @@ def export_pdf(model_id: int):
     response.headers["Content-Disposition"] = (
         f'attachment; filename="threat_model_{model.id}_{slug}.pdf"'
     )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "pdf", "title": model.title},
+    )
+    db.session.commit()
     return response
+
+
+@bp.post("/<int:model_id>/export/pdf/request")
+@login_required
+def request_pdf_export(model_id: int):
+    """Enqueue asynchronous PDF export; returns job ID or falls back to sync."""
+    _require_access()
+    from ...extensions import task_queue
+
+    model = _get_model_or_404(model_id)
+    theme = "dark" if not (current_user.is_authenticated and current_user.theme_preference == "light") else "light"
+    html = render_template(
+        "threat/export_report.html",
+        model=model,
+        export_mode=True,
+        theme=theme,
+        StrideCategory=StrideCategory,
+        RiskLevel=RiskLevel,
+        ScenarioStatus=ScenarioStatus,
+    )
+
+    if task_queue:
+        job = task_queue.enqueue(
+            "scaffold.apps.threat.tasks.generate_pdf_task",
+            model_id,
+            html,
+            job_timeout=120,
+        )
+        log_event(
+            action="threat_model.export_requested",
+            entity_type="threat_model",
+            entity_id=model.id,
+            details={"format": "pdf", "title": model.title, "job_id": job.id},
+        )
+        db.session.commit()
+        return jsonify({"job_id": job.id}), 202
+
+    # Synchronous fallback when Redis/RQ is not configured
+    from ...core.pdf_export import html_to_pdf_bytes
+
+    pdf_bytes = html_to_pdf_bytes(html)
+    response = make_response(pdf_bytes)
+    response.headers["Content-Type"] = "application/pdf"
+    slug = model.title.lower().replace(" ", "_")[:40]
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="threat_model_{model.id}_{slug}.pdf"'
+    )
+    log_event(
+        action="threat_model.exported",
+        entity_type="threat_model",
+        entity_id=model.id,
+        details={"format": "pdf", "title": model.title},
+    )
+    db.session.commit()
+    return response
+
+
+@bp.get("/export/status/<job_id>")
+@login_required
+def export_status(job_id: str):
+    """Poll the status of an async PDF export job."""
+    from ...extensions import get_redis
+
+    try:
+        from rq.job import Job
+
+        job = Job.fetch(job_id, connection=get_redis())
+    except Exception:
+        return jsonify({"status": "not_found"}), 404
+
+    if job.is_finished:
+        return jsonify({"status": "done", "path": job.result})
+    if job.is_failed:
+        return jsonify({"status": "failed"}), 500
+    return jsonify({"status": "pending"})
 
 
 # ---------------------------------------------------------------------------

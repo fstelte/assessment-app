@@ -8,6 +8,7 @@ from flask_login import login_required
 from flask_wtf import FlaskForm
 
 from ...core.pdf_export import html_to_pdf_bytes
+from ...core.audit import log_event
 from ...extensions import db
 from ...apps.bia.models import Component, ContextScope
 from . import bp
@@ -176,7 +177,13 @@ def export_scenario_html(scenario_id):
     export_folder = ensure_export_folder()
     file_path = export_folder / filename
     file_path.write_text(html_content, encoding="utf-8")
-    
+    log_event(
+        action="incident.scenario.exported",
+        entity_type="incident_scenario",
+        entity_id=scenario.id,
+        details={"format": "html", "filename": filename},
+    )
+    db.session.commit()
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 
@@ -213,6 +220,13 @@ def export_scenario_pdf(scenario_id):
     filename = f"IncidentPlan_{safe_name}.pdf"
     response = current_app.response_class(pdf_bytes, mimetype="application/pdf")
     response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    log_event(
+        action="incident.scenario.exported",
+        entity_type="incident_scenario",
+        entity_id=scenario.id,
+        details={"format": "pdf", "filename": filename},
+    )
+    db.session.commit()
     return response
 
 

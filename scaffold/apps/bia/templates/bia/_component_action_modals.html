@@ -30,7 +30,7 @@
       }).then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            window.location.reload();
+            window.location.replace(window.location.href);
           } else {
             handleErrors(data.errors);
           }
@@ -54,7 +54,7 @@
       }).then((response) => response.json())
         .then((data) => {
           if (data.success) {
-            window.location.reload();
+            window.location.replace(window.location.href);
           } else {
             window.alert(i18n.deleteFailed);
           }

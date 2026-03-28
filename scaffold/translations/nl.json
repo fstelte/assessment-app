@@ -521,6 +521,27 @@
         "empty": "Geen AI-risico's vastgesteld voor de gekoppelde componenten."
       }
     },
+    "manage_component_availability": {
+      "title": "Beschikbaarheid \u2013 {component}",
+      "back": "Terug naar componenten",
+      "no_context": "Geen context",
+      "badge": "Beschikbaarheidsdoelstellingen",
+      "placeholders": {
+        "mtd": "bijv. 1 week",
+        "rto": "bijv. 4 uur",
+        "rpo": "bijv. 1 uur",
+        "masl": "bijv. 99,5%"
+      },
+      "help": {
+        "mtd": "De maximale tijd dat dit component niet beschikbaar mag zijn voordat dit onaanvaardbare gevolgen heeft.",
+        "rto": "De doeltijd om dit component te herstellen na een verstoring.",
+        "rpo": "Het maximaal aanvaardbare gegevensverlies uitgedrukt in tijd.",
+        "masl": "Het minimale prestatieniveau dat vereist is om dit component als operationeel te beschouwen."
+      },
+      "actions": {
+        "submit": "Opslaan"
+      }
+    },
     "manage_availability": {
       "title": "Beschikbaarheidsvereisten",
       "subtitle": "Beschikbaarheid",
@@ -745,13 +766,34 @@
       "no": "Nee"
     },
     "view_consequences": {
+      "title": "Gevolgen \u2013 {component}",
+      "back": "Terug naar componenten",
+      "heading": "Gevolgen voor {component}",
+      "empty": "Er zijn nog geen gevolgen toegevoegd.",
       "actions": {
         "save": "Opslaan",
-        "save_changes": "Wijzigingen opslaan"
+        "save_changes": "Wijzigingen opslaan",
+        "add": "Gevolg toevoegen"
       },
       "table": {
+        "category": "Categorie",
+        "security_property": "Beveiligingseigenschap",
         "worst_case": "Slechtste geval",
-        "realistic_case": "Realistisch geval"
+        "realistic_case": "Realistisch geval",
+        "actions": "Acties"
+      }
+    },
+    "manage_component_consequence": {
+      "title": "Gevolg \u2013 {component}",
+      "back": "Terug naar componenten",
+      "view_existing": "Bestaande gevolgen bekijken",
+      "no_context": "Geen context",
+      "cia_badge": "CIA-beoordeling",
+      "category_help": "Selecteer een of meer gevolg\u00ebncategorie\u00ebn die van toepassing zijn.",
+      "justification_worst_placeholder": "Leg uit waarom dit het slechtste scenario is...",
+      "justification_realistic_placeholder": "Beschrijf de realistische impact...",
+      "actions": {
+        "submit": "Opslaan"
       }
     },
     "authentication_methods": {

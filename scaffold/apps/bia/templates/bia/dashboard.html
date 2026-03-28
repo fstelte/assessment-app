@@ -262,7 +262,7 @@ body[data-theme="dark"] .bia-chip {
 			<div class="bia-quick-card h-full flex flex-col gap-2">
 				<h2>{{ _('bia.dashboard.sidebar.exports') }}</h2>
 				<div class="grid gap-2">
-					<a href="{{ url_for('bia.export_data_inventory') }}" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
+					<a href="{{ url_for('bia.export_data_inventory') }}" class="w-full inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.dashboard.sidebar.export_inventory') }}</a>
 					<div class="relative" data-export-dropdown>
 						<button type="button" class="export-toggle w-full inline-flex items-center justify-between font-medium rounded-md px-2.5 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" aria-expanded="false" aria-haspopup="true">
 							{{ _('bia.dashboard.sidebar.export_cia_detailed') }} <i class="fas fa-chevron-down text-[0.6rem] ml-1"></i>
