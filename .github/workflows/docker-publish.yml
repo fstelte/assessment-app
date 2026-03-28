@@ -22,6 +22,9 @@ jobs:
           - name: backup
             dockerfile: docker/backup/Dockerfile
             image_suffix: "-backup"
+          - name: restore
+            dockerfile: docker/restore/Dockerfile
+            image_suffix: "-db-restore"
     permissions:
       contents: read
       packages: write
