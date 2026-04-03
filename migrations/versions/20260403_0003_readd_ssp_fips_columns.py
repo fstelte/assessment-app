@@ -18,34 +18,49 @@ depends_on = None
 FIPS_RATING_VALUES = ("not_set", "low", "moderate", "high")
 
 
+def _column_exists(table: str, column: str) -> bool:
+    bind = op.get_bind()
+    result = bind.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = :t AND column_name = :c"
+        ),
+        {"t": table, "c": column},
+    )
+    return result.fetchone() is not None
+
+
 def upgrade() -> None:
-    op.add_column(
-        "ssp_plans",
-        sa.Column(
-            "fips_confidentiality",
-            sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_conf", native_enum=False),
-            nullable=False,
-            server_default="not_set",
-        ),
-    )
-    op.add_column(
-        "ssp_plans",
-        sa.Column(
-            "fips_integrity",
-            sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_integ", native_enum=False),
-            nullable=False,
-            server_default="not_set",
-        ),
-    )
-    op.add_column(
-        "ssp_plans",
-        sa.Column(
-            "fips_availability",
-            sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_avail", native_enum=False),
-            nullable=False,
-            server_default="not_set",
-        ),
-    )
+    if not _column_exists("ssp_plans", "fips_confidentiality"):
+        op.add_column(
+            "ssp_plans",
+            sa.Column(
+                "fips_confidentiality",
+                sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_conf", native_enum=False),
+                nullable=False,
+                server_default="not_set",
+            ),
+        )
+    if not _column_exists("ssp_plans", "fips_integrity"):
+        op.add_column(
+            "ssp_plans",
+            sa.Column(
+                "fips_integrity",
+                sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_integ", native_enum=False),
+                nullable=False,
+                server_default="not_set",
+            ),
+        )
+    if not _column_exists("ssp_plans", "fips_availability"):
+        op.add_column(
+            "ssp_plans",
+            sa.Column(
+                "fips_availability",
+                sa.Enum(*FIPS_RATING_VALUES, name="ssp_fips_avail", native_enum=False),
+                nullable=False,
+                server_default="not_set",
+            ),
+        )
 
 
 def downgrade() -> None:
