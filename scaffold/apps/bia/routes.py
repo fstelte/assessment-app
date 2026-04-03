@@ -1556,7 +1556,7 @@ def export_csv(item_id: int):
         exported_files.append(
             {
                 "filename": filename,
-                "path": export_folder.name,
+                "folder_name": export_folder.name,
                 "size": len(content.encode("utf-8")),
             }
         )
@@ -1581,7 +1581,7 @@ def export_csv(item_id: int):
 def download_csv_file(folder: str, filename: str):
     export_root = ensure_export_folder().resolve()
     file_path = (export_root / folder / filename).resolve()
-    if not str(file_path).startswith(str(export_root) + "/") and file_path != export_root:
+    if not file_path.is_relative_to(export_root):
         abort(404)
     if not file_path.exists():
         flash(_("bia.flash.file_not_found"), "danger")

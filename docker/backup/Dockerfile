@@ -9,6 +9,8 @@ RUN apt-get update \
   && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
   && apt-get update \
   && apt-get install -y --no-install-recommends postgresql-client-18 \
+  && apt-get purge -y libncursesw6 \
+  && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -14,7 +14,10 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock README.md /app/
 RUN poetry install --only main --no-interaction --no-ansi --no-root \
-    && playwright install --with-deps chromium
+    && playwright install --with-deps chromium \
+    && apt-get purge -y libncursesw6 \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . /app
 
