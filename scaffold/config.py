@@ -20,6 +20,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.template",
     "scaffold.apps.tools",
     "scaffold.apps.threat",
+    "scaffold.apps.ssp",
 ]
 
 

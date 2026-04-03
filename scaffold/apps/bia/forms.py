@@ -156,6 +156,21 @@ class ContextScopeForm(FlaskForm):
         validators=[Optional(), Length(max=255)],
         description=_l("bia.context_form.tooltips.incident_contact"),
     )
+    abbreviation = StringField(
+        _l("bia.context_form.fields.abbreviation.label"),
+        validators=[Optional(), Length(max=50)],
+        description=_l("bia.context_form.tooltips.abbreviation"),
+    )
+    operational_status = SelectField(
+        _l("bia.context_form.fields.operational_status.label"),
+        choices=[
+            ("", _l("bia.context_form.fields.operational_status.placeholder")),
+            ("operational", _l("bia.context_form.fields.operational_status.operational")),
+            ("under_development", _l("bia.context_form.fields.operational_status.under_development")),
+            ("major_modification", _l("bia.context_form.fields.operational_status.major_modification")),
+        ],
+        validators=[Optional()],
+    )
     submit = SubmitField("Save context")
 
     def validate_end_date(self, field):

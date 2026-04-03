@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{% if item %}Edit POA&M Item{% else %}Add POA&M Item{% endif %} — {{ context.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-3xl px-4 sm:px-6 py-6">
+
+  {# ── Header ── #}
+  <div class="mb-6">
+    <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← POA&amp;M: {{ context.name }}</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">
+      {% if item %}Edit POA&amp;M Item{% else %}Add POA&amp;M Item{% endif %}
+    </h1>
+  </div>
+
+  {# ── Flash messages ── #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="mb-4 px-4 py-3 rounded-lg text-sm
+    {% if category == 'success' %}bg-green-500/10 text-green-400 border border-green-500/20
+    {% elif category == 'danger' %}bg-red-500/10 text-red-400 border border-red-500/20
+    {% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endwith %}
+
+  {# ── Item form ── #}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card p-6 mb-6">
+    <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)] mb-4">Task Details</h2>
+    <form method="post">
+      {{ form.hidden_tag() }}
+
+      <div class="flex flex-col gap-4">
+
+        <div>
+          {{ form.weakness_description.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          {{ form.weakness_description(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          {% if form.weakness_description.errors %}
+          <div class="text-xs mt-1 text-red-500">{{ form.weakness_description.errors | join(', ') }}</div>
+          {% endif %}
+        </div>
+
+        <div>
+          {{ form.resources_required.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+          <p class="text-xs text-[var(--color-muted)] mb-1.5">Budget, personnel, tools, or other resources needed to accomplish this task.</p>
+          {{ form.resources_required(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            {{ form.point_of_contact.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.point_of_contact(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.estimated_cost.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.estimated_cost(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 4 person-days, €2,000") }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            {{ form.scheduled_completion.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.scheduled_completion(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.status.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
+            {{ form.status(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}"
+             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Cancel</a>
+          <button type="submit" name="save_item"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+            {% if item %}Save Changes{% else %}Add Item{% endif %}
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  {# ── Milestones (only shown when editing an existing item) ── #}
+  {% if item %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
+      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)]">Milestones</h2>
+      <span class="text-xs text-[var(--color-muted)]">{{ item.milestones | length }} milestone(s)</span>
+    </div>
+
+    {% if item.milestones %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+          <tr>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Description</th>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Scheduled</th>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Completed</th>
+            <th class="px-5 py-3 text-right text-xs font-bold uppercase text-[var(--color-muted)]"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for ms in item.milestones %}
+          <tr class="hover:bg-[var(--color-surface)]/50 transition-colors">
+            <td class="px-5 py-3">{{ ms.description }}</td>
+            <td class="px-5 py-3 whitespace-nowrap text-[var(--color-muted)]">{{ ms.scheduled_date or "—" }}</td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              {% if ms.completed_date %}
+              <span class="text-green-400">{{ ms.completed_date }}</span>
+              {% else %}
+              <span class="text-[var(--color-muted)]">—</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 text-right">
+              <form method="post" action="{{ url_for('ssp.delete_poam_milestone', ssp_id=ssp.id, item_id=item.id, ms_id=ms.id) }}"
+                    onsubmit="return confirm('Remove this milestone?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs text-red-400 hover:underline">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-4 text-sm text-[var(--color-muted)] italic">No milestones yet.</div>
+    {% endif %}
+
+    {# Add milestone form ── #}
+    <div class="px-5 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30">
+      <h3 class="text-xs font-bold uppercase text-[var(--color-muted)] mb-3">Add Milestone</h3>
+      <form method="post">
+        {{ milestone_form.hidden_tag() }}
+        <div class="flex flex-col sm:flex-row gap-3 items-end">
+          <div class="flex-1">
+            {{ milestone_form.description.label(class="block text-xs font-medium mb-1 text-[var(--color-text)]") }}
+            {{ milestone_form.description(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+          </div>
+          <div>
+            {{ milestone_form.scheduled_date.label(class="block text-xs font-medium mb-1 text-[var(--color-text)]") }}
+            {{ milestone_form.scheduled_date(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ milestone_form.completed_date.label(class="block text-xs font-medium mb-1 text-[var(--color-text)]") }}
+            {{ milestone_form.completed_date(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <button type="submit" name="add_milestone"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">
+            Add
+          </button>
+        </div>
+        {% if milestone_form.description.errors %}
+        <div class="text-xs mt-1 text-red-500">{{ milestone_form.description.errors | join(', ') }}</div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

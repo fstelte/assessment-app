@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}System Security Plans{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-[var(--color-text)]">System Security Plans</h1>
+      <p class="text-[var(--color-muted)] text-sm mt-1">{{ _('ssp.index.subtitle') }}</p>
+    </div>
+  </div>
+
+  {% if ssps %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-8">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Existing SSPs</div>
+    <ul class="divide-y divide-[var(--color-border)]">
+      {% for ssp in ssps %}
+      <li class="px-5 py-4 flex items-center justify-between gap-4">
+        <div>
+          <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="font-medium text-primary-500 hover:underline">{{ ssp.context_scope.name }}</a>
+          {% if ssp.context_scope.abbreviation %}
+          <span class="ml-2 text-xs px-2 py-0.5 rounded bg-[var(--color-surface)] text-[var(--color-muted)] border border-[var(--color-border)]">{{ ssp.context_scope.abbreviation }}</span>
+          {% endif %}
+          <p class="text-xs text-[var(--color-muted)] mt-0.5">
+            {% if ssp.plan_approval_date %}Approved: {{ ssp.plan_approval_date }}{% else %}Draft{% endif %}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">View</a>
+          <a href="{{ url_for('ssp.edit', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Edit</a>
+          <div class="relative" data-export-dropdown>
+            <button type="button"
+              class="export-toggle inline-flex items-center gap-1 font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8"
+              aria-expanded="false" aria-haspopup="true">
+              <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down text-[0.55rem] ml-0.5"></i>
+            </button>
+            <ul class="export-menu absolute right-0 z-50 mt-1 min-w-[9rem] rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+              <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id) }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+              <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id, format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+            </ul>
+          </div>
+          <form method="POST" action="{{ url_for('ssp.delete', ssp_id=ssp.id) }}" onsubmit="return confirm('Delete the SSP for {{ ssp.context_scope.name | e }}? This cannot be undone.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-red-700/50 text-red-400 hover:bg-red-500/10 transition-colors">Delete</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if scopes_without_ssp %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Systems without an SSP</div>
+    <ul class="divide-y divide-[var(--color-border)]">
+      {% for scope in scopes_without_ssp %}
+      <li class="px-5 py-4 flex items-center justify-between gap-4">
+        <div>
+          <span class="font-medium text-[var(--color-text)]">{{ scope.name }}</span>
+          {% if scope.abbreviation %}
+          <span class="ml-2 text-xs px-2 py-0.5 rounded bg-[var(--color-surface)] text-[var(--color-muted)] border border-[var(--color-border)]">{{ scope.abbreviation }}</span>
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('ssp.create', context_scope_id=scope.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+            Create SSP
+          </button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if not ssps and not scopes_without_ssp %}
+  <div class="text-center py-16 text-[var(--color-muted)]">
+    <p class="text-lg">No BIA systems found.</p>
+    <p class="text-sm mt-1">Register systems in the BIA module first.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('click', function(e) {
+	var btn = e.target.closest('[data-export-dropdown] .export-toggle');
+	if (btn) {
+		e.stopPropagation();
+		var menu = btn.nextElementSibling;
+		var isOpen = !menu.classList.contains('hidden');
+		document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+			m.classList.add('hidden');
+			if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+		});
+		if (!isOpen) {
+			menu.classList.remove('hidden');
+			btn.setAttribute('aria-expanded', 'true');
+		}
+		return;
+	}
+	document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+		m.classList.add('hidden');
+		if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+	});
+});
+</script>
+{% endblock %}

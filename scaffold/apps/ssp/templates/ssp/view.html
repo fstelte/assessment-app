@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% block title %}SSP — {{ context.name }}{% endblock %}
+
+{% include "bia/_badge_styles.html" %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+
+  {# ── Header ── #}
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+      <a href="{{ url_for('ssp.index') }}" class="text-xs text-[var(--color-muted)] hover:underline">← All SSPs</a>
+      <h1 class="text-2xl font-bold text-[var(--color-text)] mt-1">System Security Plan</h1>
+      <p class="text-[var(--color-muted)] text-sm">{{ context.name }}{% if context.abbreviation %} ({{ context.abbreviation }}){% endif %}</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="{{ url_for('ssp.edit', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Edit Metadata</a>
+      <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Interconnections</a>
+      <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Controls</a>
+      <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">POA&amp;M</a>
+      <div class="relative" data-export-dropdown>
+        <button type="button"
+          class="export-toggle inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/10 text-white hover:bg-white/20 border border-white/15"
+          aria-expanded="false" aria-haspopup="true">
+          <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down text-[0.6rem] ml-0.5"></i>
+        </button>
+        <ul class="export-menu absolute right-0 z-50 mt-1 min-w-[9rem] rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
+          <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id) }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
+          <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id, format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
+        </ul>
+      </div>
+      <form method="POST" action="{{ url_for('ssp.delete', ssp_id=ssp.id) }}" onsubmit="return confirm('Delete the SSP for {{ context.name | e }}? This cannot be undone.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-red-700/50 text-red-400 hover:bg-red-500/10 transition-colors">Delete SSP</button>
+      </form>
+    </div>
+  </div>
+
+  {% macro section_card(number, title) %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6 break-inside-avoid">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-3">
+      <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/10 text-primary-500">§{{ number }}</span>
+      <span class="font-semibold text-sm uppercase tracking-wide text-[var(--color-text)]">{{ title }}</span>
+    </div>
+    <div class="px-5 py-4">
+  {% endmacro %}
+
+  {% macro end_card() %}</div></div>{% endmacro %}
+
+  {# ── §1-3 Cover block ── #}
+  {{ section_card("1–3", "System Identification") }}
+  {% set _info_labels = context.components | map(attribute='info_label') | select | list %}
+  {% set _top_label = _info_labels | sort(attribute='severity', reverse=True) | first if _info_labels else none %}
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">System Name</dt><dd class="font-medium">{{ context.name }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Abbreviation</dt><dd>{{ context.abbreviation or "—" }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Responsible Organization</dt><dd>{{ context.responsible or "—" }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Operational Status</dt>
+      <dd>
+        {% if context.operational_status == "operational" %}Operational
+        {% elif context.operational_status == "under_development" %}Under Development
+        {% elif context.operational_status == "major_modification" %}Major Modification
+        {% else %}—{% endif %}
+      </dd>
+    </div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">System Type</dt>
+      <dd>{{ context.tier.get_label() if context.tier else "—" }}</dd>
+    </div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Information Label</dt>
+      <dd>{{ _top_label.get_label() if _top_label else "—" }}</dd>
+    </div>
+  </dl>
+  {{ end_card() }}
+
+  {# ── §4-6 Contacts ── #}
+  {{ section_card("4–6", "System Owner & Designated Contacts") }}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-[var(--color-border)]">
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Role</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Name / Contact</th>
+      </tr></thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for role, value in [
+          ("System Owner", context.author.full_name ~ " <" ~ context.author.email ~ ">" if context.author else "—"),
+          ("Project Leader", context.project_leader or "—"),
+          ("Risk Owner", context.risk_owner or "—"),
+          ("Product Owner", context.product_owner or "—"),
+          ("Technical Administrator", context.technical_administrator or "—"),
+          ("ISSO / Security Manager", context.security_manager or "—"),
+          ("Incident Contact", context.incident_contact or "—"),
+        ] %}
+        <tr>
+          <td class="py-2 pr-4 text-[var(--color-muted)] whitespace-nowrap">{{ role }}</td>
+          <td class="py-2">{{ value }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ end_card() }}
+
+  {# ── §9 General Description ── #}
+  {{ section_card("9", "General Description / Purpose") }}
+  <div class="text-sm text-[var(--color-text)] space-y-3">
+    {% if context.service_description %}
+    <div>
+      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Service Description</p>
+      <p class="whitespace-pre-wrap">{{ context.service_description }}</p>
+    </div>
+    {% endif %}
+    {% if context.scope_description %}
+    <div>
+      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Scope</p>
+      <p class="whitespace-pre-wrap">{{ context.scope_description }}</p>
+    </div>
+    {% endif %}
+    {% if not context.service_description and not context.scope_description %}
+    <p class="text-[var(--color-muted)] italic">No description provided.</p>
+    {% endif %}
+  </div>
+  {{ end_card() }}
+
+  {# ── §10 System Environment ── #}
+  {{ section_card("10", "System Environment") }}
+  {% if env_summary %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-[var(--color-border)]">
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Component</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Category</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Items</th>
+      </tr></thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for row in env_summary %}
+        <tr>
+          <td class="py-2 pr-4 align-top">{{ row.component }}</td>
+          <td class="py-2 pr-4 align-top capitalize text-[var(--color-muted)]">{{ row.category | replace("_", " ") }}</td>
+          <td class="py-2 align-top">{{ row["items"] | join(", ") }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm">No component dependencies recorded.</p>
+  {% endif %}
+  {% if ssp.authorization_boundary %}
+  <div class="mt-4 pt-4 border-t border-[var(--color-border)] text-sm">
+    <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Authorization Boundary</p>
+    <p class="whitespace-pre-wrap">{{ ssp.authorization_boundary }}</p>
+  </div>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── §11 Interconnections ── #}
+  {{ section_card("11", "System Interconnections") }}
+  {% if ssp.interconnections %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-[var(--color-border)]">
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">System</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Organization</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Agreement</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Direction</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Security Contact</th>
+      </tr></thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for ic in ssp.interconnections %}
+        <tr>
+          <td class="py-2 pr-3">{{ ic.system_name }}</td>
+          <td class="py-2 pr-3 text-[var(--color-muted)]">{{ ic.owning_organization or "—" }}</td>
+          <td class="py-2 pr-3">{{ ic.agreement_type.value | upper }}</td>
+          <td class="py-2 pr-3 capitalize">{{ ic.data_direction.value | replace("_", " ") }}</td>
+          <td class="py-2">{{ ic.security_contact or "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm">No interconnections recorded.</p>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── §12 Laws / Regulations ── #}
+  {{ section_card("12", "Laws, Regulations & Policies") }}
+  {% if ssp.laws_regulations %}
+  <p class="text-sm whitespace-pre-wrap">{{ ssp.laws_regulations }}</p>
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm">Not specified.</p>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── §13 Impact Categorization ── #}
+  {{ section_card("13", "Impact Categorization (C/I/A)") }}
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+    {% for prop in ["confidentiality", "integrity", "availability"] %}
+    <div class="bg-[var(--color-surface)] rounded-lg p-4 border border-[var(--color-border)]">
+      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-2">{{ prop | capitalize }}</p>
+      <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ effective_cia[prop] | lower }}">{{ effective_cia[prop] }}</span></div>
+      <p class="text-xs text-[var(--color-muted)] mt-1">Derived from BIA</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% if has_dpia %}
+  <p class="text-xs text-[var(--color-muted)] mt-3">ℹ DPIA assessment exists for one or more components — review privacy impact as part of categorization.</p>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── Risk Register Summary ── #}
+  {% if risk_summary %}
+  {{ section_card("—", "Risk Register Summary") }}
+  <div class="flex flex-wrap gap-3 text-sm">
+    {% for sev, count in risk_summary.items() %}
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-center">
+      <p class="text-2xl font-bold text-[var(--color-text)]">{{ count }}</p>
+      <p class="text-xs text-[var(--color-muted)] capitalize mt-0.5">{{ sev }} severity</p>
+    </div>
+    {% endfor %}
+  </div>
+  {{ end_card() }}
+  {% endif %}
+
+  {# ── §14 Minimum Security Controls ── #}
+  {{ section_card("14", "Minimum Security Controls") }}
+  {% if controls_by_domain %}
+  {% for domain, entries in controls_by_domain.items() %}
+  <div class="mb-5">
+    <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-2 pb-1 border-b border-[var(--color-border)]">{{ domain }}</h3>
+    <div class="space-y-2">
+      {% for entry in entries %}
+      <div class="bg-[var(--color-surface)] rounded-lg p-3 border border-[var(--color-border)]">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm font-medium text-[var(--color-text)]">{{ entry.control.domain }}</p>
+            {% if entry.control.description %}
+            <p class="text-xs text-[var(--color-muted)] mt-0.5">{{ entry.control.description | truncate(120) }}</p>
+            {% endif %}
+          </div>
+          <div class="flex-shrink-0 flex gap-2 items-center">
+            {% set status = entry.implementation_status.value if entry.implementation_status else "planned" %}
+            {% if status == "implemented" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-500 border border-green-500/30">Implemented</span>
+            {% elif status == "partially_implemented" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">Partial</span>
+            {% elif status == "not_applicable" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">N/A</span>
+            {% else %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">Planned</span>
+            {% endif %}
+            <span class="text-xs text-[var(--color-muted)] capitalize">{{ entry.source.value }}</span>
+          </div>
+        </div>
+        {% if entry.implementation_statement %}
+        <p class="text-xs text-[var(--color-text)] mt-2 whitespace-pre-wrap border-t border-[var(--color-border)] pt-2">{{ entry.implementation_statement }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm">No controls linked. <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">Manage controls →</a></p>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── Continuous Monitoring ── #}
+  {{ section_card("CM", "Continuous Monitoring") }}
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+    <div class="sm:col-span-2">
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Relevant KPIs / KRIs</dt>
+      <dd class="whitespace-pre-wrap">{{ ssp.monitoring_kpis_kris or "—" }}</dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">What Will Be Monitored</dt>
+      <dd class="whitespace-pre-wrap">{{ ssp.monitoring_what or "—" }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Monitored By</dt>
+      <dd class="whitespace-pre-wrap">{{ ssp.monitoring_who or "—" }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Review Frequency</dt>
+      <dd>{{ ssp.monitoring_frequency or "—" }}</dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Tools Used</dt>
+      <dd class="whitespace-pre-wrap">{{ ssp.monitoring_tools or "—" }}</dd>
+    </div>
+  </dl>
+  {{ end_card() }}
+
+  {# ── POA&M Summary ── #}
+  {{ section_card("POA&M", "Plan of Action & Milestones") }}
+  {% if ssp.poam_items %}
+  {% set open_items = ssp.poam_items | selectattr('status.value', 'in', ['open', 'in_progress', 'delayed']) | list %}
+  {% set done_items = ssp.poam_items | selectattr('status.value', 'equalto', 'completed') | list %}
+  <div class="flex flex-wrap gap-4 text-sm mb-4">
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
+      <p class="text-lg font-bold text-[var(--color-text)]">{{ ssp.poam_items | length }}</p>
+      <p class="text-xs text-[var(--color-muted)]">Total Items</p>
+    </div>
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
+      <p class="text-lg font-bold text-amber-400">{{ open_items | length }}</p>
+      <p class="text-xs text-[var(--color-muted)]">Open</p>
+    </div>
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
+      <p class="text-lg font-bold text-green-400">{{ done_items | length }}</p>
+      <p class="text-xs text-[var(--color-muted)]">Completed</p>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-[var(--color-border)]">
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Task</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Contact</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Due</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Status</th>
+      </tr></thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for item in ssp.poam_items %}
+        <tr>
+          <td class="py-2 pr-4">{{ item.weakness_description | truncate(80) }}</td>
+          <td class="py-2 pr-4 text-[var(--color-muted)]">{{ item.point_of_contact or "—" }}</td>
+          <td class="py-2 pr-4 whitespace-nowrap text-[var(--color-muted)]">{{ item.scheduled_completion or "—" }}</td>
+          <td class="py-2">
+            {% set s = item.status.value %}
+            {% if s == 'completed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">Completed</span>
+            {% elif s == 'in_progress' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">In Progress</span>
+            {% elif s == 'delayed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">Delayed</span>
+            {% elif s == 'cancelled' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">Cancelled</span>
+            {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">Open</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-3">
+    <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-xs text-primary-500 hover:underline">Manage POA&amp;M →</a>
+  </div>
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm">No POA&amp;M items recorded. <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">Add items →</a></p>
+  {% endif %}
+  {{ end_card() }}
+
+  {# ── §15-16 Dates ── #}
+  {{ section_card("15–16", "Plan Dates") }}
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">Plan Completion Date</dt>
+      <dd class="font-medium">{{ ssp.plan_completion_date or "—" }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">Plan Approval Date</dt>
+      <dd class="font-medium">{{ ssp.plan_approval_date or "—" }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">Created</dt>
+      <dd>{{ ssp.created_at.strftime("%Y-%m-%d") if ssp.created_at else "—" }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">Last Updated</dt>
+      <dd>{{ ssp.updated_at.strftime("%Y-%m-%d") if ssp.updated_at else "—" }}</dd>
+    </div>
+  </dl>
+  {{ end_card() }}
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('click', function(e) {
+	var btn = e.target.closest('[data-export-dropdown] .export-toggle');
+	if (btn) {
+		e.stopPropagation();
+		var menu = btn.nextElementSibling;
+		var isOpen = !menu.classList.contains('hidden');
+		document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+			m.classList.add('hidden');
+			if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+		});
+		if (!isOpen) {
+			menu.classList.remove('hidden');
+			btn.setAttribute('aria-expanded', 'true');
+		}
+		return;
+	}
+	document.querySelectorAll('[data-export-dropdown] .export-menu').forEach(function(m) {
+		m.classList.add('hidden');
+		if (m.previousElementSibling) m.previousElementSibling.setAttribute('aria-expanded', 'false');
+	});
+});
+</script>
+{% endblock %}
