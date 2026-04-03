@@ -72,6 +72,18 @@ class ContextScope(db.Model):
     security_manager = db.Column(Text)
     incident_contact = db.Column(Text)
 
+    abbreviation = db.Column(db.String(50), nullable=True)
+    operational_status = db.Column(
+        Enum(
+            "operational",
+            "under_development",
+            "major_modification",
+            name="context_scope_operational_status",
+            native_enum=False,
+        ),
+        nullable=True,
+    )
+
     is_archived = db.Column(
         db.Boolean,
         default=False,
@@ -90,6 +102,12 @@ class ContextScope(db.Model):
     )
     summary = db.relationship(
         "Summary",
+        uselist=False,
+        back_populates="context_scope",
+        cascade="all, delete-orphan",
+    )
+    ssp = db.relationship(
+        "SSPlan",
         uselist=False,
         back_populates="context_scope",
         cascade="all, delete-orphan",

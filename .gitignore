@@ -32,6 +32,7 @@ htmlcov/
 # IDE / editor settings
 .idea/
 .vscode/
+.github/prompts/
 *.swp
 *.swo
 

@@ -221,6 +221,22 @@
         "incident_contact": {
           "label": "Incident contact"
         },
+        "abbreviation": {
+          "label": "System abbreviation"
+        },
+        "operational_status": {
+          "label": "Operational status",
+          "placeholder": "— select —",
+          "operational": "Operational",
+          "under_development": "Under development",
+          "major_modification": "Major modification"
+        },
+        "system_type": {
+          "label": "System type",
+          "placeholder": "— select —",
+          "major_application": "Major application",
+          "general_support_system": "General support system"
+        },
         "mission_critical": {
           "label": "Mission critical dependencies"
         },
@@ -273,7 +289,10 @@
         "product_owner": "The product owner for this service.",
         "technical_administrator": "The technical administrator for this service.",
         "security_manager": "The security manager for this service.",
-        "incident_contact": "Contact person in case of incidents."
+        "incident_contact": "Contact person in case of incidents.",
+        "abbreviation": "Short abbreviation or acronym used to identify the system.",
+        "operational_status": "Current operational status of the system.",
+        "system_type": "Classify the system as a major application or general support system."
       },
       "component_fields": {
         "name": {
@@ -2773,6 +2792,14 @@
       "mitigated": "Mitigated",
       "accepted": "Accepted",
       "closed": "Closed"
+    }
+  },
+  "ssp": {
+    "navigation": {
+      "label": "Security Plans"
+    },
+    "index": {
+      "subtitle": "One plan per registered system"
     }
   }
 }

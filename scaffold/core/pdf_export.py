@@ -58,6 +58,7 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
             # support backdrop-filter — elements that use it become invisible in the
             # rendered PDF (known Chromium limitation). We replace with solid backgrounds.
             page.add_style_tag(content="""
+                @page { margin: 0 !important; size: auto; }
                 * {
                     backdrop-filter: none !important;
                     -webkit-backdrop-filter: none !important;
@@ -81,6 +82,8 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
 
             # Measure the full rendered dimensions so the PDF has no page breaks
             # and no horizontal clipping regardless of content size.
+            # Add a small buffer to prevent pixel-rounding from spilling onto a
+            # second page when Chromium switches to print layout.
             dims = page.evaluate("""
                 () => ({
                     width: Math.max(
@@ -90,7 +93,7 @@ def html_to_pdf_bytes(html_content: str) -> bytes:
                     height: Math.max(
                         document.documentElement.scrollHeight,
                         document.body ? document.body.scrollHeight : 0
-                    )
+                    ) + 10
                 })
             """)
 

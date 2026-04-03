@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Interconnections — {{ ssp.context_scope.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+  <div class="mb-6">
+    <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← Back to SSP</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">System Interconnections</h1>
+    <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="mb-4 px-4 py-3 rounded-lg border {% if category == 'success' %}bg-green-500/10 border-green-500/30 text-green-400{% else %}bg-red-500/10 border-red-500/30 text-red-400{% endif %} text-sm">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {# Existing entries #}
+  {% if ssp.interconnections %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-8">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Registered Interconnections</div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-[var(--color-border)]">
+          <th class="text-left px-5 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">System</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Organization</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Agreement</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Direction</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Contact</th>
+          <th class="px-3 py-2"></th>
+        </tr></thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for ic in ssp.interconnections %}
+          <tr>
+            <td class="px-5 py-3">{{ ic.system_name }}</td>
+            <td class="px-3 py-3 text-[var(--color-muted)]">{{ ic.owning_organization or "—" }}</td>
+            <td class="px-3 py-3">{{ ic.agreement_type.value | upper }}</td>
+            <td class="px-3 py-3 capitalize">{{ ic.data_direction.value | replace("_", " ") }}</td>
+            <td class="px-3 py-3">{{ ic.security_contact or "—" }}</td>
+            <td class="px-3 py-3">
+              <div class="flex gap-2">
+                <a href="{{ url_for('ssp.edit_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" class="text-xs text-primary-500 hover:underline">Edit</a>
+                <form method="POST" action="{{ url_for('ssp.delete_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" onsubmit="return confirm('Remove this interconnection?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="text-xs text-red-400 hover:underline">Remove</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Add form #}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Add Interconnection</div>
+    <div class="px-5 py-4">
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            {{ form.system_name.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.system_name(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            {% for e in form.system_name.errors %}<p class="text-red-400 text-xs mt-1">{{ e }}</p>{% endfor %}
+          </div>
+          <div>
+            {{ form.owning_organization.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.owning_organization(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.agreement_type.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.agreement_type(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.data_direction.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.data_direction(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.security_contact.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.security_contact(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+          </div>
+          <div>
+            {{ form.notes.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
+            {{ form.notes(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
+          </div>
+        </div>
+        {{ form.submit(class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

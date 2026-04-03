@@ -365,6 +365,22 @@
         "incident_contact": {
           "label": "Incidentcontact"
         },
+        "abbreviation": {
+          "label": "Systeemafkorting"
+        },
+        "operational_status": {
+          "label": "Operationele status",
+          "placeholder": "— selecteer —",
+          "operational": "Operationeel",
+          "under_development": "In ontwikkeling",
+          "major_modification": "Grote wijziging"
+        },
+        "system_type": {
+          "label": "Systeemtype",
+          "placeholder": "— selecteer —",
+          "major_application": "Grote applicatie",
+          "general_support_system": "Algemeen ondersteuningssysteem"
+        },
         "mission_critical": {
           "label": "Missiekritieke afhankelijkheden"
         },
@@ -417,7 +433,10 @@
         "product_owner": "De producteigenaar voor deze dienst.",
         "technical_administrator": "De technisch beheerder voor deze dienst.",
         "security_manager": "De security manager voor deze dienst.",
-        "incident_contact": "Contactpersoon in geval van incidenten."
+        "incident_contact": "Contactpersoon in geval van incidenten.",
+        "abbreviation": "Korte afkorting of acroniem voor het systeem.",
+        "operational_status": "Huidige operationele status van het systeem.",
+        "system_type": "Classificeer het systeem als grote applicatie of algemeen ondersteuningssysteem."
       },
       "component_fields": {
         "name": {
@@ -2843,6 +2862,14 @@
       "mitigated": "Gemitigeerd",
       "accepted": "Geaccepteerd",
       "closed": "Gesloten"
+    }
+  },
+  "ssp": {
+    "navigation": {
+      "label": "Beveiligingsplannen"
+    },
+    "index": {
+      "subtitle": "Één plan per geregistreerd systeem"
     }
   }
 }

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Security Controls — {{ ssp.context_scope.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+  <div class="flex justify-between items-start mb-6 gap-4">
+    <div>
+      <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← Back to SSP</a>
+      <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">Section 14 — Security Controls</h1>
+      <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
+    </div>
+    <a href="{{ url_for('ssp.add_control_entry', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">Add Control</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="mb-4 px-4 py-3 rounded-lg border {% if category == 'success' %}bg-green-500/10 border-green-500/30 text-green-400{% else %}bg-red-500/10 border-red-500/30 text-red-400{% endif %} text-sm">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if controls_by_domain %}
+  {% for domain, entries in controls_by_domain.items() %}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ domain }}</div>
+    <div class="divide-y divide-[var(--color-border)]">
+      {% for entry in entries %}
+      <div class="px-5 py-4">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <p class="text-sm font-medium text-[var(--color-text)]">{{ entry.control.domain }}</p>
+            {% if entry.control.description %}
+            <p class="text-xs text-[var(--color-muted)] mt-0.5">{{ entry.control.description | truncate(150) }}</p>
+            {% endif %}
+            {% if entry.implementation_statement %}
+            <p class="text-xs text-[var(--color-text)] mt-2 whitespace-pre-wrap">{{ entry.implementation_statement }}</p>
+            {% endif %}
+          </div>
+          <div class="flex-shrink-0 flex flex-col items-end gap-2">
+            {% set status = entry.implementation_status.value if entry.implementation_status else "planned" %}
+            {% if status == "implemented" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-500 border border-green-500/30">Implemented</span>
+            {% elif status == "partially_implemented" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">Partial</span>
+            {% elif status == "not_applicable" %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">N/A</span>
+            {% else %}
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">Planned</span>
+            {% endif %}
+            <a href="{{ url_for('ssp.edit_control_entry', ssp_id=ssp.id, entry_id=entry.id) }}" class="text-xs text-primary-500 hover:underline">Edit</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="text-center py-16 text-[var(--color-muted)]">
+    <p class="text-lg">No controls linked yet.</p>
+    <p class="text-sm mt-1">Controls are auto-seeded from Risk items and Threat Models when the SSP is created.</p>
+    <a href="{{ url_for('ssp.add_control_entry', ssp_id=ssp.id) }}" class="inline-flex items-center mt-4 px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">Add Control Manually</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

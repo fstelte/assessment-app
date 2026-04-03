@@ -424,6 +424,8 @@ def edit_item(item_id: int):
     form = ContextScopeForm(obj=item)
     if request.method == "GET" and item.tier_id is not None:
         form.tier.data = item.tier_id
+    if request.method == "GET":
+        form.operational_status.data = item.operational_status or ""
 
     component_form = ComponentForm()
     _configure_component_form(component_form)
@@ -2088,6 +2090,8 @@ def _apply_context_form(
     context.technical_administrator = form.technical_administrator.data
     context.security_manager = form.security_manager.data
     context.incident_contact = form.incident_contact.data
+    context.abbreviation = form.abbreviation.data or None
+    context.operational_status = form.operational_status.data or None
     if context.author:
         context.coordinator = context.author.full_name
 
@@ -2149,24 +2153,10 @@ def _send_export_response(html_content: str, base_filename: str):
     The output format is controlled by the ``format`` query-string parameter:
     ``html`` (default) saves the file and sends it; ``pdf`` converts via
     Playwright and returns a PDF attachment.
-
-    When RQ is configured and ``format=pdf``, the export is performed
-    asynchronously and the caller receives a 202 JSON response with a job ID.
     """
     export_format = request.args.get("format", "html").lower()
     if export_format == "pdf":
-        from ...extensions import task_queue
-
         pdf_filename = base_filename.removesuffix(".html") + ".pdf"
-
-        if task_queue:
-            job = task_queue.enqueue(
-                "scaffold.apps.bia.tasks.generate_pdf_task",
-                0,  # component_id placeholder; html_content carries full context
-                html_content,
-                job_timeout=120,
-            )
-            return jsonify({"job_id": job.id, "filename": pdf_filename}), 202
 
         try:
             pdf_bytes = html_to_pdf_bytes(html_content)
@@ -2236,6 +2226,8 @@ def copy_item(item_id: int):
         technical_administrator=original.technical_administrator,
         security_manager=original.security_manager,
         incident_contact=original.incident_contact,
+        abbreviation=original.abbreviation,
+        operational_status=original.operational_status,
         author=current_user, # Assign to current user
         is_archived=False,
         archived_at=None
