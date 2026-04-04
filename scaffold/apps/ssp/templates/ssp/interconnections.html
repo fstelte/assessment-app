@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Interconnections — {{ ssp.context_scope.name }}{% endblock %}
+{% block title %}{{ _('ssp.interconnections.title') }} — {{ ssp.context_scope.name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
   <div class="mb-6">
-    <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← Back to SSP</a>
-    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">System Interconnections</h1>
+    <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.interconnections.back') }}</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.interconnections.title') }}</h1>
     <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
   </div>
 
@@ -18,15 +18,15 @@
   {# Existing entries #}
   {% if ssp.interconnections %}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-8">
-    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Registered Interconnections</div>
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.interconnections.registered') }}</div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead><tr class="border-b border-[var(--color-border)]">
-          <th class="text-left px-5 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">System</th>
-          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Organization</th>
-          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Agreement</th>
-          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Direction</th>
-          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Contact</th>
+          <th class="text-left px-5 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.system') }}</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.organization') }}</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.agreement') }}</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.direction') }}</th>
+          <th class="text-left px-3 py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.security_contact') }}</th>
           <th class="px-3 py-2"></th>
         </tr></thead>
         <tbody class="divide-y divide-[var(--color-border)]">
@@ -39,10 +39,10 @@
             <td class="px-3 py-3">{{ ic.security_contact or "—" }}</td>
             <td class="px-3 py-3">
               <div class="flex gap-2">
-                <a href="{{ url_for('ssp.edit_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" class="text-xs text-primary-500 hover:underline">Edit</a>
-                <form method="POST" action="{{ url_for('ssp.delete_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" onsubmit="return confirm('Remove this interconnection?')">
+                <a href="{{ url_for('ssp.edit_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" class="text-xs text-primary-500 hover:underline">{{ _('ssp.interconnections.edit') }}</a>
+                <form method="POST" action="{{ url_for('ssp.delete_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" onsubmit="return confirm('{{ _('ssp.interconnections.remove_confirm') }}')">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="text-xs text-red-400 hover:underline">Remove</button>
+                  <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('ssp.interconnections.remove') }}</button>
                 </form>
               </div>
             </td>
@@ -56,7 +56,7 @@
 
   {# Add form #}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
-    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Add Interconnection</div>
+    <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.interconnections.add_section') }}</div>
     <div class="px-5 py-4">
       <form method="POST" novalidate>
         {{ form.hidden_tag() }}

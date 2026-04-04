@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}SSP — {{ context.name }}{% endblock %}
+{% block title %}{{ _('ssp.view.title') }} — {{ context.name }}{% endblock %}
 
 {% include "bia/_badge_styles.html" %}
 
@@ -9,29 +9,29 @@
   {# ── Header ── #}
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div>
-      <a href="{{ url_for('ssp.index') }}" class="text-xs text-[var(--color-muted)] hover:underline">← All SSPs</a>
-      <h1 class="text-2xl font-bold text-[var(--color-text)] mt-1">System Security Plan</h1>
+      <a href="{{ url_for('ssp.index') }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.view.back') }}</a>
+      <h1 class="text-2xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.view.title') }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ context.name }}{% if context.abbreviation %} ({{ context.abbreviation }}){% endif %}</p>
     </div>
     <div class="flex gap-2 flex-wrap">
-      <a href="{{ url_for('ssp.edit', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Edit Metadata</a>
-      <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Interconnections</a>
-      <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Controls</a>
+      <a href="{{ url_for('ssp.edit', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.edit_metadata') }}</a>
+      <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.interconnections') }}</a>
+      <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.controls') }}</a>
       <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">POA&amp;M</a>
       <div class="relative" data-export-dropdown>
         <button type="button"
           class="export-toggle inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/10 text-white hover:bg-white/20 border border-white/15"
           aria-expanded="false" aria-haspopup="true">
-          <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down text-[0.6rem] ml-0.5"></i>
+          <i class="fas fa-download"></i> {{ _('ssp.view.export') }} <i class="fas fa-chevron-down text-[0.6rem] ml-0.5"></i>
         </button>
         <ul class="export-menu absolute right-0 z-50 mt-1 min-w-[9rem] rounded-xl shadow-xl bg-[var(--color-surface)] border border-[var(--color-border)] py-1.5 hidden">
           <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id) }}"><i class="fas fa-file-code w-4"></i> HTML</a></li>
           <li><a class="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-surface-hover)]" href="{{ url_for('ssp.export_pdf', ssp_id=ssp.id, format='pdf') }}"><i class="fas fa-file-pdf w-4"></i> PDF</a></li>
         </ul>
       </div>
-      <form method="POST" action="{{ url_for('ssp.delete', ssp_id=ssp.id) }}" onsubmit="return confirm('Delete the SSP for {{ context.name | e }}? This cannot be undone.')">
+      <form method="POST" action="{{ url_for('ssp.delete', ssp_id=ssp.id) }}" onsubmit="return confirm('{{ _('ssp.view.delete_confirm', name=(context.name | e)) }}')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-red-700/50 text-red-400 hover:bg-red-500/10 transition-colors">Delete SSP</button>
+        <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-red-700/50 text-red-400 hover:bg-red-500/10 transition-colors">{{ _('ssp.view.delete') }}</button>
       </form>
     </div>
   </div>
@@ -48,14 +48,14 @@
   {% macro end_card() %}</div></div>{% endmacro %}
 
   {# ── §1-3 Cover block ── #}
-  {{ section_card("1–3", "System Identification") }}
+  {{ section_card("1–3", _('ssp.sections.system_identification')) }}
   {% set _info_labels = context.components | map(attribute='info_label') | select | list %}
   {% set _top_label = _info_labels | sort(attribute='severity', reverse=True) | first if _info_labels else none %}
   <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">System Name</dt><dd class="font-medium">{{ context.name }}</dd></div>
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Abbreviation</dt><dd>{{ context.abbreviation or "—" }}</dd></div>
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Responsible Organization</dt><dd>{{ context.responsible or "—" }}</dd></div>
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Operational Status</dt>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.system_name') }}</dt><dd class="font-medium">{{ context.name }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.abbreviation') }}</dt><dd>{{ context.abbreviation or "—" }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.responsible_org') }}</dt><dd>{{ context.responsible or "—" }}</dd></div>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.operational_status') }}</dt>
       <dd>
         {% if context.operational_status == "operational" %}Operational
         {% elif context.operational_status == "under_development" %}Under Development
@@ -63,22 +63,22 @@
         {% else %}—{% endif %}
       </dd>
     </div>
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">System Type</dt>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.system_type') }}</dt>
       <dd>{{ context.tier.get_label() if context.tier else "—" }}</dd>
     </div>
-    <div><dt class="text-[var(--color-muted)] text-xs uppercase">Information Label</dt>
+    <div><dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.information_label') }}</dt>
       <dd>{{ _top_label.get_label() if _top_label else "—" }}</dd>
     </div>
   </dl>
   {{ end_card() }}
 
   {# ── §4-6 Contacts ── #}
-  {{ section_card("4–6", "System Owner & Designated Contacts") }}
+  {{ section_card("4–6", _('ssp.sections.contacts')) }}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="border-b border-[var(--color-border)]">
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Role</th>
-        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Name / Contact</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.role') }}</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.contact') }}</th>
       </tr></thead>
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for role, value in [
@@ -101,35 +101,35 @@
   {{ end_card() }}
 
   {# ── §9 General Description ── #}
-  {{ section_card("9", "General Description / Purpose") }}
+  {{ section_card("9", _('ssp.sections.description')) }}
   <div class="text-sm text-[var(--color-text)] space-y-3">
     {% if context.service_description %}
     <div>
-      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Service Description</p>
+      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">{{ _('ssp.labels.service_description') }}</p>
       <p class="whitespace-pre-wrap">{{ context.service_description }}</p>
     </div>
     {% endif %}
     {% if context.scope_description %}
     <div>
-      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Scope</p>
+      <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">{{ _('ssp.labels.scope') }}</p>
       <p class="whitespace-pre-wrap">{{ context.scope_description }}</p>
     </div>
     {% endif %}
     {% if not context.service_description and not context.scope_description %}
-    <p class="text-[var(--color-muted)] italic">No description provided.</p>
+    <p class="text-[var(--color-muted)] italic">{{ _('ssp.labels.no_description') }}</p>
     {% endif %}
   </div>
   {{ end_card() }}
 
   {# ── §10 System Environment ── #}
-  {{ section_card("10", "System Environment") }}
+  {{ section_card("10", _('ssp.sections.environment')) }}
   {% if env_summary %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="border-b border-[var(--color-border)]">
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Component</th>
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Category</th>
-        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Items</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.component') }}</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.category') }}</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.items_col') }}</th>
       </tr></thead>
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for row in env_summary %}
@@ -143,27 +143,27 @@
     </table>
   </div>
   {% else %}
-  <p class="text-[var(--color-muted)] italic text-sm">No component dependencies recorded.</p>
+  <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.no_components') }}</p>
   {% endif %}
   {% if ssp.authorization_boundary %}
   <div class="mt-4 pt-4 border-t border-[var(--color-border)] text-sm">
-    <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">Authorization Boundary</p>
+    <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-1">{{ _('ssp.labels.authorization_boundary') }}</p>
     <p class="whitespace-pre-wrap">{{ ssp.authorization_boundary }}</p>
   </div>
   {% endif %}
   {{ end_card() }}
 
   {# ── §11 Interconnections ── #}
-  {{ section_card("11", "System Interconnections") }}
+  {{ section_card("11", _('ssp.sections.interconnections')) }}
   {% if ssp.interconnections %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="border-b border-[var(--color-border)]">
-        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">System</th>
-        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Organization</th>
-        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Agreement</th>
-        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">Direction</th>
-        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Security Contact</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.system') }}</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.organization') }}</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.agreement') }}</th>
+        <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.direction') }}</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.security_contact') }}</th>
       </tr></thead>
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for ic in ssp.interconnections %}
@@ -179,51 +179,146 @@
     </table>
   </div>
   {% else %}
-  <p class="text-[var(--color-muted)] italic text-sm">No interconnections recorded.</p>
+  <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.no_interconnections') }}</p>
   {% endif %}
   {{ end_card() }}
 
   {# ── §12 Laws / Regulations ── #}
-  {{ section_card("12", "Laws, Regulations & Policies") }}
+  {{ section_card("12", _('ssp.sections.laws')) }}
   {% if ssp.laws_regulations %}
   <p class="text-sm whitespace-pre-wrap">{{ ssp.laws_regulations }}</p>
   {% else %}
-  <p class="text-[var(--color-muted)] italic text-sm">Not specified.</p>
+  <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.not_specified') }}</p>
   {% endif %}
   {{ end_card() }}
 
   {# ── §13 Impact Categorization ── #}
-  {{ section_card("13", "Impact Categorization (C/I/A)") }}
+  {{ section_card("13", _('ssp.sections.impact')) }}
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
     {% for prop in ["confidentiality", "integrity", "availability"] %}
     <div class="bg-[var(--color-surface)] rounded-lg p-4 border border-[var(--color-border)]">
       <p class="text-xs font-bold uppercase text-[var(--color-muted)] mb-2">{{ prop | capitalize }}</p>
       <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ effective_cia[prop] | lower }}">{{ effective_cia[prop] }}</span></div>
-      <p class="text-xs text-[var(--color-muted)] mt-1">Derived from BIA</p>
+      <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('ssp.labels.derived_from_bia') }}</p>
     </div>
     {% endfor %}
   </div>
   {% if has_dpia %}
-  <p class="text-xs text-[var(--color-muted)] mt-3">ℹ DPIA assessment exists for one or more components — review privacy impact as part of categorization.</p>
+  <p class="text-xs text-[var(--color-muted)] mt-3">ℹ {{ _('ssp.labels.dpia_note') }}</p>
   {% endif %}
   {{ end_card() }}
 
   {# ── Risk Register Summary ── #}
   {% if risk_summary %}
-  {{ section_card("—", "Risk Register Summary") }}
+  {{ section_card("—", _('ssp.sections.risk_summary')) }}
   <div class="flex flex-wrap gap-3 text-sm">
     {% for sev, count in risk_summary.items() %}
     <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-center">
       <p class="text-2xl font-bold text-[var(--color-text)]">{{ count }}</p>
-      <p class="text-xs text-[var(--color-muted)] capitalize mt-0.5">{{ sev }} severity</p>
+      <p class="text-xs text-[var(--color-muted)] capitalize mt-0.5">{{ sev }} {{ _('ssp.labels.severity') }}</p>
     </div>
     {% endfor %}
   </div>
   {{ end_card() }}
   {% endif %}
 
+  {# ── Threat Assessment ── #}
+  {% if threat_models %}
+  {{ section_card("TM", _('ssp.sections.threat')) }}
+  {% for tm in threat_models %}
+  <div class="mb-6 {% if not loop.last %}border-b border-[var(--color-border)] pb-6{% endif %}">
+    <div class="flex items-center justify-between gap-3 mb-1">
+      <h3 class="text-sm font-semibold text-[var(--color-text)]">{{ tm.title }}</h3>
+      <a href="{{ url_for('threat.model_detail', model_id=tm.id) }}" class="text-xs text-primary-500 hover:underline">{{ _('ssp.labels.open_model') }}</a>
+    </div>
+    {% if tm.scope %}
+    <p class="text-xs text-[var(--color-muted)] mb-3 whitespace-pre-wrap">{{ tm.scope }}</p>
+    {% endif %}
+    {% set active_scenarios = tm.scenarios | rejectattr('is_archived', 'equalto', true) | list %}
+    {% if active_scenarios %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-[var(--color-border)]">
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.scenario') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.stride') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.asset') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.likelihood') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.impact') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.risk_level') }}</th>
+            <th class="text-left py-2 pr-3 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.treatment') }}</th>
+            <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.table.status') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for scenario in active_scenarios | sort(attribute='risk_score', reverse=True) %}
+          <tr>
+            <td class="py-2 pr-3 align-top">
+              <p class="font-medium text-[var(--color-text)]">{{ scenario.title }}</p>
+              {% if scenario.description %}
+              <p class="text-xs text-[var(--color-muted)] mt-0.5">{{ scenario.description | truncate(100) }}</p>
+              {% endif %}
+              {% if scenario.mitigation %}
+              <p class="text-xs text-emerald-400 mt-0.5"><span class="font-semibold">{{ _('ssp.labels.outcome_prefix') }}</span> {{ scenario.mitigation | truncate(120) }}</p>
+              {% endif %}
+            </td>
+            <td class="py-2 pr-3 align-top text-xs capitalize text-[var(--color-muted)] whitespace-nowrap">
+              {{ scenario.stride_category.value | replace("_", " ") if scenario.stride_category else "—" }}
+            </td>
+            <td class="py-2 pr-3 align-top text-xs text-[var(--color-muted)]">
+              {{ scenario.asset.name if scenario.asset else "—" }}
+            </td>
+            <td class="py-2 pr-3 align-top text-center text-sm font-semibold text-[var(--color-text)]">
+              {{ scenario.likelihood }}
+            </td>
+            <td class="py-2 pr-3 align-top text-center text-sm font-semibold text-[var(--color-text)]">
+              {{ scenario.impact_score }}
+            </td>
+            <td class="py-2 pr-3 align-top whitespace-nowrap">
+              {% if scenario.risk_level %}
+                {% set rl = scenario.risk_level.value %}
+                {% if rl == 'critical' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-600/20 text-red-400 border border-red-600/30">{{ _('ssp.status.critical') }}</span>
+                {% elif rl == 'high' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">{{ _('ssp.status.high') }}</span>
+                {% elif rl == 'medium' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">{{ _('ssp.status.medium') }}</span>
+                {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">{{ _('ssp.status.low') }}</span>
+                {% endif %}
+                {% if scenario.risk_score is not none %}<span class="ml-1 text-xs text-[var(--color-muted)]">({{ scenario.risk_score }})</span>{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="py-2 pr-3 align-top text-xs capitalize text-[var(--color-muted)]">
+              {{ scenario.treatment.value if scenario.treatment else "—" }}
+            </td>
+            <td class="py-2 align-top whitespace-nowrap">
+              {% if scenario.status %}
+                {% set st = scenario.status.value %}
+                {% if st == 'mitigated' or st == 'closed' or st == 'accepted' %}
+                  <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">{{ st | capitalize }}</span>
+                {% elif st == 'analysed' %}
+                  <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">{{ _('ssp.status.analysed') }}</span>
+                {% else %}
+                  <span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">{{ st | capitalize }}</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-xs text-[var(--color-muted)] italic">{{ _('ssp.labels.no_scenarios') }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {{ end_card() }}
+  {% else %}
+  {{ section_card("TM", _('ssp.sections.threat')) }}
+  <p class="text-sm text-[var(--color-muted)] italic">{{ _('ssp.labels.no_threat_model', name=context.name) }}</p>
+  {{ end_card() }}
+  {% endif %}
+
   {# ── §14 Minimum Security Controls ── #}
-  {{ section_card("14", "Minimum Security Controls") }}
+  {{ section_card("14", _('ssp.sections.controls')) }}
   {% if controls_by_domain %}
   {% for domain, entries in controls_by_domain.items() %}
   <div class="mb-5">
@@ -241,13 +336,13 @@
           <div class="flex-shrink-0 flex gap-2 items-center">
             {% set status = entry.implementation_status.value if entry.implementation_status else "planned" %}
             {% if status == "implemented" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-500 border border-green-500/30">Implemented</span>
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-500 border border-green-500/30">{{ _('ssp.status.implemented') }}</span>
             {% elif status == "partially_implemented" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">Partial</span>
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">{{ _('ssp.status.partial') }}</span>
             {% elif status == "not_applicable" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">N/A</span>
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">{{ _('ssp.status.not_applicable') }}</span>
             {% else %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">Planned</span>
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">{{ _('ssp.status.planned') }}</span>
             {% endif %}
             <span class="text-xs text-[var(--color-muted)] capitalize">{{ entry.source.value }}</span>
           </div>
@@ -261,62 +356,62 @@
   </div>
   {% endfor %}
   {% else %}
-  <p class="text-[var(--color-muted)] italic text-sm">No controls linked. <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">Manage controls →</a></p>
+  <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.no_controls') }} <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">{{ _('ssp.labels.manage_controls') }}</a></p>
   {% endif %}
   {{ end_card() }}
 
   {# ── Continuous Monitoring ── #}
-  {{ section_card("CM", "Continuous Monitoring") }}
+  {{ section_card("CM", _('ssp.sections.monitoring')) }}
   <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
     <div class="sm:col-span-2">
-      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Relevant KPIs / KRIs</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.kpis_kris') }}</dt>
       <dd class="whitespace-pre-wrap">{{ ssp.monitoring_kpis_kris or "—" }}</dd>
     </div>
     <div class="sm:col-span-2">
-      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">What Will Be Monitored</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.what_monitored') }}</dt>
       <dd class="whitespace-pre-wrap">{{ ssp.monitoring_what or "—" }}</dd>
     </div>
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Monitored By</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.monitored_by') }}</dt>
       <dd class="whitespace-pre-wrap">{{ ssp.monitoring_who or "—" }}</dd>
     </div>
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Review Frequency</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.review_frequency') }}</dt>
       <dd>{{ ssp.monitoring_frequency or "—" }}</dd>
     </div>
     <div class="sm:col-span-2">
-      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">Tools Used</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.tools_used') }}</dt>
       <dd class="whitespace-pre-wrap">{{ ssp.monitoring_tools or "—" }}</dd>
     </div>
   </dl>
   {{ end_card() }}
 
   {# ── POA&M Summary ── #}
-  {{ section_card("POA&M", "Plan of Action & Milestones") }}
+  {{ section_card("POA&M", _('ssp.sections.poam')) }}
   {% if ssp.poam_items %}
   {% set open_items = ssp.poam_items | selectattr('status.value', 'in', ['open', 'in_progress', 'delayed']) | list %}
   {% set done_items = ssp.poam_items | selectattr('status.value', 'equalto', 'completed') | list %}
   <div class="flex flex-wrap gap-4 text-sm mb-4">
     <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
       <p class="text-lg font-bold text-[var(--color-text)]">{{ ssp.poam_items | length }}</p>
-      <p class="text-xs text-[var(--color-muted)]">Total Items</p>
+      <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.labels.total_items') }}</p>
     </div>
     <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
       <p class="text-lg font-bold text-amber-400">{{ open_items | length }}</p>
-      <p class="text-xs text-[var(--color-muted)]">Open</p>
+      <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.labels.open') }}</p>
     </div>
     <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-4 py-2 text-center">
       <p class="text-lg font-bold text-green-400">{{ done_items | length }}</p>
-      <p class="text-xs text-[var(--color-muted)]">Completed</p>
+      <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.labels.completed') }}</p>
     </div>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="border-b border-[var(--color-border)]">
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Task</th>
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Contact</th>
-        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">Due</th>
-        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">Status</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.task_col') }}</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.contact_col') }}</th>
+        <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.due_col') }}</th>
+        <th class="text-left py-2 text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.labels.status_col') }}</th>
       </tr></thead>
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for item in ssp.poam_items %}
@@ -326,11 +421,11 @@
           <td class="py-2 pr-4 whitespace-nowrap text-[var(--color-muted)]">{{ item.scheduled_completion or "—" }}</td>
           <td class="py-2">
             {% set s = item.status.value %}
-            {% if s == 'completed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">Completed</span>
-            {% elif s == 'in_progress' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">In Progress</span>
-            {% elif s == 'delayed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">Delayed</span>
-            {% elif s == 'cancelled' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">Cancelled</span>
-            {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">Open</span>
+            {% if s == 'completed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">{{ _('ssp.status.completed') }}</span>
+            {% elif s == 'in_progress' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">{{ _('ssp.status.in_progress') }}</span>
+            {% elif s == 'delayed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">{{ _('ssp.status.delayed') }}</span>
+            {% elif s == 'cancelled' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">{{ _('ssp.status.cancelled') }}</span>
+            {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">{{ _('ssp.status.open') }}</span>
             {% endif %}
           </td>
         </tr>
@@ -339,30 +434,30 @@
     </table>
   </div>
   <div class="mt-3">
-    <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-xs text-primary-500 hover:underline">Manage POA&amp;M →</a>
+    <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-xs text-primary-500 hover:underline">{{ _('ssp.labels.manage_poam') }}</a>
   </div>
   {% else %}
-  <p class="text-[var(--color-muted)] italic text-sm">No POA&amp;M items recorded. <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">Add items →</a></p>
+  <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.no_poam') }} <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-primary-500 hover:underline">{{ _('ssp.labels.add_items') }}</a></p>
   {% endif %}
   {{ end_card() }}
 
   {# ── §15-16 Dates ── #}
-  {{ section_card("15–16", "Plan Dates") }}
+  {{ section_card("15–16", _('ssp.sections.dates')) }}
   <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase">Plan Completion Date</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.plan_completion_date') }}</dt>
       <dd class="font-medium">{{ ssp.plan_completion_date or "—" }}</dd>
     </div>
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase">Plan Approval Date</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.plan_approval_date') }}</dt>
       <dd class="font-medium">{{ ssp.plan_approval_date or "—" }}</dd>
     </div>
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase">Created</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.created') }}</dt>
       <dd>{{ ssp.created_at.strftime("%Y-%m-%d") if ssp.created_at else "—" }}</dd>
     </div>
     <div>
-      <dt class="text-[var(--color-muted)] text-xs uppercase">Last Updated</dt>
+      <dt class="text-[var(--color-muted)] text-xs uppercase">{{ _('ssp.labels.last_updated') }}</dt>
       <dd>{{ ssp.updated_at.strftime("%Y-%m-%d") if ssp.updated_at else "—" }}</dd>
     </div>
   </dl>

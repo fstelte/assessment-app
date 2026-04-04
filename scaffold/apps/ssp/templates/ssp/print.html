@@ -18,18 +18,18 @@
 
     {# Cover #}
     <div class="border border-slate-700 rounded-xl p-8 bg-slate-900">
-      <p class="text-xs font-bold uppercase tracking-widest text-primary-400 mb-2">System Security Plan</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-primary-400 mb-2">{{ _('ssp.view.title') }}</p>
       <h1 class="text-3xl font-bold text-white mb-1">{{ context.name }}</h1>
       {% if context.abbreviation %}
       <p class="text-slate-400 text-lg mb-4">{{ context.abbreviation }}</p>
       {% endif %}
       <div class="grid grid-cols-2 gap-x-10 gap-y-3 text-sm mt-6">
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Responsible Organization</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.responsible_org') }}</p>
           <p class="font-medium text-white">{{ context.responsible or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Operational Status</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.operational_status') }}</p>
           <p class="font-medium text-white">
             {% if context.operational_status == "operational" %}Operational
             {% elif context.operational_status == "under_development" %}Under Development
@@ -38,21 +38,21 @@
           </p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">System Type</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.system_type') }}</p>
           <p class="font-medium text-white">{{ context.tier.get_label() if context.tier else "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Information Label</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.information_label') }}</p>
           {% set _labels = context.components | map(attribute='info_label') | select | list %}
           {% set _top = _labels | sort(attribute='severity', reverse=True) | first if _labels else none %}
           <p class="font-medium text-white">{{ _top.get_label() if _top else "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Plan Completion Date</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.plan_completion_date') }}</p>
           <p class="font-medium text-white">{{ ssp.plan_completion_date or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Plan Approval Date</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.plan_approval_date') }}</p>
           <p class="font-medium text-white">{{ ssp.plan_approval_date or "—" }}</p>
         </div>
       </div>
@@ -62,23 +62,23 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§1–3</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">System Identification</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.system_identification') }}</h2>
       </div>
       <div class="p-6 grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">System Name</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.system_name') }}</p>
           <p class="text-white">{{ context.name }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Abbreviation</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.abbreviation') }}</p>
           <p class="text-white">{{ context.abbreviation or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Responsible Organization</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.responsible_org') }}</p>
           <p class="text-white">{{ context.responsible or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">System Type</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.system_type') }}</p>
           <p class="text-white">{{ context.tier.get_label() if context.tier else "—" }}</p>
         </div>
       </div>
@@ -88,13 +88,13 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§4–6</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">System Owner &amp; Designated Contacts</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.contacts') }}</h2>
       </div>
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-700 bg-slate-800/40">
-            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400 w-48">Role</th>
-            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400">Name / Contact</th>
+            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400 w-48">{{ _('ssp.labels.role') }}</th>
+            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.labels.contact') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800">
@@ -120,23 +120,23 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§9</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">General Description / Purpose</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.description') }}</h2>
       </div>
       <div class="p-6 space-y-4 text-sm">
         {% if context.service_description %}
         <div>
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">Service Description</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.service_description') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ context.service_description }}</p>
         </div>
         {% endif %}
         {% if context.scope_description %}
         <div>
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">Scope</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.scope') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ context.scope_description }}</p>
         </div>
         {% endif %}
         {% if not context.service_description and not context.scope_description %}
-        <p class="text-slate-500 italic">No description provided.</p>
+        <p class="text-slate-500 italic">{{ _('ssp.labels.no_description') }}</p>
         {% endif %}
       </div>
     </div>
@@ -145,12 +145,12 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§10</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">System Environment</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.environment') }}</h2>
       </div>
       <div class="p-6 space-y-4">
         {% if ssp.authorization_boundary %}
         <div class="text-sm">
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">Authorization Boundary</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.authorization_boundary') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ ssp.authorization_boundary }}</p>
         </div>
         {% endif %}
@@ -158,9 +158,9 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-700 bg-slate-800/40">
-              <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-slate-400">Component</th>
-              <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-slate-400">Category</th>
-              <th class="text-left py-2 text-xs font-bold uppercase text-slate-400">Items</th>
+              <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-slate-400">{{ _('ssp.labels.component') }}</th>
+              <th class="text-left py-2 pr-4 text-xs font-bold uppercase text-slate-400">{{ _('ssp.labels.category') }}</th>
+              <th class="text-left py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.labels.items_col') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800">
@@ -174,7 +174,7 @@
           </tbody>
         </table>
         {% else %}
-        <p class="text-slate-500 italic text-sm">No component dependencies recorded.</p>
+        <p class="text-slate-500 italic text-sm">{{ _('ssp.labels.no_components') }}</p>
         {% endif %}
       </div>
     </div>
@@ -183,17 +183,17 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§11</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">System Interconnections</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.interconnections') }}</h2>
       </div>
       {% if ssp.interconnections %}
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-700 bg-slate-800/40">
-            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400">System</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Organization</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Agreement</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Direction</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Contact</th>
+            <th class="text-left px-6 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.system') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.organization') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.agreement') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.direction') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.security_contact') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800">
@@ -209,7 +209,7 @@
         </tbody>
       </table>
       {% else %}
-      <p class="p-6 text-slate-500 italic text-sm">No interconnections recorded.</p>
+      <p class="p-6 text-slate-500 italic text-sm">{{ _('ssp.labels.no_interconnections') }}</p>
       {% endif %}
     </div>
 
@@ -217,13 +217,13 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§12</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Laws, Regulations &amp; Policies</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.laws') }}</h2>
       </div>
       <div class="p-6 text-sm">
         {% if ssp.laws_regulations %}
         <p class="whitespace-pre-wrap text-white">{{ ssp.laws_regulations }}</p>
         {% else %}
-        <p class="text-slate-500 italic">Not specified.</p>
+        <p class="text-slate-500 italic">{{ _('ssp.labels.not_specified') }}</p>
         {% endif %}
       </div>
     </div>
@@ -232,7 +232,7 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§13</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Impact Categorization (C/I/A)</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.impact') }}</h2>
       </div>
       <div class="p-6 grid grid-cols-3 gap-4">
         {% for prop in ["confidentiality", "integrity", "availability"] %}
@@ -243,15 +243,90 @@
         {% endfor %}
       </div>
       {% if has_dpia %}
-      <p class="px-6 pb-4 text-xs text-slate-400">ℹ DPIA assessment exists for one or more components.</p>
+      <p class="px-6 pb-4 text-xs text-slate-400">ℹ {{ _('ssp.labels.dpia_note') }}</p>
       {% endif %}
     </div>
+
+    {# Threat Assessment #}
+    {% if threat_models %}
+    <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden">
+      <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
+        <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§TM</span>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.threat') }}</h2>
+      </div>
+      <div class="p-6 space-y-8">
+        {% for tm in threat_models %}
+        <div class="{% if not loop.last %}border-b border-slate-800 pb-6{% endif %}">
+          <h3 class="text-sm font-semibold text-white mb-1">{{ tm.title }}</h3>
+          {% if tm.scope %}<p class="text-xs text-slate-400 mb-3 whitespace-pre-wrap">{{ tm.scope }}</p>{% endif %}
+          {% set active_scenarios = tm.scenarios | rejectattr('is_archived', 'equalto', true) | list %}
+          {% if active_scenarios %}
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.scenario') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.stride') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.asset') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.likelihood') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.impact') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.risk_level') }}</th>
+                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.treatment') }}</th>
+                <th class="text-left py-1.5 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.status') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+              {% for scenario in active_scenarios | sort(attribute='risk_score', reverse=True) %}
+              <tr>
+                <td class="py-2 pr-3 align-top">
+                  <p class="font-medium text-white">{{ scenario.title }}</p>
+                  {% if scenario.description %}<p class="text-xs text-slate-400 mt-0.5">{{ scenario.description | truncate(100) }}</p>{% endif %}
+                  {% if scenario.mitigation %}<p class="text-xs text-emerald-400 mt-0.5"><span class="font-semibold">{{ _('ssp.labels.outcome_prefix') }}</span> {{ scenario.mitigation | truncate(120) }}</p>{% endif %}
+                </td>
+                <td class="py-2 pr-3 align-top text-xs capitalize text-slate-400 whitespace-nowrap">
+                  {{ scenario.stride_category.value | replace("_", " ") if scenario.stride_category else "—" }}
+                </td>
+                <td class="py-2 pr-3 align-top text-xs text-slate-400">{{ scenario.asset.name if scenario.asset else "—" }}</td>
+                <td class="py-2 pr-3 align-top text-center text-sm font-semibold text-white">{{ scenario.likelihood }}</td>
+                <td class="py-2 pr-3 align-top text-center text-sm font-semibold text-white">{{ scenario.impact_score }}</td>
+                <td class="py-2 pr-3 align-top whitespace-nowrap">
+                  {% if scenario.risk_level %}
+                    {% set rl = scenario.risk_level.value %}
+                    {% if rl == 'critical' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-600/20 text-red-400">{{ _('ssp.status.critical') }}</span>
+                    {% elif rl == 'high' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-orange-500/20 text-orange-400">{{ _('ssp.status.high') }}</span>
+                    {% elif rl == 'medium' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/20 text-yellow-400">{{ _('ssp.status.medium') }}</span>
+                    {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">{{ _('ssp.status.low') }}</span>
+                    {% endif %}
+                    {% if scenario.risk_score is not none %}<span class="ml-1 text-xs text-slate-500">({{ scenario.risk_score }})</span>{% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td class="py-2 pr-3 align-top text-xs capitalize text-slate-400">{{ scenario.treatment.value if scenario.treatment else "—" }}</td>
+                <td class="py-2 align-top whitespace-nowrap">
+                  {% if scenario.status %}
+                    {% set st = scenario.status.value %}
+                    {% if st in ['mitigated', 'closed', 'accepted'] %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">{{ st | capitalize }}</span>
+                    {% elif st == 'analysed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400">{{ _('ssp.status.analysed') }}</span>
+                    {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400">{{ st | capitalize }}</span>
+                    {% endif %}
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-xs text-slate-500 italic">{{ _('ssp.labels.no_scenarios') }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     {# §14 Controls #}
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§14</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Minimum Security Controls</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.controls') }}</h2>
       </div>
       <div class="p-6 space-y-6">
         {% if controls_by_domain %}
@@ -261,10 +336,10 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-700">
-                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">Control</th>
-                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">Status</th>
-                <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">Responsible</th>
-                <th class="text-left py-1.5 text-xs font-bold uppercase text-slate-500">Statement</th>
+              <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.control') }}</th>
+              <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.status') }}</th>
+              <th class="text-left py-1.5 pr-3 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.responsible') }}</th>
+              <th class="text-left py-1.5 text-xs font-bold uppercase text-slate-500">{{ _('ssp.table.statement') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800">
@@ -273,10 +348,10 @@
                 <td class="py-2 pr-3 text-white align-top font-medium">{{ entry.control.domain }}</td>
                 <td class="py-2 pr-3 align-top whitespace-nowrap">
                   {% set s = entry.implementation_status.value if entry.implementation_status else "planned" %}
-                  {% if s == "implemented" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">Implemented</span>
-                  {% elif s == "partially_implemented" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400">Partial</span>
-                  {% elif s == "not_applicable" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-500/15 text-slate-400">N/A</span>
-                  {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400">Planned</span>
+                  {% if s == "implemented" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">{{ _('ssp.status.implemented') }}</span>
+                  {% elif s == "partially_implemented" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400">{{ _('ssp.status.partial') }}</span>
+                  {% elif s == "not_applicable" %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-500/15 text-slate-400">{{ _('ssp.status.not_applicable') }}</span>
+                  {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400">{{ _('ssp.status.planned') }}</span>
                   {% endif %}
                 </td>
                 <td class="py-2 pr-3 text-slate-400 align-top">{{ entry.responsible_entity or "—" }}</td>
@@ -288,7 +363,7 @@
         </div>
         {% endfor %}
         {% else %}
-        <p class="text-slate-500 italic text-sm">No controls recorded.</p>
+        <p class="text-slate-500 italic text-sm">{{ _('ssp.controls.no_controls_recorded') }}</p>
         {% endif %}
       </div>
     </div>
@@ -297,29 +372,29 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§CM</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Continuous Monitoring</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.monitoring') }}</h2>
       </div>
       <div class="p-6 space-y-4 text-sm">
         <div>
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">Relevant KPIs / KRIs</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.kpis_kris') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ ssp.monitoring_kpis_kris or "—" }}</p>
         </div>
         <div>
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">What Will Be Monitored</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.what_monitored') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ ssp.monitoring_what or "—" }}</p>
         </div>
         <div class="grid grid-cols-2 gap-x-10">
           <div>
-            <p class="text-xs font-bold uppercase text-slate-400 mb-1">Monitored By</p>
+            <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.monitored_by') }}</p>
             <p class="whitespace-pre-wrap text-white">{{ ssp.monitoring_who or "—" }}</p>
           </div>
           <div>
-            <p class="text-xs font-bold uppercase text-slate-400 mb-1">Review Frequency</p>
+            <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.review_frequency') }}</p>
             <p class="text-white">{{ ssp.monitoring_frequency or "—" }}</p>
           </div>
         </div>
         <div>
-          <p class="text-xs font-bold uppercase text-slate-400 mb-1">Tools Used</p>
+          <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.tools_used') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ ssp.monitoring_tools or "—" }}</p>
         </div>
       </div>
@@ -329,18 +404,18 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§POA&amp;M</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Plan of Action &amp; Milestones</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.poam') }}</h2>
       </div>
       {% if ssp.poam_items %}
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-700 bg-slate-800/40">
             <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">#</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Task / Weakness</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Contact</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Resources</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Due</th>
-            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">Status</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.task_weakness') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.point_of_contact') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.resources') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.labels.due_col') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.table.status') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-800">
@@ -362,11 +437,11 @@
             <td class="px-4 py-2 text-slate-400 align-top whitespace-nowrap">{{ item.scheduled_completion or "—" }}</td>
             <td class="px-4 py-2 align-top whitespace-nowrap">
               {% set s = item.status.value %}
-              {% if s == 'completed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">Completed</span>
-              {% elif s == 'in_progress' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400">In Progress</span>
-              {% elif s == 'delayed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/15 text-red-400">Delayed</span>
-              {% elif s == 'cancelled' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-500/15 text-slate-400">Cancelled</span>
-              {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400">Open</span>
+              {% if s == 'completed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-400">{{ _('ssp.status.completed') }}</span>
+              {% elif s == 'in_progress' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400">{{ _('ssp.status.in_progress') }}</span>
+              {% elif s == 'delayed' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500/15 text-red-400">{{ _('ssp.status.delayed') }}</span>
+              {% elif s == 'cancelled' %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-500/15 text-slate-400">{{ _('ssp.status.cancelled') }}</span>
+              {% else %}<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/15 text-amber-400">{{ _('ssp.status.open') }}</span>
               {% endif %}
             </td>
           </tr>
@@ -374,7 +449,7 @@
         </tbody>
       </table>
       {% else %}
-      <p class="p-6 text-slate-500 italic text-sm">No POA&M items recorded.</p>
+      <p class="p-6 text-slate-500 italic text-sm">{{ _('ssp.labels.no_poam') }}</p>
       {% endif %}
     </div>
 
@@ -382,23 +457,23 @@
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§15–16</span>
-        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">Plan Dates</h2>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.dates') }}</h2>
       </div>
       <div class="p-6 grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Plan Completion Date</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.plan_completion_date') }}</p>
           <p class="text-white">{{ ssp.plan_completion_date or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Plan Approval Date</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.plan_approval_date') }}</p>
           <p class="text-white">{{ ssp.plan_approval_date or "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Created</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.created') }}</p>
           <p class="text-white">{{ ssp.created_at.strftime("%Y-%m-%d") if ssp.created_at else "—" }}</p>
         </div>
         <div>
-          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">Last Updated</p>
+          <p class="text-slate-400 text-xs uppercase font-semibold mb-0.5">{{ _('ssp.labels.last_updated') }}</p>
           <p class="text-white">{{ ssp.updated_at.strftime("%Y-%m-%d") if ssp.updated_at else "—" }}</p>
         </div>
       </div>

@@ -50,6 +50,12 @@ body[data-theme="dark"] .threat-form-panel {
         <p class="text-xs text-[var(--color-muted)] mb-2">{{ _("threat.model_form.bia_import_hint") }}</p>
         {{ render_field_with_help(form.bia_id) }}
       </div>
+      {% else %}
+      <div class="mb-3 p-3 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+        <p class="text-sm font-semibold mb-2">Linked System (BIA)</p>
+        <p class="text-xs text-[var(--color-muted)] mb-2">Select the system this threat model belongs to. This links the results to the System Security Plan.</p>
+        {{ render_field_with_help(form.bia_id) }}
+      </div>
       {% endif %}
       <div class="flex gap-2 mt-3">
         {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700") }}

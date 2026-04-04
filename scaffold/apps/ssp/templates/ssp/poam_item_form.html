@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if item %}Edit POA&M Item{% else %}Add POA&M Item{% endif %} — {{ context.name }}{% endblock %}
+{% block title %}{% if item %}{{ _('ssp.poam_form.edit_title') }}{% else %}{{ _('ssp.poam_form.add_title') }}{% endif %} — {{ context.name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto max-w-3xl px-4 sm:px-6 py-6">
@@ -8,7 +8,7 @@
   <div class="mb-6">
     <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← POA&amp;M: {{ context.name }}</a>
     <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">
-      {% if item %}Edit POA&amp;M Item{% else %}Add POA&amp;M Item{% endif %}
+      {% if item %}{{ _('ssp.poam_form.edit_title') }}{% else %}{{ _('ssp.poam_form.add_title') }}{% endif %}
     </h1>
   </div>
 
@@ -26,7 +26,7 @@
 
   {# ── Item form ── #}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card p-6 mb-6">
-    <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)] mb-4">Task Details</h2>
+    <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)] mb-4">{{ _('ssp.poam_form.task_details') }}</h2>
     <form method="post">
       {{ form.hidden_tag() }}
 
@@ -42,7 +42,7 @@
 
         <div>
           {{ form.resources_required.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-          <p class="text-xs text-[var(--color-muted)] mb-1.5">Budget, personnel, tools, or other resources needed to accomplish this task.</p>
+          <p class="text-xs text-[var(--color-muted)] mb-1.5">{{ _('ssp.poam_form.resources_hint') }}</p>
           {{ form.resources_required(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         </div>
 
@@ -70,10 +70,10 @@
 
         <div class="flex justify-end gap-3 pt-2">
           <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}"
-             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Cancel</a>
+             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.poam_form.cancel') }}</a>
           <button type="submit" name="save_item"
             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">
-            {% if item %}Save Changes{% else %}Add Item{% endif %}
+            {% if item %}{{ _('ssp.poam_form.save_changes') }}{% else %}{{ _('ssp.poam_form.add_item') }}{% endif %}
           </button>
         </div>
 
@@ -85,8 +85,8 @@
   {% if item %}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
     <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
-      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)]">Milestones</h2>
-      <span class="text-xs text-[var(--color-muted)]">{{ item.milestones | length }} milestone(s)</span>
+      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.poam_form.milestones_section') }}</h2>
+      <span class="text-xs text-[var(--color-muted)]">{{ _('ssp.poam_form.milestone_count', count=(item.milestones | length)) }}</span>
     </div>
 
     {% if item.milestones %}
@@ -94,9 +94,9 @@
       <table class="w-full text-sm border-collapse">
         <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
           <tr>
-            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Description</th>
-            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Scheduled</th>
-            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">Completed</th>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.forms.milestone_description') }}</th>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.poam_form.scheduled_col') }}</th>
+            <th class="px-5 py-3 text-left text-xs font-bold uppercase text-[var(--color-muted)]">{{ _('ssp.poam_form.completed_col') }}</th>
             <th class="px-5 py-3 text-right text-xs font-bold uppercase text-[var(--color-muted)]"></th>
           </tr>
         </thead>
@@ -114,9 +114,9 @@
             </td>
             <td class="px-5 py-3 text-right">
               <form method="post" action="{{ url_for('ssp.delete_poam_milestone', ssp_id=ssp.id, item_id=item.id, ms_id=ms.id) }}"
-                    onsubmit="return confirm('Remove this milestone?')">
+                    onsubmit="return confirm('{{ _('ssp.poam_form.remove_confirm') }}')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="text-xs text-red-400 hover:underline">Remove</button>
+                <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('ssp.poam_form.remove') }}</button>
               </form>
             </td>
           </tr>
@@ -125,12 +125,12 @@
       </table>
     </div>
     {% else %}
-    <div class="px-5 py-4 text-sm text-[var(--color-muted)] italic">No milestones yet.</div>
+    <div class="px-5 py-4 text-sm text-[var(--color-muted)] italic">{{ _('ssp.poam_form.no_milestones') }}</div>
     {% endif %}
 
     {# Add milestone form ── #}
     <div class="px-5 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30">
-      <h3 class="text-xs font-bold uppercase text-[var(--color-muted)] mb-3">Add Milestone</h3>
+      <h3 class="text-xs font-bold uppercase text-[var(--color-muted)] mb-3">{{ _('ssp.poam_form.add_milestone') }}</h3>
       <form method="post">
         {{ milestone_form.hidden_tag() }}
         <div class="flex flex-col sm:flex-row gap-3 items-end">
@@ -148,7 +148,7 @@
           </div>
           <button type="submit" name="add_milestone"
             class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors whitespace-nowrap">
-            Add
+            {{ _('ssp.poam_form.add_btn') }}
           </button>
         </div>
         {% if milestone_form.description.errors %}

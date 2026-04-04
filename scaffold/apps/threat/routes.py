@@ -160,18 +160,19 @@ def model_new():
     form = ThreatModelForm()
     form.bia_id.choices = _bia_choices()
     if form.validate_on_submit():
+        bia_id = form.bia_id.data
         model = ThreatModel(
             title=(form.title.data or "").strip(),
             description=form.description.data,
             scope=form.scope.data,
             owner_id=current_user.id,
+            context_scope_id=int(bia_id) if bia_id else None,
         )
         db.session.add(model)
         db.session.flush()
         # ------------------------------------------------------------------
         # If a BIA was selected, pre-populate assets from its components.
         # ------------------------------------------------------------------
-        bia_id = form.bia_id.data
         if bia_id:
             components = (
                 BiaComponent.query
@@ -226,10 +227,13 @@ def model_edit(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
     form = ThreatModelForm(obj=model)
+    form.bia_id.choices = _bia_choices()
     if form.validate_on_submit():
         model.title = (form.title.data or "").strip()
         model.description = form.description.data
         model.scope = form.scope.data
+        bia_id = form.bia_id.data
+        model.context_scope_id = int(bia_id) if bia_id else None
         log_event(
             action="threat_model_updated",
             entity_type="threat_model",
@@ -239,6 +243,9 @@ def model_edit(model_id: int):
         db.session.commit()
         flash(_("threat.flash.updated"), "success")
         return redirect(url_for("threat.model_detail", model_id=model.id))
+    # Pre-select the saved BIA scope on GET
+    if request.method == "GET" and model.context_scope_id:
+        form.bia_id.data = str(model.context_scope_id)
     return render_template("threat/model_form.html", form=form, model=model)
 
 

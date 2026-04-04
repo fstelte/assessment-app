@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Edit Interconnection — {{ ssp.context_scope.name }}{% endblock %}
+{% block title %}{{ _('ssp.edit_interconnection.title') }} — {{ ssp.context_scope.name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto max-w-2xl px-4 sm:px-6 py-6">
   <div class="mb-6">
-    <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← Back to Interconnections</a>
-    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">Edit Interconnection</h1>
+    <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.edit_interconnection.back') }}</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.edit_interconnection.title') }}</h1>
   </div>
 
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card">
@@ -27,7 +27,7 @@
         </div>
         <div class="flex gap-3">
           {{ form.submit(class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
-          <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Cancel</a>
+          <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.edit_interconnection.cancel') }}</a>
         </div>
       </form>
     </div>
