@@ -31,6 +31,69 @@ def _get_ssp_or_404(ssp_id: int) -> SSPlan:
     return ssp
 
 
+def _collect_threat_models(context) -> list:
+    """Return all non-archived ThreatModels linked to a ContextScope.
+
+    Three lookup paths (deduplicated):
+    1. Direct FK: ThreatModel.context_scope_id (set when created/edited from a BIA).
+    2. Via DPIA: ThreatModel.dpia_id → DPIAAssessment linked to a component in this scope.
+    3. Asset name heuristic: ThreatModel has COMPONENT assets whose names match the
+       scope's BiaComponents — covers models created before context_scope_id existed.
+    """
+    from ..threat.models import ThreatModel, ThreatModelAsset, AssetType
+
+    # 1. Direct link
+    direct = (
+        ThreatModel.query
+        .filter(
+            ThreatModel.context_scope_id == context.id,
+            ThreatModel.is_archived == False,  # noqa: E712
+        )
+        .all()
+    )
+    seen_ids: set[int] = {tm.id for tm in direct}
+
+    # 2. Via DPIA
+    dpia_ids = [
+        d.id
+        for comp in context.components
+        for d in comp.dpia_assessments
+    ]
+    via_dpia: list = []
+    if dpia_ids:
+        via_dpia = (
+            ThreatModel.query
+            .filter(
+                ThreatModel.dpia_id.in_(dpia_ids),
+                ThreatModel.is_archived == False,  # noqa: E712
+                ThreatModel.id.notin_(seen_ids),
+            )
+            .all()
+        )
+        seen_ids.update(tm.id for tm in via_dpia)
+
+    # 3. Asset name heuristic (backfill for pre-migration models)
+    component_names = [c.name for c in context.components]
+    via_assets: list = []
+    if component_names:
+        via_assets = (
+            ThreatModel.query
+            .join(ThreatModelAsset, ThreatModelAsset.threat_model_id == ThreatModel.id)
+            .filter(
+                ThreatModelAsset.asset_type == AssetType.COMPONENT,
+                ThreatModelAsset.name.in_(component_names),
+                ThreatModel.is_archived == False,  # noqa: E712
+                ThreatModel.id.notin_(seen_ids),
+            )
+            .distinct()
+            .all()
+        )
+
+    all_models = direct + via_dpia + via_assets
+    all_models.sort(key=lambda tm: tm.title)
+    return all_models
+
+
 # ---------------------------------------------------------------------------
 # Index
 # ---------------------------------------------------------------------------
@@ -146,6 +209,9 @@ def view(ssp_id: int):
     # DPIA check
     has_dpia = any(comp.dpia_assessments for comp in context.components)
 
+    # Threat models linked to this scope
+    threat_models = _collect_threat_models(context)
+
     return render_template(
         "ssp/view.html",
         ssp=ssp,
@@ -155,6 +221,7 @@ def view(ssp_id: int):
         controls_by_domain=controls_by_domain,
         risk_summary=risk_summary,
         has_dpia=has_dpia,
+        threat_models=threat_models,
     )
 
 
@@ -393,6 +460,9 @@ def export_pdf(ssp_id: int):
 
     has_dpia = any(comp.dpia_assessments for comp in context.components)
 
+    # Threat models linked to this scope
+    threat_models = _collect_threat_models(context)
+
     html_content = render_template(
         "ssp/print.html",
         ssp=ssp,
@@ -402,6 +472,7 @@ def export_pdf(ssp_id: int):
         controls_by_domain=controls_by_domain,
         risk_summary=risk_summary,
         has_dpia=has_dpia,
+        threat_models=threat_models,
         export_mode=True,
         export_css=_load_export_css(),
     )

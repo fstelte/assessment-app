@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_help %}
-{% block title %}Edit SSP — {{ ssp.context_scope.name }}{% endblock %}
+{% block title %}{{ _('ssp.edit.title') }} — {{ ssp.context_scope.name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto max-w-3xl px-4 sm:px-6 py-6">
   <div class="mb-6">
-    <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← Back to SSP</a>
-    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">Edit SSP Metadata</h1>
+    <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.edit.back') }}</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.edit.title') }}</h1>
     <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
   </div>
 
@@ -20,21 +20,21 @@
     {{ form.hidden_tag() }}
 
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
-      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Authorization Boundary</div>
+      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_boundary') }}</div>
       <div class="px-5 py-4">
         {{ form.authorization_boundary(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=4) }}
       </div>
     </div>
 
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
-      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Laws, Regulations & Policies</div>
+      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_laws') }}</div>
       <div class="px-5 py-4">
         {{ form.laws_regulations(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=6) }}
       </div>
     </div>
 
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
-      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Plan Dates</div>
+      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_dates') }}</div>
       <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           {{ form.plan_completion_date.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
@@ -48,7 +48,7 @@
     </div>
 
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
-      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">Continuous Monitoring</div>
+      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_monitoring') }}</div>
       <div class="px-5 py-4 flex flex-col gap-4">
         <div>
           {{ form.monitoring_kpis_kris.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
@@ -77,7 +77,7 @@
 
     <div class="flex gap-3">
       {{ form.submit(class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
-      <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">Cancel</a>
+      <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.edit.cancel') }}</a>
     </div>  </form>
 </div>
 {% endblock %}

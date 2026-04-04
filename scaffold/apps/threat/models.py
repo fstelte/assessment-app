@@ -105,9 +105,15 @@ class ThreatModel(TimestampMixin, db.Model):
         db.ForeignKey("dpia_assessments.id", ondelete="SET NULL"),
         nullable=True,
     )
+    context_scope_id = db.Column(
+        db.Integer,
+        db.ForeignKey("bia_context_scope.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     owner = db.relationship("User", foreign_keys=[owner_id])
     product = db.relationship("ThreatProduct", back_populates="models", foreign_keys=[product_id])
+    context_scope = db.relationship("ContextScope", foreign_keys=[context_scope_id])
     assets = db.relationship(
         "ThreatModelAsset",
         back_populates="threat_model",
