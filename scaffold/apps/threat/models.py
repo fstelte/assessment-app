@@ -231,6 +231,12 @@ class ThreatScenario(TimestampMixin, db.Model):
         back_populates="scenario",
         cascade="all, delete-orphan",
     )
+    risk_id = db.Column(
+        db.Integer,
+        db.ForeignKey("risk_items.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    linked_risk = db.relationship("Risk", foreign_keys=[risk_id])
 
 
 class ThreatFramework(TimestampMixin, db.Model):
