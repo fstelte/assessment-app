@@ -47,7 +47,7 @@ from .models import (
     ThreatScenario,
     TreatmentOption,
 )
-from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, user_choices
+from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, sync_scenario_to_risk, user_choices
 
 bp = Blueprint(
     "threat",
@@ -388,6 +388,7 @@ def scenario_new(model_id: int):
         _attach_controls(scenario, form)
         db.session.add(scenario)
         db.session.flush()
+        sync_scenario_to_risk(scenario)
         log_event(
             action="threat_scenario_created",
             entity_type="threat_scenario",
@@ -469,6 +470,7 @@ def scenario_edit(model_id: int, scenario_id: int):
         apply_risk_score(scenario)
         apply_residual_risk_score(scenario)
         _attach_controls(scenario, form)
+        sync_scenario_to_risk(scenario)
         log_event(
             action="threat_scenario_updated",
             entity_type="threat_scenario",
@@ -479,6 +481,28 @@ def scenario_edit(model_id: int, scenario_id: int):
         flash(_("threat.flash.scenario_updated"), "success")
         return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
     return render_template("threat/scenario_form.html", form=form, model=model, scenario=scenario)
+
+
+@bp.route("/<int:model_id>/scenarios/<int:scenario_id>/sync-risk", methods=["POST"])
+@login_required
+def scenario_sync_risk(model_id: int, scenario_id: int):
+    _require_access()
+    model = _get_model_or_404(model_id)
+    scenario = ThreatScenario.query.get_or_404(scenario_id)
+    if scenario.threat_model_id != model.id:
+        abort(404)
+    try:
+        sync_scenario_to_risk(scenario)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        flash(_("threat.flash.risk_sync_error").format(error=str(exc)), "danger")
+        return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
+    if scenario.risk_id:
+        flash(_("threat.flash.risk_synced"), "success")
+    else:
+        flash(_("threat.flash.risk_sync_skipped"), "info")
+    return redirect(url_for("threat.scenario_detail", model_id=model.id, scenario_id=scenario.id))
 
 
 @bp.route("/<int:model_id>/scenarios/<int:scenario_id>/delete", methods=["POST"])

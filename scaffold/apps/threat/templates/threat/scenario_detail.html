@@ -80,6 +80,10 @@ body[data-theme="dark"] .threat-panel {
         <a href="{{ url_for('threat.scenario_edit', model_id=model.id, scenario_id=scenario.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">
           {{ _("threat.scenario_detail.edit") }}
         </a>
+        <form method="post" action="{{ url_for('threat.scenario_sync_risk', model_id=model.id, scenario_id=scenario.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-blue-400 text-blue-400 hover:bg-blue-400/10">{{ _("threat.scenario_detail.sync_risk") }}</button>
+        </form>
         <form method="post" action="{{ url_for('threat.scenario_delete', model_id=model.id, scenario_id=scenario.id) }}"
               data-confirm="{{ _('threat.scenario_detail.confirm_delete') }}"
               onsubmit="return confirm(this.dataset.confirm)">
@@ -214,6 +218,22 @@ body[data-theme="dark"] .threat-panel {
         </div>
       </div>
     {% endif %}
+
+    <div class="detail-row">
+      <div class="detail-label">Risk workspace</div>
+      <div class="flex items-center gap-2">
+        {% if scenario.risk_id %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600 text-white">Linked (risk #{{ scenario.risk_id }})</span>
+          <a href="{{ url_for('risk.edit', risk_id=scenario.risk_id) }}" class="text-xs text-blue-400 hover:underline">View risk &rarr;</a>
+        {% else %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--color-surface-hover)] text-[var(--color-muted)]">Not linked</span>
+          <form method="post" action="{{ url_for('threat.scenario_sync_risk', model_id=model.id, scenario_id=scenario.id) }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-xs text-blue-400 hover:underline bg-transparent border-0 cursor-pointer p-0">Sync now</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
   </div>
 
   <!-- Mitigation Actions -->

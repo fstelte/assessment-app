@@ -346,6 +346,59 @@ def _register_cli_commands(app: Flask) -> None:
         _db.session.commit()
         click.echo(f"Seeded {created_fw} framework(s) and {created_entries} library entr{'y' if created_entries == 1 else 'ies'}.")
 
+    @app.cli.command("backfill-threat-risks")
+    @click.option("--dry-run", is_flag=True, default=False, help="Show what would happen without writing anything.")
+    def backfill_threat_risks(dry_run: bool) -> None:
+        """Sync existing threat scenarios (treatment=mitigate, active status) to the risk workspace."""
+
+        from .apps.threat.models import ScenarioStatus, ThreatScenario, TreatmentOption
+        from .apps.threat.services import sync_scenario_to_risk
+        from .extensions import db as _db
+
+        _EXCLUDED = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
+
+        # Fetch all non-archived scenarios and filter in Python to avoid
+        # SQLAlchemy non-native enum comparison issues with PostgreSQL.
+        all_scenarios = ThreatScenario.query.filter_by(is_archived=False).all()
+        click.echo(f"Found {len(all_scenarios)} non-archived scenario(s) total.")
+
+        created = 0
+        updated = 0
+        skipped = 0
+
+        for scenario in all_scenarios:
+            if scenario.treatment is not TreatmentOption.MITIGATE:
+                click.echo(
+                    f"  SKIP  [{scenario.id}] {scenario.title!r} "
+                    f"(treatment={scenario.treatment.value if scenario.treatment else 'none'})"
+                )
+                skipped += 1
+                continue
+
+            if scenario.status in _EXCLUDED:
+                click.echo(
+                    f"  SKIP  [{scenario.id}] {scenario.title!r} "
+                    f"(status={scenario.status.value})"
+                )
+                skipped += 1
+                continue
+
+            had_risk = scenario.risk_id is not None
+            if not dry_run:
+                sync_scenario_to_risk(scenario)
+            label = "UPDATE" if had_risk else "CREATE"
+            click.echo(f"  {label} [{scenario.id}] {scenario.title!r}")
+            if had_risk:
+                updated += 1
+            else:
+                created += 1
+
+        if not dry_run:
+            _db.session.commit()
+            click.echo(f"\nBackfill complete: {created} risk(s) created, {updated} risk(s) updated, {skipped} skipped.")
+        else:
+            click.echo(f"\nDry-run: {created} would be created, {updated} would be updated, {skipped} skipped.")
+
 
 @lru_cache(maxsize=1)
 def _load_app_metadata() -> dict[str, str]:

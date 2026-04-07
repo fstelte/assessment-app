@@ -683,6 +683,12 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     <div class="risk-actions__buttons">
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.create') }}">{{ _('New risk') }}</a>
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}#risk-list">{{ _('Refresh view') }}</a>
+      {% if current_user.has_role('admin') or current_user.has_role('assessment_manager') %}
+      <form method="post" action="{{ url_for('risk.sync_from_threats') }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-blue-400 text-blue-400 hover:bg-blue-400/10">{{ _('Sync from threats') }}</button>
+      </form>
+      {% endif %}
       {% if current_user.has_role('admin') %}
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400/10" href="{{ url_for('admin.risk_thresholds') }}">{{ _('Severity thresholds') }}</a>
       {% endif %}

@@ -105,6 +105,28 @@ def _resolve_components(form: RiskForm) -> list[Component] | None:
         return None
 
 
+def _resolve_components_for_edit(form: RiskForm) -> list[Component] | None:
+    """Like _resolve_components but also accepts ineligible components already in the form choices."""
+    try:
+        component_ids = [int(value) for value in form.component_ids.data]
+    except (TypeError, ValueError):
+        form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+        return None
+    if not component_ids:
+        form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+        return None
+    # Accept any component id that appears in the rendered choices (eligible + ineligible extras)
+    allowed_ids = {int(value) for value, _label in (form.component_ids.choices or [])}
+    if not all(cid in allowed_ids for cid in component_ids):
+        form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+        return None
+    components = Component.query.filter(Component.id.in_(component_ids)).all()
+    if not components:
+        form.component_ids.errors.append(_("admin.risks.errors.invalid_components"))
+        return None
+    return components
+
+
 def _resolve_controls(form: RiskForm) -> list[Control] | None:
     selected_ids = [value for value in (form.csa_control_ids.data or []) if value]
     if not selected_ids:
@@ -119,6 +141,35 @@ def _resolve_controls(form: RiskForm) -> list[Control] | None:
     except ValueError:
         form.csa_control_ids.errors.append(_("admin.risks.errors.invalid_controls"))
         return None
+
+
+@bp.route("/sync-from-threats", methods=["POST"])
+@login_required
+def sync_from_threats():
+    """Sync all eligible unlinked threat scenarios into the risk workspace."""
+    _require_risk_access()
+    from ..threat.models import ScenarioStatus, ThreatScenario, TreatmentOption
+    from ..threat.services import sync_scenario_to_risk
+
+    _EXCLUDED = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
+    scenarios = ThreatScenario.query.filter_by(is_archived=False).all()
+    created = 0
+    for scenario in scenarios:
+        if scenario.treatment is not TreatmentOption.MITIGATE:
+            continue
+        if scenario.status in _EXCLUDED:
+            continue
+        if scenario.risk_id is not None:
+            continue
+        sync_scenario_to_risk(scenario)
+        created += 1
+
+    db.session.commit()
+    if created:
+        flash(_("risk.flash.synced_from_threats").format(count=created), "success")
+    else:
+        flash(_("risk.flash.synced_from_threats_none"), "info")
+    return redirect(url_for("risk.dashboard"))
 
 
 @bp.route("/")
@@ -220,6 +271,29 @@ def edit(risk_id: int):
     if risk is None:
         abort(404)
 
+    # If this risk was synced from a threat scenario, keep chance/impact/components
+    # aligned with the latest scenario values.
+    from ..threat.models import ThreatScenario
+    from ..threat.services import _CHANCE_MAP, _IMPACT_MAP, _components_for_scenario
+    linked_scenario = ThreatScenario.query.filter_by(risk_id=risk_id).first()
+    if linked_scenario:
+        dirty = False
+        expected_chance = RiskChance(_CHANCE_MAP.get(linked_scenario.likelihood, "possible"))
+        expected_impact = RiskImpact(_IMPACT_MAP.get(linked_scenario.impact_score, "moderate"))
+        if risk.chance != expected_chance:
+            risk.chance = expected_chance
+            dirty = True
+        if risk.impact != expected_impact:
+            risk.impact = expected_impact
+            dirty = True
+        if not risk.components:
+            components_to_link = _components_for_scenario(linked_scenario)
+            if components_to_link:
+                risk.components = components_to_link
+                dirty = True
+        if dirty:
+            db.session.commit()
+
     form = RiskForm(obj=risk)
     configure_risk_form(form, extra_components=list(risk.components))
     form.submit.label.text = _("Save changes")
@@ -236,7 +310,7 @@ def edit(risk_id: int):
         form.ticket_url.data = risk.ticket_url or ""
 
     if form.validate_on_submit():
-        components = _resolve_components(form)
+        components = _resolve_components_for_edit(form)
         controls = _resolve_controls(form)
         if components and controls is not None:
             risk.title = (form.title.data or "").strip()

@@ -186,7 +186,9 @@
       "already_archived": "Risico is al gearchiveerd.",
       "reopened": "Risico \"{title}\" is heropend.",
       "already_open": "Risico is al actief.",
-      "deleted": "Risico \"{title}\" is verwijderd."
+      "deleted": "Risico \"{title}\" is verwijderd.",
+      "synced_from_threats": "{count} dreigingsscenario('s) gesynchroniseerd naar het risicoregister.",
+      "synced_from_threats_none": "Geen niet-gekoppelde dreigingsscenario's gevonden die kwalificeren (behandeling=Mitigeren, actieve status)."
     },
     "help": {
       "impact_areas": "Selecteer elk domein dat verstoring ondervindt wanneer dit risico zich voordoet.",
@@ -2723,6 +2725,7 @@
       "back": "Terug naar model",
       "edit": "Bewerken",
       "delete": "Verwijderen",
+      "sync_risk": "Synchroniseren met risicoregister",
       "confirm_delete": "Weet u zeker dat u dit scenario wilt verwijderen?",
       "risk_score": "Risicowaarde",
       "risk_level": "Risiconiveau",
@@ -2767,7 +2770,10 @@
       "asset_deleted": "Asset verwijderd.",
       "scenario_created": "Scenario aangemaakt.",
       "scenario_updated": "Scenario bijgewerkt.",
-      "scenario_deleted": "Scenario verwijderd."
+      "scenario_deleted": "Scenario verwijderd.",
+      "risk_synced": "Scenario gekoppeld aan risicoregister.",
+      "risk_sync_skipped": "Scenario niet gesynchroniseerd: behandeling moet Mitigeren zijn en status moet actief zijn.",
+      "risk_sync_error": "Synchronisatie mislukt: {error}"
     },
     "stride": {
       "spoofing": "Spoofing",

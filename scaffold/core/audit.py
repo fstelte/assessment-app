@@ -890,7 +890,7 @@ def _capture_insert(instance: Any, spec: ModelChangeSpec) -> PendingAuditChange:
     return PendingAuditChange(
         spec=spec,
         action="created",
-        entity_id=spec.resolve_identity(instance),
+        entity_id=None,  # deferred: resolved in _after_flush once the DB has assigned a PK
         changes=changes,
         metadata=metadata,
         instance_ref=instance,

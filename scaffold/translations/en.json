@@ -1814,7 +1814,9 @@
       "already_archived": "Risk already archived.",
       "reopened": "Risk \"{title}\" reopened.",
       "already_open": "Risk is already open.",
-      "deleted": "Risk \"{title}\" deleted."
+      "deleted": "Risk \"{title}\" deleted.",
+      "synced_from_threats": "{count} threat scenario(s) synced to the risk workspace.",
+      "synced_from_threats_none": "No unlinked threat scenarios found that qualify (treatment=Mitigate, active status)."
     },
     "help": {
       "impact_areas": "Select every domain that experiences disruption when this risk materialises.",
@@ -2653,6 +2655,7 @@
       "back": "Back to model",
       "edit": "Edit",
       "delete": "Delete",
+      "sync_risk": "Sync to risk workspace",
       "confirm_delete": "Are you sure you want to delete this scenario?",
       "risk_score": "Risk score",
       "risk_level": "Risk level",
@@ -2697,7 +2700,10 @@
       "asset_deleted": "Asset deleted.",
       "scenario_created": "Scenario created.",
       "scenario_updated": "Scenario updated.",
-      "scenario_deleted": "Scenario deleted."
+      "scenario_deleted": "Scenario deleted.",
+      "risk_synced": "Scenario linked to risk workspace.",
+      "risk_sync_skipped": "Scenario not synced: treatment must be Mitigate and status must be active.",
+      "risk_sync_error": "Sync failed: {error}"
     },
     "stride": {
       "spoofing": "Spoofing",

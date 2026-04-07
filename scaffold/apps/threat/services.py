@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import csv
 import io
+from datetime import UTC, date, datetime
 
 from ..identity.models import User
-from .models import RiskLevel, ScenarioStatus, StrideCategory, ThreatScenario
+from .models import RiskLevel, ScenarioStatus, StrideCategory, ThreatScenario, TreatmentOption
 
 
 RISK_LEVEL_MATRIX: dict[tuple[str, str], str] = {
@@ -116,3 +117,111 @@ def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
             ]
         )
     return output.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Risk workspace synchronisation
+# ---------------------------------------------------------------------------
+
+_EXCLUDED_STATUSES = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
+
+_CHANCE_MAP = {
+    1: "rare",
+    2: "unlikely",
+    3: "possible",
+    4: "likely",
+    5: "almost_certain",
+}
+
+_IMPACT_MAP = {
+    1: "insignificant",
+    2: "minor",
+    3: "moderate",
+    4: "major",
+    5: "catastrophic",
+}
+
+_TREATMENT_MAP = {
+    TreatmentOption.ACCEPT: "accept",
+    TreatmentOption.MITIGATE: "mitigate",
+    TreatmentOption.TRANSFER: "transfer",
+    TreatmentOption.AVOID: "avoid",
+}
+
+
+def _components_for_scenario(scenario: ThreatScenario) -> list:
+    """Return BIA components to link when syncing to the risk workspace.
+
+    Prefers eligible (risk-tracking enabled) components from the threat model's
+    context scope.  Falls back to all components in that scope if none are
+    eligible, so the risk can always be edited immediately.
+    """
+    from ..bia.models import Component
+    from ..risk.services import eligible_component_query
+
+    context_scope_id = (
+        scenario.threat_model.context_scope_id
+        if scenario.threat_model
+        else None
+    )
+    if not context_scope_id:
+        return []
+
+    eligible = (
+        eligible_component_query()
+        .filter(Component.context_scope_id == context_scope_id)
+        .all()
+    )
+    if eligible:
+        return eligible
+
+    # Fall back to all components in the scope; the edit form accepts them via extra_components
+    return Component.query.filter_by(context_scope_id=context_scope_id).all()
+
+
+def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
+    """Create, update, or close the linked Risk entry based on the scenario state.
+
+    When the scenario status is mitigated, accepted, or closed the linked risk
+    (if any) is closed.  For all other statuses the risk is created or kept in
+    sync with the scenario's inherent risk fields.
+    """
+    from ...extensions import db
+    from ..risk.models import Risk, RiskChance, RiskImpact, RiskTreatmentOption
+
+    if scenario.status in _EXCLUDED_STATUSES or scenario.treatment is not TreatmentOption.MITIGATE:
+        if scenario.risk_id:
+            risk = db.session.get(Risk, scenario.risk_id)
+            if risk and not risk.is_closed:
+                risk.closed_at = datetime.now(UTC)
+        return
+
+    likelihood = max(1, min(5, scenario.likelihood or 1))
+    impact = max(1, min(5, scenario.impact_score or 1))
+    treatment_str = _TREATMENT_MAP.get(scenario.treatment, "mitigate") if scenario.treatment else "mitigate"
+
+    fields: dict = {
+        "title": scenario.title,
+        "description": scenario.description or scenario.title,
+        "chance": RiskChance(str(_CHANCE_MAP[likelihood])),
+        "impact": RiskImpact(str(_IMPACT_MAP[impact])),
+        "treatment": RiskTreatmentOption(treatment_str),
+    }
+
+    if scenario.risk_id is None:
+        risk = Risk(discovered_on=date.today(), **fields)
+        risk.components = _components_for_scenario(scenario)
+        db.session.add(risk)
+        db.session.flush()
+        scenario.risk_id = risk.id
+    else:
+        risk = db.session.get(Risk, scenario.risk_id)
+        if risk:
+            for key, value in fields.items():
+                setattr(risk, key, value)
+            if risk.is_closed:
+                risk.closed_at = None
+            # Refresh components only if none are linked yet
+            if not risk.components:
+                risk.components = _components_for_scenario(scenario)
+
