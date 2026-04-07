@@ -60,8 +60,6 @@ bp = Blueprint(
 def _require_access() -> None:
     if not current_user.is_authenticated:
         abort(403)
-    if not (current_user.has_role(ROLE_ADMIN) or current_user.has_role(ROLE_ASSESSMENT_MANAGER)):
-        abort(403)
 
 
 def _get_model_or_404(model_id: int) -> ThreatModel:
