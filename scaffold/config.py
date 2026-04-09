@@ -87,6 +87,7 @@ class Settings:
     redis_url: str = ""
     server_side_sessions: bool = False
     session_lifetime_minutes: int = 120
+    field_encryption_keys: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -162,6 +163,7 @@ class Settings:
             redis_url=os.getenv("REDIS_URL", defaults.redis_url),
             server_side_sessions=_as_bool(os.getenv("SERVER_SIDE_SESSIONS")),
             session_lifetime_minutes=_int_env("SESSION_LIFETIME_MINUTES", defaults.session_lifetime_minutes),
+            field_encryption_keys=os.getenv("FIELD_ENCRYPTION_KEYS", defaults.field_encryption_keys),
         )
 
     def flask_config(self) -> dict[str, object]:

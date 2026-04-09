@@ -1,5 +1,13 @@
 import pytest
 import fakeredis
+import os
+
+# Ensure FIELD_ENCRYPTION_KEYS is set for all tests.
+# This is a test-only key — never use in production.
+os.environ.setdefault(
+    "FIELD_ENCRYPTION_KEYS",
+    "t3xLB2zXmQvP8kRdNwJsYeHfCaGpUiOb4lV7hM1nDgA=",
+)
 
 from scaffold import create_app
 from scaffold.config import Settings
@@ -33,6 +41,7 @@ def app():
             "scaffold.apps.risk.api",
             "scaffold.apps.risk.routes",
             "scaffold.apps.template",
+            "scaffold.apps.ssp",
         ],
         password_login_enabled=True,
     )

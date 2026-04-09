@@ -9,7 +9,14 @@
       <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.controls.page_title') }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
     </div>
-    <a href="{{ url_for('ssp.add_control_entry', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">{{ _('ssp.controls.add') }}</a>
+    <div class="flex items-center gap-2 shrink-0">
+      <a href="{{ url_for('ssp.add_control_entry', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">{{ _('ssp.controls.add') }}</a>
+      <form method="post" action="{{ url_for('ssp.sync_controls_from_threats', ssp_id=ssp.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ url_for('ssp.controls', ssp_id=ssp.id) }}">
+        <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-card)] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-text)] transition-colors">{{ _('ssp.controls.sync_from_threats') }}</button>
+      </form>
+    </div>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}

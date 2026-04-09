@@ -120,28 +120,89 @@ def seed_controls(ssp: "SSPlan") -> None:
 
     context = ssp.context_scope
 
+    from ..threat.models import ThreatModel
+    from ..dpia.models import DPIAAssessment
+
+    # --- ThreatScenario controls: path 1 — ThreatModel.context_scope_id (direct link) ---
+    direct_threat_models = ThreatModel.query.filter_by(context_scope_id=context.id).all()
+    for tm in direct_threat_models:
+        for scenario in tm.scenarios:
+            for control in scenario.controls:
+                _add_entry(control, ControlSource.THREAT)
+
+    # --- ThreatScenario controls: path 2 — via DPIA linked to components ---
+    dpia_ids = [
+        d.id
+        for component in context.components
+        for d in DPIAAssessment.query.filter_by(component_id=component.id).all()
+    ]
+    seen_direct_ids = {tm.id for tm in direct_threat_models}
+    if dpia_ids:
+        via_dpia_models = ThreatModel.query.filter(
+            ThreatModel.dpia_id.in_(dpia_ids),
+            ~ThreatModel.id.in_(seen_direct_ids) if seen_direct_ids else True,
+        ).all()
+        for tm in via_dpia_models:
+            for scenario in tm.scenarios:
+                for control in scenario.controls:
+                    _add_entry(control, ControlSource.THREAT)
+
     for component in context.components:
         # --- Controls from Risk items linked to this component ---
         for risk in component.risks:
             for control in risk.controls:
                 _add_entry(control, ControlSource.RISK)
 
-        # --- Controls from ThreatScenarios via DPIA link ---
-        from ..threat.models import ThreatModel, ThreatScenario
+
+# ---------------------------------------------------------------------------
+# Sync threat scenario controls to SSP minimum security controls
+# ---------------------------------------------------------------------------
+
+def sync_scenario_controls_to_ssp(scenario: object) -> None:
+    """Add controls from a ThreatScenario to the linked SSP as minimum security controls.
+
+    Resolves the SSP via the scenario's ThreatModel → ContextScope → SSPlan chain.
+    Only adds entries that do not already exist; never removes existing entries.
+    """
+    from .models import SSPControlEntry, ControlSource
+
+    threat_model = scenario.threat_model
+    if threat_model is None:
+        return
+
+    context_scope = threat_model.context_scope
+
+    # Fall back to DPIA → ContextScope when the direct FK is absent
+    if context_scope is None and threat_model.dpia_id is not None:
         from ..dpia.models import DPIAAssessment
 
-        # Find all DPIAs for this component
-        dpia_ids = [
-            d.id for d in DPIAAssessment.query.filter_by(component_id=component.id).all()
-        ]
-        if dpia_ids:
-            threat_models = ThreatModel.query.filter(
-                ThreatModel.dpia_id.in_(dpia_ids)
-            ).all()
-            for tm in threat_models:
-                for scenario in tm.scenarios:
-                    for control in scenario.controls:
-                        _add_entry(control, ControlSource.THREAT)
+        dpia = DPIAAssessment.query.get(threat_model.dpia_id)
+        if dpia is not None:
+            from ..bia.models import ContextScope as CS
+
+            context_scope = CS.query.filter_by(id=dpia.component.context_scope_id).first() if hasattr(dpia, "component") and dpia.component else None
+
+    if context_scope is None:
+        return
+
+    ssp = context_scope.ssp
+    if ssp is None:
+        return
+
+    existing_control_ids: set[int] = {
+        e.control_id
+        for e in SSPControlEntry.query.filter_by(ssp_id=ssp.id).with_entities(SSPControlEntry.control_id).all()
+    }
+
+    for control in scenario.controls:
+        if control.id not in existing_control_ids:
+            entry = SSPControlEntry(
+                ssp_id=ssp.id,
+                control_id=control.id,
+                source=ControlSource.THREAT,
+            )
+            db.session.add(entry)
+            existing_control_ids.add(control.id)
 
 
 # ---------------------------------------------------------------------------
@@ -176,3 +237,90 @@ def build_environment_summary(context_scope: "ContextScope") -> list[dict]:
                 })
 
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Sync a ThreatMitigationAction to the SSP POA&M
+# ---------------------------------------------------------------------------
+
+_MITIGATION_TO_POAM_STATUS = {
+    "proposed": "open",
+    "in_progress": "in_progress",
+    "implemented": "completed",
+    "verified": "completed",
+}
+
+
+def sync_mitigation_to_poam(action: object) -> None:
+    """Create or update a POA&M item in the SSP linked to a ThreatMitigationAction.
+
+    Resolves the SSP via action → scenario → ThreatModel → ContextScope → SSPlan.
+    Does nothing when no SSP is found for the associated context scope.
+    """
+    from .models import POAMItem, POAMStatus
+
+    scenario = action.scenario
+    if scenario is None:
+        return
+
+    threat_model = scenario.threat_model
+    if threat_model is None:
+        return
+
+    context_scope = threat_model.context_scope
+
+    # Fall back to DPIA → ContextScope when the direct FK is absent
+    if context_scope is None and threat_model.dpia_id is not None:
+        from ..dpia.models import DPIAAssessment
+
+        dpia = DPIAAssessment.query.get(threat_model.dpia_id)
+        if dpia is not None and hasattr(dpia, "component") and dpia.component:
+            from ..bia.models import ContextScope as CS
+
+            context_scope = CS.query.filter_by(id=dpia.component.context_scope_id).first()
+
+    if context_scope is None:
+        return
+
+    ssp = context_scope.ssp
+    if ssp is None:
+        return
+
+    # Map MitigationStatus → POAMStatus
+    status_value = _MITIGATION_TO_POAM_STATUS.get(
+        action.status.value if hasattr(action.status, "value") else str(action.status),
+        "open",
+    )
+    poam_status = POAMStatus(status_value)
+
+    # Resolve point of contact from assigned user
+    poc: str | None = None
+    if action.assigned_to is not None:
+        user = action.assigned_to
+        poc = getattr(user, "display_name", None) or getattr(user, "username", None) or getattr(user, "email", None)
+
+    # Build weakness description combining title and optional description
+    weakness = action.title
+    if action.description:
+        weakness = f"{action.title}\n\n{action.description}"
+
+    # Look for an existing POA&M item linked to this mitigation action
+    existing = POAMItem.query.filter_by(source_threat_mitigation_id=action.id).first()
+
+    if existing is not None:
+        existing.weakness_description = weakness
+        existing.point_of_contact = poc
+        existing.scheduled_completion = action.due_date
+        existing.resources_required = action.notes
+        existing.status = poam_status
+    else:
+        item = POAMItem(
+            ssp_id=ssp.id,
+            source_threat_mitigation_id=action.id,
+            weakness_description=weakness,
+            point_of_contact=poc,
+            scheduled_completion=action.due_date,
+            resources_required=action.notes,
+            status=poam_status,
+        )
+        db.session.add(item)

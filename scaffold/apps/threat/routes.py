@@ -48,6 +48,7 @@ from .models import (
     TreatmentOption,
 )
 from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, sync_scenario_to_risk, user_choices
+from ..ssp.services import sync_mitigation_to_poam, sync_scenario_controls_to_ssp
 
 bp = Blueprint(
     "threat",
@@ -387,6 +388,7 @@ def scenario_new(model_id: int):
         db.session.add(scenario)
         db.session.flush()
         sync_scenario_to_risk(scenario)
+        sync_scenario_controls_to_ssp(scenario)
         log_event(
             action="threat_scenario_created",
             entity_type="threat_scenario",
@@ -469,6 +471,7 @@ def scenario_edit(model_id: int, scenario_id: int):
         apply_residual_risk_score(scenario)
         _attach_controls(scenario, form)
         sync_scenario_to_risk(scenario)
+        sync_scenario_controls_to_ssp(scenario)
         log_event(
             action="threat_scenario_updated",
             entity_type="threat_scenario",
@@ -1038,6 +1041,7 @@ def mitigation_new(model_id: int, scenario_id: int):
         )
         db.session.add(action)
         db.session.flush()
+        sync_mitigation_to_poam(action)
         log_event(
             action="threat_mitigation_created",
             entity_type="threat_mitigation_action",
@@ -1079,6 +1083,7 @@ def mitigation_edit(model_id: int, scenario_id: int, action_id: int):
         action.assigned_to_id = int(form.assigned_to_id.data) if form.assigned_to_id.data else None
         action.due_date = form.due_date.data
         action.notes = form.notes.data
+        sync_mitigation_to_poam(action)
         log_event(
             action="threat_mitigation_updated",
             entity_type="threat_mitigation_action",

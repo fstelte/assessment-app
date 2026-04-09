@@ -2947,6 +2947,7 @@
       "no_controls": "No controls linked yet.",
       "no_controls_hint": "Controls are auto-seeded from Risk items and Threat Models when the SSP is created.",
       "add_manual": "Add Control Manually",
+      "sync_from_threats": "Sync from Threat Scenarios",
       "edit": "Edit",
       "no_controls_recorded": "No controls recorded."
     },

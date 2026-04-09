@@ -12,6 +12,7 @@ from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ...extensions import db
+from ...core.encryption import EncryptedJSON, EncryptedString
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import joinedload, validates
@@ -335,11 +336,11 @@ class MFASetting(TimestampMixin, db.Model):
         unique=True,
         nullable=False,
     )
-    secret = db.Column(db.String(64), nullable=False)
+    secret = db.Column(EncryptedString, nullable=False)
     enabled = db.Column(db.Boolean, default=False, nullable=False)
     enrolled_at = db.Column(db.DateTime(timezone=True))
     last_verified_at = db.Column(db.DateTime(timezone=True))
-    backup_codes = db.Column(db.JSON)
+    backup_codes = db.Column(EncryptedJSON)
 
     user = db.relationship("User", back_populates="mfa_setting")
 

@@ -3017,6 +3017,7 @@
       "no_controls": "Nog geen maatregelen gekoppeld.",
       "no_controls_hint": "Maatregelen worden automatisch aangemaakt vanuit Risicoitems en Dreigingsmodellen bij het aanmaken van het SSP.",
       "add_manual": "Maatregel handmatig toevoegen",
+      "sync_from_threats": "Synchroniseren vanuit dreigingsscenario's",
       "edit": "Bewerken",
       "no_controls_recorded": "Geen maatregelen vastgelegd."
     },
