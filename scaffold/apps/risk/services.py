@@ -109,10 +109,19 @@ def component_choice_label(component: Component) -> str:
     return f"{scope_name} - {component.name}"
 
 
-def component_choices() -> list[tuple[str, str]]:
-    """Return WTForms choices for eligible components."""
+def component_choices(context_scope_id: int | None = None) -> list[tuple[str, str]]:
+    """Return WTForms choices for eligible components.
 
-    return [(str(component.id), component_choice_label(component)) for component in list_eligible_components()]
+    When *context_scope_id* is given, only components that belong to that
+    context scope are included.
+    """
+
+    query = eligible_component_query().order_by(ContextScope.name.asc(), Component.name.asc()).options(
+        sa.orm.joinedload(Component.context_scope)
+    )
+    if context_scope_id is not None:
+        query = query.filter(Component.context_scope_id == context_scope_id)
+    return [(str(component.id), component_choice_label(component)) for component in query.all()]
 
 
 def control_choices(include_blank: bool = True) -> list[tuple[str, str]]:
@@ -219,11 +228,12 @@ def configure_risk_form(
     *,
     extra_components: list[Component] | None = None,
     ineligible_suffix: str | None = None,
+    context_scope_id: int | None = None,
 ) -> None:
     form.impact.choices = impact_choices()
     form.chance.choices = chance_choices()
     form.impact_areas.choices = impact_area_choices()
-    form.component_ids.choices = component_choices()
+    form.component_ids.choices = component_choices(context_scope_id=context_scope_id)
     form.treatment.choices = treatment_choices()
     form.treatment_owner_id.choices = treatment_owner_choices()
     if hasattr(form, "csa_control_ids"):

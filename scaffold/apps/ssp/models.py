@@ -225,6 +225,12 @@ class POAMItem(db.Model):
         db.ForeignKey("ssp_plans.id", ondelete="CASCADE"),
         nullable=False,
     )
+    source_threat_mitigation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_mitigation_actions.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
     weakness_description = db.Column(db.Text, nullable=False)
     resources_required = db.Column(db.Text, nullable=True)
     point_of_contact = db.Column(db.String(255), nullable=True)

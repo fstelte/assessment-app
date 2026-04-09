@@ -144,7 +144,7 @@ def _resolve_controls(form: RiskForm) -> list[Control] | None:
 @bp.route("/sync-from-threats", methods=["POST"])
 @login_required
 def sync_from_threats():
-    """Sync all eligible unlinked threat scenarios into the risk workspace."""
+    """Sync all eligible threat scenarios into the risk workspace (create or update)."""
     _require_risk_access()
     from ..threat.models import ScenarioStatus, ThreatScenario, TreatmentOption
     from ..threat.services import sync_scenario_to_risk
@@ -152,19 +152,22 @@ def sync_from_threats():
     _EXCLUDED = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
     scenarios = ThreatScenario.query.filter_by(is_archived=False).all()
     created = 0
+    updated = 0
     for scenario in scenarios:
         if scenario.treatment is not TreatmentOption.MITIGATE:
             continue
         if scenario.status in _EXCLUDED:
             continue
-        if scenario.risk_id is not None:
-            continue
+        was_new = scenario.risk_id is None
         sync_scenario_to_risk(scenario)
-        created += 1
+        if was_new:
+            created += 1
+        else:
+            updated += 1
 
     db.session.commit()
-    if created:
-        flash(_("risk.flash.synced_from_threats").format(count=created), "success")
+    if created or updated:
+        flash(_("risk.flash.synced_from_threats").format(count=created + updated), "success")
     else:
         flash(_("risk.flash.synced_from_threats_none"), "info")
     return redirect(url_for("risk.dashboard"))
@@ -289,11 +292,18 @@ def edit(risk_id: int):
             if components_to_link:
                 risk.components = components_to_link
                 dirty = True
+        else:
+            # Re-sync components to match current threat model assets.
+            refreshed = _components_for_scenario(linked_scenario)
+            if refreshed and set(c.id for c in refreshed) != set(c.id for c in risk.components):
+                risk.components = refreshed
+                dirty = True
         if dirty:
             db.session.commit()
 
     form = RiskForm(obj=risk)
-    configure_risk_form(form, extra_components=list(risk.components))
+    _threat_scope_id = linked_scenario.threat_model.context_scope_id if linked_scenario and linked_scenario.threat_model else None
+    configure_risk_form(form, extra_components=list(risk.components), context_scope_id=_threat_scope_id)
     form.submit.label.text = _("Save changes")
     component_choices_available = bool(form.component_ids.choices)
 

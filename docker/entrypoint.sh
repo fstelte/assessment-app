@@ -105,6 +105,7 @@ python /app/docker/render_maintenance.py
 python /app/docker/wait_for_db.py
 
 flask db upgrade
+flask encrypt-existing-secrets
 
 # Background cleaner: remove files and folders inside /app/exports older than 1 day,
 # run every 4 hours and emit timestamped logs to stdout/stderr so Docker captures them.

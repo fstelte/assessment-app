@@ -399,6 +399,36 @@ def _register_cli_commands(app: Flask) -> None:
         else:
             click.echo(f"\nDry-run: {created} would be created, {updated} would be updated, {skipped} skipped.")
 
+    @app.cli.command("encrypt-existing-secrets")
+    def encrypt_existing_secrets() -> None:
+        """Encrypt existing plaintext MFA secrets and backup codes (idempotent)."""
+
+        import json as _json
+        from .apps.identity.models import MFASetting
+        from .core.encryption import _load_fernet
+        from .extensions import db as _db
+
+        fernet = _load_fernet()
+        count = 0
+
+        for mfa in MFASetting.query.all():
+            changed = False
+            # Detect whether value is already Fernet ciphertext (starts with "gAAAAA")
+            if mfa.secret and not mfa.secret.startswith("gAAAAA"):
+                mfa.secret = fernet.encrypt(mfa.secret.encode()).decode()
+                changed = True
+
+            if mfa.backup_codes is not None and isinstance(mfa.backup_codes, list):
+                serialized = _json.dumps(mfa.backup_codes)
+                mfa.backup_codes = fernet.encrypt(serialized.encode()).decode()
+                changed = True
+
+            if changed:
+                count += 1
+
+        _db.session.commit()
+        click.echo(f"Encrypted: {count} MFASetting record(s).")
+
 
 @lru_cache(maxsize=1)
 def _load_app_metadata() -> dict[str, str]:

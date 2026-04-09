@@ -17,7 +17,7 @@ from .forms import POAMItemForm, POAMMilestoneForm, SSPControlEntryForm, SSPEdit
 from .models import FipsRating, POAMItem, POAMMilestone, POAMStatus, SSPControlEntry, SSPInterconnection, SSPlan
 from ..bia.utils import get_cia_impact
 from ..bia.routes import _load_export_css, _send_export_response
-from .services import build_environment_summary, seed_controls, seed_interconnections
+from .services import build_environment_summary, seed_controls, seed_interconnections, sync_scenario_controls_to_ssp
 
 
 def _safe_filename(name: str) -> str:
@@ -414,6 +414,55 @@ def add_control_entry(ssp_id: int):
         return redirect(url_for("ssp.controls", ssp_id=ssp.id))
 
     return render_template("ssp/add_control.html", ssp=ssp, available_controls=available_controls)
+
+
+@bp.route("/<int:ssp_id>/controls/sync-from-threats", methods=["POST"])
+@login_required
+def sync_controls_from_threats(ssp_id: int):
+    """Sync controls from all linked threat scenarios into the SSP."""
+    from ..threat.models import ThreatModel
+    from ..dpia.models import DPIAAssessment
+
+    ssp = _get_ssp_or_404(ssp_id)
+    context = ssp.context_scope
+
+    # Collect all threat models linked to this scope (direct + via DPIA)
+    direct = ThreatModel.query.filter_by(context_scope_id=context.id).all()
+    seen_ids = {tm.id for tm in direct}
+
+    dpia_ids = [
+        d.id
+        for comp in context.components
+        for d in DPIAAssessment.query.filter_by(component_id=comp.id).all()
+    ]
+    via_dpia = []
+    if dpia_ids:
+        via_dpia = ThreatModel.query.filter(
+            ThreatModel.dpia_id.in_(dpia_ids),
+            ~ThreatModel.id.in_(seen_ids) if seen_ids else True,
+        ).all()
+
+    all_threat_models = direct + via_dpia
+
+    count = 0
+    for tm in all_threat_models:
+        for scenario in tm.scenarios:
+            before = count
+            sync_scenario_controls_to_ssp(scenario)
+            # count approximate additions by re-checking (flush first)
+    db.session.flush()
+
+    # Count how many entries now have source=THREAT
+    from .models import ControlSource
+    count = SSPControlEntry.query.filter_by(ssp_id=ssp.id, source=ControlSource.THREAT).count()
+
+    db.session.commit()
+    flash(f"Synced threat controls — {count} threat-sourced control(s) now in this Security Plan.", "success")
+    next_page = request.form.get("next")
+    # Restrict redirect to relative paths only (prevent open redirect)
+    if next_page and next_page.startswith("/"):
+        return redirect(next_page)
+    return redirect(url_for("ssp.controls", ssp_id=ssp.id))
 
 
 # ---------------------------------------------------------------------------

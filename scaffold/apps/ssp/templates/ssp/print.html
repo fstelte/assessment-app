@@ -99,12 +99,11 @@
         </thead>
         <tbody class="divide-y divide-slate-800">
           {% for role, value in [
-            ("System Owner", context.author.full_name ~ " <" ~ context.author.email ~ ">" if context.author else "—"),
+            ("System Owner", context.risk_owner or "—"),
             ("Project Leader", context.project_leader or "—"),
-            ("Risk Owner", context.risk_owner or "—"),
             ("Product Owner", context.product_owner or "—"),
             ("Technical Administrator", context.technical_administrator or "—"),
-            ("ISSO / Security Manager", context.security_manager or "—"),
+            ("Security Manager", context.security_manager or "—"),
             ("Incident Contact", context.incident_contact or "—"),
           ] %}
           <tr>
