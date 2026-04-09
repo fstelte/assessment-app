@@ -325,29 +325,9 @@
     <div class="space-y-2">
       {% for entry in entries %}
       <div class="bg-[var(--color-surface)] rounded-lg p-3 border border-[var(--color-border)]">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-sm font-medium text-[var(--color-text)]">{{ entry.control.domain }}</p>
-            {% if entry.control.description %}
-            <p class="text-xs text-[var(--color-muted)] mt-0.5">{{ entry.control.description | truncate(120) }}</p>
-            {% endif %}
-          </div>
-          <div class="flex-shrink-0 flex gap-2 items-center">
-            {% set status = entry.implementation_status.value if entry.implementation_status else "planned" %}
-            {% if status == "implemented" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/15 text-green-500 border border-green-500/30">{{ _('ssp.status.implemented') }}</span>
-            {% elif status == "partially_implemented" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">{{ _('ssp.status.partial') }}</span>
-            {% elif status == "not_applicable" %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">{{ _('ssp.status.not_applicable') }}</span>
-            {% else %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">{{ _('ssp.status.planned') }}</span>
-            {% endif %}
-            <span class="text-xs text-[var(--color-muted)] capitalize">{{ entry.source.value }}</span>
-          </div>
-        </div>
-        {% if entry.implementation_statement %}
-        <p class="text-xs text-[var(--color-text)] mt-2 whitespace-pre-wrap border-t border-[var(--color-border)] pt-2">{{ entry.implementation_statement }}</p>
+        <p class="text-sm font-medium text-[var(--color-text)]">{{ entry.control.domain }}</p>
+        {% if entry.control.description %}
+        <p class="text-xs text-[var(--color-muted)] mt-0.5">{{ entry.control.description | truncate(120) }}</p>
         {% endif %}
       </div>
       {% endfor %}
