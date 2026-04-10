@@ -68,6 +68,13 @@ body[data-theme="dark"] .threat-form-panel {
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.65);
 }
+.controls-item:has(input:checked) {
+  background: rgba(99, 102, 241, 0.07);
+}
+.controls-item input[type="checkbox"] {
+  accent-color: #6366f1;
+  flex-shrink: 0;
+}
 </style>
 {% endblock %}
 {% block main_container_class %}container mx-auto max-w-4xl px-4 sm:px-6{% endblock %}
@@ -209,7 +216,47 @@ body[data-theme="dark"] .threat-form-panel {
         <div>{{ render_field_with_help(form.treatment) }}</div>
         <div>{{ render_field_with_help(form.status) }}</div>
         <div>{{ render_field_with_help(form.owner_id) }}</div>
-        <div class="md:col-span-2">{{ render_field_with_help(form.csa_control_ids) }}</div>
+        <div class="md:col-span-2">
+          <div class="mb-4">
+            <div class="flex items-center gap-2 mb-1.5">
+              <label class="block text-sm font-medium text-[var(--color-text)]">{{ form.csa_control_ids.label.text }}</label>
+              <span id="controls-badge" class="rounded-full bg-primary-600 text-white text-xs font-bold px-2 py-0.5 leading-none hidden">0</span>
+            </div>
+            <input type="text" id="controls-filter"
+                   placeholder="{{ _('Search controls\u2026') }}"
+                   autocomplete="off"
+                   class="w-full mb-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+            <div id="controls-panel"
+                 class="overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[var(--color-border)]"
+                 style="max-height:240px">
+              {% for value, label in form.csa_control_ids.choices %}
+                <label class="controls-item flex items-center gap-3 px-3.5 py-2 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors select-none"
+                       data-label="{{ label|lower }}">
+                  <input type="checkbox"
+                         name="{{ form.csa_control_ids.name }}"
+                         value="{{ value }}"
+                         {% if value in (form.csa_control_ids.data or []) %}checked{% endif %}
+                         class="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500 flex-shrink-0">
+                  <span class="text-sm text-[var(--color-text)]">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div id="controls-no-results" class="hidden text-sm text-[var(--color-muted)] mt-2 px-1">{{ _('No controls match your search.') }}</div>
+            {% if form.csa_control_ids.errors %}
+              <div class="text-red-400 text-xs mt-1">
+                {% for error in form.csa_control_ids.errors %}<div>{{ error }}</div>{% endfor %}
+              </div>
+            {% endif %}
+            {% if form.csa_control_ids.description %}
+              <details class="mt-1">
+                <summary class="text-xs text-primary-400 cursor-pointer">{{ _('Help') }}</summary>
+                <div class="text-sm text-[var(--color-muted)] mt-1 p-2 bg-[var(--color-surface)] rounded-md border border-[var(--color-border)]">
+                  {{ form.csa_control_ids.description }}
+                </div>
+              </details>
+            {% endif %}
+          </div>
+        </div>
       </div>
 
       <div class="flex gap-2 mt-4">
@@ -272,6 +319,39 @@ body[data-theme="dark"] .threat-form-panel {
 
   var currentMethod = document.getElementById('methodology_field').value || 'STRIDE';
   selectMethodology(currentMethod);
+
+  // Searchable checkbox panel for controls
+  (function () {
+    var filterInput = document.getElementById('controls-filter');
+    var badge = document.getElementById('controls-badge');
+    var noResults = document.getElementById('controls-no-results');
+
+    function updateBadge() {
+      var count = document.querySelectorAll('#controls-panel input[type="checkbox"]:checked').length;
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+
+    if (filterInput) {
+      filterInput.addEventListener('input', function () {
+        var q = this.value.toLowerCase();
+        var items = document.querySelectorAll('.controls-item');
+        var visible = 0;
+        items.forEach(function (item) {
+          var show = !q || item.dataset.label.indexOf(q) !== -1;
+          item.style.display = show ? '' : 'none';
+          if (show) visible++;
+        });
+        noResults.classList.toggle('hidden', visible > 0);
+      });
+    }
+
+    document.querySelectorAll('#controls-panel input[type="checkbox"]').forEach(function (cb) {
+      cb.addEventListener('change', updateBadge);
+    });
+
+    updateBadge();
+  }());
 })();
 </script>
 {% endblock %}

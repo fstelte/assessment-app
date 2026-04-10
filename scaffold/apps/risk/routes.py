@@ -298,6 +298,12 @@ def edit(risk_id: int):
             if refreshed and set(c.id for c in refreshed) != set(c.id for c in risk.components):
                 risk.components = refreshed
                 dirty = True
+        # Re-sync controls from the linked threat scenario.
+        scenario_control_ids = {c.id for c in linked_scenario.controls}
+        risk_control_ids = {c.id for c in risk.controls}
+        if scenario_control_ids != risk_control_ids:
+            risk.controls = list(linked_scenario.controls)
+            dirty = True
         if dirty:
             db.session.commit()
 

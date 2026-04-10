@@ -237,6 +237,11 @@ def edit(ssp_id: int):
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPEditForm(obj=ssp)
 
+    # Build auto-retrieved boundary items from the related BIA
+    context = ssp.context_scope
+    auto_components = [c.name for c in context.components if c.name]
+    auto_interconnections = [i.system_name for i in ssp.interconnections if i.system_name]
+
     if form.validate_on_submit():
         ssp.laws_regulations = form.laws_regulations.data
         ssp.authorization_boundary = form.authorization_boundary.data
@@ -261,13 +266,24 @@ def edit(ssp_id: int):
         flash("SSP updated.", "success")
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
-    # Pre-fill enum select values
+    # Pre-fill enum select values; auto-populate boundary from BIA when empty
     if request.method == "GET":
         form.fips_confidentiality.data = ssp.fips_confidentiality.value if ssp.fips_confidentiality else "not_set"
         form.fips_integrity.data = ssp.fips_integrity.value if ssp.fips_integrity else "not_set"
         form.fips_availability.data = ssp.fips_availability.value if ssp.fips_availability else "not_set"
 
-    return render_template("ssp/edit.html", ssp=ssp, form=form)
+        if not ssp.authorization_boundary:
+            all_auto = auto_components + auto_interconnections
+            if all_auto:
+                form.authorization_boundary.data = "\n".join(all_auto)
+
+    return render_template(
+        "ssp/edit.html",
+        ssp=ssp,
+        form=form,
+        auto_components=auto_components,
+        auto_interconnections=auto_interconnections,
+    )
 
 
 # ---------------------------------------------------------------------------

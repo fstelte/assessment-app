@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
 {% block title %}{{ _('ssp.edit_interconnection.title') }} — {{ ssp.context_scope.name }}{% endblock %}
 
 {% block content %}
@@ -13,16 +14,13 @@
       <form method="POST" novalidate>
         {{ form.hidden_tag() }}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          {% for field in [form.system_name, form.owning_organization, form.agreement_type, form.data_direction, form.security_contact] %}
-          <div>
-            {{ field.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ field(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-            {% for e in field.errors %}<p class="text-red-400 text-xs mt-1">{{ e }}</p>{% endfor %}
-          </div>
-          {% endfor %}
+          {{ render_field_with_help(form.system_name) }}
+          {{ render_field_with_help(form.owning_organization) }}
+          {{ render_field_with_help(form.agreement_type) }}
+          {{ render_field_with_help(form.data_direction) }}
+          {{ render_field_with_help(form.security_contact) }}
           <div class="sm:col-span-2">
-            {{ form.notes.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.notes(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=3) }}
+            {{ render_field_with_help(form.notes) }}
           </div>
         </div>
         <div class="flex gap-3">
