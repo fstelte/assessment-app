@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
 {% block title %}{% if item %}{{ _('ssp.poam_form.edit_title') }}{% else %}{{ _('ssp.poam_form.add_title') }}{% endif %} — {{ context.name }}{% endblock %}
 
 {% block content %}
@@ -32,40 +33,17 @@
 
       <div class="flex flex-col gap-4">
 
-        <div>
-          {{ form.weakness_description.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-          {{ form.weakness_description(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          {% if form.weakness_description.errors %}
-          <div class="text-xs mt-1 text-red-500">{{ form.weakness_description.errors | join(', ') }}</div>
-          {% endif %}
-        </div>
+        {{ render_field_with_help(form.weakness_description) }}
+        {{ render_field_with_help(form.resources_required) }}
 
-        <div>
-          {{ form.resources_required.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-          <p class="text-xs text-[var(--color-muted)] mb-1.5">{{ _('ssp.poam_form.resources_hint') }}</p>
-          {{ form.resources_required(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {{ render_field_with_help(form.point_of_contact) }}
+          {{ render_field_with_help(form.estimated_cost) }}
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            {{ form.point_of_contact.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.point_of_contact(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.estimated_cost.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.estimated_cost(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 4 person-days, €2,000") }}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            {{ form.scheduled_completion.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.scheduled_completion(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.status.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.status(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
+          {{ render_field_with_help(form.scheduled_completion) }}
+          {{ render_field_with_help(form.status) }}
         </div>
 
         <div class="flex justify-end gap-3 pt-2">

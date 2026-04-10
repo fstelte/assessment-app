@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
 {% block title %}{{ _('ssp.interconnections.title') }} — {{ ssp.context_scope.name }}{% endblock %}
 
 {% block content %}
@@ -61,31 +62,12 @@
       <form method="POST" novalidate>
         {{ form.hidden_tag() }}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            {{ form.system_name.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.system_name(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-            {% for e in form.system_name.errors %}<p class="text-red-400 text-xs mt-1">{{ e }}</p>{% endfor %}
-          </div>
-          <div>
-            {{ form.owning_organization.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.owning_organization(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.agreement_type.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.agreement_type(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.data_direction.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.data_direction(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.security_contact.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.security_contact(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            {{ form.notes.label(class="block text-sm font-medium text-[var(--color-text)] mb-1") }}
-            {{ form.notes(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2) }}
-          </div>
+          {{ render_field_with_help(form.system_name) }}
+          {{ render_field_with_help(form.owning_organization) }}
+          {{ render_field_with_help(form.agreement_type) }}
+          {{ render_field_with_help(form.data_direction) }}
+          {{ render_field_with_help(form.security_contact) }}
+          {{ render_field_with_help(form.notes) }}
         </div>
         {{ form.submit(class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
       </form>

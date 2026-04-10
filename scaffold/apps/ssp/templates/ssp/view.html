@@ -36,6 +36,22 @@
     </div>
   </div>
 
+  {# ── Quick Actions ── #}
+  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6 px-5 py-4">
+    <p class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-3">{{ _('ssp.view.quick_actions') }}</p>
+    <div class="flex flex-wrap gap-3">
+      <a href="{{ url_for('ssp.edit', ssp_id=ssp.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">
+        <i class="fas fa-pen-to-square text-primary-400 text-xs"></i> {{ _('ssp.view.edit_metadata') }}
+      </a>
+      <a href="{{ url_for('ssp.add_poam_item', ssp_id=ssp.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">
+        <i class="fas fa-plus text-primary-400 text-xs"></i> {{ _('ssp.view.add_poam_item') }}
+      </a>
+      <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">
+        <i class="fas fa-diagram-project text-primary-400 text-xs"></i> {{ _('ssp.view.interconnections') }}
+      </a>
+    </div>
+  </div>
+
   {% macro section_card(number, title) %}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6 break-inside-avoid">
     <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-3">

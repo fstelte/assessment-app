@@ -237,6 +237,7 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
     if scenario.risk_id is None:
         risk = Risk(discovered_on=date.today(), **fields)
         risk.components = _components_for_scenario(scenario)
+        risk.controls = list(scenario.controls)
         db.session.add(risk)
         db.session.flush()
         scenario.risk_id = risk.id
@@ -249,4 +250,6 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
                 risk.closed_at = None
             # Always keep components in sync with the threat model's assets.
             risk.components = _components_for_scenario(scenario)
+            # Keep controls in sync with the linked threat scenario.
+            risk.controls = list(scenario.controls)
 

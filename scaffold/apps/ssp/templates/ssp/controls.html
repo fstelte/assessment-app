@@ -50,8 +50,6 @@
               <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">{{ _('ssp.status.partial') }}</span>
             {% elif status == "not_applicable" %}
               <span class="px-2 py-0.5 rounded text-xs font-bold bg-[var(--color-muted)]/15 text-[var(--color-muted)] border border-[var(--color-border)]">{{ _('ssp.status.not_applicable') }}</span>
-            {% else %}
-              <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">{{ _('ssp.status.planned') }}</span>
             {% endif %}
             <a href="{{ url_for('ssp.edit_control_entry', ssp_id=ssp.id, entry_id=entry.id) }}" class="text-xs text-primary-500 hover:underline">{{ _('ssp.controls.edit') }}</a>
           </div>

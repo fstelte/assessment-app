@@ -78,6 +78,13 @@
   text-transform: none;
   letter-spacing: 0.02em;
 }
+.risk-controls-item:has(input:checked) {
+  background: rgba(99, 102, 241, 0.07);
+}
+.risk-controls-item input[type="checkbox"] {
+  accent-color: #6366f1;
+  flex-shrink: 0;
+}
 .risk-pill--low {
   background: var(--risk-emerald-500);
   border-color: rgba(16, 185, 129, 0.6);
@@ -235,8 +242,30 @@ body[data-theme="dark"] .risk-control-preview {
           {{ field_errors(form.treatment_plan) }}
         </div>
         <div data-control-wrapper>
-          <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.csa_control_ids.id }}">{{ form.csa_control_ids.label.text }}</label>
-          {{ form.csa_control_ids(class_="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", id=form.csa_control_ids.id, multiple=True) }}
+          <div class="flex items-center gap-2 mb-1.5">
+            <label class="block text-sm font-medium text-[var(--color-text)]" for="risk-controls-filter">{{ form.csa_control_ids.label.text }}</label>
+            <span id="risk-controls-badge" class="rounded-full bg-primary-600 text-white text-xs font-bold px-2 py-0.5 leading-none hidden">0</span>
+          </div>
+          <input type="text" id="risk-controls-filter"
+                 placeholder="{{ _('Search controls\u2026') }}"
+                 autocomplete="off"
+                 class="w-full mb-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <div id="risk-controls-panel"
+               class="overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[var(--color-border)]"
+               style="max-height:240px">
+            {% for value, label in form.csa_control_ids.choices %}
+              <label class="risk-controls-item flex items-center gap-3 px-3.5 py-2 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors select-none"
+                     data-label="{{ label|lower }}">
+                <input type="checkbox"
+                       name="{{ form.csa_control_ids.name }}"
+                       value="{{ value }}"
+                       {% if value in (form.csa_control_ids.data or []) %}checked{% endif %}
+                       class="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500">
+                <span class="text-sm text-[var(--color-text)]">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          <div id="risk-controls-no-results" class="hidden text-sm text-[var(--color-muted)] mt-2 px-1">{{ _('No controls match your search.') }}</div>
           <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('admin.risks.form.csa_help') }}</div>
           {{ field_errors(form.csa_control_ids) }}
         </div>
@@ -293,21 +322,59 @@ body[data-theme="dark"] .risk-control-preview {
   const mitigateValue = "{{ RiskTreatmentOption.MITIGATE.value }}";
   const treatmentField = document.getElementById("{{ form.treatment.id }}");
   const controlWrapper = document.querySelector('[data-control-wrapper]');
-  const controlField = document.getElementById("{{ form.csa_control_ids.id }}");
+  const filterInput = document.getElementById('risk-controls-filter');
+  const badge = document.getElementById('risk-controls-badge');
+  const noResults = document.getElementById('risk-controls-no-results');
+
+  function getCheckboxes() {
+    return document.querySelectorAll('#risk-controls-panel input[type="checkbox"]');
+  }
+
+  function updateBadge() {
+    const count = document.querySelectorAll('#risk-controls-panel input[type="checkbox"]:checked').length;
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+  }
 
   function syncControlField() {
-    if (!treatmentField || !controlWrapper || !controlField) {
+    if (!treatmentField || !controlWrapper) {
       return;
     }
     const shouldShow = treatmentField.value === mitigateValue;
     controlWrapper.style.display = shouldShow ? '' : 'none';
-    controlField.toggleAttribute('disabled', !shouldShow);
-    if (!shouldShow) {
-      Array.from(controlField.options).forEach((option) => {
-        option.selected = false;
+    getCheckboxes().forEach(function (cb) {
+      cb.disabled = !shouldShow;
+      if (!shouldShow) cb.checked = false;
+    });
+    if (!shouldShow && filterInput) {
+      filterInput.value = '';
+      document.querySelectorAll('.risk-controls-item').forEach(function (item) {
+        item.style.display = '';
       });
+      if (noResults) noResults.classList.add('hidden');
     }
+    updateBadge();
   }
+
+  if (filterInput) {
+    filterInput.addEventListener('input', function () {
+      const q = this.value.toLowerCase();
+      const items = document.querySelectorAll('.risk-controls-item');
+      let visible = 0;
+      items.forEach(function (item) {
+        const show = !q || item.dataset.label.indexOf(q) !== -1;
+        item.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (noResults) noResults.classList.toggle('hidden', visible > 0);
+    });
+  }
+
+  getCheckboxes().forEach(function (cb) {
+    cb.addEventListener('change', updateBadge);
+  });
 
   document.addEventListener('DOMContentLoaded', function () {
     syncControlField();
