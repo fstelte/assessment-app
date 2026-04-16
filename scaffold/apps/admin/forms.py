@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import HiddenField, IntegerField, StringField, SubmitField, TextAreaField
+from wtforms import HiddenField, IntegerField, PasswordField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp
 
 from scaffold.core.i18n import lazy_gettext as _l
@@ -132,3 +132,35 @@ class InformationLabelDeleteForm(FlaskForm):
 
     label_id = HiddenField(validators=[DataRequired()])
     submit = SubmitField("Delete")
+
+
+class BackupCreateForm(FlaskForm):
+    """Trigger an admin-initiated encrypted backup."""
+
+    custom_key = StringField(
+        _label("admin.backup.create.custom_key_label"),
+        validators=[Optional(), Length(max=512)],
+        render_kw={"placeholder": _l("admin.backup.create.custom_key_placeholder"), "autocomplete": "off"},
+    )
+    submit = SubmitField(_label("admin.backup.create.submit"))
+
+
+class BackupRestoreForm(FlaskForm):
+    """Upload a backup file for restore, with optional encryption key."""
+
+    backup_file = FileField(
+        _label("admin.backup.restore.file_label"),
+        validators=[
+            FileRequired(message=_message("admin.backup.restore.file_required")),
+            FileAllowed(
+                ["gz", "enc", "db", "sql", "dump"],
+                message=_message("admin.backup.restore.file_type"),
+            ),
+        ],
+    )
+    encryption_key = PasswordField(
+        _label("admin.backup.restore.key_label"),
+        validators=[Optional(), Length(max=128)],
+        description=_l("admin.backup.restore.key_help"),
+    )
+    submit = SubmitField(_label("admin.backup.restore.submit"))

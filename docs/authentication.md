@@ -220,3 +220,191 @@ users, manage MFA, or apply the same security posture outside the web routes.
    and confirm `/auth/login` redirects straight to SAML.
 4. Rotate the break-glass password again and document the event in the incident
   timeline.
+
+---
+
+## SCIM 2.0 Automated Provisioning
+
+SCIM (System for Cross-domain Identity Management, RFC 7643/7644) adds
+**push-based** lifecycle management on top of the SAML JIT flow. Entra ID calls
+the platform's SCIM endpoint to create, update, and deprovision users and groups
+automatically — even before a user ever logs in.
+
+SCIM **complements** SAML. SAML continues to handle authentication and
+session issuance; SCIM handles lifecycle events (create, disable, group
+membership changes).
+
+### Overview
+
+```
+Microsoft Entra ID  ──HTTPS SCIM 2.0 (Bearer token)──▶  /scim/v2/
+                                                             │
+                                                      Bearer token validated
+                                                      against scim_tokens table
+                                                             │
+                                                      Provisioner
+                                                       ├── User create/update/disable
+                                                       └── Group → AADGroupMapping
+                                                               └── Role assignment
+```
+
+### Step 1 — Run the Database Migration
+
+The SCIM feature requires two schema changes:
+
+- A new `scim_tokens` table to store hashed bearer tokens.
+- A `scim_display_name` column on `aad_group_mappings` to store human-readable
+  Entra group names received via SCIM.
+
+Apply the migration before enabling the connector:
+
+```bash
+flask --app scaffold:create_app db upgrade
+```
+
+### Step 2 — Generate a Bearer Token
+
+1. Sign in to the platform as an administrator.
+2. Navigate to **Admin → SCIM Tokens** (`/admin/scim/tokens`).
+3. Enter a description (e.g. `Entra SCIM connector`) and click **Generate Token**.
+4. **Copy the token immediately** — it is shown only once. The platform stores
+   only the SHA-256 hash; the raw value cannot be recovered.
+5. Keep the token in a secrets manager (key vault, Ansible vault, or equivalent).
+   Treat it as a long-lived credential with the same sensitivity as a service
+   account password.
+
+To revoke a token (e.g. after a rotation), return to the same page and click
+**Revoke**. The old token stops working immediately on the next request.
+
+### Step 3 — Configure the Entra ID Enterprise Application
+
+The SCIM connector is added to the **same** enterprise application that handles
+SAML SSO. Within the application:
+
+1. Go to **Provisioning** → set the provisioning mode to **Automatic**.
+2. Under **Admin Credentials**:
+   - **Tenant URL**: `https://<your-domain>/scim/v2`
+   - **Secret Token**: the value generated in Step 2.
+3. Click **Test Connection** to verify connectivity. Entra will call
+   `GET /scim/v2/ServiceProviderConfig` with the Bearer token.
+4. Under **Mappings**, enable both:
+   - **Provision Azure Active Directory Users**
+   - **Provision Azure Active Directory Groups**
+5. Configure **User attribute mappings** to align with the platform fields:
+
+   | Entra attribute | SCIM attribute |
+   |---|---|
+   | `objectId` | `id` (matching property) |
+   | `objectId` | `externalId` |
+   | `userPrincipalName` | `userName` |
+   | `mail` | `emails[type eq "work"].value` |
+   | `givenName` | `name.givenName` |
+   | `surname` | `name.familyName` |
+   | `accountEnabled` | `active` |
+
+6. Under **Scope**, set to **Assigned users and groups** so that only users
+   and groups explicitly assigned to the application are synced.
+7. Assign the groups that should have platform access to the enterprise
+   application.
+8. Save and set the provisioning status to **On**.
+
+### Step 4 — Map Groups to Roles
+
+Groups are registered automatically when Entra first pushes them. Until an
+administrator maps a group to a role, members are provisioned as active users
+but receive no role.
+
+**To map a group to a role:**
+
+1. Navigate to **Admin → SCIM Groups** (`/admin/scim/groups`) to see all groups
+   registered via SCIM and their `scim_display_name` (populated automatically
+   from Entra).
+2. The actual role assignment is managed in the **Entra Group Mapping** section
+   of the user administration panel. Find the group by its OID and select the
+   target platform role.
+
+Once mapped, all users Entra subsequently adds to that group (via
+`PATCH /scim/v2/Groups/{id}`) will automatically receive the corresponding role.
+Removing a user from the group in Entra removes the role immediately.
+
+### SCIM Endpoint Reference
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/scim/v2/ServiceProviderConfig` | Returns SP capabilities (used by Entra during test connection) |
+| `GET` | `/scim/v2/Schemas` | Schema discovery |
+| `GET` | `/scim/v2/Users` | List users; supports `filter=userName eq "…"` and `filter=externalId eq "…"` |
+| `POST` | `/scim/v2/Users` | Provision a new user |
+| `GET` | `/scim/v2/Users/{id}` | Fetch a user by Entra OID |
+| `PUT` | `/scim/v2/Users/{id}` | Replace all user attributes |
+| `PATCH` | `/scim/v2/Users/{id}` | Partial update (active, name, emails, userName) |
+| `DELETE` | `/scim/v2/Users/{id}` | Disable user and clear roles (no hard delete) |
+| `GET` | `/scim/v2/Groups` | List groups; supports `filter=externalId eq "…"` |
+| `POST` | `/scim/v2/Groups` | Register a group / upsert AADGroupMapping |
+| `GET` | `/scim/v2/Groups/{id}` | Fetch a group by OID |
+| `PUT` | `/scim/v2/Groups/{id}` | Replace group attributes and member list |
+| `PATCH` | `/scim/v2/Groups/{id}` | Add/remove members or update displayName |
+| `DELETE` | `/scim/v2/Groups/{id}` | Remove group mapping and revoke managed roles |
+
+All requests must include `Authorization: Bearer <token>`. CSRF protection is
+not applied to `/scim/v2/*` routes; authentication is handled entirely by the
+bearer token.
+
+### How SCIM and SAML Coexist
+
+| Event | SAML JIT (existing) | SCIM (new) |
+|---|---|---|
+| User added to Entra group | Nothing until first login | User provisioned immediately |
+| User logs in via SSO | Profile updated; roles synced | No action (user already exists) |
+| User removed from group in Entra | Role removed at next login | Role removed immediately |
+| `accountEnabled=false` in Entra | No effect until next login attempt | `active=false` PATCH → account disabled immediately |
+| Admin manually assigns a role | Persisted | Preserved; SCIM only touches roles it manages |
+
+### Security Considerations
+
+- **Token strength** — Tokens are 256-bit random strings generated with
+  `secrets.token_urlsafe(32)`. Only the SHA-256 hash is persisted; the raw
+  value is irrecoverable after the creation page is closed.
+- **HTTPS only** — The SCIM endpoint must be behind TLS. Never expose it over
+  plain HTTP; enforce this at the reverse proxy (nginx) level.
+- **Least privilege** — Scope the Entra provisioning credentials to the dedicated
+  enterprise application, not to a personal user account.
+- **Rate limiting** — SCIM routes are limited to 100 requests per minute per
+  source IP (via `flask-limiter`). Entra's provisioning service stays well within
+  this bound under normal operation.
+- **Audit trail** — Every provisioning action (user created, user disabled, role
+  assigned, role revoked, group registered, group deleted) is written to the
+  platform audit log. Review it at **Admin → Audit Trail**.
+- **No hard deletes** — `DELETE /scim/v2/Users/{id}` disables the account and
+  clears roles but never removes the database row, preserving audit history.
+
+### Troubleshooting
+
+- **Test Connection fails (401)** — Confirm the Secret Token in Entra matches
+  the value generated on the token management page. Tokens are case-sensitive.
+  Check that the token has not been revoked in **Admin → SCIM Tokens**.
+- **Test Connection fails (connection error)** — Verify `https://<your-domain>/scim/v2/ServiceProviderConfig`
+  is reachable from the internet (or from Entra's egress IPs). Check the nginx
+  reverse proxy configuration and any firewall rules.
+- **Users provisioned but have no role** — The group has been registered but
+  not yet mapped to a role. Complete Step 4 above. Once mapped, trigger a
+  re-sync in Entra (Provisioning → Provision on demand).
+- **Role not revoked when user removed from group** — Check the audit log for
+  `scim_role_revoked` entries. If absent, confirm the PATCH operation reached
+  the application by reviewing nginx access logs. Entra may retry failed
+  operations after a backoff period.
+- **Provisioning cycle stuck** — Entra's provisioning service can pause after
+  repeated errors. Review the provisioning logs in Entra (Provisioning →
+  Provisioning logs) and ensure the platform returned appropriate 2xx/4xx
+  responses rather than 5xx errors.
+- **Duplicate `scim_display_name` after group rename** — The display name is
+  updated whenever Entra sends a `PATCH /scim/v2/Groups/{id}` with
+  `op: replace, path: displayName`. If the name appears stale, trigger
+  **Provision on demand** for the affected group in Entra.
+
+### Rotate a SCIM Token
+
+1. Generate a new token in **Admin → SCIM Tokens** and copy its value.
+2. Update the **Secret Token** in the Entra provisioning configuration and save.
+3. Click **Test Connection** to confirm the new token is accepted.
+4. Return to **Admin → SCIM Tokens** and revoke the old token.

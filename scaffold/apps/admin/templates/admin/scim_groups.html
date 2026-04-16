@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}SCIM Group Mappings{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">SCIM Group Mappings</h1>
+    <p class="text-[var(--color-muted)] mb-0">Entra ID groups registered via SCIM provisioning and their role mappings.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.list_users') }}">Back to Admin</a>
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.scim_tokens') }}">SCIM Tokens</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-4 rounded-md px-4 py-3 text-sm
+      {% if category == 'error' or category == 'danger' %}bg-red-500/15 text-red-400 border border-red-500/30
+      {% elif category == 'success' %}bg-green-500/15 text-green-400 border border-green-500/30
+      {% elif category == 'warning' %}bg-yellow-500/15 text-yellow-400 border border-yellow-500/30
+      {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)]">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+      <tr>
+        <th class="px-4 py-3 font-semibold">Display Name</th>
+        <th class="px-4 py-3 font-semibold">Group OID</th>
+        <th class="px-4 py-3 font-semibold">Mapped Role</th>
+        <th class="px-4 py-3 font-semibold">Registered</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mapping in mappings %}
+      <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]">
+        <td class="px-4 py-3 text-[var(--color-text)] font-medium">{{ mapping.scim_display_name or '—' }}</td>
+        <td class="px-4 py-3 text-[var(--color-muted)] font-mono text-xs">{{ mapping.group_object_id }}</td>
+        <td class="px-4 py-3 text-[var(--color-text)]">
+          {% if mapping.role %}
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-500/15 text-blue-400">{{ mapping.role.name }}</span>
+          {% else %}
+            <span class="text-[var(--color-muted)]">Not mapped</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-[var(--color-muted)]">{{ mapping.created_at.strftime('%Y-%m-%d') if mapping.created_at else '—' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-4 py-6 text-center text-[var(--color-muted)]">No SCIM group mappings registered yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted)] text-sm">
+  <p>Groups are registered automatically when Entra ID pushes them via the SCIM connector. To assign a role to a group, configure the <strong>Entra Group Mapping</strong> in the user administration panel, or use the SCIM provisioning flow.</p>
+</div>
+{% endblock %}

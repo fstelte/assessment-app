@@ -21,8 +21,9 @@ COPY docker/backup/entrypoint.sh /app/entrypoint.sh
 COPY docker/s3_upload.py /app/s3_upload.py
 COPY docker/serve-status.py /app/serve-status.py
 COPY docker/healthcheck.sh /app/healthcheck.sh
+COPY docker/encrypt_backup.py /app/encrypt_backup.py
 
-RUN pip install --no-cache-dir boto3 || true
+RUN pip install --no-cache-dir boto3 cryptography || true
 RUN chmod +x /app/backup-db.sh /app/entrypoint.sh /app/healthcheck.sh
 
 EXPOSE 9090

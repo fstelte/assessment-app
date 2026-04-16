@@ -16,10 +16,15 @@ services:
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:-scaffold}:${POSTGRES_PASSWORD:-scaffold}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-scaffold}"
       FLASK_ENV: production
       REDIS_URL: "redis://redis:6379/0"
+      BACKUP_DIR: /backups
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      RESTORE_WATCH_DIR: /restore/incoming
     volumes:
       - ../instance:/app/instance
       #- ../migrations:/app/migrations
       - maintenance-page:/maintenance
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+      - ${RESTORE_HOST_DIR:-./restore}:/restore
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 10s

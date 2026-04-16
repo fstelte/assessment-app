@@ -15,7 +15,7 @@ WORKDIR /app
 COPY docker/restore/entrypoint.sh /app/entrypoint.sh
 COPY docker/restore/restore_db.py /app/restore_db.py
 
-RUN pip install --no-cache-dir docker \
+RUN pip install --no-cache-dir docker cryptography \
   && chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]

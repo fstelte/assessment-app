@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 from datetime import UTC, date, datetime
 import json
+from pathlib import Path
 
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
@@ -64,6 +67,8 @@ from .forms import (
     AuthenticationMethodDeleteForm,
     AuthenticationMethodForm,
     AuthenticationMethodToggleForm,
+    BackupCreateForm,
+    BackupRestoreForm,
     BiaTierForm,
     ControlCreateForm,
     ControlDeleteForm,
@@ -72,6 +77,15 @@ from .forms import (
     InformationLabelDeleteForm,
     InformationLabelForm,
     InformationLabelToggleForm,
+)
+from .backup_crypto import try_decrypt
+from .backup_utils import (
+    create_sqlite_backup,
+    create_postgres_backup,
+    get_backup_dir,
+    get_configured_key,
+    read_backup_status,
+    write_backup_status,
 )
 from ...core.audit import log_event
 from ...core.security import invalidate_user_sessions
@@ -1674,3 +1688,204 @@ def delete_information_label(label_id: int):
     db.session.commit()
     flash(_("admin.information_labels.flash.deleted", name=lbl_name), "success")
     return redirect(url_for("admin.list_information_labels"))
+
+
+# ---------------------------------------------------------------------------
+# Backup & Restore admin
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/backup")
+@login_required
+@require_fresh_login()
+def backup_dashboard():
+    _require_admin()
+    backup_dir = get_backup_dir(current_app)
+    status = read_backup_status(backup_dir)
+    has_env_key = bool(current_app.config.get("BACKUP_ENCRYPTION_KEY"))
+    create_form = BackupCreateForm()
+    return render_template(
+        "admin/backup.html",
+        status=status,
+        has_env_key=has_env_key,
+        create_form=create_form,
+    )
+
+
+@bp.route("/backup/create", methods=["POST"])
+@login_required
+@require_fresh_login()
+def create_backup():
+    _require_admin()
+    form = BackupCreateForm()
+    if not form.validate_on_submit():
+        abort(400)
+
+    backup_dir = get_backup_dir(current_app)
+    # Primary key: BACKUP_ENCRYPTION_KEY env var; custom key overrides if provided
+    env_key = current_app.config.get("BACKUP_ENCRYPTION_KEY") or None
+    custom_key = (form.custom_key.data or "").strip() or None
+    encryption_key = custom_key or env_key
+
+    db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    try:
+        if "sqlite" in db_uri:
+            backup_path = create_sqlite_backup(db_uri, backup_dir, encryption_key=encryption_key)
+        else:
+            backup_path = create_postgres_backup(db_uri, backup_dir, encryption_key=encryption_key)
+    except Exception as exc:
+        flash(_("admin.backup.create.error", error=str(exc)), "error")
+        return redirect(url_for("admin.backup_dashboard"))
+
+    write_backup_status(backup_dir, backup_path)
+    status = read_backup_status(get_backup_dir(current_app))
+    create_form = BackupCreateForm()
+    return render_template(
+        "admin/backup.html",
+        status=status,
+        has_env_key=bool(env_key),
+        create_form=create_form,
+        new_key=custom_key,  # Only shown when user provided/generated a custom key
+        new_backup_file=backup_path.name,
+    )
+
+
+@bp.route("/backup/restore", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def restore_backup():
+    _require_admin()
+    form = BackupRestoreForm()
+    if form.validate_on_submit():
+        from cryptography.fernet import InvalidToken
+
+        uploaded = form.backup_file.data
+        provided_key = form.encryption_key.data.strip() if form.encryption_key.data else None
+        configured_key = get_configured_key(current_app)
+
+        file_bytes = uploaded.read()
+        filename = uploaded.filename
+
+        if filename.endswith(".enc"):
+            keys_to_try = [k for k in [provided_key, configured_key] if k]
+            if not keys_to_try:
+                keys_to_try = [None]
+            try:
+                file_bytes = try_decrypt(file_bytes, keys_to_try + [None])
+                filename = filename[:-4]
+            except InvalidToken:
+                flash(_("admin.backup.restore.decrypt_failed"), "error")
+                return render_template("admin/backup_restore.html", form=form)
+
+        restore_dir = current_app.config.get("RESTORE_WATCH_DIR", "/restore/incoming")
+        dest = Path(restore_dir) / filename
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(file_bytes)
+        except Exception as exc:
+            flash(_("admin.backup.restore.write_error", error=str(exc)), "error")
+            return render_template("admin/backup_restore.html", form=form)
+
+        flash(_("admin.backup.restore.queued", filename=filename), "success")
+        return redirect(url_for("admin.backup_dashboard"))
+
+    return render_template("admin/backup_restore.html", form=form)
+
+
+# ---------------------------------------------------------------------------
+# SCIM Token & Group management admin
+# ---------------------------------------------------------------------------
+
+@bp.get("/scim/tokens")
+@login_required
+@require_fresh_login()
+def scim_tokens():
+    _require_admin()
+    from ..scim.models import SCIMToken
+    tokens = SCIMToken.query.order_by(SCIMToken.created_at.desc()).all()
+    return render_template("admin/scim_tokens.html", tokens=tokens, new_token=None)
+
+
+@bp.post("/scim/tokens/create")
+@login_required
+@require_fresh_login()
+def scim_token_create():
+    _require_admin()
+    from ..scim.models import SCIMToken
+
+    description = (request.form.get("description") or "").strip() or None
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+
+    token = SCIMToken(token_hash=token_hash, description=description, is_active=True)
+    db.session.add(token)
+    db.session.flush()
+    log_event(
+        action="scim_token_created",
+        entity_type="SCIMToken",
+        entity_id=token.id,
+        details={"description": description},
+    )
+    db.session.commit()
+
+    tokens = SCIMToken.query.order_by(SCIMToken.created_at.desc()).all()
+    flash(_("admin.scim.tokens.flash.created"), "success")
+    return render_template("admin/scim_tokens.html", tokens=tokens, new_token=raw_token)
+
+
+@bp.post("/scim/tokens/<int:token_id>/revoke")
+@login_required
+@require_fresh_login()
+def scim_token_revoke(token_id: int):
+    _require_admin()
+    from ..scim.models import SCIMToken
+
+    token = db.session.get(SCIMToken, token_id)
+    if token is None:
+        abort(404)
+    token.is_active = False
+    db.session.flush()
+    log_event(
+        action="scim_token_revoked",
+        entity_type="SCIMToken",
+        entity_id=token.id,
+        details={"description": token.description},
+    )
+    db.session.commit()
+    flash(_("admin.scim.tokens.flash.revoked"), "info")
+    return redirect(url_for("admin.scim_tokens"))
+
+
+@bp.post("/scim/tokens/<int:token_id>/delete")
+@login_required
+@require_fresh_login()
+def scim_token_delete(token_id: int):
+    _require_admin()
+    from ..scim.models import SCIMToken
+
+    token = db.session.get(SCIMToken, token_id)
+    if token is None:
+        abort(404)
+    db.session.delete(token)
+    log_event(
+        action="scim_token_deleted",
+        entity_type="SCIMToken",
+        entity_id=token_id,
+    )
+    db.session.commit()
+    flash(_("admin.scim.tokens.flash.deleted"), "info")
+    return redirect(url_for("admin.scim_tokens"))
+
+
+@bp.get("/scim/groups")
+@login_required
+@require_fresh_login()
+def scim_groups():
+    _require_admin()
+    from ..identity.models import AADGroupMapping
+    mappings = AADGroupMapping.query.options(sa.orm.joinedload(AADGroupMapping.role)).order_by(
+        AADGroupMapping.scim_display_name.asc()
+    ).all()
+    roles = Role.query.order_by(Role.name.asc()).all()
+    return render_template("admin/scim_groups.html", mappings=mappings, roles=roles)
+

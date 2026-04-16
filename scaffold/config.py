@@ -21,6 +21,7 @@ _DEFAULT_MODULES = [
     "scaffold.apps.tools",
     "scaffold.apps.threat",
     "scaffold.apps.ssp",
+    "scaffold.apps.scim",
 ]
 
 
@@ -88,6 +89,9 @@ class Settings:
     server_side_sessions: bool = False
     session_lifetime_minutes: int = 120
     field_encryption_keys: str = ""
+    backup_dir: str = field(default_factory=lambda: os.getenv("BACKUP_DIR", "/backups"))
+    backup_encryption_key: str | None = field(default_factory=lambda: os.getenv("BACKUP_ENCRYPTION_KEY") or None)
+    restore_watch_dir: str = field(default_factory=lambda: os.getenv("RESTORE_WATCH_DIR", "/restore/incoming"))
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -164,6 +168,9 @@ class Settings:
             server_side_sessions=_as_bool(os.getenv("SERVER_SIDE_SESSIONS")),
             session_lifetime_minutes=_int_env("SESSION_LIFETIME_MINUTES", defaults.session_lifetime_minutes),
             field_encryption_keys=os.getenv("FIELD_ENCRYPTION_KEYS", defaults.field_encryption_keys),
+            backup_dir=os.getenv("BACKUP_DIR", defaults.backup_dir),
+            backup_encryption_key=os.getenv("BACKUP_ENCRYPTION_KEY") or None,
+            restore_watch_dir=os.getenv("RESTORE_WATCH_DIR", defaults.restore_watch_dir),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -235,6 +242,9 @@ class Settings:
             "SESSION_COOKIE_SECURE": self.session_cookie_secure,
             "SESSION_COOKIE_HTTPONLY": self.session_cookie_httponly,
             "SESSION_COOKIE_SAMESITE": self.session_cookie_samesite,
+            "BACKUP_DIR": self.backup_dir,
+            "BACKUP_ENCRYPTION_KEY": self.backup_encryption_key,
+            "RESTORE_WATCH_DIR": self.restore_watch_dir,
         }
 
     def saml_allowed_groups(self) -> List[str]:
