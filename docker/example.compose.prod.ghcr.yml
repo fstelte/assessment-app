@@ -15,7 +15,6 @@ services:
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:-scaffold}:${POSTGRES_PASSWORD:-scaffold}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-scaffold}"
       FLASK_ENV: production
       BACKUP_DIR: /backups
-      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
       RESTORE_WATCH_DIR: /restore/incoming
     volumes:
       - ../instance:/app/instance

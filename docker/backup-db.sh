@@ -103,7 +103,8 @@ fi
 
 # --- Optional Encryption ---
 # Prefer BACKUP_ENCRYPTION_KEY env var, fall back to key file on shared volume
-ENC_KEY="${BACKUP_ENCRYPTION_KEY:-}"
+# Sanitize: strip quotes and carriage returns (Windows line endings in .env files)
+ENC_KEY=$(printf '%s' "${BACKUP_ENCRYPTION_KEY:-}" | tr -d '"\r')
 if [ -z "$ENC_KEY" ] && [ -f "$BACKUP_DIR/.encryption_key" ]; then
   ENC_KEY=$(cat "$BACKUP_DIR/.encryption_key" | tr -d '[:space:]')
 fi
