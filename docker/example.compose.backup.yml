@@ -12,9 +12,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-scaffold}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-scaffold}
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
-      - POSTGRES_PORT= ${POSTGRES_PORT:-5432}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-scaffold}
-      - DATABASE_URL="postgresql+psycopg://${POSTGRES_USER:-scaffold}:${POSTGRES_PASSWORD:-scaffold}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-scaffold}"
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-scaffold}:${POSTGRES_PASSWORD:-scaffold}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-scaffold}
       #- DATABASE_URL=${DATABASE_URL}
       - BACKUP_RETENTION_DAYS=2
       - BACKUP_INTERVAL_SECONDS=14400 # 4 hours

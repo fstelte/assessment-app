@@ -109,6 +109,7 @@ if [ -z "$ENC_KEY" ] && [ -f "$BACKUP_DIR/.encryption_key" ]; then
   ENC_KEY=$(cat "$BACKUP_DIR/.encryption_key" | tr -d '[:space:]')
 fi
 
+printf '%s - backup-db: DEBUG: ENC_KEY set=%s LAST_CREATED=%s\n' "$(timestamp)" "$([ -n "$ENC_KEY" ] && echo yes || echo no)" "${LAST_CREATED:-<unset>}"
 if [ -n "$ENC_KEY" ] && [ -n "${LAST_CREATED:-}" ]; then
   ENCRYPTED_FILE="${LAST_CREATED}.enc"
   if python /app/encrypt_backup.py "$LAST_CREATED" "$ENCRYPTED_FILE" "$ENC_KEY"; then
@@ -117,6 +118,9 @@ if [ -n "$ENC_KEY" ] && [ -n "${LAST_CREATED:-}" ]; then
     printf '%s - backup-db: encrypted -> %s\n' "$(timestamp)" "$ENCRYPTED_FILE"
   else
     printf '%s - backup-db: WARNING: encryption failed, keeping unencrypted file\n' "$(timestamp)" >&2
+    python /app/encrypt_backup.py "$LAST_CREATED" "$ENCRYPTED_FILE" "$ENC_KEY" 2>&1 | while IFS= read -r line; do
+      printf '%s - backup-db: encrypt error: %s\n' "$(timestamp)" "$line" >&2
+    done
   fi
 fi
 
