@@ -101,6 +101,24 @@ else
   fail "Unsupported or unknown DB URI scheme: $DB_URI"
 fi
 
+# --- Optional Encryption ---
+# Prefer BACKUP_ENCRYPTION_KEY env var, fall back to key file on shared volume
+ENC_KEY="${BACKUP_ENCRYPTION_KEY:-}"
+if [ -z "$ENC_KEY" ] && [ -f "$BACKUP_DIR/.encryption_key" ]; then
+  ENC_KEY=$(cat "$BACKUP_DIR/.encryption_key" | tr -d '[:space:]')
+fi
+
+if [ -n "$ENC_KEY" ] && [ -n "${LAST_CREATED:-}" ]; then
+  ENCRYPTED_FILE="${LAST_CREATED}.enc"
+  if python /app/encrypt_backup.py "$LAST_CREATED" "$ENCRYPTED_FILE" "$ENC_KEY"; then
+    rm -f "$LAST_CREATED"
+    LAST_CREATED="$ENCRYPTED_FILE"
+    printf '%s - backup-db: encrypted -> %s\n' "$(timestamp)" "$ENCRYPTED_FILE"
+  else
+    printf '%s - backup-db: WARNING: encryption failed, keeping unencrypted file\n' "$(timestamp)" >&2
+  fi
+fi
+
 # Retention: delete backups older than RETENTION_DAYS
 # Debug retention value
 printf '%s - backup-db: DEBUG: RETENTION_DAYS=%s\n' "$(timestamp)" "$RETENTION_DAYS"

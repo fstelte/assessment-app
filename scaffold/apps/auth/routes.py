@@ -314,6 +314,33 @@ def login_saml_acs():
     if name_id:
         saml_metadata["saml_name_id"] = name_id
 
+    # --- Reauthentication path ---
+    # If this SAML response was initiated by /auth/reauth, only refresh the
+    # login timestamp rather than issuing a completely new session.
+    reauth_next = session.pop("reauth_next", None)
+    if reauth_next:
+        # Verify the SAML identity matches the currently signed-in user
+        current_email = (current_user.email or "").lower()
+        saml_email = (email or "").lower()
+        saml_oid = object_id or ""
+        current_oid = (getattr(current_user, "azure_oid", None) or "").lower()
+        identity_matches = (
+            (saml_email and saml_email == current_email)
+            or (saml_oid and saml_oid.lower() == current_oid)
+        )
+        if identity_matches:
+            session["login_time"] = datetime.now(UTC).isoformat()
+            flash("Identity confirmed.", "success")
+            return redirect(reauth_next)
+        # Identity mismatch – deny and log out for safety
+        current_app.logger.warning(
+            "Reauth identity mismatch: expected %s, got %s",
+            current_email,
+            saml_email,
+        )
+        flash("Identity confirmation failed. Please log in again.", "danger")
+        return redirect(url_for("auth.logout"))
+
     finalise_login(user, remember=False, method="saml", metadata=saml_metadata)
     flash("Signed in with SAML.", "success")
     return redirect(url_for(LOGIN_REDIRECT_ENDPOINT))
@@ -635,6 +662,25 @@ def mfa_passkey_verify_complete():
     finalise_login(user, remember, method="passkey_verify")
     flash("Signed in with passkey.", "success")
     return jsonify({"success": True, "redirect": url_for(LOGIN_REDIRECT_ENDPOINT)})
+
+
+@bp.get("/reauth")
+@login_required
+def reauth():
+    """Trigger reauthentication via SAML before accessing a sensitive action."""
+    next_url = request.args.get("next") or url_for(LOGIN_REDIRECT_ENDPOINT)
+
+    settings = _get_saml_settings()
+    if settings is None:
+        # No SAML configured – fall back to a full password login
+        flash("Please log in again to continue.", "warning")
+        return redirect(url_for("auth.login", next=next_url))
+
+    session["reauth_next"] = next_url
+    auth = init_saml_auth(prepare_request(request), settings)
+    redirect_url = auth.login(force_authn=True)
+    session["saml_request_id"] = auth.get_last_request_id()
+    return redirect(redirect_url)
 
 
 @bp.route("/profile", methods=["GET", "POST"])

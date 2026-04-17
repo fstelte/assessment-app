@@ -1692,6 +1692,62 @@
       },
       "link_risk_management": "Risicobeheer"
     },
+    "backup": {
+      "nav_link": "Back-up & herstel",
+      "title": "Back-up & herstel",
+      "heading": "Back-up & herstel",
+      "subtitle": "Maak versleutelde back-ups en herstel de database.",
+      "link_back_to_admin": "Terug naar beheer",
+      "link_restore": "Back-up herstellen",
+      "status": {
+        "heading": "Back-upstatus",
+        "last_backup": "Laatste back-up",
+        "last_file": "Laatste bestand",
+        "files_heading": "Back-upbestanden",
+        "encrypted": "Versleuteld",
+        "no_files": "Geen back-upbestanden gevonden.",
+        "unavailable": "Nog geen statusinformatie beschikbaar."
+      },
+      "download": {
+        "btn": "Downloaden"
+      },
+      "create": {
+        "heading": "Versleutelde back-up maken",
+        "description": "Maakt een nieuwe back-up van de database. Als er een versleutelingssleutel via de omgeving is ingesteld, wordt deze automatisch gebruikt. U kunt ook hieronder een eigen sleutel opgeven.",
+        "key_configured": "Versleutelingssleutel geconfigureerd via omgevingsvariabele — wordt gebruikt tenzij u hieronder een eigen sleutel invoert.",
+        "no_key": "Geen versleutelingssleutel geconfigureerd in de omgeving. Voer hieronder een sleutel in om deze back-up te versleutelen, of laat leeg voor een onversleutelde back-up.",
+        "submit": "Nu back-up maken",
+        "error": "Back-up mislukt: {error}",
+        "custom_key_label": "Eigen versleutelingssleutel (optioneel)",
+        "custom_key_placeholder": "Leeg laten om de geconfigureerde omgevingssleutel te gebruiken",
+        "custom_key_help_env": "Leeg laten om de sleutel uit BACKUP_ENCRYPTION_KEY te gebruiken. Voer een andere sleutel in of genereer er een om alleen voor deze back-up te overschrijven.",
+        "custom_key_help_no_env": "Er is geen omgevingssleutel geconfigureerd. Voer een sleutel in of klik op Genereren. Leeg laten voor een onversleutelde back-up.",
+        "generate_key_btn": "Genereren"
+      },
+      "key": {
+        "warning_title": "Sla de versleutelingssleutel nu op",
+        "warning_body": "Deze sleutel wordt slechts eenmaal getoond. Sla hem op een veilige locatie op voordat u deze pagina verlaat. Zonder de sleutel kunt u versleutelde back-ups niet herstellen.",
+        "copy": "Kopiëren",
+        "copied": "Gekopieerd!",
+        "backup_created": "Back-upbestand: {filename}"
+      },
+      "restore": {
+        "title": "Back-up herstellen",
+        "heading": "Back-up herstellen",
+        "subtitle": "Upload een back-upbestand om het herstel in de wachtrij te zetten.",
+        "link_back": "Terug naar back-updashboard",
+        "file_label": "Back-upbestand",
+        "file_required": "Selecteer een back-upbestand.",
+        "file_type": "Niet-ondersteund bestandstype. Toegestaan: .gz, .enc, .db, .sql, .dump",
+        "key_label": "Versleutelingssleutel (optioneel)",
+        "key_help": "Als de back-up versleuteld is, voer dan de sleutel in die bij het aanmaken is gebruikt. Indien leeg gelaten, wordt automatisch de geconfigureerde sleutel geprobeerd.",
+        "key_placeholder": "Leeg laten om geconfigureerde sleutel te gebruiken",
+        "submit": "Uploaden & herstel plannen",
+        "decrypt_failed": "Ontsleuteling mislukt. Controleer de versleutelingssleutel en probeer het opnieuw.",
+        "write_error": "Het back-upbestand kon niet worden opgeslagen: {error}",
+        "queued": "Back-upbestand '{filename}' gepland voor herstel."
+      }
+    },
     "audit": {
       "title": "Auditlogboek",
       "heading": "Auditlogboek",

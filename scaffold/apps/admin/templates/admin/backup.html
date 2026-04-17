@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.backup.title') }}{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.backup.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.backup.subtitle') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.list_users') }}">{{ _('admin.backup.link_back_to_admin') }}</a>
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.restore_backup') }}">{{ _('admin.backup.link_restore') }}</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-4 rounded-md px-4 py-3 text-sm
+      {% if category == 'error' or category == 'danger' %}bg-red-500/15 text-red-400 border border-red-500/30
+      {% elif category == 'success' %}bg-green-500/15 text-green-400 border border-green-500/30
+      {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+{% if new_key %}
+<div class="mb-6 rounded-md border border-amber-500/40 bg-amber-400/10 px-5 py-4">
+  <div class="flex items-start gap-3">
+    <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <div class="flex-1">
+      <p class="font-semibold text-amber-300 mb-1">{{ _('admin.backup.key.warning_title') }}</p>
+      <p class="text-sm text-amber-200 mb-3">{{ _('admin.backup.key.warning_body') }}</p>
+      <div class="flex items-center gap-2 mb-2">
+        <code id="backup-key" class="block flex-1 rounded bg-black/30 px-3 py-2 font-mono text-xs text-amber-100 break-all select-all">{{ new_key }}</code>
+        <button type="button"
+                onclick="navigator.clipboard.writeText('{{ new_key }}').then(() => this.textContent = '{{ _('admin.backup.key.copied') }}')"
+                class="shrink-0 inline-flex items-center justify-center font-medium rounded-md px-3 py-2 text-xs transition-colors border border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
+          {{ _('admin.backup.key.copy') }}
+        </button>
+      </div>
+      {% if new_backup_file %}
+      <p class="text-xs text-amber-200/70">{{ _('admin.backup.key.backup_created', filename=new_backup_file) }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-2">
+  <!-- Backup status card -->
+  <div class="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5">
+    <h2 class="text-lg font-semibold mb-3">{{ _('admin.backup.status.heading') }}</h2>
+    {% if status %}
+      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm mb-4">
+        <dt class="text-[var(--color-muted)]">{{ _('admin.backup.status.last_backup') }}</dt>
+        <dd>{{ status.get('last_backup', '-') }}</dd>
+        <dt class="text-[var(--color-muted)]">{{ _('admin.backup.status.last_file') }}</dt>
+        <dd class="break-all">{{ status.get('last_file', '-') }}</dd>
+      </dl>
+      {% if status.get('backups') %}
+        <h3 class="text-sm font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-2">{{ _('admin.backup.status.files_heading') }}</h3>
+        <ul class="text-xs space-y-1 max-h-48 overflow-y-auto">
+          {% for f in status.backups %}
+            <li class="flex items-center gap-2">
+              {% if f.endswith('.enc') %}
+                <span class="inline-flex items-center text-xs font-semibold rounded-full px-2 py-0.5 bg-blue-500/20 text-blue-300">{{ _('admin.backup.status.encrypted') }}</span>
+              {% endif %}
+              <span class="font-mono break-all flex-1">{{ f }}</span>
+              <a href="{{ url_for('admin.download_backup', filename=f) }}"
+                 class="shrink-0 inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+                 title="{{ _('admin.backup.download.btn') }}">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+                </svg>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-[var(--color-muted)]">{{ _('admin.backup.status.no_files') }}</p>
+      {% endif %}
+    {% else %}
+      <p class="text-sm text-[var(--color-muted)]">{{ _('admin.backup.status.unavailable') }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Create backup card -->
+  <div class="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5">
+    <h2 class="text-lg font-semibold mb-1">{{ _('admin.backup.create.heading') }}</h2>
+    <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('admin.backup.create.description') }}</p>
+    {% if has_env_key %}
+      <div class="mb-3 rounded-md border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm text-blue-300">
+        {{ _('admin.backup.create.key_configured') }}
+      </div>
+    {% else %}
+      <div class="mb-3 rounded-md border border-amber-500/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-300">
+        {{ _('admin.backup.create.no_key') }}
+      </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.create_backup') }}">
+      {{ create_form.hidden_tag() }}
+      <div class="mb-4">
+        <label for="custom_key" class="block text-sm font-medium text-[var(--color-text)] mb-1">
+          {{ _('admin.backup.create.custom_key_label') }}
+        </label>
+        <p class="text-xs text-[var(--color-muted)] mb-2">
+          {% if has_env_key %}
+            {{ _('admin.backup.create.custom_key_help_env') }}
+          {% else %}
+            {{ _('admin.backup.create.custom_key_help_no_env') }}
+          {% endif %}
+        </p>
+        <div class="flex gap-2">
+          {{ create_form.custom_key(
+               id="custom_key",
+               class="flex-1 rounded-md border border-[var(--color-border)] bg-[var(--color-input)] px-3 py-2 text-sm font-mono text-[var(--color-text)] focus:outline-none focus:ring-1 focus:ring-primary-500"
+             ) }}
+          <button type="button"
+                  onclick="(function(){const b=crypto.getRandomValues(new Uint8Array(32));let s='';b.forEach(x=>s+=String.fromCharCode(x));document.getElementById('custom_key').value=btoa(s).replace(/\+/g,'-').replace(/\//g,'_');})()"
+                  class="shrink-0 inline-flex items-center justify-center font-medium rounded-md px-3 py-2 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+            {{ _('admin.backup.create.generate_key_btn') }}
+          </button>
+        </div>
+      </div>
+      {{ create_form.submit(
+           class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer"
+         ) }}
+    </form>
+  </div>
+</div>
+{% endblock %}

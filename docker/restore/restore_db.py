@@ -20,7 +20,7 @@ except Exception:  # pragma: no cover - docker client optional
     docker = None  # type: ignore[assignment]
     DockerException = Exception  # type: ignore[assignment]
 
-SUPPORTED_EXTENSIONS = {".sql", ".sql.gz", ".dump", ".dump.gz", ".db", ".db.gz"}
+SUPPORTED_EXTENSIONS = {".sql", ".sql.gz", ".dump", ".dump.gz", ".db", ".db.gz", ".db.gz.enc", ".sql.gz.enc"}
 
 
 def timestamp() -> str:
@@ -149,6 +149,44 @@ def start_containers(client: Optional[Any], names: Iterable[str]) -> None:
     if wait_after > 0:
         log(f"waiting {wait_after}s for services to stabilise")
         time.sleep(wait_after)
+
+
+def decrypt_if_needed(path: Path) -> Path:
+    """
+    If file ends in .enc, Fernet-decrypt it (trying BACKUP_ENCRYPTION_KEY env var,
+    then .encryption_key file in watch dir parent, then raise).
+    Returns path to decrypted temp file (caller must delete) or original path.
+    """
+    if not str(path).endswith(".enc"):
+        return path
+
+    from cryptography.fernet import Fernet, InvalidToken
+
+    data = path.read_bytes()
+    keys = []
+    env_key = os.getenv("BACKUP_ENCRYPTION_KEY", "").strip()
+    if env_key:
+        keys.append(env_key)
+    key_file = Path(os.getenv("RESTORE_WATCH_DIR", "/restore/incoming")).parent / ".encryption_key"
+    if key_file.exists():
+        file_key = key_file.read_text().strip()
+        if file_key and file_key not in keys:
+            keys.append(file_key)
+
+    for key in keys:
+        try:
+            decrypted = Fernet(key.encode()).decrypt(data)
+            # Write to temp file with the .enc extension stripped
+            suffix = path.name[:-4]  # strip .enc
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            tmp.write(decrypted)
+            tmp.close()
+            log(f"decrypted {path.name} -> {tmp.name}")
+            return Path(tmp.name)
+        except InvalidToken:
+            continue
+
+    raise RuntimeError(f"Could not decrypt {path}: no valid key found")
 
 
 def decompress_if_needed(path: Path) -> tuple[Path, bool]:
@@ -288,7 +326,14 @@ def select_candidates(watch_dir: Path) -> list[Path]:
     for path in watch_dir.glob("**/*"):
         if not path.is_file():
             continue
-        suffix = ''.join(path.suffixes[-2:]) if path.suffix == ".gz" else path.suffix
+        # Build suffix: up to last 3 suffixes to cover .db.gz.enc / .sql.gz.enc
+        all_suffixes = path.suffixes
+        if len(all_suffixes) >= 3:
+            suffix = ''.join(all_suffixes[-3:])
+        elif len(all_suffixes) >= 2:
+            suffix = ''.join(all_suffixes[-2:])
+        else:
+            suffix = path.suffix
         if suffix not in SUPPORTED_EXTENSIONS:
             continue
         files.append(path)
@@ -338,7 +383,12 @@ def main() -> None:
                 log(f"detected backup file {backup} (pending {len(pending)})")
                 stopped = stop_containers(client)
                 try:
-                    process_backup(db_uri, backup)
+                    work_path = decrypt_if_needed(backup)
+                    try:
+                        process_backup(db_uri, work_path)
+                    finally:
+                        if work_path != backup:
+                            work_path.unlink(missing_ok=True)
                     state["last_processed"] = {
                         "path": str(backup),
                         "mtime": backup.stat().st_mtime,

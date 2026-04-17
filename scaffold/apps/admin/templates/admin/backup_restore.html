@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.backup.restore.title') }}{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.backup.restore.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.backup.restore.subtitle') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.backup_dashboard') }}">{{ _('admin.backup.restore.link_back') }}</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-4 rounded-md px-4 py-3 text-sm
+      {% if category == 'error' or category == 'danger' %}bg-red-500/15 text-red-400 border border-red-500/30
+      {% elif category == 'success' %}bg-green-500/15 text-green-400 border border-green-500/30
+      {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="max-w-lg rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-6">
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.restore_backup') }}">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-4">
+      {{ form.backup_file.label(class="block text-sm font-medium mb-1") }}
+      {{ form.backup_file(
+           class="block w-full text-sm text-[var(--color-text)] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary-600 file:text-white hover:file:bg-primary-700 cursor-pointer",
+           accept=".gz,.enc,.db,.sql,.dump"
+         ) }}
+      {% for error in form.backup_file.errors %}
+        <div class="text-red-400 text-xs mt-1">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-5">
+      {{ form.encryption_key.label(class="block text-sm font-medium mb-1") }}
+      {{ form.encryption_key(
+           class="block w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30",
+           placeholder=_('admin.backup.restore.key_placeholder')
+         ) }}
+      {% if form.encryption_key.description %}
+        <p class="text-xs text-[var(--color-muted)] mt-1">{{ form.encryption_key.description }}</p>
+      {% endif %}
+      {% for error in form.encryption_key.errors %}
+        <div class="text-red-400 text-xs mt-1">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    {{ form.submit(
+         class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer"
+       ) }}
+  </form>
+</div>
+{% endblock %}

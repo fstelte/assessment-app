@@ -6,7 +6,11 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_VERSION=2.2.1
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl postgresql-client libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config \
+    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl gnupg lsb-release wget postgresql-client libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config \
+    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
     && rm -rf /var/lib/apt/lists/* \
     && pip install "poetry==$POETRY_VERSION" \
     && poetry config virtualenvs.create false

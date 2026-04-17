@@ -1434,6 +1434,62 @@
         }
       }
     },
+    "backup": {
+      "nav_link": "Backup & Restore",
+      "title": "Backup & Restore",
+      "heading": "Backup & Restore",
+      "subtitle": "Create encrypted backups and restore the database.",
+      "link_back_to_admin": "Back to admin",
+      "link_restore": "Restore a backup",
+      "status": {
+        "heading": "Backup status",
+        "last_backup": "Last backup",
+        "last_file": "Last file",
+        "files_heading": "Backup files",
+        "encrypted": "Encrypted",
+        "no_files": "No backup files found.",
+        "unavailable": "No status information available yet."
+      },
+      "download": {
+        "btn": "Download"
+      },
+      "create": {
+        "heading": "Create encrypted backup",
+        "description": "Creates a new backup of the database. If an encryption key is configured via the environment, it will be used automatically. You can also provide a custom key below.",
+        "key_configured": "Encryption key configured via environment — will be used unless you provide a custom key below.",
+        "no_key": "No encryption key configured in the environment. Enter a custom key below to encrypt this backup, or leave it empty to create an unencrypted backup.",
+        "submit": "Create backup now",
+        "error": "Backup failed: {error}",
+        "custom_key_label": "Custom encryption key (optional)",
+        "custom_key_placeholder": "Leave empty to use the configured environment key",
+        "custom_key_help_env": "Leave empty to use the key from BACKUP_ENCRYPTION_KEY. Enter or generate a different key to override for this backup only.",
+        "custom_key_help_no_env": "No environment key is configured. Enter a key or click Generate to create one. Leave empty for an unencrypted backup.",
+        "generate_key_btn": "Generate"
+      },
+      "key": {
+        "warning_title": "Save this encryption key now",
+        "warning_body": "This key is shown once. Save it in a secure location before leaving this page. Without it, you cannot restore encrypted backups.",
+        "copy": "Copy",
+        "copied": "Copied!",
+        "backup_created": "Backup file: {filename}"
+      },
+      "restore": {
+        "title": "Restore a backup",
+        "heading": "Restore a backup",
+        "subtitle": "Upload a backup file to queue it for restore.",
+        "link_back": "Back to backup dashboard",
+        "file_label": "Backup file",
+        "file_required": "Please select a backup file.",
+        "file_type": "Unsupported file type. Allowed: .gz, .enc, .db, .sql, .dump",
+        "key_label": "Encryption key (optional)",
+        "key_help": "If the backup is encrypted, enter the key used when it was created. If left empty, the configured encryption key will be tried automatically.",
+        "key_placeholder": "Leave empty to use configured key",
+        "submit": "Upload & queue restore",
+        "decrypt_failed": "Decryption failed. Please verify the encryption key and try again.",
+        "write_error": "Failed to save backup file: {error}",
+        "queued": "Backup file '{filename}' queued for restore."
+      }
+    },
     "audit": {
       "title": "Audit trail",
       "heading": "Audit trail",
