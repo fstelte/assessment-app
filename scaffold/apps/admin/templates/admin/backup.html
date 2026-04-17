@@ -70,7 +70,15 @@
               {% if f.endswith('.enc') %}
                 <span class="inline-flex items-center text-xs font-semibold rounded-full px-2 py-0.5 bg-blue-500/20 text-blue-300">{{ _('admin.backup.status.encrypted') }}</span>
               {% endif %}
-              <span class="font-mono break-all">{{ f }}</span>
+              <span class="font-mono break-all flex-1">{{ f }}</span>
+              <a href="{{ url_for('admin.download_backup', filename=f) }}"
+                 class="shrink-0 inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+                 title="{{ _('admin.backup.download.btn') }}">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+                </svg>
+              </a>
             </li>
           {% endfor %}
         </ul>

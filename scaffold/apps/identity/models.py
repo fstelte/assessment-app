@@ -156,7 +156,7 @@ class AADGroupMapping(TimestampMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     group_object_id = db.Column(db.String(255), unique=True, nullable=False)
-    role_id = db.Column(db.Integer, db.ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     scim_display_name = db.Column(db.String(255), nullable=True)
 
     role = db.relationship("Role", back_populates="aad_group_mappings")

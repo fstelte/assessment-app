@@ -1708,6 +1708,9 @@
         "no_files": "Geen back-upbestanden gevonden.",
         "unavailable": "Nog geen statusinformatie beschikbaar."
       },
+      "download": {
+        "btn": "Downloaden"
+      },
       "create": {
         "heading": "Versleutelde back-up maken",
         "description": "Maakt een nieuwe back-up van de database. Als er een versleutelingssleutel via de omgeving is ingesteld, wordt deze automatisch gebruikt. U kunt ook hieronder een eigen sleutel opgeven.",

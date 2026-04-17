@@ -84,6 +84,15 @@ class MFAVerifyForm(FlaskForm):
     submit = SubmitField(_label("auth.mfa.verify.submit"))
 
 
+class ReauthForm(FlaskForm):
+    password = PasswordField(
+        _label("auth.login.fields.password"),
+        validators=[DataRequired()],
+        render_kw={"autocomplete": "current-password"},
+    )
+    submit = SubmitField(_label("auth.login.actions.submit"))
+
+
 class ProfileForm(FlaskForm):
     first_name = StringField(_label("profile.fields.first_name"), validators=[Optional(), Length(max=120)])
     last_name = StringField(_label("profile.fields.last_name"), validators=[Optional(), Length(max=120)])

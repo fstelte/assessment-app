@@ -19,6 +19,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     url_for,
 )
 from ...core.i18n import gettext as _, get_locale
@@ -1792,6 +1793,28 @@ def restore_backup():
     return render_template("admin/backup_restore.html", form=form)
 
 
+@bp.route("/backup/download/<path:filename>")
+@login_required
+@require_fresh_login()
+def download_backup(filename):
+    _require_admin()
+    backup_dir = get_backup_dir(current_app)
+    # Resolve and validate to prevent path traversal
+    try:
+        target = (backup_dir / filename).resolve()
+        backup_dir_resolved = backup_dir.resolve()
+        if not str(target).startswith(str(backup_dir_resolved) + "/") and target != backup_dir_resolved:
+            abort(400)
+    except Exception:
+        abort(400)
+    if not target.is_file():
+        abort(404)
+    # Block serving internal metadata files
+    if target.name in {"backup-status.json", ".encryption_key"}:
+        abort(403)
+    return send_file(target, as_attachment=True, download_name=target.name)
+
+
 # ---------------------------------------------------------------------------
 # SCIM Token & Group management admin
 # ---------------------------------------------------------------------------
@@ -1888,4 +1911,38 @@ def scim_groups():
     ).all()
     roles = Role.query.order_by(Role.name.asc()).all()
     return render_template("admin/scim_groups.html", mappings=mappings, roles=roles)
+
+
+@bp.post("/scim/groups/<int:mapping_id>/assign-role")
+@login_required
+@require_fresh_login()
+def scim_group_assign_role(mapping_id: int):
+    _require_admin()
+    from ..identity.models import AADGroupMapping
+    mapping = AADGroupMapping.query.get_or_404(mapping_id)
+    role_id = request.form.get("role_id", "").strip()
+    if role_id:
+        role = Role.query.get(int(role_id))
+        if role is None:
+            flash("Role not found.", "danger")
+            return redirect(url_for("admin.scim_groups"))
+        mapping.role_id = role.id
+        log_event(
+            action="scim_group_role_assigned",
+            entity_type="AADGroupMapping",
+            entity_id=mapping.group_object_id,
+            details={"role": role.name},
+        )
+        flash(f"Role '{role.name}' assigned to group.", "success")
+    else:
+        mapping.role_id = None
+        log_event(
+            action="scim_group_role_removed",
+            entity_type="AADGroupMapping",
+            entity_id=mapping.group_object_id,
+            details={},
+        )
+        flash("Role mapping removed from group.", "success")
+    db.session.commit()
+    return redirect(url_for("admin.scim_groups"))
 

@@ -73,15 +73,13 @@ def require_fresh_login(max_age_minutes: int = 30) -> Callable[[T], T]:
 
             login_time_iso = session.get("login_time")
             if not login_time_iso:
-                flash("This action requires recent authentication. Please log in again.", "warning")
-                return redirect(url_for("auth.login", next=request.url))
+                return redirect(url_for("auth.reauth", next=request.url))
 
             login_time = datetime.fromisoformat(login_time_iso)
             if login_time.tzinfo is None:
                 login_time = login_time.replace(tzinfo=UTC)
             if datetime.now(UTC) - login_time > timedelta(minutes=max_age_minutes):
-                flash("This action requires recent authentication. Please log in again.", "warning")
-                return redirect(url_for("auth.login", next=request.url))
+                return redirect(url_for("auth.reauth", next=request.url))
 
             return func(*args, **kwargs)
 

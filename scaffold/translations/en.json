@@ -1450,6 +1450,9 @@
         "no_files": "No backup files found.",
         "unavailable": "No status information available yet."
       },
+      "download": {
+        "btn": "Download"
+      },
       "create": {
         "heading": "Create encrypted backup",
         "description": "Creates a new backup of the database. If an encryption key is configured via the environment, it will be used automatically. You can also provide a custom key below.",

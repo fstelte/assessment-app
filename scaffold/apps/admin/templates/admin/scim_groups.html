@@ -34,6 +34,7 @@
         <th class="px-4 py-3 font-semibold">Group OID</th>
         <th class="px-4 py-3 font-semibold">Mapped Role</th>
         <th class="px-4 py-3 font-semibold">Registered</th>
+        <th class="px-4 py-3 font-semibold">Assign Role</th>
       </tr>
     </thead>
     <tbody>
@@ -49,10 +50,22 @@
           {% endif %}
         </td>
         <td class="px-4 py-3 text-[var(--color-muted)]">{{ mapping.created_at.strftime('%Y-%m-%d') if mapping.created_at else '—' }}</td>
+        <td class="px-4 py-3">
+          <form method="post" action="{{ url_for('admin.scim_group_assign_role', mapping_id=mapping.id) }}" class="flex items-center gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="role_id" class="text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] px-2 py-1">
+              <option value="">— None —</option>
+              {% for role in roles %}
+              <option value="{{ role.id }}" {% if mapping.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1 text-sm transition-colors bg-blue-600 hover:bg-blue-500 text-white">Save</button>
+          </form>
+        </td>
       </tr>
       {% else %}
       <tr>
-        <td colspan="4" class="px-4 py-6 text-center text-[var(--color-muted)]">No SCIM group mappings registered yet.</td>
+        <td colspan="5" class="px-4 py-6 text-center text-[var(--color-muted)]">No SCIM group mappings registered yet.</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -60,6 +73,6 @@
 </div>
 
 <div class="mt-4 p-4 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-muted)] text-sm">
-  <p>Groups are registered automatically when Entra ID pushes them via the SCIM connector. To assign a role to a group, configure the <strong>Entra Group Mapping</strong> in the user administration panel, or use the SCIM provisioning flow.</p>
+  <p>Groups are registered automatically when Entra ID pushes them via the SCIM connector. Use the <strong>Assign Role</strong> dropdown above to map a group to a platform role. Once mapped, all members Entra adds to the group will automatically receive that role.</p>
 </div>
 {% endblock %}
