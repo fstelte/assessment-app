@@ -198,7 +198,7 @@ body[data-theme="dark"] .risk-control-preview {
           {# Plural ticket links editor (US4) #}
           <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('risk.ticket.links_label') }}</label>
           <div id="ticket-links-container" class="space-y-2 mb-2">
-            {% set existing_links = (risk.ticket_links if risk and risk.ticket_links) else [] %}
+            {% set existing_links = risk.ticket_links if risk and risk.ticket_links else [] %}
             {% if existing_links %}
               {% for link in existing_links %}
                 <div class="ticket-link-row flex gap-2 items-center">

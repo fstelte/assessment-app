@@ -263,6 +263,33 @@ def test_risk_create_with_two_ticket_links(client, app, admin_user):
         assert links[1].label == "GH-55"
 
 
+def test_risk_edit_page_renders_existing_ticket_links(client, app, admin_user):
+    """Edit page renders existing ticket links without template errors."""
+    component_id = _seed_component(app)
+    control_id = _seed_control(app)
+    _seed_thresholds(app)
+    _login(client, admin_user.email)
+
+    payload = _build_risk_payload(component_id, control_id, admin_user.id)
+    payload.update({
+        "title": "Render edit risk",
+        "ticket_label_0": "JIRA-150",
+        "ticket_url_0": "https://jira.example.com/browse/JIRA-150",
+    })
+    client.post("/risk/new", data=payload, follow_redirects=False)
+
+    with app.app_context():
+        risk = Risk.query.filter_by(title="Render edit risk").first()
+        assert risk is not None
+        risk_id = risk.id
+
+    response = client.get(f"/risk/{risk_id}/edit")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "JIRA-150" in html
+    assert "https://jira.example.com/browse/JIRA-150" in html
+
+
 def test_risk_edit_replaces_ticket_links(client, app, admin_user):
     """Editing a risk replaces ticket links with the submitted set."""
     from scaffold.apps.risk.models import RiskTicketLink
