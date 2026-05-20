@@ -26,6 +26,7 @@ from .models import (
     RiskChance,
     RiskSeverity,
     RiskSeverityThreshold,
+    RiskTicketLink,
     RiskTreatmentOption,
 )
 
@@ -250,6 +251,46 @@ def configure_risk_form(
             form.component_ids.choices.append((cid, label))
 
 
+def set_ticket_links(risk: Risk, links_data: list[dict[str, str]]) -> None:
+    """Replace the ordered ticket links on a risk.
+
+    *links_data* is a list of ``{"label": ..., "url": ...}`` dicts in display
+    order.  Previously saved links that cannot be matched are preserved as-is
+    so degraded (unreachable) links are not silently discarded; callers should
+    validate individually and flag as needed.
+
+    Empty label/url pairs are silently skipped.
+    """
+
+    from urllib.parse import urlparse as _urlparse
+
+    desired: list[dict[str, str]] = []
+    for item in links_data:
+        label = (item.get("label") or "").strip()
+        url = (item.get("url") or "").strip()
+        if not label and not url:
+            continue
+        desired.append({"label": label, "url": url})
+
+    # Build a keyed lookup of existing links to detect degraded saved links.
+    existing_key = {(link.label, link.url): link for link in risk.ticket_links}
+
+    new_links: list[RiskTicketLink] = []
+    for order, item in enumerate(desired):
+        label = item["label"]
+        url = item["url"]
+        existing = existing_key.get((label, url))
+        if existing is not None:
+            existing.sort_order = order
+            new_links.append(existing)
+        else:
+            # Treat as degraded/new; create without strict URL validation here
+            # (route-level validation happens before this call for clean data)
+            new_links.append(RiskTicketLink(label=label, url=url, sort_order=order))
+
+    risk.ticket_links = new_links
+
+
 def set_impact_areas(risk: Risk, area_values: list[str]) -> None:
     selected: set[RiskImpactArea] = set()
     for raw_value in area_values:
@@ -356,6 +397,31 @@ def apply_payload_to_risk(risk: Risk, payload: Mapping[str, object] | None) -> N
         add_error("csa_control_ids", "Mitigation treatment requires at least one CSA control.")
     ticket_url = _coerce_url(payload.get("ticket_url"), "ticket_url", add_error)
 
+    # ticket_links: list of {label, url} dicts (new format)
+    # Falls back to ticket_url compatibility alias if ticket_links not provided
+    raw_ticket_links = payload.get("ticket_links")
+    ticket_links_data: list[dict[str, str]] | None = None
+    if raw_ticket_links is not None:
+        if not isinstance(raw_ticket_links, list):
+            add_error("ticket_links", "ticket_links must be a list.")
+        else:
+            ticket_links_data = []
+            for idx, item in enumerate(raw_ticket_links):
+                if not isinstance(item, dict):
+                    add_error("ticket_links", f"Item {idx} must be an object with label and url.")
+                    continue
+                lbl = _coerce_string(item.get("label"))
+                url = _coerce_url(item.get("url"), f"ticket_links[{idx}].url", add_error)
+                if not lbl:
+                    add_error("ticket_links", f"Item {idx}: label is required.")
+                elif len(lbl) > 80:
+                    add_error("ticket_links", f"Item {idx}: label cannot exceed 80 characters.")
+                elif url is not None:
+                    ticket_links_data.append({"label": lbl, "url": url})
+    elif ticket_url:
+        # Compatibility: single ticket_url → one link with default label "Ticket"
+        ticket_links_data = [{"label": "Ticket", "url": ticket_url}]
+
     if errors:
         raise RiskValidationError(errors)
 
@@ -374,12 +440,15 @@ def apply_payload_to_risk(risk: Risk, payload: Mapping[str, object] | None) -> N
     risk.treatment_due_date = treatment_due_date
     risk.treatment_owner = owner
     risk.controls = controls
+    # Update scalar ticket_url for backward compat (first link URL or None)
     risk.ticket_url = ticket_url
     risk.components = components
     risk.impact_area_links = [
         RiskImpactAreaLink(area=area)
         for area in sorted(impact_areas, key=lambda entry: entry.value)
     ]
+    if ticket_links_data is not None:
+        set_ticket_links(risk, ticket_links_data)
 
 
 def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | None = None) -> dict[str, object]:
@@ -437,7 +506,16 @@ def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | Non
         "controls": controls,
         "control_ids": [control["id"] for control in controls if control.get("id") is not None],
         "control": controls[0] if controls else None,
-        "ticket_url": risk.ticket_url,
+        "ticket_links": [
+            {"id": tl.id, "label": tl.label, "url": tl.url, "sort_order": tl.sort_order}
+            for tl in sorted(risk.ticket_links, key=lambda t: t.sort_order)
+        ],
+        # Deprecated compatibility alias — first link URL or legacy scalar column
+        "ticket_url": (
+            risk.ticket_links[0].url
+            if risk.ticket_links
+            else risk.ticket_url
+        ),
         "closed_at": risk.closed_at.isoformat() if getattr(risk, "closed_at", None) else None,
         "created_at": risk.created_at.isoformat() if getattr(risk, "created_at", None) else None,
         "updated_at": risk.updated_at.isoformat() if getattr(risk, "updated_at", None) else None,

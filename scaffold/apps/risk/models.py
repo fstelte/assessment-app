@@ -143,6 +143,12 @@ class Risk(TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         back_populates="risk",
     )
+    ticket_links = db.relationship(
+        "RiskTicketLink",
+        cascade="all, delete-orphan",
+        back_populates="risk",
+        order_by="RiskTicketLink.sort_order",
+    )
 
     def score(self) -> int:
         """Return the numeric score derived from impact * chance."""
@@ -187,6 +193,23 @@ class RiskImpactAreaLink(db.Model):
     area = db.Column(_enum_column(RiskImpactArea, name="risk_impact_area"), nullable=False)
 
     risk = db.relationship(Risk, back_populates="impact_area_links")
+
+
+class RiskTicketLink(db.Model):
+    """Child row representing one external remediation or tracking reference for a risk."""
+
+    __tablename__ = "risk_ticket_links"
+    __table_args__ = (
+        sa.UniqueConstraint("risk_id", "label", "url", name="uq_risk_ticket_link"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    risk_id = db.Column(db.Integer, db.ForeignKey("risk_items.id", ondelete="CASCADE"), nullable=False)
+    label = db.Column(db.String(80), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+
+    risk = db.relationship(Risk, back_populates="ticket_links")
 
 
 class RiskSeverityThreshold(TimestampMixin, db.Model):

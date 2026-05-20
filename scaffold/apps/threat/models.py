@@ -81,6 +81,41 @@ threat_scenario_controls = db.Table(
     sa.UniqueConstraint("scenario_id", "control_id", name="uq_threat_scenario_control"),
 )
 
+# M2M: ThreatScenario <-> ThreatModelAsset (plural assignment)
+threat_scenario_assets = db.Table(
+    "threat_scenario_assets",
+    db.metadata,
+    db.Column(
+        "scenario_id",
+        db.Integer,
+        db.ForeignKey("threat_scenarios.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "asset_id",
+        db.Integer,
+        db.ForeignKey("threat_model_assets.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    sa.UniqueConstraint("scenario_id", "asset_id", name="uq_threat_scenario_asset"),
+)
+
+
+class ThreatScenarioStrideCategory(db.Model):
+    """Association row connecting one threat scenario to one STRIDE-LM category."""
+
+    __tablename__ = "threat_scenario_stride_categories"
+    __table_args__ = (
+        sa.UniqueConstraint("scenario_id", "stride_category", name="uq_threat_scenario_stride"),
+    )
+
+    scenario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_scenarios.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    stride_category = db.Column(db.String(50), nullable=False, primary_key=True)
+
 
 class ThreatModel(TimestampMixin, db.Model):
     """Top-level container grouping related threat scenarios."""
@@ -211,6 +246,18 @@ class ThreatScenario(TimestampMixin, db.Model):
         "ThreatModelAsset",
         back_populates="scenarios",
         foreign_keys=[asset_id],
+    )
+    # Plural asset assignments (US1)
+    assigned_assets = db.relationship(
+        "ThreatModelAsset",
+        secondary="threat_scenario_assets",
+        backref=db.backref("assigned_scenarios", lazy="dynamic"),
+    )
+    # Plural STRIDE-LM category assignments (US2)
+    stride_category_links = db.relationship(
+        "ThreatScenarioStrideCategory",
+        cascade="all, delete-orphan",
+        backref="scenario",
     )
     owner = db.relationship("User", foreign_keys=[owner_id])
     controls = db.relationship(

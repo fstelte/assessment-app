@@ -103,11 +103,23 @@ class ThreatScenarioForm(FlaskForm):
         choices=STRIDE_CHOICES,
         description=_l("threat.scenario_form.help.stride_category"),
     )
+    stride_category_ids = SelectMultipleField(
+        "STRIDE-LM categories",
+        validators=[Optional()],
+        choices=STRIDE_CHOICES,
+        description=_l("threat.scenario_form.help.stride_category"),
+    )
     asset_id = SelectField(
         "Threatened asset",
         validators=[Optional()],
         choices=[],
         coerce=str,
+        description=_l("threat.scenario_form.help.asset_id"),
+    )
+    asset_ids = SelectMultipleField(
+        "Threatened assets",
+        validators=[Optional()],
+        choices=[],
         description=_l("threat.scenario_form.help.asset_id"),
     )
     title = StringField(

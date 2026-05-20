@@ -1851,7 +1851,15 @@
       "open": "Open linked ticket",
       "missing": "No ticket reference added yet.",
       "placeholder": "Paste a link to the delivery ticket or incident record",
-      "help_text": "Optional. Attaches context for remediation work, e.g. Jira or ServiceNow."
+      "help_text": "Optional. Attaches context for remediation work, e.g. Jira or ServiceNow.",
+      "links_label": "Ticket links",
+      "link_label": "Label",
+      "link_url": "URL",
+      "add_link": "Add ticket link",
+      "remove_link": "Remove",
+      "error_label_required": "Label is required.",
+      "error_label_too_long": "Label cannot exceed 80 characters.",
+      "degraded": "Link unavailable"
     },
     "controls": {
       "linked": "CSA controls linked",
@@ -2630,7 +2638,8 @@
       "scenarios_heading": "Threat Scenarios",
       "new_scenario": "New scenario",
       "no_scenarios": "No scenarios yet.",
-      "create_first_scenario": "Create first scenario"
+      "create_first_scenario": "Create first scenario",
+      "more": "more"
     },
     "model_form": {
       "title_new": "New Threat Model",
@@ -2704,7 +2713,15 @@
         "treatment": "How will this risk be handled? Accept (tolerate the risk), Mitigate (reduce likelihood or impact), Transfer (e.g. insure or outsource), or Avoid (eliminate the activity).",
         "status": "The current lifecycle stage of this scenario: Identified (logged), Analysed (assessed), Mitigated (controls in place), or Closed (accepted or resolved).",
         "owner_id": "The person accountable for monitoring and resolving this threat scenario.",
-        "csa_control_ids": "Link one or more CSA controls that address or mitigate this scenario. Hold Ctrl / Cmd to select multiple."
+        "csa_control_ids": "Link one or more CSA controls that address or mitigate this scenario. Hold Ctrl / Cmd to select multiple.",
+        "asset_ids": "Select all assets threatened by this scenario. Hold Ctrl / Cmd to select multiple.",
+        "stride_category_ids": "Select all applicable STRIDE-LM categories for this scenario. Hold Ctrl / Cmd to select multiple."
+      },
+      "label_assets": "Threatened assets",
+      "label_stride_categories": "STRIDE-LM categories",
+      "error": {
+        "assets_required": "Select at least one asset.",
+        "stride_categories_required": "Select at least one STRIDE-LM category."
       }
     },
     "scenario_detail": {
@@ -2716,7 +2733,9 @@
       "risk_score": "Risk score",
       "risk_level": "Risk level",
       "stride_category": "STRIDE-LM category",
+      "stride_categories": "STRIDE-LM categories",
       "asset": "Asset",
+      "assets": "Assets",
       "description": "Description",
       "threat_actor": "Threat actor",
       "attack_vector": "Attack vector",

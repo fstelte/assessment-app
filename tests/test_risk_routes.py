@@ -198,3 +198,138 @@ def test_risk_threshold_overlap_validation_blocks_update(client, app, admin_user
     with app.app_context():
         current = db.session.get(RiskSeverityThreshold, low_threshold.id)
         assert current.max_score == low_threshold.max_score
+
+
+# ---------------------------------------------------------------------------
+# T032/T033: Auth regression – role-aware access to risk ticket links
+# ---------------------------------------------------------------------------
+
+
+def test_unauthenticated_risk_create_redirects(client, app):
+    """Unauthenticated POST to create risk should redirect to login."""
+    resp = client.post("/risk/new", data={}, follow_redirects=False)
+    assert resp.status_code in (302, 403)
+
+
+# ---------------------------------------------------------------------------
+# T023: US4 – multiple labeled ticket links on a risk
+# ---------------------------------------------------------------------------
+
+
+def _build_risk_payload(component_id: int, control_id: int, user_id: int) -> dict:
+    return {
+        "title": "Ticket link risk",
+        "description": "Test multiple ticket links.",
+        "discovered_on": date.today().isoformat(),
+        "impact": RiskImpact.MODERATE.value,
+        "chance": RiskChance.POSSIBLE.value,
+        "impact_areas": [RiskImpactArea.OPERATIONAL.value],
+        "component_ids": [str(component_id)],
+        "treatment": RiskTreatmentOption.MITIGATE.value,
+        "treatment_plan": "Fix it",
+        "treatment_due_date": date.today().isoformat(),
+        "treatment_owner_id": str(user_id),
+        "csa_control_ids": [str(control_id)],
+    }
+
+
+def test_risk_create_with_two_ticket_links(client, app, admin_user):
+    """Creating a risk with two ticket links persists both."""
+    from scaffold.apps.risk.models import RiskTicketLink
+
+    component_id = _seed_component(app)
+    control_id = _seed_control(app)
+    _seed_thresholds(app)
+    _login(client, admin_user.email)
+
+    payload = _build_risk_payload(component_id, control_id, admin_user.id)
+    payload.update({
+        "ticket_label_0": "JIRA-101",
+        "ticket_url_0": "https://jira.example.com/browse/JIRA-101",
+        "ticket_label_1": "GH-55",
+        "ticket_url_1": "https://github.com/org/repo/issues/55",
+    })
+
+    resp = client.post("/risk/new", data=payload, follow_redirects=False)
+    assert resp.status_code == 302
+
+    with app.app_context():
+        risk = Risk.query.filter_by(title="Ticket link risk").first()
+        assert risk is not None
+        links = sorted(risk.ticket_links, key=lambda t: t.sort_order)
+        assert len(links) == 2
+        assert links[0].label == "JIRA-101"
+        assert links[0].url == "https://jira.example.com/browse/JIRA-101"
+        assert links[1].label == "GH-55"
+
+
+def test_risk_edit_replaces_ticket_links(client, app, admin_user):
+    """Editing a risk replaces ticket links with the submitted set."""
+    from scaffold.apps.risk.models import RiskTicketLink
+
+    component_id = _seed_component(app)
+    control_id = _seed_control(app)
+    _seed_thresholds(app)
+    _login(client, admin_user.email)
+
+    # Create with one link
+    payload = _build_risk_payload(component_id, control_id, admin_user.id)
+    payload.update({
+        "title": "Edit link risk",
+        "ticket_label_0": "JIRA-200",
+        "ticket_url_0": "https://jira.example.com/browse/JIRA-200",
+    })
+    client.post("/risk/new", data=payload, follow_redirects=False)
+
+    with app.app_context():
+        risk = Risk.query.filter_by(title="Edit link risk").first()
+        assert risk is not None
+        risk_id = risk.id
+
+    # Edit with two links
+    payload["ticket_label_0"] = "JIRA-200"
+    payload["ticket_url_0"] = "https://jira.example.com/browse/JIRA-200"
+    payload["ticket_label_1"] = "JIRA-201"
+    payload["ticket_url_1"] = "https://jira.example.com/browse/JIRA-201"
+    client.post(f"/risk/{risk_id}/edit", data=payload, follow_redirects=False)
+
+    with app.app_context():
+        risk = db.session.get(Risk, risk_id)
+        assert len(risk.ticket_links) == 2
+
+
+def test_risk_create_with_no_ticket_links(client, app, admin_user):
+    """Creating a risk with no ticket links is valid."""
+    component_id = _seed_component(app)
+    control_id = _seed_control(app)
+    _seed_thresholds(app)
+    _login(client, admin_user.email)
+
+    payload = _build_risk_payload(component_id, control_id, admin_user.id)
+    payload["title"] = "No ticket links risk"
+    resp = client.post("/risk/new", data=payload, follow_redirects=False)
+    assert resp.status_code == 302
+
+    with app.app_context():
+        risk = Risk.query.filter_by(title="No ticket links risk").first()
+        assert risk is not None
+        assert len(risk.ticket_links) == 0
+
+
+def test_ticket_link_label_max_length_validation(client, app, admin_user):
+    """A label exceeding 80 characters should be rejected."""
+    component_id = _seed_component(app)
+    control_id = _seed_control(app)
+    _seed_thresholds(app)
+    _login(client, admin_user.email)
+
+    payload = _build_risk_payload(component_id, control_id, admin_user.id)
+    payload["title"] = "Long label risk"
+    payload["ticket_label_0"] = "X" * 81
+    payload["ticket_url_0"] = "https://jira.example.com/browse/LONG"
+
+    resp = client.post("/risk/new", data=payload, follow_redirects=False)
+    # Should re-render form with error, not redirect
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert "80" in html or "label" in html.lower()

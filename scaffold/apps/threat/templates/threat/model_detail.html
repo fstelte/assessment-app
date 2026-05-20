@@ -211,8 +211,21 @@ body[data-theme="dark"] .threat-scenario-card {
                       <a href="{{ url_for('threat.scenario_detail', model_id=model.id, scenario_id=scenario.id) }}" class="font-medium no-underline">
                         {{ scenario.title }}
                       </a>
-                      {% if scenario.asset %}
+                      {# Plural assets (US1) – fall back to legacy scalar #}
+                      {% set all_assets = scenario.assigned_assets | list %}
+                      {% if all_assets %}
+                        <span class="text-[var(--color-muted)] text-sm ml-2">
+                          /
+                          {% for a in all_assets[:2] %}{{ a.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                          {% if all_assets | length > 2 %}<span class="text-xs text-[var(--color-muted)]"> +{{ all_assets | length - 2 }} {{ _("threat.model_detail.more") }}</span>{% endif %}
+                        </span>
+                      {% elif scenario.asset %}
                         <span class="text-[var(--color-muted)] text-sm ml-2">/ {{ scenario.asset.name }}</span>
+                      {% endif %}
+                      {# Extra category pills for multi-category scenarios (all except the current group) #}
+                      {% set extra_cats = scenario.stride_category_links | selectattr('stride_category', 'ne', cat.value) | list if scenario.stride_category_links else [] %}
+                      {% if extra_cats %}
+                        <span class="ml-1 text-xs text-[var(--color-muted)]">+{{ extra_cats | length }}</span>
                       {% endif %}
                     </div>
                     <div class="flex gap-2 items-center">

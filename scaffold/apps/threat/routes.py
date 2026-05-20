@@ -47,7 +47,7 @@ from .models import (
     ThreatScenario,
     TreatmentOption,
 )
-from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, sync_scenario_to_risk, user_choices
+from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, set_scenario_assets, set_scenario_stride_categories, sync_scenario_to_risk, user_choices
 from ..ssp.services import sync_mitigation_to_poam, sync_scenario_controls_to_ssp
 
 bp = Blueprint(
@@ -63,6 +63,17 @@ def _require_access() -> None:
         abort(403)
 
 
+def _require_edit_access() -> None:
+    """Require admin or assessment manager role to make changes."""
+    if not current_user.is_authenticated:
+        abort(403)
+    if not (
+        current_user.has_role(ROLE_ADMIN)
+        or current_user.has_role(ROLE_ASSESSMENT_MANAGER)
+    ):
+        abort(403)
+
+
 def _get_model_or_404(model_id: int) -> ThreatModel:
     return ThreatModel.query.get_or_404(model_id)
 
@@ -72,6 +83,7 @@ def _configure_scenario_form(form: ThreatScenarioForm, threat_model: ThreatModel
         (str(a.id), a.name) for a in threat_model.assets
     ]
     form.asset_id.choices = asset_choices
+    form.asset_ids.choices = [(str(a.id), a.name) for a in threat_model.assets]
     form.owner_id.choices = user_choices()
     control_choices = [
         (str(c.id), f"{c.domain}")
@@ -122,6 +134,8 @@ def dashboard():
         .options(
             sa.orm.joinedload(ThreatScenario.threat_model),
             sa.orm.joinedload(ThreatScenario.asset),
+            sa.orm.selectinload(ThreatScenario.stride_category_links),
+            sa.orm.selectinload(ThreatScenario.assigned_assets),
         )
         .order_by(ThreatScenario.risk_score.desc())
         .limit(100)
@@ -155,7 +169,7 @@ def _bia_choices() -> list[tuple[str, str]]:
 @bp.route("/new", methods=["GET", "POST"])
 @login_required
 def model_new():
-    _require_access()
+    _require_edit_access()
     form = ThreatModelForm()
     form.bia_id.choices = _bia_choices()
     if form.validate_on_submit():
@@ -208,7 +222,11 @@ def model_detail(model_id: int):
     scenarios_by_category: dict[str, list[ThreatScenario]] = {}
     for cat in StrideCategory:
         scenarios_by_category[cat.value] = [
-            s for s in model.scenarios if s.stride_category == cat
+            s for s in model.scenarios
+            if (
+                any(link.stride_category == cat.value for link in s.stride_category_links)
+                or (not s.stride_category_links and s.stride_category == cat)
+            )
         ]
     return render_template(
         "threat/model_detail.html",
@@ -223,7 +241,7 @@ def model_detail(model_id: int):
 @bp.route("/<int:model_id>/edit", methods=["GET", "POST"])
 @login_required
 def model_edit(model_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     form = ThreatModelForm(obj=model)
     form.bia_id.choices = _bia_choices()
@@ -251,7 +269,7 @@ def model_edit(model_id: int):
 @bp.route("/<int:model_id>/archive", methods=["POST"])
 @login_required
 def model_archive(model_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     model.is_archived = not model.is_archived
     model.archived_at = datetime.now(UTC) if model.is_archived else None
@@ -274,7 +292,7 @@ def model_archive(model_id: int):
 @bp.route("/<int:model_id>/assets/new", methods=["GET", "POST"])
 @login_required
 def asset_new(model_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     form = ThreatModelAssetForm()
     if form.validate_on_submit():
@@ -302,7 +320,7 @@ def asset_new(model_id: int):
 @bp.route("/<int:model_id>/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 @login_required
 def asset_edit(model_id: int, asset_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     asset = ThreatModelAsset.query.get_or_404(asset_id)
     if asset.threat_model_id != model.id:
@@ -328,7 +346,7 @@ def asset_edit(model_id: int, asset_id: int):
 @bp.route("/<int:model_id>/assets/<int:asset_id>/delete", methods=["POST"])
 @login_required
 def asset_delete(model_id: int, asset_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     asset = ThreatModelAsset.query.get_or_404(asset_id)
     if asset.threat_model_id != model.id:
@@ -353,7 +371,7 @@ def asset_delete(model_id: int, asset_id: int):
 @bp.route("/<int:model_id>/scenarios/new", methods=["GET", "POST"])
 @login_required
 def scenario_new(model_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     form = ThreatScenarioForm()
     _configure_scenario_form(form, model)
@@ -387,8 +405,28 @@ def scenario_new(model_id: int):
         _attach_controls(scenario, form)
         db.session.add(scenario)
         db.session.flush()
+
+        # Plural asset assignments (US1)
+        selected_asset_ids = [int(v) for v in (form.asset_ids.data or []) if v]
+        if selected_asset_ids:
+            set_scenario_assets(scenario, selected_asset_ids, model.assets)
+        elif scenario.asset_id:
+            # Backfill: map legacy scalar to plural relationship
+            set_scenario_assets(scenario, [scenario.asset_id], model.assets)
+
+        # Plural STRIDE-LM category assignments (US2 – STRIDE only)
+        methodology = scenario.methodology or "STRIDE"
+        selected_categories = form.stride_category_ids.data or []
+        if methodology == "STRIDE" and selected_categories:
+            set_scenario_stride_categories(scenario, selected_categories)
+        elif methodology == "STRIDE" and stride_cat_value:
+            # Backfill: map legacy scalar to plural relationship
+            set_scenario_stride_categories(scenario, [stride_cat_value])
+
         sync_scenario_to_risk(scenario)
         sync_scenario_controls_to_ssp(scenario)
+        _log_asset_audit(scenario, [], list(scenario.assigned_assets))
+        _log_category_audit(scenario, [], list(scenario.stride_category_links))
         log_event(
             action="threat_scenario_created",
             entity_type="threat_scenario",
@@ -421,7 +459,7 @@ def scenario_detail(model_id: int, scenario_id: int):
 @bp.route("/<int:model_id>/scenarios/<int:scenario_id>/edit", methods=["GET", "POST"])
 @login_required
 def scenario_edit(model_id: int, scenario_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     scenario = ThreatScenario.query.get_or_404(scenario_id)
     if scenario.threat_model_id != model.id:
@@ -445,9 +483,18 @@ def scenario_edit(model_id: int, scenario_id: int):
         form.cia_c.data = "C" in cia
         form.cia_i.data = "I" in cia
         form.cia_a.data = "A" in cia
+        # Pre-fill plural fields
+        form.asset_ids.data = [str(a.id) for a in scenario.assigned_assets] or (
+            [str(scenario.asset_id)] if scenario.asset_id else []
+        )
+        form.stride_category_ids.data = [link.stride_category for link in scenario.stride_category_links] or (
+            [scenario.stride_category.value] if scenario.stride_category else []
+        )
     if form.validate_on_submit():
         cia = _build_cia(form)
         stride_cat_value = form.stride_category.data or "spoofing"
+        prev_assets = list(scenario.assigned_assets)
+        prev_categories = list(scenario.stride_category_links)
         scenario.stride_category = StrideCategory(stride_cat_value)
         scenario.asset_id = int(form.asset_id.data) if form.asset_id.data else None
         scenario.title = (form.title.data or "").strip()
@@ -470,6 +517,25 @@ def scenario_edit(model_id: int, scenario_id: int):
         apply_risk_score(scenario)
         apply_residual_risk_score(scenario)
         _attach_controls(scenario, form)
+
+        # Plural asset assignments (US1) — only update when field was submitted
+        selected_asset_ids = [int(v) for v in (form.asset_ids.data or []) if v]
+        if selected_asset_ids:
+            set_scenario_assets(scenario, selected_asset_ids, model.assets)
+        elif not scenario.assigned_assets and scenario.asset_id:
+            # Legacy no-op save: backfill plural from scalar without forcing change
+            set_scenario_assets(scenario, [scenario.asset_id], model.assets)
+
+        # Plural STRIDE-LM category assignments (US2 – STRIDE only)
+        methodology = scenario.methodology or "STRIDE"
+        selected_categories = form.stride_category_ids.data or []
+        if methodology == "STRIDE" and selected_categories:
+            set_scenario_stride_categories(scenario, selected_categories)
+        elif methodology == "STRIDE" and not scenario.stride_category_links and stride_cat_value:
+            set_scenario_stride_categories(scenario, [stride_cat_value])
+
+        _log_asset_audit(scenario, prev_assets, list(scenario.assigned_assets))
+        _log_category_audit(scenario, prev_categories, list(scenario.stride_category_links))
         sync_scenario_to_risk(scenario)
         sync_scenario_controls_to_ssp(scenario)
         log_event(
@@ -509,7 +575,7 @@ def scenario_sync_risk(model_id: int, scenario_id: int):
 @bp.route("/<int:model_id>/scenarios/<int:scenario_id>/delete", methods=["POST"])
 @login_required
 def scenario_delete(model_id: int, scenario_id: int):
-    _require_access()
+    _require_edit_access()
     model = _get_model_or_404(model_id)
     scenario = ThreatScenario.query.get_or_404(scenario_id)
     if scenario.threat_model_id != model.id:
@@ -716,6 +782,50 @@ def _attach_controls(scenario: ThreatScenario, form: ThreatScenarioForm) -> None
     else:
         controls = []
     scenario.controls = controls
+
+
+def _log_asset_audit(
+    scenario: ThreatScenario,
+    before: list,
+    after: list,
+) -> None:
+    """Emit add/remove audit events for asset assignment changes."""
+    before_ids = {a.id for a in before}
+    after_ids = {a.id for a in after}
+    added = after_ids - before_ids
+    removed = before_ids - after_ids
+    if added or removed:
+        log_event(
+            action="threat_scenario_assets_changed",
+            entity_type="threat_scenario",
+            entity_id=scenario.id,
+            details={
+                "added_asset_ids": sorted(added),
+                "removed_asset_ids": sorted(removed),
+            },
+        )
+
+
+def _log_category_audit(
+    scenario: ThreatScenario,
+    before: list,
+    after: list,
+) -> None:
+    """Emit add/remove audit events for STRIDE-LM category assignment changes."""
+    before_vals = {link.stride_category for link in before}
+    after_vals = {link.stride_category for link in after}
+    added = after_vals - before_vals
+    removed = before_vals - after_vals
+    if added or removed:
+        log_event(
+            action="threat_scenario_categories_changed",
+            entity_type="threat_scenario",
+            entity_id=scenario.id,
+            details={
+                "added_categories": sorted(added),
+                "removed_categories": sorted(removed),
+            },
+        )
 
 
 # ---------------------------------------------------------------------------

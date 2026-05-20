@@ -146,3 +146,97 @@ def test_risk_api_enforces_impact_range(client, app):
     body = response.get_json()
     assert body["success"] is False
     assert "impact" in body["errors"]
+
+
+# ---------------------------------------------------------------------------
+# T023: US4 – API ticket_links field and compatibility alias
+# ---------------------------------------------------------------------------
+
+
+def test_risk_api_create_with_ticket_links(client, app):
+    """POST /api/risks with ticket_links persists both links."""
+    admin = _provision_admin(app)
+    component = _provision_component(app)
+    control = _provision_control(app)
+    _login(client, admin)
+
+    payload = {
+        "title": "Ticket links API risk",
+        "description": "Testing plural ticket links via API.",
+        "impact": 3,
+        "chance": "possible",
+        "impact_areas": ["operational"],
+        "component_ids": [component["id"]],
+        "treatment": "mitigate",
+        "csa_control_ids": [control.id],
+        "ticket_links": [
+            {"label": "JIRA-300", "url": "https://jira.example.com/browse/JIRA-300"},
+            {"label": "GH-99", "url": "https://github.com/org/repo/issues/99"},
+        ],
+    }
+
+    resp = client.post("/api/risks", json=payload)
+    assert resp.status_code == 201
+    data = resp.get_json()["data"]
+    assert len(data["ticket_links"]) == 2
+    labels = {tl["label"] for tl in data["ticket_links"]}
+    assert "JIRA-300" in labels
+    assert "GH-99" in labels
+    # Compat alias points to first link
+    assert data["ticket_url"] == "https://jira.example.com/browse/JIRA-300"
+
+
+def test_risk_api_ticket_url_compat_alias(client, app):
+    """POST /api/risks with legacy ticket_url creates one link labeled 'Ticket'."""
+    admin = _provision_admin(app)
+    component = _provision_component(app)
+    control = _provision_control(app)
+    _login(client, admin)
+
+    payload = {
+        "title": "Legacy ticket url risk",
+        "description": "Backward compat test.",
+        "impact": 2,
+        "chance": "unlikely",
+        "impact_areas": ["financial"],
+        "component_ids": [component["id"]],
+        "treatment": "mitigate",
+        "csa_control_ids": [control.id],
+        "ticket_url": "https://legacy.example.com/ticket/42",
+    }
+
+    resp = client.post("/api/risks", json=payload)
+    assert resp.status_code == 201
+    data = resp.get_json()["data"]
+    # One ticket_links entry created from ticket_url
+    assert len(data["ticket_links"]) == 1
+    assert data["ticket_links"][0]["url"] == "https://legacy.example.com/ticket/42"
+    assert data["ticket_links"][0]["label"] == "Ticket"
+    assert data["ticket_url"] == "https://legacy.example.com/ticket/42"
+
+
+def test_risk_api_ticket_link_label_too_long(client, app):
+    """ticket_links with label > 80 chars should return 400."""
+    admin = _provision_admin(app)
+    component = _provision_component(app)
+    control = _provision_control(app)
+    _login(client, admin)
+
+    payload = {
+        "title": "Long label via API",
+        "description": "Should fail validation.",
+        "impact": 2,
+        "chance": "unlikely",
+        "impact_areas": ["operational"],
+        "component_ids": [component["id"]],
+        "treatment": "mitigate",
+        "csa_control_ids": [control.id],
+        "ticket_links": [
+            {"label": "X" * 81, "url": "https://example.com/ticket/1"},
+        ],
+    }
+
+    resp = client.post("/api/risks", json=payload)
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert "ticket_links" in body["errors"]

@@ -1,0 +1,222 @@
+openapi: 3.0.3
+info:
+  title: Risk API Contract Updates
+  version: 1.0.0
+  description: >-
+    Contract deltas for the existing /api/risks endpoints to support multiple
+    labeled ticket links per risk while preserving transitional compatibility.
+paths:
+  /api/risks:
+    get:
+      summary: List risks
+      responses:
+        '200':
+          description: Existing success envelope with updated risk payloads.
+    post:
+      summary: Create risk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskWrite'
+      responses:
+        '201':
+          description: Created risk with updated ticket link payload.
+        '400':
+          description: Validation errors keyed by request field.
+  /api/risks/{riskId}:
+    get:
+      summary: Fetch one risk
+      parameters:
+        - in: path
+          name: riskId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: One serialized risk.
+    put:
+      summary: Update one risk
+      parameters:
+        - in: path
+          name: riskId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskWrite'
+      responses:
+        '200':
+          description: Updated risk with current ticket link collection.
+        '400':
+          description: Validation errors keyed by request field.
+components:
+  schemas:
+    RiskTicketLink:
+      type: object
+      required:
+        - label
+        - url
+      properties:
+        id:
+          type: integer
+          nullable: true
+        label:
+          type: string
+          maxLength: 100
+        url:
+          type: string
+          format: uri
+          maxLength: 500
+        sort_order:
+          type: integer
+          minimum: 0
+    RiskRead:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        discovered_on:
+          type: string
+          format: date
+          nullable: true
+        impact:
+          type: object
+        chance:
+          type: object
+        score:
+          type: integer
+        severity:
+          type: string
+          nullable: true
+        treatment:
+          type: string
+        treatment_plan:
+          type: string
+          nullable: true
+        treatment_due_date:
+          type: string
+          format: date
+          nullable: true
+        treatment_owner:
+          type: object
+          nullable: true
+        component_ids:
+          type: array
+          items:
+            type: integer
+        components:
+          type: array
+          items:
+            type: object
+        impact_areas:
+          type: array
+          items:
+            type: string
+        controls:
+          type: array
+          items:
+            type: object
+        control_ids:
+          type: array
+          items:
+            type: integer
+        control:
+          type: object
+          nullable: true
+          description: Deprecated single-control compatibility field.
+        ticket_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskTicketLink'
+        ticket_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Deprecated compatibility alias derived from the first ticket link.
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    RiskWrite:
+      type: object
+      required:
+        - title
+        - description
+        - impact
+        - chance
+        - component_ids
+        - impact_areas
+        - treatment
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        discovered_on:
+          type: string
+          format: date
+        impact:
+          oneOf:
+            - type: string
+            - type: integer
+        chance:
+          oneOf:
+            - type: string
+            - type: integer
+        impact_areas:
+          type: array
+          items:
+            type: string
+        component_ids:
+          type: array
+          items:
+            type: integer
+        treatment:
+          type: string
+        treatment_plan:
+          type: string
+          nullable: true
+        treatment_due_date:
+          type: string
+          format: date
+          nullable: true
+        treatment_owner_id:
+          type: integer
+          nullable: true
+        csa_control_ids:
+          type: array
+          items:
+            type: integer
+        csa_control_id:
+          type: integer
+          nullable: true
+          description: Deprecated single-control compatibility input.
+        ticket_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskTicketLink'
+        ticket_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Deprecated compatibility input that seeds the first ticket link when provided.

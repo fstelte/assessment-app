@@ -167,7 +167,15 @@
       "open": "Gekoppeld ticket openen",
       "missing": "Nog geen ticket gekoppeld.",
       "placeholder": "Plak een link naar het werk- of incidentticket",
-      "help_text": "Optioneel. Geeft extra context voor opvolging, bijvoorbeeld Jira of ServiceNow."
+      "help_text": "Optioneel. Geeft extra context voor opvolging, bijvoorbeeld Jira of ServiceNow.",
+      "links_label": "Ticketkoppelingen",
+      "link_label": "Label",
+      "link_url": "URL",
+      "add_link": "Ticketkoppeling toevoegen",
+      "remove_link": "Verwijderen",
+      "error_label_required": "Label is verplicht.",
+      "error_label_too_long": "Label mag niet meer dan 80 tekens bevatten.",
+      "degraded": "Koppeling niet beschikbaar"
     },
     "controls": {
       "linked": "Gekoppelde CSA-controls",
@@ -2700,7 +2708,8 @@
       "scenarios_heading": "Dreigingsscenario's",
       "new_scenario": "Nieuw scenario",
       "no_scenarios": "Nog geen scenario's.",
-      "create_first_scenario": "Eerste scenario aanmaken"
+      "create_first_scenario": "Eerste scenario aanmaken",
+      "more": "meer"
     },
     "model_form": {
       "title_new": "Nieuw dreigingsmodel",
@@ -2774,7 +2783,15 @@
         "treatment": "Hoe wordt dit risico aangepakt? Accepteren (risico tolereren), Mitigeren (kans of impact verlagen), Overdragen (bijv. verzekeren of uitbesteden), of Vermijden (activiteit elimineren).",
         "status": "De huidige levenscyclusfase van dit scenario: Identified (ingepland), Analysed (beoordeeld), Mitigated (maatregelen getroffen), of Closed (geaccepteerd of opgelost).",
         "owner_id": "De persoon die verantwoordelijk is voor het bewaken en oplossen van dit dreigingsscenario.",
-        "csa_control_ids": "Koppel een of meer CSA-beheersmaatregelen die dit scenario aanpakken of beperken. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren."
+        "csa_control_ids": "Koppel een of meer CSA-beheersmaatregelen die dit scenario aanpakken of beperken. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren.",
+        "asset_ids": "Selecteer alle assets die door dit scenario worden bedreigd. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren.",
+        "stride_category_ids": "Selecteer alle toepasselijke STRIDE-LM categorieën voor dit scenario. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren."
+      },
+      "label_assets": "Bedreigde assets",
+      "label_stride_categories": "STRIDE-LM categorieën",
+      "error": {
+        "assets_required": "Selecteer minstens één asset.",
+        "stride_categories_required": "Selecteer minstens één STRIDE-LM categorie."
       }
     },
     "scenario_detail": {
@@ -2786,7 +2803,9 @@
       "risk_score": "Risicowaarde",
       "risk_level": "Risiconiveau",
       "stride_category": "STRIDE-LM categorie",
+      "stride_categories": "STRIDE-LM categorieën",
       "asset": "Asset",
+      "assets": "Assets",
       "description": "Beschrijving",
       "threat_actor": "Dreigingsactor",
       "attack_vector": "Aanvalsvector",
