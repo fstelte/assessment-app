@@ -195,10 +195,38 @@ body[data-theme="dark"] .risk-control-preview {
           {{ field_errors(form.description) }}
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.ticket_url.id }}">{{ _('risk.ticket.label') }}</label>
-          {{ form.ticket_url(class_="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", placeholder=_('risk.ticket.placeholder')) }}
+          {# Plural ticket links editor (US4) #}
+          <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('risk.ticket.links_label') }}</label>
+          <div id="ticket-links-container" class="space-y-2 mb-2">
+            {% set existing_links = (risk.ticket_links if risk and risk.ticket_links) else [] %}
+            {% if existing_links %}
+              {% for link in existing_links %}
+                <div class="ticket-link-row flex gap-2 items-center">
+                  <input type="text" name="ticket_label_{{ loop.index0 }}" value="{{ link.label }}" maxlength="80"
+                    placeholder="{{ _('risk.ticket.link_label') }}"
+                    class="w-32 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">
+                  <input type="url" name="ticket_url_{{ loop.index0 }}" value="{{ link.url }}"
+                    placeholder="{{ _('risk.ticket.placeholder') }}"
+                    class="flex-1 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">
+                  <button type="button" class="ticket-link-remove text-red-400 hover:text-red-600 text-xs px-1" aria-label="{{ _('risk.ticket.remove_link') }}">✕</button>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="ticket-link-row flex gap-2 items-center">
+                <input type="text" name="ticket_label_0" value="" maxlength="80"
+                  placeholder="{{ _('risk.ticket.link_label') }}"
+                  class="w-32 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">
+                <input type="url" name="ticket_url_0" value=""
+                  placeholder="{{ _('risk.ticket.placeholder') }}"
+                  class="flex-1 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">
+                <button type="button" class="ticket-link-remove text-red-400 hover:text-red-600 text-xs px-1" aria-label="{{ _('risk.ticket.remove_link') }}">✕</button>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" id="add-ticket-link" class="text-sm text-primary-600 hover:underline">+ {{ _('risk.ticket.add_link') }}</button>
           <div class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.ticket.help_text') }}</div>
-          {{ field_errors(form.ticket_url) }}
+          {# Keep legacy hidden field for backward compat #}
+          {{ form.ticket_url(class_="hidden") }}
         </div>
         <div>
           <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.discovered_on.id }}">{{ form.discovered_on.label.text }}</label>
@@ -382,6 +410,54 @@ body[data-theme="dark"] .risk-control-preview {
       treatmentField.addEventListener('change', syncControlField);
     }
   });
+
+  // Dynamic ticket link rows (US4)
+  (function () {
+    var container = document.getElementById('ticket-links-container');
+    var addBtn = document.getElementById('add-ticket-link');
+    if (!container || !addBtn) return;
+
+    function getRowCount() {
+      return container.querySelectorAll('.ticket-link-row').length;
+    }
+
+    function attachRemoveHandlers() {
+      container.querySelectorAll('.ticket-link-remove').forEach(function(btn) {
+        btn.onclick = null;
+        btn.addEventListener('click', function() {
+          var row = this.closest('.ticket-link-row');
+          if (row) row.remove();
+          reindexRows();
+        });
+      });
+    }
+
+    function reindexRows() {
+      container.querySelectorAll('.ticket-link-row').forEach(function(row, idx) {
+        var inputs = row.querySelectorAll('input');
+        inputs[0].name = 'ticket_label_' + idx;
+        inputs[1].name = 'ticket_url_' + idx;
+      });
+    }
+
+    addBtn.addEventListener('click', function() {
+      var idx = getRowCount();
+      var row = document.createElement('div');
+      row.className = 'ticket-link-row flex gap-2 items-center';
+      row.innerHTML =
+        '<input type="text" name="ticket_label_' + idx + '" value="" maxlength="80"' +
+        ' placeholder="{{ _("risk.ticket.link_label") }}"' +
+        ' class="w-32 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">' +
+        '<input type="url" name="ticket_url_' + idx + '" value=""' +
+        ' placeholder="{{ _("risk.ticket.placeholder") }}"' +
+        ' class="flex-1 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50">' +
+        '<button type="button" class="ticket-link-remove text-red-400 hover:text-red-600 text-xs px-1" aria-label="{{ _("risk.ticket.remove_link") }}">✕</button>';
+      container.appendChild(row);
+      attachRemoveHandlers();
+    });
+
+    attachRemoveHandlers();
+  })();
 })();
 </script>
 {% endblock %}

@@ -78,8 +78,110 @@ def status_choices() -> list[tuple[str, str]]:
     return [(s.value, s.value.replace("_", " ").title()) for s in ScenarioStatus]
 
 
+def scenario_asset_names(scenario: ThreatScenario) -> list[str]:
+    """Return display names for all assets assigned to a scenario.
+
+    Prefers the plural ``assigned_assets`` relationship.  Falls back to the
+    legacy scalar ``asset`` when the plural collection is empty (e.g. on
+    objects that pre-date backfill or during form preview).
+    """
+
+    if scenario.assigned_assets:
+        return [a.name for a in scenario.assigned_assets]
+    if scenario.asset:
+        return [scenario.asset.name]
+    return []
+
+
+def scenario_stride_values(scenario: ThreatScenario) -> list[str]:
+    """Return STRIDE-LM values for all categories assigned to a scenario.
+
+    Prefers the plural ``stride_category_links`` relationship.  Falls back to
+    the legacy scalar ``stride_category`` for STRIDE scenarios.
+    """
+
+    if scenario.stride_category_links:
+        return [link.stride_category for link in scenario.stride_category_links]
+    if scenario.stride_category:
+        return [scenario.stride_category.value]
+    return []
+
+
+def set_scenario_assets(scenario: ThreatScenario, asset_ids: list[int], model_assets: list) -> None:
+    """Replace the plural asset assignments on a scenario.
+
+    Preserves any assets that are no longer in *model_assets* (historical/
+    unavailable) as read-only entries so existing records are not silently
+    lost on re-save.
+
+    :param scenario: the scenario being edited
+    :param asset_ids: IDs selected by the user from the form
+    :param model_assets: current assets available in the threat model
+    """
+
+    available_ids = {a.id for a in model_assets}
+    requested_ids = set(asset_ids)
+
+    # IDs that were previously assigned but are no longer available
+    current_ids = {a.id for a in scenario.assigned_assets}
+    unavailable_preserved = current_ids - available_ids
+
+    desired_ids = requested_ids | unavailable_preserved
+    asset_map = {a.id: a for a in model_assets}
+
+    # Also keep a lookup for already-assigned unavailable assets
+    for a in scenario.assigned_assets:
+        if a.id not in asset_map:
+            asset_map[a.id] = a
+
+    new_assets = [asset_map[aid] for aid in desired_ids if aid in asset_map]
+    scenario.assigned_assets = new_assets
+
+
+def set_scenario_stride_categories(
+    scenario: ThreatScenario,
+    category_values: list[str],
+) -> None:
+    """Replace the plural STRIDE-LM category assignments on a scenario.
+
+    Preserves categories that are no longer valid enum members (historical)
+    as read-only entries.
+
+    :param scenario: the scenario being edited
+    :param category_values: string values selected by the user
+    """
+    from .models import ThreatScenarioStrideCategory
+
+    valid_values = {c.value for c in StrideCategory}
+    requested = set(category_values) & valid_values
+
+    # Keep historical unavailable categories
+    current_values = {link.stride_category for link in scenario.stride_category_links}
+    unavailable_preserved = current_values - valid_values
+    desired = requested | unavailable_preserved
+
+    # Compute diff
+    to_remove = [
+        link for link in scenario.stride_category_links
+        if link.stride_category not in desired
+    ]
+    to_add = desired - current_values
+
+    for link in to_remove:
+        scenario.stride_category_links.remove(link)
+    for value in to_add:
+        scenario.stride_category_links.append(
+            ThreatScenarioStrideCategory(stride_category=value)
+        )
+
+
 def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
-    """Return a UTF-8 CSV string for the given list of ThreatScenario objects."""
+    """Return a UTF-8 CSV string for the given list of ThreatScenario objects.
+
+    Plural columns ``assets`` and ``stride_categories`` contain semicolon-
+    separated values.  Compatibility alias columns ``asset`` and
+    ``stride_category`` are preserved for one release cycle.
+    """
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -87,8 +189,13 @@ def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
         [
             "id",
             "title",
+            # plural columns (new)
+            "assets",
+            "stride_categories",
+            # compatibility aliases (deprecated – one release cycle)
             "stride_category",
             "asset",
+            # remaining columns
             "likelihood",
             "impact_score",
             "risk_score",
@@ -100,12 +207,16 @@ def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
         ]
     )
     for s in scenarios:
+        asset_names = scenario_asset_names(s)
+        stride_values = scenario_stride_values(s)
         writer.writerow(
             [
                 s.id,
                 s.title,
-                s.stride_category.value if s.stride_category else "",
-                s.asset.name if s.asset else "",
+                "; ".join(asset_names),
+                "; ".join(stride_values),
+                stride_values[0] if stride_values else "",
+                asset_names[0] if asset_names else "",
                 s.likelihood,
                 s.impact_score,
                 s.risk_score,

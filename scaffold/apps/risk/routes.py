@@ -33,6 +33,7 @@ from .services import (
     load_thresholds,
     optional_int,
     set_impact_areas,
+    set_ticket_links,
     validate_component_ids,
     validate_control_ids,
 )
@@ -78,6 +79,7 @@ def _risk_query():
         sa.orm.selectinload(Risk.impact_area_links),
         sa.orm.selectinload(Risk.controls),
         sa.orm.selectinload(Risk.treatment_owner),
+        sa.orm.selectinload(Risk.ticket_links),
     )
 
 
@@ -198,6 +200,21 @@ def dashboard():
     )
 
 
+def _parse_ticket_links_from_form(form_data) -> list[dict]:
+    """Extract ordered ticket link dicts from ticket_label_N / ticket_url_N form fields."""
+    links = []
+    i = 0
+    while True:
+        label = (form_data.get(f"ticket_label_{i}") or "").strip()
+        url = (form_data.get(f"ticket_url_{i}") or "").strip()
+        if not label and not url:
+            break
+        if label or url:
+            links.append({"label": label, "url": url, "sort_order": i})
+        i += 1
+    return links
+
+
 @bp.route("/new", methods=["GET", "POST"])
 @login_required
 def create():
@@ -232,6 +249,13 @@ def create():
             set_impact_areas(risk, form.impact_areas.data or [])
             db.session.add(risk)
             db.session.flush()
+            # Persist plural ticket links (US4)
+            links_data = _parse_ticket_links_from_form(request.form)
+            if links_data:
+                set_ticket_links(risk, links_data)
+            elif risk.ticket_url:
+                # Backfill legacy scalar ticket_url as a single link
+                set_ticket_links(risk, [{"label": "Ticket", "url": risk.ticket_url, "sort_order": 0}])
             log_event(
                 action="risk_created",
                 entity_type="risk",
@@ -322,6 +346,8 @@ def edit(risk_id: int):
         form.chance.data = risk.chance.value
         form.treatment.data = risk.treatment.value
         form.ticket_url.data = risk.ticket_url or ""
+        # Pre-fill template context variable for existing ticket links
+        # (rendered by the Jinja template using risk.ticket_links)
 
     if form.validate_on_submit():
         components = _resolve_components_for_edit(form)
@@ -340,6 +366,13 @@ def edit(risk_id: int):
             risk.components = components
             risk.controls = controls or []
             set_impact_areas(risk, form.impact_areas.data or [])
+            # Persist plural ticket links (US4)
+            links_data = _parse_ticket_links_from_form(request.form)
+            if links_data:
+                set_ticket_links(risk, links_data)
+            elif not risk.ticket_links and risk.ticket_url:
+                # Backfill legacy scalar when no plural links saved yet
+                set_ticket_links(risk, [{"label": "Ticket", "url": risk.ticket_url, "sort_order": 0}])
             db.session.flush()
             log_event(
                 action="risk_updated",

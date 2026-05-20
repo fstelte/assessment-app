@@ -95,10 +95,29 @@ body[data-theme="dark"] .threat-panel {
 
     <!-- Detail rows -->
     <div class="detail-row">
-      <div class="detail-label">{{ _("threat.scenario_detail.stride_category") }}</div>
-      <div>{{ _("threat.stride." + scenario.stride_category.value) }}</div>
+      <div class="detail-label">{{ _("threat.scenario_detail.stride_categories") }}</div>
+      <div class="flex flex-wrap gap-1">
+        {% set cats = scenario.stride_category_links | list %}
+        {% if cats %}
+          {% for link in cats %}
+            <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ _("threat.stride." + link.stride_category) }}</span>
+          {% endfor %}
+        {% elif scenario.stride_category %}
+          <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ _("threat.stride." + scenario.stride_category.value) }}</span>
+        {% endif %}
+      </div>
     </div>
-    {% if scenario.asset %}
+    {% set all_assets = scenario.assigned_assets | list %}
+    {% if all_assets %}
+      <div class="detail-row">
+        <div class="detail-label">{{ _("threat.scenario_detail.assets") }}</div>
+        <div class="flex flex-wrap gap-1">
+          {% for asset in all_assets %}
+            <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ asset.name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% elif scenario.asset %}
       <div class="detail-row">
         <div class="detail-label">{{ _("threat.scenario_detail.asset") }}</div>
         <div>{{ scenario.asset.name }}</div>

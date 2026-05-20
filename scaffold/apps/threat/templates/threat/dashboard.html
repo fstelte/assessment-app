@@ -209,6 +209,8 @@ body[data-theme="dark"] .threat-quick-card:hover {
             <tr>
               <th>{{ _("threat.scenario_form.title") }}</th>
               <th>{{ _("threat.dashboard.models") }}</th>
+              <th>{{ _("threat.scenario_detail.stride_categories") }}</th>
+              <th>{{ _("threat.scenario_detail.assets") }}</th>
               <th>{{ _("threat.scenario_detail.risk_level") }}</th>
               <th>{{ _("threat.scenario_detail.status") }}</th>
               <th></th>
@@ -219,6 +221,32 @@ body[data-theme="dark"] .threat-quick-card:hover {
             <tr>
               <td class="font-medium">{{ s.title }}</td>
               <td>{{ s.threat_model.title if s.threat_model else '—' }}</td>
+              <td>
+                {# Plural STRIDE categories #}
+                {% set cats = s.stride_category_links | list %}
+                {% set stride_map = {'spoofing':'S','tampering':'T','repudiation':'R','information_disclosure':'I','denial_of_service':'D','elevation_of_privilege':'E','lateral_movement':'LM'} %}
+                {% if cats %}
+                  {% for link in cats[:3] %}
+                    {% set code = stride_map.get(link.stride_category, '?') %}
+                    <span class="stride-pill stride-{{ code }}">{{ code }}</span>
+                  {% endfor %}
+                  {% if cats | length > 3 %}<span class="text-xs text-[var(--color-muted)]">+{{ cats | length - 3 }}</span>{% endif %}
+                {% elif s.stride_category %}
+                  {% set code = stride_map.get(s.stride_category.value, '?') %}
+                  <span class="stride-pill stride-{{ code }}">{{ code }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {# Plural assets #}
+                {% set all_assets = s.assigned_assets | list %}
+                {% if all_assets %}
+                  {{ all_assets[0].name }}{% if all_assets | length > 1 %} <span class="text-xs text-[var(--color-muted)]">+{{ all_assets | length - 1 }}</span>{% endif %}
+                {% elif s.asset %}
+                  {{ s.asset.name }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
               <td>
                 {% if s.risk_level %}
                 <span class="stride-pill risk-{{ s.risk_level.value }}">{{ s.risk_level.value }}</span>

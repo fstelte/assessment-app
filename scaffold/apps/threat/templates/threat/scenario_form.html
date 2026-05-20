@@ -126,10 +126,10 @@ body[data-theme="dark"] .threat-form-panel {
         {{ form.pasta_stage(class="block w-full rounded-md border border-[var(--color-border)] bg-[var(--bs-body-bg)] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500", id="pasta_stage_field") }}
       </div>
 
-      <!-- STRIDE-LM visual picker -->
+      <!-- STRIDE-LM visual picker (multi-select when STRIDE methodology) -->
       <div class="mb-4" id="stride_category_row">
-        <label class="block text-sm font-medium mb-2">{{ _("threat.scenario_form.label_stride") }} <span class="text-danger">*</span></label>
-        <div class="stride-option-grid">
+        <label class="block text-sm font-medium mb-2">{{ _("threat.scenario_form.label_stride_categories") }} <span class="text-danger">*</span></label>
+        <div class="stride-option-grid" id="stride_multi_grid">
           {% set stride_data = [
             ('spoofing', 'S', '#3b82f6'),
             ('tampering', 'T', '#f59e0b'),
@@ -140,19 +140,31 @@ body[data-theme="dark"] .threat-form-panel {
             ('lateral_movement', 'LM', '#f97316'),
           ] %}
           {% for value, code, color in stride_data %}
-            <label class="stride-option-label" id="stride-lbl-{{ loop.index }}" data-stride="{{ value }}">
+            <label class="stride-option-label" id="stride-lbl-{{ loop.index }}" data-stride="{{ value }}"
+              style="{% if value in (form.stride_category_ids.data or []) %}border-color:{{ color }};background:{{ color }}20{% endif %}">
               <span class="stride-badge" style="background:{{ color }};color:#fff">{{ code }}</span>
               <span>{{ _("threat.stride." + value) }}</span>
             </label>
           {% endfor %}
         </div>
+        {# Hidden single-select kept for backward compat (non-STRIDE scenarios) #}
         {{ form.stride_category(class="stride-select-hidden", id="stride_category_field") }}
+        {# Multi-select hidden inputs populated by JS (STRIDE only) #}
+        <div id="stride_multi_hidden">
+          {% for cat in (form.stride_category_ids.data or []) %}
+            <input type="hidden" name="stride_category_ids" value="{{ cat }}">
+          {% endfor %}
+        </div>
       </div>
 
       <!-- Asset + title row -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
         <div class="md:col-span-5">
-          {{ render_field_with_help(form.asset_id) }}
+          {# Multi-select asset picker (US1) #}
+          <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_assets") }}</label>
+          {{ form.asset_ids(class="block w-full rounded border border-[var(--color-border)] bg-[var(--bs-body-bg)] text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500", size="4") }}
+          {# Kept for backward compat with non-STRIDE routes that still submit asset_id #}
+          {{ form.asset_id(class="hidden") }}
         </div>
         <div class="md:col-span-7">
           {{ render_field_with_help(form.title) }}
@@ -269,29 +281,73 @@ body[data-theme="dark"] .threat-form-panel {
 
 <script nonce="{{ csp_nonce }}">
 (function () {
-  function selectStride(value, el) {
-    document.getElementById('stride_category_field').value = value;
-    document.querySelectorAll('.stride-option-label').forEach(function (lbl) {
-      lbl.style.borderColor = '';
-      lbl.style.background = '';
+  // Multi-select STRIDE category picker
+  var selectedCategories = new Set(
+    Array.from(document.querySelectorAll('#stride_multi_hidden input[name="stride_category_ids"]'))
+      .map(function(el) { return el.value; })
+  );
+  var strideColors = {
+    spoofing: '#3b82f6', tampering: '#f59e0b', repudiation: '#8b5cf6',
+    information_disclosure: '#06b6d4', denial_of_service: '#ef4444',
+    elevation_of_privilege: '#10b981', lateral_movement: '#f97316'
+  };
+
+  function syncHiddenInputs() {
+    var container = document.getElementById('stride_multi_hidden');
+    container.innerHTML = '';
+    selectedCategories.forEach(function(val) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'stride_category_ids';
+      inp.value = val;
+      container.appendChild(inp);
     });
-    el.style.borderColor = '#6366f1';
-    el.style.background = 'rgba(99,102,241,0.08)';
+    // Also sync legacy single-select field (first selected value or first STRIDE)
+    var first = selectedCategories.size ? selectedCategories.values().next().value : '';
+    document.getElementById('stride_category_field').value = first;
   }
 
-  // Attach click handlers via event listeners (CSP-safe)
-  document.querySelectorAll('.stride-option-label[data-stride]').forEach(function (lbl) {
-    lbl.addEventListener('click', function () {
-      selectStride(this.dataset.stride, this);
+  function renderStrideLabels() {
+    document.querySelectorAll('#stride_multi_grid .stride-option-label[data-stride]').forEach(function(lbl) {
+      var val = lbl.dataset.stride;
+      var color = strideColors[val] || '#6366f1';
+      if (selectedCategories.has(val)) {
+        lbl.style.borderColor = color;
+        lbl.style.background = 'rgba(' + hexToRgb(color) + ',0.12)';
+      } else {
+        lbl.style.borderColor = '';
+        lbl.style.background = '';
+      }
+    });
+  }
+
+  function hexToRgb(hex) {
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return r + ',' + g + ',' + b;
+  }
+
+  document.querySelectorAll('#stride_multi_grid .stride-option-label[data-stride]').forEach(function(lbl) {
+    lbl.addEventListener('click', function() {
+      var val = this.dataset.stride;
+      if (selectedCategories.has(val)) {
+        selectedCategories.delete(val);
+      } else {
+        selectedCategories.add(val);
+      }
+      syncHiddenInputs();
+      renderStrideLabels();
     });
   });
 
-  // Pre-select on page load
-  var currentVal = document.getElementById('stride_category_field').value;
-  if (currentVal) {
-    var matching = document.querySelector('.stride-option-label[data-stride="' + currentVal + '"]');
-    if (matching) selectStride(currentVal, matching);
+  // Backfill from legacy single-select if no multi-select value set
+  if (selectedCategories.size === 0) {
+    var legacy = document.getElementById('stride_category_field').value;
+    if (legacy) {
+      selectedCategories.add(legacy);
+      syncHiddenInputs();
+    }
   }
+  renderStrideLabels();
 
   // Methodology picker
   function selectMethodology(value) {

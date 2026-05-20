@@ -795,18 +795,30 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         {% endif %}
 
         <div>
-          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('risk.ticket.label') }}</p>
-          {% if card.ticket_url %}
-          <a class="link-primary" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.ticket.open') }}</a>
-          <div class="text-[var(--color-muted)] text-sm break-all">{{ card.ticket_url }}</div>
+          <p class="font-semibold text-sm uppercase text-[var(--color-muted)] mb-1">{{ _('risk.ticket.links_label') }}</p>
+          {% set links = card.ticket_links | list %}
+          {% if links %}
+            <ul class="space-y-1">
+              {% for link in links %}
+                <li class="flex items-center gap-1 text-sm">
+                  <a href="{{ link.url }}" target="_blank" rel="noopener" class="link-primary truncate max-w-xs">{{ link.label or link.url }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% elif card.ticket_url %}
+            <a class="link-primary" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.ticket.open') }}</a>
+            <div class="text-[var(--color-muted)] text-sm break-all">{{ card.ticket_url }}</div>
           {% else %}
-          <div class="text-[var(--color-muted)] text-sm">{{ _('risk.ticket.missing') }}</div>
+            <div class="text-[var(--color-muted)] text-sm">{{ _('risk.ticket.missing') }}</div>
           {% endif %}
         </div>
 
         <div class="risk-card__actions">
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.edit', risk_id=card.id) }}">{{ _('Edit risk') }}</a>
-          {% if card.ticket_url %}
+          {% set first_link = card.ticket_links[0] if card.ticket_links else none %}
+          {% if first_link %}
+          <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ first_link.url }}" target="_blank" rel="noopener">{{ _('risk.actions.view_ticket') }}</a>
+          {% elif card.ticket_url %}
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ card.ticket_url }}" target="_blank" rel="noopener">{{ _('risk.actions.view_ticket') }}</a>
           {% endif %}
           {% if api_endpoint_available %}

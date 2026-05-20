@@ -43,6 +43,7 @@ def _risk_query():
         sa.orm.selectinload(Risk.impact_area_links),
         sa.orm.selectinload(Risk.controls),
         sa.orm.selectinload(Risk.treatment_owner),
+        sa.orm.selectinload(Risk.ticket_links),
     )
 
 
