@@ -595,3 +595,56 @@ admin.backup.restore.queued
 - Existing admin routes (only new routes added)
 - Database schema (no new models — key stored in file, not DB)
 - Any other Flask blueprints or modules
+
+---
+
+## Partial Restore Feature (feature 002)
+
+Partial restore allows administrators to restore individual tables from a backup without replacing the entire database.
+
+### Supported Backup Formats
+
+Only the following formats support partial restore:
+
+| Format | Backend | Notes |
+|---|---|---|
+| `.db.gz` | SQLite | Compressed SQLite database |
+| `.db.gz.enc` | SQLite | Encrypted + compressed SQLite database |
+| `.sql.gz` | PostgreSQL | Compressed plain pg_dump SQL |
+| `.sql.gz.enc` | PostgreSQL | Encrypted + compressed plain pg_dump SQL |
+
+All other formats (`.dump`, `.dump.gz`, etc.) require a full restore.
+
+### Operator Workflow
+
+1. Navigate to **Admin → Backup → Partial Restore**.
+2. Upload a supported backup file and optionally provide the encryption key.
+3. Review the table list and select the tables to restore.
+4. Review the conflict preview (shows existing rows that will be skipped).
+5. Confirm execution. Each selected table is restored using skip-existing semantics.
+6. Review per-table results on the results page.
+
+### Conflict Strategy
+
+Partial restore uses a **skip-existing** strategy:
+- Rows with a matching primary key that already exist in the live database are skipped.
+- Only new rows (by primary key) are inserted.
+- No existing data is overwritten.
+
+### Identity / Auth Tables
+
+The following tables form the identity group and **must be selected together** when any one of them is included:
+
+- `users`, `roles`, `user_roles`, `aad_group_mappings`, `mfa_settings`, `passkey_credentials`
+
+`scim_tokens` and `audit_log` are intentionally excluded from the identity group.
+
+### Preview Expiry and Concurrency
+
+- An inspection is valid for **30 minutes**. After that, the administrator must re-inspect the backup.
+- Only one partial restore may run at a time. A file-based lock prevents concurrent executions. Stale locks older than 2 hours are automatically cleared.
+- Ephemeral preview/run state is stored in a temporary directory (`{tempdir}/scaffold_partial_restore/`) and is not persisted to the database.
+
+### Fallback: Full Restore
+
+If a backup format is not supported for partial restore, use the standard **Full Restore** workflow instead (Admin → Backup → Restore).

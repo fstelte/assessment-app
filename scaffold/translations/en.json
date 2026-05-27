@@ -226,14 +226,14 @@
         },
         "operational_status": {
           "label": "Operational status",
-          "placeholder": "— select —",
+          "placeholder": "â€” select â€”",
           "operational": "Operational",
           "under_development": "Under development",
           "major_modification": "Major modification"
         },
         "system_type": {
           "label": "System type",
-          "placeholder": "— select —",
+          "placeholder": "â€” select â€”",
           "major_application": "Major application",
           "general_support_system": "General support system"
         },
@@ -439,8 +439,8 @@
         },
         "not_linked": "Not linked",
         "not_set": "Not set",
-        "pagination": "Showing {start}–{end} of {total}",
-        "pagination_with_pages": "Showing {start}–{end} of {total} (page {page} of {pages})",
+        "pagination": "Showing {start}â€“{end} of {total}",
+        "pagination_with_pages": "Showing {start}â€“{end} of {total} (page {page} of {pages})",
         "empty": "No components found for this selection.",
         "confirm_delete": "Delete this component?"
       },
@@ -543,7 +543,7 @@
         "scope": "Scope",
         "search": "Search",
         "component": "Component",
-        "search_placeholder": "Search components…",
+        "search_placeholder": "Search componentsâ€¦",
         "apply": "Apply",
         "reset": "Reset"
       },
@@ -555,7 +555,7 @@
         "start_dpia": "Start DPIA",
         "dpia_short": "DPIA"
       },
-      "showing_count": "Showing {start}–{end} of {total} components",
+      "showing_count": "Showing {start}â€“{end} of {total} components",
       "no_components": "No components registered yet.",
       "add_button": "Add component",
       "export_inventory": "Export inventory",
@@ -575,10 +575,10 @@
       "no_results": "No components match this filter.",
       "dpia_count_tooltip": "{count} active DPIA",
       "no_dpia_tooltip": "No active DPIA",
-      "delete_confirm": "Delete ‘{name}’?"
+      "delete_confirm": "Delete â€˜{name}â€™?"
     },
     "manage_component_availability": {
-      "title": "Availability \u2013 {component}",
+      "title": "Availability – {component}",
       "back": "Back to Components",
       "no_context": "No context",
       "badge": "Availability Targets",
@@ -653,7 +653,7 @@
       }
     },
     "view_consequences": {
-      "title": "Consequences \u2013 {component}",
+      "title": "Consequences – {component}",
       "back": "Back to Components",
       "heading": "Consequences for {component}",
       "empty": "No consequences have been added yet.",
@@ -671,7 +671,7 @@
       }
     },
     "manage_component_consequence": {
-      "title": "Consequence \u2013 {component}",
+      "title": "Consequence – {component}",
       "back": "Back to Components",
       "view_existing": "View existing consequences",
       "no_context": "No context",
@@ -718,7 +718,7 @@
           "slug": "Slug",
           "components": "Components",
           "unassigned": "Not assigned",
-          "unassigned_slug": "—"
+          "unassigned_slug": "â€”"
         },
         "columns": {
           "bia": "BIA",
@@ -892,7 +892,7 @@
         "rpo": "RPO",
         "masl": "MASL"
       },
-      "showing_count": "{start}–{end} of {total} requirements",
+      "showing_count": "{start}â€“{end} of {total} requirements",
       "no_requirements": "No availability requirements registered yet.",
       "availability": {
         "title": "Availability Requirements",
@@ -902,7 +902,7 @@
     },
     "all_consequences": {
       "heading": "CIA Consequences",
-      "showing_count": "{start}–{end} of {total} consequences",
+      "showing_count": "{start}â€“{end} of {total} consequences",
       "no_consequences": "No consequences registered yet.",
       "list_title": "All consequences",
       "count_suffix": "consequences",
@@ -1004,9 +1004,9 @@
       },
       "rating": {
         "label": "Rating",
-        "green": "Green – effective",
-        "amber": "Amber – partially effective",
-        "red": "Red – not effective"
+        "green": "Green â€“ effective",
+        "amber": "Amber â€“ partially effective",
+        "red": "Red â€“ not effective"
       },
       "start": {
         "title": "Start Assessment",
@@ -1279,7 +1279,7 @@
         "identifier": "Identifier",
         "keyword": {
           "label": "Keyword",
-          "placeholder": "Search by name or description…"
+          "placeholder": "Search by name or descriptionâ€¦"
         },
         "search": "Search",
         "clear": "Clear filters"
@@ -1389,7 +1389,7 @@
         "confirm_delete": "Delete this user account? This action cannot be undone."
       },
       "form": {
-        "select_role": "Select a role…",
+        "select_role": "Select a roleâ€¦",
         "add_role": "Add role",
         "remove": "Remove"
       },
@@ -1456,7 +1456,7 @@
       "create": {
         "heading": "Create encrypted backup",
         "description": "Creates a new backup of the database. If an encryption key is configured via the environment, it will be used automatically. You can also provide a custom key below.",
-        "key_configured": "Encryption key configured via environment — will be used unless you provide a custom key below.",
+        "key_configured": "Encryption key configured via environment â€” will be used unless you provide a custom key below.",
         "no_key": "No encryption key configured in the environment. Enter a custom key below to encrypt this backup, or leave it empty to create an unencrypted backup.",
         "submit": "Create backup now",
         "error": "Backup failed: {error}",
@@ -1488,6 +1488,112 @@
         "decrypt_failed": "Decryption failed. Please verify the encryption key and try again.",
         "write_error": "Failed to save backup file: {error}",
         "queued": "Backup file '{filename}' queued for restore."
+      },
+      "partial_restore": {
+        "nav_link": "Partial Restore",
+        "title": "Partial Restore",
+        "heading": "Partial Restore",
+        "subtitle": "Select and restore specific tables from a backup file.",
+        "link_back": "Back to backup dashboard",
+        "link_partial_restore": "Partial Restore",
+        "entry": {
+          "heading": "Select a backup",
+          "description": "Select a backup file to inspect and choose which tables to restore.",
+          "file_label": "Backup file",
+          "file_required": "Please select a backup file.",
+          "file_type": "Unsupported file type. Supported: .db.gz, .db.gz.enc, .sql.gz, .sql.gz.enc",
+          "key_label": "Encryption key (optional)",
+          "key_placeholder": "Leave empty to use the configured key",
+          "key_help": "Required if the backup is encrypted. Leave empty to use the configured environment key.",
+          "submit": "Inspect backup",
+          "not_eligible": "This backup format does not support partial restore. Use full restore instead.",
+          "decrypt_failed": "Decryption failed. Verify the encryption key and try again.",
+          "inspect_failed": "Could not inspect this backup. It may be corrupted or use an unsupported format.",
+          "active_run": "A partial restore is already in progress. Please wait until it completes before starting another."
+        },
+        "inspect": {
+          "heading": "Select tables to restore",
+          "description": "Choose the tables you want to restore from this backup.",
+          "source_format": "Source format",
+          "table_count": "Available tables",
+          "row_count": "Rows",
+          "row_count_estimate": "{count} (estimate)",
+          "row_count_exact": "{count}",
+          "sensitivity_normal": "Normal",
+          "sensitivity_identity": "Identity-sensitive",
+          "table_select_all": "Select all",
+          "table_deselect_all": "Deselect all",
+          "warning_identity": "You have selected identity/auth tables. All members of the identity group must be selected together.",
+          "warning_sensitive": "Warning: You have selected sensitive identity tables. Restoring these tables will replace user accounts, roles, and authentication settings. Proceed only if you are certain this is needed.",
+          "group_required": "Identity/auth tables must be selected as a group: {tables}",
+          "no_eligible_tables": "No eligible tables found in this backup.",
+          "submit": "Preview restore plan",
+          "expiry_notice": "This inspection expires at {expires_at}. Start a new inspection if it expires.",
+          "full_restore_only": "This backup cannot be partially restored. Use full restore instead."
+        },
+        "preview": {
+          "heading": "Restore preview",
+          "description": "Review the impact of the restore before executing.",
+          "table": "Table",
+          "backup_rows": "Backup rows",
+          "existing_rows": "Existing rows",
+          "conflicting": "Conflicting",
+          "importable": "Importable",
+          "conflict_strategy": "Strategy",
+          "skip_existing": "Skip existing",
+          "blocked": "Blocked",
+          "blocked_reason": "Reason",
+          "conflict_key_single": "Single primary key",
+          "conflict_key_composite": "Composite primary key",
+          "conflict_key_undetectable": "No detectable key",
+          "warning_identity": "Warning: You are about to restore identity/auth tables. User accounts, roles, and authentication settings will be affected.",
+          "dependencies_heading": "Required dependencies",
+          "dependency_included": "Auto-included (required)",
+          "no_conflicts": "No conflicts detected.",
+          "submit": "Execute restore",
+          "cancel": "Cancel",
+          "expiry_notice": "This preview expires. Re-inspect if the page has been open for too long.",
+          "expired": "This preview has expired. Please start a new inspection."
+        },
+        "execute": {
+          "heading": "Executing restore",
+          "revalidation_failed": "Pre-execution validation failed. The restore was not started.",
+          "blocked_tables": "The following tables were blocked and could not be restored: {tables}",
+          "no_tables_selected": "No tables were selected. The restore was not started.",
+          "identity_incomplete": "Identity/auth tables must all be selected together. The restore was not started."
+        },
+        "results": {
+          "heading": "Restore results",
+          "title": "Restore results",
+          "subtitle": "Summary of the partial restore operation.",
+          "status_completed": "Completed",
+          "status_partial": "Partially completed",
+          "status_failed": "Failed",
+          "status_blocked": "Blocked",
+          "table": "Table",
+          "status": "Status",
+          "restored_rows": "Rows restored",
+          "skipped_rows": "Rows skipped (conflict)",
+          "outcome_restored": "Restored",
+          "outcome_skipped": "Skipped",
+          "outcome_blocked": "Blocked",
+          "outcome_failed": "Failed",
+          "blocked_reason": "Reason",
+          "error_detail": "Error detail",
+          "link_new": "Start a new partial restore",
+          "link_back": "Back to backup dashboard",
+          "no_results": "No table results recorded."
+        },
+        "schema_mismatch": "Table \"{table}\" exists in the backup but is missing from the current schema. Use full restore or manual recovery.",
+        "no_key_error": "Backup is encrypted but no decryption key is available.",
+        "parse_error": "Failed to parse backup contents: {error}",
+        "dependency_missing": "Required dependency \"{table}\" is missing from the selection.",
+        "dedup_notice": "Duplicate table entries were removed from the selection.",
+        "repeat_run_notice": "Some rows were already restored in a previous run and have been skipped.",
+        "backend_unsupported": "The backup format is not supported for partial restore with the current database backend. Use full restore instead.",
+        "pgsql_restore_failed": "PostgreSQL partial restore failed for table \"{table}\": {error}",
+        "dependency_state_blocked": "Table \"{table}\" is blocked because a required dependency could not be restored.",
+        "row_count_unavailable": "Row count unavailable"
       }
     },
     "audit": {
@@ -1664,7 +1770,7 @@
         "page_title": "Risk severity thresholds"
       },
       "edit": {
-        "title": "Edit risk · {title}",
+        "title": "Edit risk Â· {title}",
         "heading": "Edit {title}",
         "subtitle": "Update fields and severity for this risk entry.",
         "summary": {
@@ -2120,7 +2226,7 @@
         "start_blocked": "Delete the existing DPIA to create a new one.",
         "start_disabled": "Link this component to a BIA first",
         "empty": "No components match your filters.",
-        "pagination": "Showing {start}–{end} of {total} components"
+        "pagination": "Showing {start}â€“{end} of {total} components"
       },
       "help": {
         "title": "Need to update component data?",
@@ -2574,7 +2680,7 @@
       "confirm_delete": "Are you sure you want to delete this scenario? This will also delete the associated response plan."
     },
     "scenarios": {
-      "title": "Scenarios · {component}",
+      "title": "Scenarios Â· {component}",
       "heading": "Incident Scenarios",
       "empty": "No scenarios defined. Create an incident scenario to start.",
       "back": "Back to Scenarios"
@@ -2742,7 +2848,7 @@
       "preconditions": "Preconditions",
       "impact_description": "Impact description",
       "affected_cia": "Affected CIA",
-      "likelihood_impact": "Likelihood: {likelihood} \u00d7 Impact: {impact}",
+      "likelihood_impact": "Likelihood: {likelihood} × Impact: {impact}",
       "treatment": "Treatment",
       "mitigation": "Mitigation",
       "residual_risk": "Residual risk",
@@ -2893,9 +2999,9 @@
     },
     "view": {
       "title": "System Security Plan",
-      "back": "\u2190 All SSPs",
+      "back": "← All SSPs",
       "quick_actions": "Quick Actions",
-      "add_poam_item": "Add POA\u0026M Item",
+      "add_poam_item": "Add POA&M Item",
       "edit_metadata": "Edit Metadata",
       "interconnections": "Interconnections",
       "controls": "Controls",
@@ -2938,12 +3044,12 @@
       "no_interconnections": "No interconnections recorded.",
       "not_specified": "Not specified.",
       "derived_from_bia": "Derived from BIA",
-      "dpia_note": "DPIA assessment exists for one or more components \u2014 review privacy impact as part of categorization.",
-      "open_model": "Open model \u2192",
+      "dpia_note": "DPIA assessment exists for one or more components — review privacy impact as part of categorization.",
+      "open_model": "Open model →",
       "no_scenarios": "No scenarios recorded.",
       "no_threat_model": "No threat models linked to this system. To link one, open the threat model, click Edit, and select {name} from the Linked System (BIA) dropdown.",
       "no_controls": "No controls linked.",
-      "manage_controls": "Manage controls \u2192",
+      "manage_controls": "Manage controls →",
       "kpis_kris": "Relevant KPIs / KRIs",
       "what_monitored": "What Will Be Monitored",
       "monitored_by": "Monitored By",
@@ -2956,9 +3062,9 @@
       "contact_col": "Contact",
       "due_col": "Due",
       "status_col": "Status",
-      "manage_poam": "Manage POA&M \u2192",
+      "manage_poam": "Manage POA&M →",
       "no_poam": "No POA&M items recorded.",
-      "add_items": "Add items \u2192",
+      "add_items": "Add items →",
       "plan_completion_date": "Plan Completion Date",
       "plan_approval_date": "Plan Approval Date",
       "created": "Created",
@@ -3010,7 +3116,7 @@
     },
     "edit": {
       "title": "Edit SSP Metadata",
-      "back": "\u2190 Back to SSP",
+      "back": "← Back to SSP",
       "section_boundary": "Authorization Boundary",
       "boundary_auto_label": "Auto-retrieved from BIA",
       "boundary_components": "BIA Components",
@@ -3019,7 +3125,7 @@
       "boundary_empty": "No components or interconnections found in the linked BIA.",
       "boundary_manual_hint": "The items above are auto-retrieved from the linked BIA. Edit the text below to refine the boundary or add further details.",
       "boundary_add_item_label": "Add item manually",
-      "boundary_add_item_placeholder": "e.g. Payment API, DMZ firewall…",
+      "boundary_add_item_placeholder": "e.g. Payment API, DMZ firewallâ€¦",
       "boundary_add_item_btn": "Add",
       "section_laws": "Laws, Regulations & Policies",
       "section_dates": "Plan Dates",
@@ -3027,8 +3133,8 @@
       "cancel": "Cancel"
     },
     "controls": {
-      "page_title": "Section 14 \u2014 Security Controls",
-      "back": "\u2190 Back to SSP",
+      "page_title": "Section 14 — Security Controls",
+      "back": "← Back to SSP",
       "add": "Add Control",
       "no_controls": "No controls linked yet.",
       "no_controls_hint": "Controls are auto-seeded from Risk items and Threat Models when the SSP is created.",
@@ -3039,19 +3145,19 @@
     },
     "add_control": {
       "title": "Add Control",
-      "back": "\u2190 Back to Controls",
+      "back": "← Back to Controls",
       "select": "Select Control",
       "all_linked": "All available controls are already linked to this SSP.",
       "add_selected": "Add Selected Control"
     },
     "edit_control": {
       "title": "Edit Control Entry",
-      "back": "\u2190 Back to Controls",
+      "back": "← Back to Controls",
       "cancel": "Cancel"
     },
     "interconnections": {
       "title": "System Interconnections",
-      "back": "\u2190 Back to SSP",
+      "back": "← Back to SSP",
       "registered": "Registered Interconnections",
       "add_section": "Add Interconnection",
       "edit": "Edit",
@@ -3060,7 +3166,7 @@
     },
     "edit_interconnection": {
       "title": "Edit Interconnection",
-      "back": "\u2190 Back to Interconnections",
+      "back": "← Back to Interconnections",
       "cancel": "Cancel"
     },
     "poam": {
@@ -3071,10 +3177,10 @@
       "completed": "Completed",
       "milestones": "Milestones",
       "no_items": "No POA&M items yet.",
-      "add_first": "Add the first item \u2192",
+      "add_first": "Add the first item →",
       "edit": "Edit",
       "delete": "Delete",
-      "delete_confirm": "Delete this POA\u0026M item and its milestones?"
+      "delete_confirm": "Delete this POA&M item and its milestones?"
     },
     "poam_form": {
       "add_title": "Add POA&M Item",
@@ -3147,7 +3253,7 @@
         "resources_required": "Budget, personnel time, tools, or other resources required to complete this remediation.",
         "point_of_contact": "Name or role of the person accountable for completing this remediation.",
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
-        "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, \u20ac5,000).",
+        "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
         "status": "Current remediation status of this POA&M item."
       }
     }

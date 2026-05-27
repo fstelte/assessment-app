@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.backup.partial_restore.preview.heading') }}{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.backup.partial_restore.preview.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.backup.partial_restore.preview.description') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.partial_restore_entry') }}">{{ _('admin.backup.partial_restore.link_back') }}</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-4 rounded-md px-4 py-3 text-sm
+      {% if category == 'error' or category == 'danger' %}bg-red-500/15 text-red-400 border border-red-500/30
+      {% elif category == 'success' %}bg-green-500/15 text-green-400 border border-green-500/30
+      {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+{% set has_identity = preview_tables | selectattr('sensitivity', 'equalto', 'identity_sensitive') | list | length > 0 %}
+
+{% if has_identity %}
+  <div class="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 font-medium">
+    {{ _('admin.backup.partial_restore.preview.warning_identity') }}
+  </div>
+{% endif %}
+
+<div class="rounded-md border border-[var(--color-border)] overflow-hidden mb-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <th class="px-4 py-2 text-left font-semibold">{{ _('admin.backup.partial_restore.preview.table') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.preview.backup_rows') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.preview.existing_rows') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.preview.conflicting') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.preview.importable') }}</th>
+        <th class="px-4 py-2 text-left font-semibold">{{ _('admin.backup.partial_restore.preview.conflict_strategy') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in preview_tables %}
+        <tr class="border-b border-[var(--color-border)] last:border-0 hover:bg-white/5
+            {% if t.conflict_summary and t.conflict_summary.blocked_reason %}bg-red-500/5{% endif %}">
+          <td class="px-4 py-2 font-mono">
+            {{ t.table_name }}
+            {% if t.auto_included %}
+              <span class="ml-1 inline-flex items-center text-xs font-semibold rounded-full px-2 py-0.5 bg-blue-500/20 text-blue-300">
+                {{ _('admin.backup.partial_restore.preview.dependency_included') }}
+              </span>
+            {% endif %}
+          </td>
+          {% if t.conflict_summary %}
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ t.conflict_summary.backup_row_count }}</td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ t.conflict_summary.existing_row_count }}</td>
+            <td class="px-4 py-2 text-right {% if t.conflict_summary.conflicting_row_count > 0 %}text-amber-400{% else %}text-[var(--color-muted)]{% endif %}">
+              {{ t.conflict_summary.conflicting_row_count }}
+            </td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ t.conflict_summary.importable_row_count }}</td>
+            <td class="px-4 py-2">
+              {% if t.conflict_summary.blocked_reason %}
+                <span class="text-red-400 font-medium">{{ _('admin.backup.partial_restore.preview.blocked') }}</span>
+                <p class="text-xs text-red-400/70 mt-0.5">{{ t.conflict_summary.blocked_reason }}</p>
+              {% else %}
+                <span class="text-xs text-[var(--color-muted)]">{{ _('admin.backup.partial_restore.preview.skip_existing') }}</span>
+              {% endif %}
+            </td>
+          {% else %}
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">—</td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">—</td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">—</td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">—</td>
+            <td class="px-4 py-2 text-xs text-[var(--color-muted)]">{{ _('admin.backup.partial_restore.preview.skip_existing') }}</td>
+          {% endif %}
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6" class="px-4 py-6 text-center text-[var(--color-muted)]">
+            {{ _('admin.backup.partial_restore.inspect.no_eligible_tables') }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="text-xs text-[var(--color-muted)] mb-4">{{ _('admin.backup.partial_restore.preview.expiry_notice') }}</p>
+
+<form method="post" action="{{ url_for('admin.partial_restore_execute') }}">
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="run_id" value="{{ run_id }}">
+
+  <div class="flex gap-3 items-center">
+    {{ form.submit(
+         class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+       ) }}
+    <a href="{{ url_for('admin.partial_restore_entry') }}"
+       class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+      {{ _('admin.backup.partial_restore.preview.cancel') }}
+    </a>
+  </div>
+</form>
+{% endblock %}
