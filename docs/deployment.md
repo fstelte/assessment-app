@@ -137,3 +137,15 @@ Refer to `docs/authentication.md` for the full end-to-end setup guide, troublesh
   confirm pagination, permissions, and static assets still function.
 - Monitor logs and metrics for at least one full login/logout cycle. Keep the
   previous release artefact available for quick rollback if regressions appear.
+
+## Partial Restore
+
+Partial restore is available from **Admin → Backup → Partial Restore**.
+
+- Supported formats: `.db.gz`, `.db.gz.enc`, `.sql.gz`, `.sql.gz.enc`.
+- Strategy: skip-existing (INSERT OR IGNORE / ON CONFLICT DO NOTHING). No data is overwritten.
+- Identity tables (`users`, `roles`, `user_roles`, etc.) must be selected as a group.
+- An inspection expires after 30 minutes. If it expires the administrator must re-upload the backup.
+- A file lock in `{tempdir}/scaffold_partial_restore/` prevents concurrent restore runs. Stale locks (>2 hours) are auto-cleared.
+- All inspect and execute actions are written to the admin audit trail.
+- If a backup format is not supported for partial restore, use the **Full Restore** workflow instead.

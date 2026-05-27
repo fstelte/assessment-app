@@ -78,6 +78,9 @@ from .forms import (
     InformationLabelDeleteForm,
     InformationLabelForm,
     InformationLabelToggleForm,
+    PartialRestoreInspectForm,
+    PartialRestoreSelectForm,
+    PartialRestoreExecuteForm,
 )
 from .backup_crypto import try_decrypt
 from .backup_utils import (
@@ -87,6 +90,18 @@ from .backup_utils import (
     get_configured_key,
     read_backup_status,
     write_backup_status,
+    build_inspection,
+    save_inspection_state,
+    load_inspection_state,
+    save_run_state,
+    load_run_state,
+    dedup_table_selection,
+    validate_table_selection,
+    check_schema_compatibility,
+    build_preview_tables,
+    orchestrate_partial_restore,
+    acquire_run_lock,
+    is_eligible_for_partial_restore,
 )
 from ...core.audit import log_event
 from ...core.security import invalidate_user_sessions
@@ -1813,6 +1828,273 @@ def download_backup(filename):
     if target.name in {"backup-status.json", ".encryption_key"}:
         abort(403)
     return send_file(target, as_attachment=True, download_name=target.name)
+
+
+# ---------------------------------------------------------------------------
+# Partial Restore
+# ---------------------------------------------------------------------------
+
+
+@bp.get("/backup/partial-restore")
+@login_required
+@require_fresh_login()
+def partial_restore_entry():
+    """Entry page: upload form to begin partial-restore inspection."""
+    _require_admin()
+    form = PartialRestoreInspectForm()
+    # Check for an already-active run and warn the user
+    active = acquire_run_lock()
+    if active:
+        # We acquired the lock just to test — release it immediately
+        from .backup_utils import release_run_lock
+        release_run_lock()
+    return render_template("admin/partial_restore.html", form=form)
+
+
+@bp.post("/backup/partial-restore/inspect")
+@login_required
+@require_fresh_login()
+def partial_restore_inspect():
+    """Inspect the uploaded backup and show the table-selection page."""
+    _require_admin()
+    form = PartialRestoreInspectForm()
+    if not form.validate_on_submit():
+        for errs in form.errors.values():
+            for err in errs:
+                flash(err, "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    uploaded = form.backup_file.data
+    filename = uploaded.filename or ""
+    if not is_eligible_for_partial_restore(filename):
+        flash(_("admin.backup.partial_restore.entry.not_eligible"), "warning")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    # Check single-run guard before wasting time on inspect
+    if not acquire_run_lock():
+        flash(_("admin.backup.partial_restore.entry.active_run"), "warning")
+        return redirect(url_for("admin.partial_restore_entry"))
+    # Release immediately — we only use the lock during actual execution
+    from .backup_utils import release_run_lock
+    release_run_lock()
+
+    file_bytes = uploaded.read()
+    provided_key = (form.encryption_key.data or "").strip() or None
+    configured_key = get_configured_key(current_app)
+    encryption_key = provided_key or configured_key
+
+    try:
+        inspection = build_inspection(filename, file_bytes, encryption_key=encryption_key)
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "ecrypt" in msg.lower():
+            flash(_("admin.backup.partial_restore.entry.decrypt_failed"), "danger")
+        else:
+            flash(_("admin.backup.partial_restore.entry.inspect_failed"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+    except ValueError:
+        flash(_("admin.backup.partial_restore.entry.not_eligible"), "warning")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    if inspection.full_restore_only:
+        flash(_("admin.backup.partial_restore.inspect.full_restore_only"), "warning")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    # Store the decrypted file bytes so the execute path can re-use them
+    # without needing a re-upload. We reuse the inspection_id as a key.
+    # If the file was encrypted, decrypt now so execute never needs the key again.
+    if inspection.encrypted and encryption_key:
+        from .backup_crypto import try_decrypt
+        from cryptography.fernet import InvalidToken
+        try:
+            bytes_to_cache = try_decrypt(file_bytes, [encryption_key])
+        except (InvalidToken, Exception):
+            bytes_to_cache = file_bytes  # fallback; won't succeed on execute either
+    else:
+        bytes_to_cache = file_bytes
+    _store_backup_bytes(inspection.inspection_id, bytes_to_cache)
+
+    save_inspection_state(inspection)
+    log_event(
+        action="partial_restore_inspect",
+        entity_type="backup",
+        details={
+            "backup_filename": filename,
+            "source_format": inspection.source_format,
+            "table_count": len(inspection.table_summaries),
+        },
+    )
+    db.session.commit()
+
+    select_form = PartialRestoreSelectForm()
+    return render_template(
+        "admin/partial_restore_inspect.html",
+        inspection=inspection,
+        form=select_form,
+    )
+
+
+@bp.post("/backup/partial-restore/preview")
+@login_required
+@require_fresh_login()
+def partial_restore_preview():
+    """Build a preview of the restore plan for the selected tables."""
+    _require_admin()
+
+    inspection_id = (request.form.get("inspection_id") or "").strip()
+    inspection = load_inspection_state(inspection_id)
+    if inspection is None:
+        flash(_("admin.backup.partial_restore.preview.expired"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    selected_tables = request.form.getlist("selected_tables")
+    selected_tables = dedup_table_selection(selected_tables)
+
+    if not selected_tables:
+        flash(_("admin.backup.partial_restore.execute.no_tables_selected"), "warning")
+        return redirect(url_for("admin.partial_restore_inspect"))
+
+    errors = validate_table_selection(selected_tables)
+    if errors:
+        for err in errors:
+            flash(err, "warning")
+        select_form = PartialRestoreSelectForm()
+        return render_template(
+            "admin/partial_restore_inspect.html",
+            inspection=inspection,
+            form=select_form,
+        )
+
+    # Build preview tables (with conflict info where available)
+    preview_tables = build_preview_tables(inspection.table_summaries, selected_tables, db.engine)
+
+    # Persist a preview run record
+    from .backup_utils import PartialRestoreRun
+    import uuid as _uuid
+    run_id = str(_uuid.uuid4())
+    run = PartialRestoreRun(
+        run_id=run_id,
+        inspection_id=inspection_id,
+        initiated_by_user_id=current_user.id if current_user.is_authenticated else None,
+        selected_tables=selected_tables,
+        started_at=datetime.now(UTC),
+        completed_at=None,
+        revalidated_at=None,
+        status="previewed",
+    )
+    save_run_state(run)
+
+    execute_form = PartialRestoreExecuteForm()
+    return render_template(
+        "admin/partial_restore_preview.html",
+        inspection=inspection,
+        preview_tables=preview_tables,
+        run_id=run_id,
+        form=execute_form,
+    )
+
+
+@bp.post("/backup/partial-restore/execute")
+@login_required
+@require_fresh_login()
+def partial_restore_execute():
+    """Execute the partial restore and redirect to the results page."""
+    _require_admin()
+
+    form = PartialRestoreExecuteForm()
+    if not form.validate_on_submit():
+        flash(_("admin.backup.partial_restore.execute.revalidation_failed"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    run_id = (request.form.get("run_id") or "").strip()
+    run = load_run_state(run_id)
+    if run is None or run.status != "previewed":
+        flash(_("admin.backup.partial_restore.preview.expired"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    inspection = load_inspection_state(run.inspection_id)
+    if inspection is None:
+        flash(_("admin.backup.partial_restore.preview.expired"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    file_bytes = _load_backup_bytes(run.inspection_id)
+    if file_bytes is None:
+        flash(_("admin.backup.partial_restore.entry.inspect_failed"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    try:
+        completed_run = orchestrate_partial_restore(
+            inspection=inspection,
+            file_bytes=file_bytes,
+            selected_tables=run.selected_tables,
+            user_id=current_user.id if current_user.is_authenticated else None,
+            engine=db.engine,
+        )
+    except ValueError as exc:
+        flash(str(exc), "warning")
+        return redirect(url_for("admin.partial_restore_entry"))
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "progress" in msg.lower():
+            flash(_("admin.backup.partial_restore.entry.active_run"), "warning")
+        else:
+            flash(msg, "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
+
+    # Audit the completed restore
+    table_outcomes = {r.table_name: r.status for r in completed_run.table_results}
+    skipped_counts = {r.table_name: r.skipped_conflict_count for r in completed_run.table_results}
+    log_event(
+        action="partial_restore_execute",
+        entity_type="backup",
+        details={
+            "backup_filename": inspection.backup_filename,
+            "source_format": inspection.source_format,
+            "selected_tables": completed_run.selected_tables,
+            "status": completed_run.status,
+            "skipped_conflict_counts": skipped_counts,
+            "table_outcomes": table_outcomes,
+        },
+    )
+    db.session.commit()
+
+    _cleanup_backup_bytes(run.inspection_id)
+
+    return redirect(url_for("admin.partial_restore_results", run_id=completed_run.run_id))
+
+
+@bp.get("/backup/partial-restore/results/<run_id>")
+@login_required
+@require_fresh_login()
+def partial_restore_results(run_id: str):
+    """Show the results of a completed partial restore."""
+    _require_admin()
+    run = load_run_state(run_id)
+    if run is None:
+        abort(404)
+    return render_template("admin/partial_restore_results.html", run=run)
+
+
+# ---------------------------------------------------------------------------
+# Partial restore – in-memory backup bytes cache (request-scope helpers)
+# ---------------------------------------------------------------------------
+_BACKUP_BYTES_CACHE: dict[str, bytes] = {}
+_BACKUP_BYTES_LOCK = __import__("threading").Lock()
+
+
+def _store_backup_bytes(key: str, data: bytes) -> None:
+    with _BACKUP_BYTES_LOCK:
+        _BACKUP_BYTES_CACHE[key] = data
+
+
+def _load_backup_bytes(key: str) -> bytes | None:
+    with _BACKUP_BYTES_LOCK:
+        return _BACKUP_BYTES_CACHE.get(key)
+
+
+def _cleanup_backup_bytes(key: str) -> None:
+    with _BACKUP_BYTES_LOCK:
+        _BACKUP_BYTES_CACHE.pop(key, None)
 
 
 # ---------------------------------------------------------------------------

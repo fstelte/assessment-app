@@ -11,6 +11,8 @@
        href="{{ url_for('admin.list_users') }}">{{ _('admin.backup.link_back_to_admin') }}</a>
     <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
        href="{{ url_for('admin.restore_backup') }}">{{ _('admin.backup.link_restore') }}</a>
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.partial_restore_entry') }}">{{ _('admin.backup.partial_restore.nav_link') }}</a>
   </div>
 </div>
 

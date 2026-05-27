@@ -164,3 +164,40 @@ class BackupRestoreForm(FlaskForm):
         description=_l("admin.backup.restore.key_help"),
     )
     submit = SubmitField(_label("admin.backup.restore.submit"))
+
+
+class PartialRestoreInspectForm(FlaskForm):
+    """Upload a backup file for partial restore inspection."""
+
+    backup_file = FileField(
+        _label("admin.backup.partial_restore.entry.file_label"),
+        validators=[
+            FileRequired(message=_message("admin.backup.partial_restore.entry.file_required")),
+            FileAllowed(
+                ["gz", "enc"],
+                message=_message("admin.backup.partial_restore.entry.file_type"),
+            ),
+        ],
+    )
+    encryption_key = PasswordField(
+        _label("admin.backup.partial_restore.entry.key_label"),
+        validators=[Optional(), Length(max=128)],
+        description=_l("admin.backup.partial_restore.entry.key_help"),
+    )
+    submit = SubmitField(_label("admin.backup.partial_restore.entry.submit"))
+
+
+class PartialRestoreSelectForm(FlaskForm):
+    """Table-selection form submitted to the preview endpoint.
+
+    selected_tables is handled as a multi-value field via request.form.getlist().
+    This form only carries CSRF + the hidden inspection_id.
+    """
+
+    submit = SubmitField(_label("admin.backup.partial_restore.inspect.submit"))
+
+
+class PartialRestoreExecuteForm(FlaskForm):
+    """Confirmation form that triggers the actual partial restore execution."""
+
+    submit = SubmitField(_label("admin.backup.partial_restore.preview.submit"))

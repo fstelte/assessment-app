@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.backup.partial_restore.inspect.heading') }}{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.backup.partial_restore.inspect.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.backup.partial_restore.inspect.description') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5"
+       href="{{ url_for('admin.partial_restore_entry') }}">{{ _('admin.backup.partial_restore.link_back') }}</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="mb-4 rounded-md px-4 py-3 text-sm
+      {% if category == 'error' or category == 'danger' %}bg-red-500/15 text-red-400 border border-red-500/30
+      {% elif category == 'success' %}bg-green-500/15 text-green-400 border border-green-500/30
+      {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5 mb-4">
+  <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+    <dt class="text-[var(--color-muted)]">{{ _('admin.backup.partial_restore.inspect.source_format') }}</dt>
+    <dd class="font-mono">{{ inspection.source_format }}</dd>
+    <dt class="text-[var(--color-muted)]">{{ _('admin.backup.partial_restore.inspect.table_count') }}</dt>
+    <dd>{{ inspection.table_summaries | length }}</dd>
+  </dl>
+  {% if inspection.parse_warnings %}
+    <div class="mt-3 rounded-md border border-amber-500/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-300">
+      {% for w in inspection.parse_warnings %}<p class="mb-0">{{ w }}</p>{% endfor %}
+    </div>
+  {% endif %}
+  <p class="text-xs text-[var(--color-muted)] mt-3">{{ _('admin.backup.partial_restore.inspect.expiry_notice', expires_at=inspection.expires_at.strftime('%H:%M UTC')) }}</p>
+</div>
+
+{% set has_identity = inspection.table_summaries | selectattr('sensitivity', 'equalto', 'identity_sensitive') | list | length > 0 %}
+
+<form method="post" action="{{ url_for('admin.partial_restore_preview') }}">
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="inspection_id" value="{{ inspection.inspection_id }}">
+
+  <div class="flex gap-2 mb-3">
+    <button type="button"
+            onclick="document.querySelectorAll('.table-checkbox').forEach(cb => cb.checked = true)"
+            class="text-xs font-medium text-primary-400 hover:text-primary-300">
+      {{ _('admin.backup.partial_restore.inspect.table_select_all') }}
+    </button>
+    <span class="text-[var(--color-muted)]">·</span>
+    <button type="button"
+            onclick="document.querySelectorAll('.table-checkbox').forEach(cb => cb.checked = false)"
+            class="text-xs font-medium text-primary-400 hover:text-primary-300">
+      {{ _('admin.backup.partial_restore.inspect.table_deselect_all') }}
+    </button>
+  </div>
+
+  {% if has_identity %}
+    <div id="identity-warning" class="mb-4 hidden rounded-md border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
+      {{ _('admin.backup.partial_restore.inspect.warning_sensitive') }}
+    </div>
+  {% endif %}
+
+  <div class="rounded-md border border-[var(--color-border)] overflow-hidden mb-4">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+          <th class="px-4 py-2 text-left w-8"></th>
+          <th class="px-4 py-2 text-left font-semibold">{{ _('admin.backup.partial_restore.preview.table') }}</th>
+          <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.inspect.row_count') }}</th>
+          <th class="px-4 py-2 text-left font-semibold">Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in inspection.table_summaries %}
+          <tr class="border-b border-[var(--color-border)] last:border-0 hover:bg-white/5
+              {% if t.sensitivity == 'identity_sensitive' %}bg-amber-400/5{% endif %}">
+            <td class="px-4 py-2">
+              <input type="checkbox"
+                     name="selected_tables"
+                     value="{{ t.table_name }}"
+                     class="table-checkbox rounded border-[var(--color-border)]
+                       {% if t.sensitivity == 'identity_sensitive' %}identity-checkbox{% endif %}"
+                     {% if t.selected_by_default %}checked{% endif %}
+                     data-sensitivity="{{ t.sensitivity }}">
+            </td>
+            <td class="px-4 py-2 font-mono">{{ t.table_name }}</td>
+            <td class="px-4 py-2 text-right text-[var(--color-muted)]">
+              {% if t.row_count_kind == 'estimate' %}
+                {{ _('admin.backup.partial_restore.inspect.row_count_estimate', count=t.row_count_estimate) }}
+              {% else %}
+                {{ _('admin.backup.partial_restore.inspect.row_count_exact', count=t.row_count_estimate) }}
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if t.sensitivity == 'identity_sensitive' %}
+                <span class="inline-flex items-center text-xs font-semibold rounded-full px-2 py-0.5 bg-amber-500/20 text-amber-300">
+                  {{ _('admin.backup.partial_restore.inspect.sensitivity_identity') }}
+                </span>
+              {% else %}
+                <span class="text-xs text-[var(--color-muted)]">{{ _('admin.backup.partial_restore.inspect.sensitivity_normal') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4" class="px-4 py-6 text-center text-[var(--color-muted)]">
+              {{ _('admin.backup.partial_restore.inspect.no_eligible_tables') }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex gap-3 items-center">
+    {{ form.submit(
+         class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer"
+       ) }}
+    <a href="{{ url_for('admin.partial_restore_entry') }}"
+       class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+      {{ _('admin.backup.partial_restore.preview.cancel') }}
+    </a>
+  </div>
+</form>
+
+<script>
+(function () {
+  var identityWarning = document.getElementById('identity-warning');
+  function updateWarning() {
+    if (!identityWarning) return;
+    var anyIdentity = document.querySelector('.identity-checkbox:checked');
+    identityWarning.classList.toggle('hidden', !anyIdentity);
+  }
+  document.querySelectorAll('.table-checkbox').forEach(function (cb) {
+    cb.addEventListener('change', updateWarning);
+  });
+  updateWarning();
+})();
+</script>
+{% endblock %}
