@@ -19,7 +19,7 @@ from ...core.audit import log_login_event
 from ...core.security import generate_session_fingerprint
 from ...extensions import db
 from ..identity.models import MFASetting, User
-from .mfa import MFAProvisioning, build_provisioning
+from .mfa import MFAProvisioning, build_provisioning, normalize_secret
 
 _MFA_SESSION_KEYS = ("mfa_pending_user_id", "mfa_enroll_user_id", "mfa_remember_me")
 
@@ -73,7 +73,10 @@ def ensure_mfa_provisioning(user: User, issuer: str) -> MFAProvisioning:
         user.mfa_setting = setting
         db.session.add(setting)
     else:
-        provisioning = build_provisioning(user.email, issuer, secret=user.mfa_setting.secret)
+        normalized_secret = normalize_secret(user.mfa_setting.secret)
+        provisioning = build_provisioning(user.email, issuer, secret=normalized_secret)
+        if normalized_secret and normalized_secret != user.mfa_setting.secret:
+            user.mfa_setting.secret = normalized_secret
         user.mfa_setting.enabled = True
         user.mfa_setting.enrolled_at = None
     db.session.commit()
