@@ -33,6 +33,7 @@ from .forms import (
     ThreatScenarioForm,
     PastaStageForm,
     PastaFindingForm,
+    PastaRiskConclusionForm,
 )
 from .models import (
     AssetType,
@@ -43,8 +44,11 @@ from .models import (
     PastaFindingThreatScenarioLink,
     PastaStageRecord,
     PastaStageStatus,
+    PastaPublicationState,
+    PastaRiskConclusion,
     PASTA_STAGE_CODES,
     PASTA_STAGE_DEFAULT_FINDING_TYPE,
+    PASTA_STAGE_GUIDANCE,
     PASTA_THREAT_FINDING_TYPES,
     RiskLevel,
     ScenarioStatus,
@@ -58,7 +62,7 @@ from .models import (
     ThreatScenario,
     TreatmentOption,
 )
-from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, set_scenario_assets, set_scenario_stride_categories, sync_scenario_to_risk, user_choices, initialize_pasta_stages, evaluate_stage_progression, trigger_revalidation_for_stage, bootstrap_pasta_from_stride, export_pasta_findings_csv
+from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, set_scenario_assets, set_scenario_stride_categories, sync_scenario_to_risk, user_choices, initialize_pasta_stages, evaluate_stage_progression, trigger_revalidation_for_stage, bootstrap_pasta_from_stride, export_pasta_findings_csv, apply_pasta_conclusion_scores, publish_pasta_conclusion_to_risk, export_pasta_findings_csv_with_scores
 from ..ssp.services import sync_mitigation_to_poam, sync_scenario_controls_to_ssp
 
 bp = Blueprint(
@@ -243,7 +247,9 @@ def model_detail(model_id: int):
             model=model,
             pasta_stages=model.pasta_stages,
             PastaStageStatus=PastaStageStatus,
+            PastaPublicationState=PastaPublicationState,
             PASTA_THREAT_FINDING_TYPES=PASTA_THREAT_FINDING_TYPES,
+            PASTA_STAGE_GUIDANCE=PASTA_STAGE_GUIDANCE,
         )
     scenarios_by_category: dict[str, list[ThreatScenario]] = {}
     for cat in StrideCategory:
@@ -394,6 +400,7 @@ def pasta_stage_edit(model_id: int, stage_code: str):
         form=form,
         model=model,
         stage=stage,
+        stage_guidance=PASTA_STAGE_GUIDANCE.get(stage_code, {}),
     )
 
 
@@ -652,8 +659,129 @@ def pasta_finding_link_scenario(model_id: int, finding_id: int):
 
 
 # ---------------------------------------------------------------------------
-# Asset CRUD
+# PASTA risk-conclusion scoring (T009, T014, T015, T016) – US1 + US2
 # ---------------------------------------------------------------------------
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/risk", methods=["GET", "POST"])
+@login_required
+def pasta_risk_conclusion_edit(model_id: int, finding_id: int):
+    """GET/POST: Edit structured stage-seven likelihood, impact, and treatment scores."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+    from .models import PastaFindingType
+    if finding.finding_type != PastaFindingType.RISK_CONCLUSION:
+        abort(400)
+
+    conclusion = finding.risk_conclusion
+    if conclusion is None:
+        conclusion = PastaRiskConclusion(finding_id=finding.id)
+        db.session.add(conclusion)
+        db.session.flush()
+
+    form = PastaRiskConclusionForm(obj=conclusion)
+    # Prefill coerce-safe defaults for SelectField
+    if request.method == "GET" and conclusion.likelihood_score:
+        form.likelihood_score.data = conclusion.likelihood_score
+    if request.method == "GET" and conclusion.impact_score:
+        form.impact_score.data = conclusion.impact_score
+
+    if form.validate_on_submit():
+        conclusion.likelihood_score = form.likelihood_score.data
+        conclusion.impact_score = form.impact_score.data
+        conclusion.treatment = form.treatment.data or "mitigate"
+        conclusion.publication_notes = form.publication_notes.data
+        apply_pasta_conclusion_scores(conclusion)
+        # If previously published and scores changed, mark needs_revalidation
+        if conclusion.publication_state == PastaPublicationState.PUBLISHED:
+            conclusion.publication_state = PastaPublicationState.NEEDS_REVALIDATION
+        log_event(
+            action="pasta_risk_conclusion_scored",
+            entity_type="pasta_risk_conclusion",
+            entity_id=conclusion.id,
+            details={
+                "model_id": model.id,
+                "finding_id": finding.id,
+                "likelihood": conclusion.likelihood_score,
+                "impact": conclusion.impact_score,
+                "overall": conclusion.overall_score,
+                "publication_state": conclusion.publication_state.value,
+            },
+        )
+        db.session.commit()
+        flash(_("threat.pasta.flash.risk_conclusion_scored"), "success")
+        return redirect(url_for("threat.pasta_stage_edit", model_id=model.id, stage_code=finding.stage_record.stage_code))
+
+    stage = finding.stage_record
+    # Gather upstream evidence for carry-forward display (FR-005)
+    upstream_findings: dict[str, list] = {}
+    for s in model.pasta_stages:
+        if s.stage_code == "risk_impact_analysis":
+            break
+        upstream_findings[s.stage_code] = [
+            f for f in s.findings if f.status.value != "archived"
+        ]
+
+    return render_template(
+        "threat/pasta_risk_conclusion_form.html",
+        form=form,
+        model=model,
+        finding=finding,
+        conclusion=conclusion,
+        stage=stage,
+        upstream_findings=upstream_findings,
+        PastaPublicationState=PastaPublicationState,
+    )
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/publish-risk", methods=["POST"])
+@login_required
+def pasta_publish_risk(model_id: int, finding_id: int):
+    """POST: Publish or republish a PASTA risk conclusion to the risk workspace."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+    from .models import PastaFindingType
+    if finding.finding_type != PastaFindingType.RISK_CONCLUSION:
+        abort(400)
+
+    conclusion = finding.risk_conclusion
+    if conclusion is None:
+        flash(_("threat.pasta.flash.risk_conclusion_missing_scores"), "warning")
+        return redirect(url_for("threat.pasta_stage_edit", model_id=model.id, stage_code=finding.stage_record.stage_code))
+
+    try:
+        publish_pasta_conclusion_to_risk(conclusion, current_user)
+        was_republish = conclusion.published_risk_id is not None
+        log_event(
+            action="pasta_risk_conclusion_published",
+            entity_type="pasta_risk_conclusion",
+            entity_id=conclusion.id,
+            details={
+                "model_id": model.id,
+                "finding_id": finding.id,
+                "risk_id": conclusion.published_risk_id,
+                "action": "republish" if was_republish else "publish",
+            },
+        )
+        db.session.commit()
+        flash(_("threat.pasta.flash.risk_conclusion_published"), "success")
+    except ValueError:
+        reasons = conclusion.blocked_reasons
+        flash(_("threat.pasta.flash.risk_conclusion_publish_blocked"), "warning")
+        for reason_key in reasons:
+            flash(_(reason_key), "warning")
+
+    return redirect(url_for("threat.model_detail", model_id=model.id))
 
 
 @bp.route("/<int:model_id>/assets/new", methods=["GET", "POST"])
@@ -970,7 +1098,7 @@ def export_csv(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
     if model.is_pasta:
-        csv_data = export_pasta_findings_csv(model)
+        csv_data = export_pasta_findings_csv_with_scores(model)
     else:
         csv_data = export_scenarios_csv(model.scenarios)
     response = make_response(csv_data)

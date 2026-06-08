@@ -504,6 +504,21 @@ def delete(risk_id: int):
 def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, object]]:
     today = date.today()
     cards: list[dict[str, object]] = []
+
+    # Build a lookup of Risk.id → PASTA source info (avoids N+1 queries)
+    try:
+        from ..threat.models import PastaRiskConclusion
+        pasta_conclusions = PastaRiskConclusion.query.options(
+            sa.orm.joinedload(PastaRiskConclusion.finding).joinedload("stage_record")
+        ).filter(
+            PastaRiskConclusion.published_risk_id.in_([r.id for r in risks])
+        ).all()
+        pasta_by_risk_id: dict[int, PastaRiskConclusion] = {
+            c.published_risk_id: c for c in pasta_conclusions
+        }
+    except Exception:  # threat module may not be loaded in all configurations
+        pasta_by_risk_id = {}
+
     for risk in risks:
         score = risk.score()
         severity = determine_severity(score, thresholds)
@@ -566,6 +581,7 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
                 "discovered_on": risk.discovered_on,
                 "updated_at": risk.updated_at,
                 "ticket_url": risk.ticket_url,
+                "pasta_origin": pasta_by_risk_id.get(risk.id),
             }
         )
     return cards

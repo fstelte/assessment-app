@@ -3061,6 +3061,11 @@
       },
       "export_heading": "PASTA Model Export",
       "export_csv_desc": "Export all findings as a CSV spreadsheet.",
+      "stage_guidance": {
+        "purpose_label": "Purpose",
+        "inputs_label": "Expected Inputs",
+        "outputs_label": "Downstream Outputs"
+      },
       "flash": {
         "pasta_created": "PASTA threat model created.",
         "bootstrap_created": "PASTA model bootstrapped from source model.",
@@ -3072,7 +3077,81 @@
         "finding_deleted": "Finding deleted.",
         "scenario_generated": "Threat scenario generated from finding.",
         "scenario_linked": "Threat scenario linked to finding.",
-        "scenario_unlinked": "Scenario link removed."
+        "scenario_unlinked": "Scenario link removed.",
+        "risk_conclusion_scored": "Risk scores saved.",
+        "risk_conclusion_published": "Risk conclusion published to the risk workspace.",
+        "risk_conclusion_publish_blocked": "This conclusion cannot be published yet.",
+        "risk_conclusion_missing_scores": "No scores found for this conclusion. Add likelihood and impact scores first."
+      },
+      "risk_conclusion": {
+        "page_title": "Stage 7 Risk Scoring",
+        "breadcrumb": "Risk Scores",
+        "narrative_label": "Risk Narrative",
+        "publication_state_label": "Publication State",
+        "overall_score_label": "Overall Score",
+        "upstream_evidence_heading": "Upstream PASTA Evidence",
+        "publish_label": "Publish to Risk Workspace",
+        "republish_label": "Republish to Risk Workspace",
+        "publish_help": "PASTA remains the source of truth. The risk workspace entry is a linked projection.",
+        "publish_blocked_heading": "Publication not yet available:",
+        "add_scores_label": "Add Scores",
+        "edit_scores_label": "Edit Scores",
+        "view_in_risk_workspace": "View in risk workspace",
+        "help": {
+          "likelihood": "How likely is this risk to occur? Use the same scale as the rest of the application.",
+          "impact": "How severe would the impact be if this risk materialized?",
+          "treatment": "Intended treatment strategy for this risk.",
+          "publication_notes": "Optional notes shown alongside the publication action in the source workflow."
+        },
+        "blocked": {
+          "missing_scores": "Likelihood and impact scores are required before publishing.",
+          "missing_overall_score": "Overall score could not be derived. Save the scoring form first.",
+          "missing_narrative": "A risk narrative description is required on the finding before publishing.",
+          "finding_needs_revalidation": "This finding is marked for revalidation. Review it before publishing.",
+          "stage_needs_revalidation": "Stage 7 requires revalidation. Earlier-stage content was updated after scoring."
+        },
+        "error": {
+          "not_publishable": "This conclusion does not meet the publication requirements."
+        }
+      }
+    }
+  },
+  "pasta": {
+    "stage": {
+      "define_objectives": {
+        "purpose": "Identify and document the business objectives, critical assets, and stakeholder concerns that the system must protect.",
+        "inputs": "Business context, regulatory requirements, stakeholder interviews, existing risk registers.",
+        "outputs": "Documented objectives and critical assets that feed Stage 2 scope definition."
+      },
+      "define_technical_scope": {
+        "purpose": "Define the technical boundaries, components, data flows, and trust zones of the system under analysis.",
+        "inputs": "Business objectives from Stage 1, architecture diagrams, network topology, data flow documents.",
+        "outputs": "Technical scope definition that feeds Stage 3 application decomposition."
+      },
+      "decompose_application": {
+        "purpose": "Break down the application into its component parts, entry points, data flows, and trust boundaries.",
+        "inputs": "Technical scope from Stage 2, application architecture, API documentation.",
+        "outputs": "Decomposed application map that feeds Stage 4 threat analysis."
+      },
+      "analyze_threats": {
+        "purpose": "Identify threat agents, threat vectors, and relevant threat scenarios targeting the application components.",
+        "inputs": "Application decomposition from Stage 3, threat intelligence, attacker profiles.",
+        "outputs": "Threat catalog that feeds Stage 5 vulnerability analysis."
+      },
+      "vulnerability_analysis": {
+        "purpose": "Identify weaknesses and vulnerabilities in the application components that could be exploited by the threats identified.",
+        "inputs": "Threat catalog from Stage 4, vulnerability databases, security test results, code review findings.",
+        "outputs": "Vulnerability inventory that feeds Stage 6 attack analysis."
+      },
+      "attack_analysis": {
+        "purpose": "Model realistic attack paths by combining threats and vulnerabilities into exploitable attack scenarios.",
+        "inputs": "Vulnerability inventory from Stage 5, threat catalog from Stage 4, application decomposition from Stage 3.",
+        "outputs": "Attack tree and attack path findings that feed Stage 7 risk and impact analysis."
+      },
+      "risk_impact_analysis": {
+        "purpose": "Synthesize the upstream findings into final risk conclusions with likelihood and impact scores for each identified business risk.",
+        "inputs": "Attack paths from Stage 6, business objectives from Stage 1, threat and vulnerability findings from Stages 4 and 5.",
+        "outputs": "Scored risk conclusions that can be published to the risk workspace and included in reports."
       }
     }
   },

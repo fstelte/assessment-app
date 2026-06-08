@@ -231,3 +231,86 @@ class TestHTMLExport:
         _login(client, admin_user["email"])
         resp = client.get(f"/threat/{model_id}/export/html")
         assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# US3 – CSV with risk scores (T027)
+# ---------------------------------------------------------------------------
+
+from scaffold.apps.threat.models import (
+    PastaFindingStatus,
+    PastaFindingType,
+    PastaPublicationState,
+    PastaRiskConclusion,
+    PastaStageStatus,
+)
+from scaffold.apps.threat.services import apply_pasta_conclusion_scores
+
+
+def _pasta_model_with_risk_conclusion(app):
+    """Create a PASTA model whose stage-7 has a scored risk_conclusion finding."""
+    with app.app_context():
+        from scaffold.apps.threat.services import initialize_pasta_stages
+        model = ThreatModel(title="Risk CSV Model", methodology=Methodology.PASTA.value)
+        db.session.add(model)
+        db.session.flush()
+        initialize_pasta_stages(model)
+        db.session.flush()
+        stage7 = next(s for s in model.pasta_stages if s.stage_code == "risk_impact_analysis")
+        finding = PastaFinding(
+            stage_record_id=stage7.id,
+            finding_type=PastaFindingType.RISK_CONCLUSION,
+            title="Data leakage risk",
+            description="Personal data may leak via insecure API.",
+            status=PastaFindingStatus.CURRENT,
+        )
+        db.session.add(finding)
+        db.session.flush()
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=3,
+            impact_score=4,
+            treatment="mitigate",
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        apply_pasta_conclusion_scores(conclusion)
+        db.session.commit()
+        return model.id
+
+
+class TestPastaCsvWithScores:
+    def test_csv_includes_risk_score_columns(self, client, app, admin_user):
+        """CSV export of a PASTA model must include likelihood_score and impact_score columns."""
+        model_id = _pasta_model_with_risk_conclusion(app)
+        _login(client, admin_user["email"])
+        resp = client.get(f"/threat/{model_id}/export/csv")
+        assert resp.status_code == 200
+        text = resp.data.decode("utf-8")
+        assert "likelihood_score" in text
+        assert "impact_score" in text
+        assert "overall_score" in text
+
+    def test_csv_stage7_row_has_score_values(self, client, app, admin_user):
+        """The stage-7 risk_conclusion row in the CSV must contain the saved score values."""
+        model_id = _pasta_model_with_risk_conclusion(app)
+        _login(client, admin_user["email"])
+        resp = client.get(f"/threat/{model_id}/export/csv")
+        assert resp.status_code == 200
+        text = resp.data.decode("utf-8")
+        # The row for the risk_conclusion finding should contain the scores
+        assert "Data leakage risk" in text
+        # likelihood=3, impact=4 → overall should be in the row too
+        lines = [l for l in text.splitlines() if "Data leakage risk" in l]
+        assert lines, "Finding row not found in CSV"
+        row = lines[0]
+        assert "3" in row
+        assert "4" in row
+
+    def test_csv_includes_publication_state_column(self, client, app, admin_user):
+        """CSV must include publication_state column."""
+        model_id = _pasta_model_with_risk_conclusion(app)
+        _login(client, admin_user["email"])
+        resp = client.get(f"/threat/{model_id}/export/csv")
+        text = resp.data.decode("utf-8")
+        assert "publication_state" in text

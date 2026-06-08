@@ -3131,6 +3131,11 @@
       },
       "export_heading": "PASTA-model exporteren",
       "export_csv_desc": "Exporteer alle bevindingen als CSV-spreadsheet.",
+      "stage_guidance": {
+        "purpose_label": "Doel",
+        "inputs_label": "Verwachte invoer",
+        "outputs_label": "Uitvoer naar volgende fase"
+      },
       "flash": {
         "pasta_created": "PASTA-dreigingsmodel aangemaakt.",
         "bootstrap_created": "PASTA-model opgestart vanuit bronmodel.",
@@ -3142,7 +3147,81 @@
         "finding_deleted": "Bevinding verwijderd.",
         "scenario_generated": "Dreigingsscenario gegenereerd vanuit bevinding.",
         "scenario_linked": "Dreigingsscenario gekoppeld aan bevinding.",
-        "scenario_unlinked": "Scenariokoppeling verwijderd."
+        "scenario_unlinked": "Scenariokoppeling verwijderd.",
+        "risk_conclusion_scored": "Risicoscores opgeslagen.",
+        "risk_conclusion_published": "Risicobevinding gepubliceerd naar de risicoruimte.",
+        "risk_conclusion_publish_blocked": "Deze conclusie kan nog niet worden gepubliceerd.",
+        "risk_conclusion_missing_scores": "Geen scores gevonden. Voeg eerst kans- en impactscores toe."
+      },
+      "risk_conclusion": {
+        "page_title": "Fase 7 risicoscoring",
+        "breadcrumb": "Risicoscores",
+        "narrative_label": "Risicobeschrijving",
+        "publication_state_label": "Publicatiestatus",
+        "overall_score_label": "Totaalscore",
+        "upstream_evidence_heading": "Bovenstrooms PASTA-bewijs",
+        "publish_label": "Publiceren naar risicoruimte",
+        "republish_label": "Opnieuw publiceren naar risicoruimte",
+        "publish_help": "PASTA blijft de primaire bron. De risicoruimte-vermelding is een gekoppelde projectie.",
+        "publish_blocked_heading": "Publicatie nog niet beschikbaar:",
+        "add_scores_label": "Scores toevoegen",
+        "edit_scores_label": "Scores bewerken",
+        "view_in_risk_workspace": "Bekijk in risicoruimte",
+        "help": {
+          "likelihood": "Hoe waarschijnlijk is dit risico? Gebruik dezelfde schaal als elders in de applicatie.",
+          "impact": "Hoe ernstig is de impact als dit risico zich voordoet?",
+          "treatment": "Voorgenomen behandelstrategie voor dit risico.",
+          "publication_notes": "Optionele notities bij de publicatieactie in de bronworkflow."
+        },
+        "blocked": {
+          "missing_scores": "Kans- en impactscores zijn vereist vóór publicatie.",
+          "missing_overall_score": "Totaalscore kon niet worden berekend. Sla het scoreformulier eerst op.",
+          "missing_narrative": "Een risicobeschrijving op de bevinding is vereist vóór publicatie.",
+          "finding_needs_revalidation": "Deze bevinding is gemarkeerd voor hervalidatie. Beoordeel deze eerst.",
+          "stage_needs_revalidation": "Fase 7 vereist hervalidatie. Eerder fase-inhoud is gewijzigd na het scoren."
+        },
+        "error": {
+          "not_publishable": "Deze conclusie voldoet niet aan de publicatievereisten."
+        }
+      }
+    }
+  },
+  "pasta": {
+    "stage": {
+      "define_objectives": {
+        "purpose": "Identificeer en documenteer de bedrijfsdoelstellingen, kritieke activa en belangen van stakeholders die het systeem moet beschermen.",
+        "inputs": "Bedrijfscontext, wettelijke vereisten, stakeholderinterviews, bestaande risicoregisters.",
+        "outputs": "Gedocumenteerde doelstellingen en kritieke activa die fase 2 voeden."
+      },
+      "define_technical_scope": {
+        "purpose": "Definieer de technische grenzen, componenten, datastromen en vertrouwenszones van het te analyseren systeem.",
+        "inputs": "Bedrijfsdoelstellingen uit fase 1, architectuurdiagrammen, netwerktopologie, datastroomdocumenten.",
+        "outputs": "Technisch scopedocument dat fase 3 voedt."
+      },
+      "decompose_application": {
+        "purpose": "Splits de applicatie op in componenten, toegangspunten, datastromen en vertrouwensgrenzen.",
+        "inputs": "Technisch scope uit fase 2, applicatiearchitectuur, API-documentatie.",
+        "outputs": "Decompositiekaart van de applicatie die fase 4 voedt."
+      },
+      "analyze_threats": {
+        "purpose": "Identificeer bedreigingsactoren, bedreigingsvectoren en relevante bedreigingsscenario's die de applicatiecomponenten raken.",
+        "inputs": "Applicatiedecompositie uit fase 3, dreigingsintelligentie, aanvallerprofielen.",
+        "outputs": "Dreigingscatalogus die fase 5 voedt."
+      },
+      "vulnerability_analysis": {
+        "purpose": "Identificeer zwakke punten en kwetsbaarheden in de applicatiecomponenten die door de geïdentificeerde bedreigingen kunnen worden misbruikt.",
+        "inputs": "Dreigingscatalogus uit fase 4, kwetsbaarheidsdatabases, beveiligingstestresultaten, codereviews.",
+        "outputs": "Kwetsbaarhedeninventaris die fase 6 voedt."
+      },
+      "attack_analysis": {
+        "purpose": "Modelleer realistische aanvalspaden door bedreigingen en kwetsbaarheden te combineren tot exploiteerbare aanvalsscenario's.",
+        "inputs": "Kwetsbaarhedeninventaris uit fase 5, dreigingscatalogus uit fase 4, applicatiedecompositie uit fase 3.",
+        "outputs": "Aanvalsboom en aanvalspadbevindingen die fase 7 voeden."
+      },
+      "risk_impact_analysis": {
+        "purpose": "Synthetiseer de bovenstrooms bevindingen tot definitieve risicobevindingen met kans- en impactscores voor elk geïdentificeerd bedrijfsrisico.",
+        "inputs": "Aanvalspaden uit fase 6, bedrijfsdoelstellingen uit fase 1, dreigings- en kwetsbaarheidsbevindingen uit fasen 4 en 5.",
+        "outputs": "Gescoorde risicobevindingen die kunnen worden gepubliceerd naar de risicoruimte en opgenomen in rapporten."
       }
     }
   },

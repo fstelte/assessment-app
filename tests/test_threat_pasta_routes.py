@@ -374,3 +374,141 @@ def test_create_pasta_model_audit_event_logged(client, app, admin_user):
             target_id=str(model.id),
         ).first()
         assert event is not None
+
+
+# ---------------------------------------------------------------------------
+# US2 — Risk scoring form (T019) and publish route (T020)
+# ---------------------------------------------------------------------------
+
+from scaffold.apps.threat.models import (
+    PastaFindingType,
+    PastaPublicationState,
+    PastaRiskConclusion,
+    PastaStageStatus,
+)
+
+
+def _stage7_finding_id(app, model_id):
+    """Helper: add a risk_conclusion finding to stage 7 and return its id."""
+    with app.app_context():
+        model = db.session.get(ThreatModel, model_id)
+        stage7 = next(s for s in model.pasta_stages if s.stage_code == "risk_impact_analysis")
+        finding = PastaFinding(
+            stage_record_id=stage7.id,
+            finding_type=PastaFindingType.RISK_CONCLUSION,
+            title="Auth bypass risk",
+            description="Session tokens can be forged.",
+            status=PastaFindingStatus.CURRENT,
+        )
+        db.session.add(finding)
+        db.session.commit()
+        return finding.id
+
+
+def test_risk_conclusion_form_get_returns_200(client, app, admin_user):
+    """GET pasta_risk_conclusion_edit must return 200 for a valid finding."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    _login(client, admin_user["email"])
+    resp = client.get(f"/threat/{model_id}/pasta/findings/{finding_id}/risk")
+    assert resp.status_code == 200
+
+
+def test_risk_conclusion_form_post_saves_scores(client, app, admin_user):
+    """POST to pasta_risk_conclusion_edit must persist likelihood and impact scores."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    _login(client, admin_user["email"])
+    resp = client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/risk",
+        data={
+            "likelihood_score": "3",
+            "impact_score": "4",
+            "treatment": "mitigate",
+            "publication_notes": "",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        assert finding.risk_conclusion is not None
+        assert finding.risk_conclusion.likelihood_score == 3
+        assert finding.risk_conclusion.impact_score == 4
+        assert finding.risk_conclusion.overall_score is not None
+
+
+def test_risk_conclusion_form_unauthenticated_redirects(client, app):
+    """Unauthenticated request to scoring form must redirect to login."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    resp = client.get(f"/threat/{model_id}/pasta/findings/{finding_id}/risk")
+    assert resp.status_code in (302, 401)
+
+
+def test_risk_conclusion_publish_route_publishes(client, app, admin_user):
+    """POST to pasta_publish_risk with publishable conclusion must set state=PUBLISHED."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    # First save scores
+    _login(client, admin_user["email"])
+    client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/risk",
+        data={
+            "likelihood_score": "2",
+            "impact_score": "3",
+            "treatment": "mitigate",
+            "publication_notes": "",
+        },
+        follow_redirects=True,
+    )
+    # Then publish
+    resp = client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/publish-risk",
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        assert finding.risk_conclusion.publication_state == PastaPublicationState.PUBLISHED
+        assert finding.risk_conclusion.published_risk_id is not None
+
+
+def test_risk_conclusion_publish_blocked_without_scores(client, app, admin_user):
+    """Publishing without scores must NOT change state and must flash a blocked message."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    _login(client, admin_user["email"])
+    # Do NOT post scores first
+    resp = client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/publish-risk",
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        # Either no conclusion at all, or state is NOT_PUBLISHED
+        if finding.risk_conclusion:
+            assert finding.risk_conclusion.publication_state != PastaPublicationState.PUBLISHED
+
+
+def test_risk_conclusion_publish_audit_event_logged(client, app, admin_user):
+    """Publishing a conclusion must log a pasta_risk_conclusion_published audit event."""
+    model_id = _pasta_model_id(app)
+    finding_id = _stage7_finding_id(app, model_id)
+    _login(client, admin_user["email"])
+    client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/risk",
+        data={"likelihood_score": "4", "impact_score": "3", "treatment": "mitigate", "publication_notes": ""},
+        follow_redirects=True,
+    )
+    client.post(
+        f"/threat/{model_id}/pasta/findings/{finding_id}/publish-risk",
+        follow_redirects=True,
+    )
+    with app.app_context():
+        from scaffold.models import AuditLog
+        event = AuditLog.query.filter_by(
+            event_type="pasta_risk_conclusion_published",
+        ).first()
+        assert event is not None

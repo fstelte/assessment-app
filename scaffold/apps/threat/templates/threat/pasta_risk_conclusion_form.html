@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
+{% block title %}{{ _("threat.pasta.risk_conclusion.page_title") }} — {{ finding.title }}{% endblock %}
+{% block content %}
+<div class="py-6 max-w-4xl mx-auto">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">Threats</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ model.title }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.pasta_stage_edit', model_id=model.id, stage_code=stage.stage_code) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ stage.label }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ _("threat.pasta.risk_conclusion.breadcrumb") }}</li>
+    </ol>
+  </nav>
+
+  {# ---- Scoring form ---- #}
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm mb-6">
+    <h1 class="text-xl font-bold mb-1">{{ _("threat.pasta.risk_conclusion.page_title") }}</h1>
+    <p class="text-sm text-[var(--color-muted)] mb-4">{{ finding.title }}</p>
+
+    {% if stage.status.value == 'needs_revalidation' %}
+    <div class="mb-4 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+      {{ _("threat.pasta.revalidation_notice") }}
+    </div>
+    {% endif %}
+
+    {# Finding narrative #}
+    {% if finding.description %}
+    <div class="mb-5 p-3 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-sm">
+      <span class="font-semibold text-xs uppercase text-[var(--color-muted)] tracking-wide">{{ _("threat.pasta.risk_conclusion.narrative_label") }}</span>
+      <p class="mt-1">{{ finding.description }}</p>
+    </div>
+    {% else %}
+    <div class="mb-5 p-3 rounded bg-yellow-50 border border-yellow-200 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+      {{ _("threat.pasta.risk_conclusion.blocked.missing_narrative") }}
+    </div>
+    {% endif %}
+
+    {# Publication state badge #}
+    {% if conclusion.id %}
+    <div class="mb-4 flex items-center gap-2">
+      <span class="text-xs font-semibold uppercase text-[var(--color-muted)]">{{ _("threat.pasta.risk_conclusion.publication_state_label") }}:</span>
+      <span class="px-2 py-0.5 rounded text-xs font-semibold
+        {% if conclusion.publication_state.value == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+        {% elif conclusion.publication_state.value == 'needs_revalidation' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+        {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400
+        {% endif %}">
+        {{ conclusion.publication_state.value | replace('_', ' ') | title }}
+      </span>
+      {% if conclusion.published_risk_id %}
+      <a href="{{ url_for('risk.dashboard') }}" class="text-xs text-primary-600 hover:underline">{{ _("threat.pasta.risk_conclusion.view_in_risk_workspace") }}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>{{ render_field_with_help(form.likelihood_score) }}</div>
+        <div>{{ render_field_with_help(form.impact_score) }}</div>
+      </div>
+      {{ render_field_with_help(form.treatment) }}
+      {{ render_field_with_help(form.publication_notes) }}
+
+      {# Derived score preview (read-only) #}
+      {% if conclusion.id and conclusion.overall_score %}
+      <div class="mt-3 p-3 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-sm flex items-center gap-3">
+        <span class="font-semibold text-xs uppercase text-[var(--color-muted)] tracking-wide">{{ _("threat.pasta.risk_conclusion.overall_score_label") }}:</span>
+        <span class="font-bold">{{ conclusion.overall_score }}</span>
+      </div>
+      {% endif %}
+
+      <div class="flex gap-2 mt-4">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
+        <a href="{{ url_for('threat.pasta_stage_edit', model_id=model.id, stage_code=stage.stage_code) }}"
+           class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors">
+          {{ _("actions.cancel") }}
+        </a>
+      </div>
+    </form>
+
+    {# Publish action #}
+    {% if conclusion.id %}
+    <div class="mt-6 pt-4 border-t border-[var(--color-border)]">
+      {% if conclusion.is_publishable %}
+      <form method="post" action="{{ url_for('threat.pasta_publish_risk', model_id=model.id, finding_id=finding.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 transition-colors">
+          {% if conclusion.published_risk_id %}{{ _("threat.pasta.risk_conclusion.republish_label") }}{% else %}{{ _("threat.pasta.risk_conclusion.publish_label") }}{% endif %}
+        </button>
+        <span class="ml-3 text-xs text-[var(--color-muted)]">{{ _("threat.pasta.risk_conclusion.publish_help") }}</span>
+      </form>
+      {% else %}
+      <div class="p-3 rounded bg-slate-50 border border-[var(--color-border)] text-sm dark:bg-slate-800">
+        <p class="font-medium text-[var(--color-muted)] mb-1">{{ _("threat.pasta.risk_conclusion.publish_blocked_heading") }}</p>
+        <ul class="list-disc list-inside space-y-0.5 text-xs text-[var(--color-muted)]">
+          {% for reason_key in conclusion.blocked_reasons %}
+          <li>{{ _(reason_key) }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {# ---- Upstream evidence carry-forward (FR-005) ---- #}
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+    <h2 class="text-base font-semibold mb-4">{{ _("threat.pasta.risk_conclusion.upstream_evidence_heading") }}</h2>
+    {% for stage_code, findings in upstream_findings.items() %}
+    {% if findings %}
+    <div class="mb-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)] mb-2">{{ stage_code | replace('_', ' ') | title }}</h3>
+      <ul class="space-y-1">
+        {% for f in findings %}
+        <li class="text-sm flex items-start gap-2">
+          <span class="shrink-0 text-xs font-medium uppercase text-[var(--color-muted)] pt-0.5">{{ f.finding_type.value | replace('_', ' ') }}</span>
+          <span class="font-medium">{{ f.title }}</span>
+          {% if f.description %}<span class="text-[var(--color-muted)] text-xs ml-1">— {{ f.description | truncate(80) }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -58,14 +58,16 @@ PASTA threat models have a model-level workflow with seven ordered stages. These
 - `PastaFindingAssetLink`: link from a finding to one of the model's `ThreatModelAsset` records.
 - `PastaFindingStrideCategoryLink`: optional STRIDE-LM category annotation on a finding (finding can have zero or many STRIDE categories).
 - `PastaFindingThreatScenarioLink`: traceability link from a PASTA finding to a generated or manually linked `ThreatScenario`, with a `link_type` field (`generated` / `linked`).
+- `PastaRiskConclusion`: one-to-one with a `risk_conclusion` type `PastaFinding`. Stores structured stage-seven scoring: `likelihood_score`, `impact_score`, `overall_score` (derived via `compute_pasta_overall_score`), `treatment` strategy, `publication_state` (`not_published` / `published` / `needs_revalidation`), `published_risk_id` (nullable FK → `risk_items.id`), `last_published_at`, `last_published_by_id`, and `publication_notes`. `is_publishable` checks that all scores are present, a narrative description exists, and neither the finding nor stage-7 is in `needs_revalidation` state. `blocked_reasons` returns a list of i18n keys. Table: `pasta_risk_conclusions`.
 
-Risk scoring follows `likelihood × impact_score`; `RiskLevel` thresholds are hardcoded (`low ≤ 4`, `medium ≤ 9`, `high ≤ 14`, `critical ≥ 15`). The `services.py` module exposes `apply_risk_score` and `apply_residual_risk_score` helpers, plus `export_scenarios_csv` (STRIDE) and `export_pasta_findings_csv` (PASTA), `bootstrap_pasta_from_stride`, `initialize_pasta_stages`, `evaluate_stage_progression`, and `trigger_revalidation_for_stage`.
+Risk scoring follows `likelihood × impact_score`; `RiskLevel` thresholds are hardcoded (`low ≤ 4`, `medium ≤ 9`, `high ≤ 14`, `critical ≥ 15`). The `services.py` module exposes `apply_risk_score` and `apply_residual_risk_score` helpers, plus `export_scenarios_csv` (STRIDE) and `export_pasta_findings_csv_with_scores` (PASTA, includes score columns), `bootstrap_pasta_from_stride`, `initialize_pasta_stages`, `evaluate_stage_progression`, `trigger_revalidation_for_stage`, `compute_pasta_overall_score`, `apply_pasta_conclusion_scores`, and `publish_pasta_conclusion_to_risk`.
 
 ### Threat Model Migrations
 
 - `20260317_0001_add_threat_modeling_module`: creates `threat_models`, `threat_model_assets`, `threat_scenarios`, and `threat_scenario_controls`.
 - `20260317_0002_threat_scenario_residual_risk_breakdown`: replaces the single `residual_risk` text column with structured `residual_likelihood`, `residual_impact`, `residual_risk_score`, and `residual_risk_level` columns.
 - `20260608_0001_pasta_threat_modeling`: adds `methodology` and `bootstrap_source_model_id` to `threat_models`; creates `pasta_stage_records`, `pasta_findings`, `pasta_finding_asset_links`, `pasta_finding_stride_links`, and `pasta_finding_scenario_links`.
+- `20260608_0002_pasta_risk_conclusions`: creates `pasta_risk_conclusions`; backfills existing stage-seven `risk_conclusion` findings as `not_published` draft records.
 
 ```mermaid
 erDiagram

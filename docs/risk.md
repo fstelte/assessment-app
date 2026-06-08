@@ -49,3 +49,39 @@ The risk module provides a single workspace for tracking identified risks across
 - **CSA control required errors** – select at least one control whenever the treatment is `mitigate`. The error string is `Select at least one CSA control when the treatment strategy is Mitigate.`
 - **Overlapping severity ranges** – update the surrounding ranges so `max_score` for one severity is strictly less than the `min_score` of the next severity.
 - **403 errors on `/risk`** – confirm the signed-in user has either the admin or assessment manager role.
+
+## PASTA Risk Publication
+
+Risk items can be created automatically from a completed PASTA threat model analysis (stage 7). The publication workflow treats the PASTA model as the source of truth.
+
+### Publication Gates
+
+A stage-seven `PastaRiskConclusion` must satisfy all of the following before publishing:
+
+1. `likelihood_score` and `impact_score` are both set (1–5 scale).
+2. `overall_score` has been derived (saved via the scoring form).
+3. The parent `PastaFinding` has a non-empty `description` (serves as the risk narrative).
+4. The finding status is not `needs_revalidation`.
+5. The parent `PastaStageRecord` (stage 7) is not in `needs_revalidation` state.
+
+### Publication Flow
+
+1. Open the PASTA model detail page.
+2. In stage 7, locate a `risk_conclusion` finding and click **Add Scores** (or **Edit Scores**).
+3. Set likelihood and impact (1–5), choose a treatment strategy, and optionally add publication notes.
+4. Save — the overall score is derived from the likelihood × impact matrix (`compute_pasta_overall_score`).
+5. If all gates pass, click **Publish to Risk Workspace** — this calls `publish_pasta_conclusion_to_risk`.
+6. The linked risk workspace entry is created (or refreshed on republish). The `published_risk_id` FK on the conclusion points to it.
+7. Republishing after a source update refreshes the existing Risk row rather than creating a duplicate.
+
+### Dashboard Integration
+
+Risk items that originate from a PASTA model display a **PASTA source** badge on the risk dashboard with a direct link back to the originating `PastaRiskConclusion` scoring form.
+
+### Publication State Values
+
+| State | Meaning |
+|---|---|
+| `not_published` | Conclusion exists but has not been published to the risk workspace. |
+| `published` | Conclusion has been successfully published; `published_risk_id` is set. |
+| `needs_revalidation` | An upstream PASTA stage was updated after publication; the conclusion must be reviewed and republished. |

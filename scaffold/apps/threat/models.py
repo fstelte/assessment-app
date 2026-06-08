@@ -672,3 +672,137 @@ class PastaFindingThreatScenarioLink(db.Model):
 
     finding = db.relationship("PastaFinding", back_populates="scenario_links")
     scenario = db.relationship("ThreatScenario")
+
+
+# ---------------------------------------------------------------------------
+# PASTA stage guidance metadata (FR-002, FR-004, FR-005)
+# ---------------------------------------------------------------------------
+
+#: Per-stage guidance shown to the user: purpose, expected inputs, downstream outputs.
+PASTA_STAGE_GUIDANCE: dict[str, dict[str, str]] = {
+    "define_objectives": {
+        "purpose": "pasta.stage.define_objectives.purpose",
+        "inputs": "pasta.stage.define_objectives.inputs",
+        "outputs": "pasta.stage.define_objectives.outputs",
+    },
+    "define_technical_scope": {
+        "purpose": "pasta.stage.define_technical_scope.purpose",
+        "inputs": "pasta.stage.define_technical_scope.inputs",
+        "outputs": "pasta.stage.define_technical_scope.outputs",
+    },
+    "decompose_application": {
+        "purpose": "pasta.stage.decompose_application.purpose",
+        "inputs": "pasta.stage.decompose_application.inputs",
+        "outputs": "pasta.stage.decompose_application.outputs",
+    },
+    "analyze_threats": {
+        "purpose": "pasta.stage.analyze_threats.purpose",
+        "inputs": "pasta.stage.analyze_threats.inputs",
+        "outputs": "pasta.stage.analyze_threats.outputs",
+    },
+    "vulnerability_analysis": {
+        "purpose": "pasta.stage.vulnerability_analysis.purpose",
+        "inputs": "pasta.stage.vulnerability_analysis.inputs",
+        "outputs": "pasta.stage.vulnerability_analysis.outputs",
+    },
+    "attack_analysis": {
+        "purpose": "pasta.stage.attack_analysis.purpose",
+        "inputs": "pasta.stage.attack_analysis.inputs",
+        "outputs": "pasta.stage.attack_analysis.outputs",
+    },
+    "risk_impact_analysis": {
+        "purpose": "pasta.stage.risk_impact_analysis.purpose",
+        "inputs": "pasta.stage.risk_impact_analysis.inputs",
+        "outputs": "pasta.stage.risk_impact_analysis.outputs",
+    },
+}
+
+
+class PastaPublicationState(enum.Enum):
+    """Publication state for a PastaRiskConclusion."""
+
+    NOT_PUBLISHED = "not_published"
+    PUBLISHED = "published"
+    NEEDS_REVALIDATION = "needs_revalidation"
+
+
+# ---------------------------------------------------------------------------
+# PastaRiskConclusion – structured stage-seven scoring and publication state
+# ---------------------------------------------------------------------------
+
+
+class PastaRiskConclusion(TimestampMixin, db.Model):
+    """Structured stage-seven scoring and publication state for one risk_conclusion finding.
+
+    One-to-one with PastaFinding (finding_type=risk_conclusion).
+    Optional link to a published Risk row in the risk workspace.
+    """
+
+    __tablename__ = "pasta_risk_conclusions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    finding_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pasta_findings.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    likelihood_score = db.Column(db.Integer, nullable=True)
+    impact_score = db.Column(db.Integer, nullable=True)
+    overall_score = db.Column(db.Integer, nullable=True)
+    treatment = db.Column(db.String(20), nullable=True, default="mitigate")
+    publication_state = db.Column(
+        _enum_column(PastaPublicationState, name="pasta_publication_state_enum"),
+        nullable=False,
+        default=PastaPublicationState.NOT_PUBLISHED,
+    )
+    published_risk_id = db.Column(
+        db.Integer,
+        db.ForeignKey("risk_items.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    last_published_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    last_published_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    publication_notes = db.Column(db.Text, nullable=True)
+
+    finding = db.relationship(
+        "PastaFinding",
+        backref=db.backref("risk_conclusion", uselist=False, cascade="all, delete-orphan"),
+    )
+    published_risk = db.relationship("Risk", foreign_keys=[published_risk_id])
+    last_published_by = db.relationship("User", foreign_keys=[last_published_by_id])
+
+    @property
+    def is_publishable(self) -> bool:
+        """Return True when the conclusion meets all publication gates (FR-011A)."""
+        if not (self.likelihood_score and self.impact_score and self.overall_score):
+            return False
+        if not (self.finding and self.finding.description and self.finding.description.strip()):
+            return False
+        if self.finding.status.value == PastaFindingStatus.NEEDS_REVALIDATION.value:
+            return False
+        # Check owning stage revalidation state
+        stage = self.finding.stage_record if self.finding else None
+        if stage and stage.status.value == PastaStageStatus.NEEDS_REVALIDATION.value:
+            return False
+        return True
+
+    @property
+    def blocked_reasons(self) -> list[str]:
+        """Return a list of i18n keys explaining why publication is blocked."""
+        reasons: list[str] = []
+        if not (self.likelihood_score and self.impact_score):
+            reasons.append("pasta.risk_conclusion.blocked.missing_scores")
+        if not self.overall_score:
+            reasons.append("pasta.risk_conclusion.blocked.missing_overall_score")
+        if not (self.finding and self.finding.description and self.finding.description.strip()):
+            reasons.append("pasta.risk_conclusion.blocked.missing_narrative")
+        if self.finding and self.finding.status.value == PastaFindingStatus.NEEDS_REVALIDATION.value:
+            reasons.append("pasta.risk_conclusion.blocked.finding_needs_revalidation")
+        stage = self.finding.stage_record if self.finding else None
+        if stage and stage.status.value == PastaStageStatus.NEEDS_REVALIDATION.value:
+            reasons.append("pasta.risk_conclusion.blocked.stage_needs_revalidation")
+        return reasons

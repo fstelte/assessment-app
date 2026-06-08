@@ -325,3 +325,141 @@ def test_pasta_stage_record_label(app, pasta_model):
         model = db.session.get(ThreatModel, pasta_model.id)
         stage1 = next(s for s in model.pasta_stages if s.display_order == 1)
         assert stage1.label == "Define Objectives"
+
+
+# ---------------------------------------------------------------------------
+# PastaRiskConclusion – T010 schema coverage
+# ---------------------------------------------------------------------------
+
+from scaffold.apps.threat.models import (
+    PASTA_STAGE_GUIDANCE,
+    PastaPublicationState,
+    PastaRiskConclusion,
+)
+from scaffold.apps.threat.services import (
+    apply_pasta_conclusion_scores,
+    compute_pasta_overall_score,
+)
+
+
+def _make_risk_finding(app, pasta_model):
+    """Helper: add a risk_conclusion PastaFinding to stage 7 and return its id."""
+    with app.app_context():
+        model = db.session.get(ThreatModel, pasta_model.id)
+        stage7 = next(s for s in model.pasta_stages if s.stage_code == "risk_impact_analysis")
+        finding = PastaFinding(
+            stage_record_id=stage7.id,
+            finding_type=PastaFindingType.RISK_CONCLUSION,
+            title="SQL injection risk",
+            description="Attackers can exfiltrate user data via SQLi.",
+            status=PastaFindingStatus.CURRENT,
+        )
+        db.session.add(finding)
+        db.session.commit()
+        return finding.id
+
+
+def test_pasta_risk_conclusion_default_state(app, pasta_model):
+    """A newly created PastaRiskConclusion must default to NOT_PUBLISHED."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(finding_id=finding.id)
+        db.session.add(conclusion)
+        db.session.commit()
+        assert conclusion.publication_state == PastaPublicationState.NOT_PUBLISHED
+        assert conclusion.likelihood_score is None
+        assert conclusion.impact_score is None
+        assert conclusion.overall_score is None
+
+
+def test_pasta_risk_conclusion_is_not_publishable_without_scores(app, pasta_model):
+    """is_publishable must be False when scores are absent."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(finding_id=finding.id)
+        db.session.add(conclusion)
+        db.session.flush()
+        assert conclusion.is_publishable is False
+
+
+def test_pasta_risk_conclusion_is_publishable_with_all_fields(app, pasta_model):
+    """is_publishable must be True when scores + narrative are present."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=3,
+            impact_score=4,
+            overall_score=12,
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        assert conclusion.is_publishable is True
+
+
+def test_pasta_risk_conclusion_blocked_reasons_missing_scores(app, pasta_model):
+    """blocked_reasons must include missing_scores key when scores absent."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(finding_id=finding.id)
+        db.session.add(conclusion)
+        db.session.flush()
+        reasons = conclusion.blocked_reasons
+        assert any("missing_scores" in r or "missing_overall_score" in r for r in reasons)
+
+
+def test_pasta_risk_conclusion_blocked_reasons_empty_when_publishable(app, pasta_model):
+    """blocked_reasons must be empty when all gates pass."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=2,
+            impact_score=2,
+            overall_score=4,
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        assert conclusion.blocked_reasons == []
+
+
+def test_compute_pasta_overall_score_returns_int_and_string(app):
+    """compute_pasta_overall_score must return (int, str) tuple."""
+    with app.app_context():
+        score, level = compute_pasta_overall_score(3, 3)
+        assert isinstance(score, int)
+        assert isinstance(level, str)
+        assert score > 0
+
+
+def test_apply_pasta_conclusion_scores_sets_overall(app, pasta_model):
+    """apply_pasta_conclusion_scores must populate overall_score from l*i."""
+    finding_id = _make_risk_finding(app, pasta_model)
+    with app.app_context():
+        finding = db.session.get(PastaFinding, finding_id)
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=3,
+            impact_score=4,
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        apply_pasta_conclusion_scores(conclusion)
+        assert conclusion.overall_score is not None
+        assert conclusion.overall_score > 0
+
+
+def test_pasta_stage_guidance_covers_all_stages():
+    """PASTA_STAGE_GUIDANCE must have an entry for every stage code."""
+    from scaffold.apps.threat.models import PASTA_STAGE_CODES, PASTA_STAGE_GUIDANCE  # noqa: F811
+    for code in PASTA_STAGE_CODES:
+        assert code in PASTA_STAGE_GUIDANCE, f"Missing guidance for {code}"
+        entry = PASTA_STAGE_GUIDANCE[code]
+        assert "purpose" in entry
+        assert "inputs" in entry
+        assert "outputs" in entry
