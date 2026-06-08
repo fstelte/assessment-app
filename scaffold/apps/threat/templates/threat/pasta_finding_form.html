@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
+{% block title %}{{ _("threat.pasta.edit_finding") }} — {{ model.title }}{% endblock %}
+{% block content %}
+<div class="py-6 max-w-2xl mx-auto">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">Threats</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ model.title }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.pasta_stage_edit', model_id=model.id, stage_code=stage.stage_code) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ stage.label }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ _("threat.pasta.edit_finding") }}</li>
+    </ol>
+  </nav>
+
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+    <h1 class="text-xl font-bold mb-5">{{ _("threat.pasta.edit_finding") }}</h1>
+    <form method="post">
+      {{ form.hidden_tag() }}
+      {{ render_field_with_help(form.finding_type) }}
+      {{ render_field_with_help(form.title) }}
+      {{ render_field_with_help(form.description) }}
+      {{ render_field_with_help(form.evidence) }}
+      {{ render_field_with_help(form.priority) }}
+      {{ render_field_with_help(form.asset_ids) }}
+      {{ render_field_with_help(form.stride_category_values) }}
+      <div class="flex gap-2 mt-5">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
+        <a href="{{ url_for('threat.pasta_stage_edit', model_id=model.id, stage_code=stage.stage_code) }}"
+           class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors">
+          {{ _("actions.cancel") }}
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

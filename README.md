@@ -30,6 +30,38 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - `/api/risks` keeps automation in sync with the UI, returning the same serialized payloads (score, severity, linked components, and CSA control metadata).
 - See `docs/risk.md` for prerequisites, best practices when selecting CSA controls, and a troubleshooting checklist.
 
+## Threat Modeling
+
+The threat module supports two methodologies selectable at model-creation time:
+
+### STRIDE-LM (default)
+
+Classic per-scenario workflow: define assets, add threat scenarios per STRIDE-LM category, score likelihood/impact, assign treatment, and link to CSA controls and BIA components.
+
+### PASTA (Process for Attack Simulation and Threat Analysis)
+
+Model-level stage-based workflow with seven ordered stages:
+
+1. Define Objectives
+2. Define Technical Scope
+3. Application Decomposition
+4. Threat Analysis
+5. Vulnerability and Weakness Analysis
+6. Attack Modelling
+7. Risk and Impact Analysis
+
+**Creating a PASTA model**: select "PASTA" as the methodology when creating a new threat model. Seven stage records are initialized automatically; only stage 1 is initially available.
+
+**Stage progression**: each stage unlocks when the previous stage has a saved summary. Editing an earlier completed stage marks later completed stages as "Needs Revalidation" to prompt review.
+
+**Findings**: each stage collects typed findings (objectives, scope items, threats, vulnerabilities, attack paths, risk conclusions). Threat-oriented findings (`THREAT`, `VULNERABILITY`, `ATTACK_PATH`) can generate or link standard `ThreatScenario` records for downstream risk-register and SSP traceability.
+
+**STRIDE-LM bootstrap**: existing STRIDE-LM models can be bootstrapped into PASTA models via the `/<id>/bootstrap-pasta` route. The source model is preserved unchanged; the new PASTA model records the source model for traceability.
+
+**Exports**: PASTA models produce a methodology-specific HTML export and a findings-based CSV. STRIDE-LM exports are unaffected.
+
+See `docs/threat_modeling_plan.md` for architectural decisions and `docs/models.md` for the complete data model reference.
+
 ## Setup Guide
 
 1. **Install dependencies**

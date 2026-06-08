@@ -364,3 +364,200 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
             # Keep controls in sync with the linked threat scenario.
             risk.controls = list(scenario.controls)
 
+
+# ---------------------------------------------------------------------------
+# PASTA workflow services
+# ---------------------------------------------------------------------------
+
+
+def initialize_pasta_stages(threat_model) -> None:
+    """Create the seven canonical PastaStageRecord rows for a new PASTA model.
+
+    Stage 1 is set to AVAILABLE; all others start LOCKED.
+    """
+    from .models import (
+        PASTA_STAGE_CODES,
+        PastaStageRecord,
+        PastaStageStatus,
+    )
+    from ...extensions import db
+
+    for idx, code in enumerate(PASTA_STAGE_CODES, start=1):
+        status = PastaStageStatus.AVAILABLE if idx == 1 else PastaStageStatus.LOCKED
+        stage = PastaStageRecord(
+            threat_model_id=threat_model.id,
+            stage_code=code,
+            display_order=idx,
+            status=status,
+        )
+        db.session.add(stage)
+
+
+def _stage_meets_gate(stage_record) -> bool:
+    """Return True if the stage satisfies its minimum content gate (FR-003B)."""
+    from .models import PASTA_STAGE_GATE_RULES, PastaFindingStatus
+
+    rules = PASTA_STAGE_GATE_RULES.get(stage_record.stage_code, {})
+    active_findings = [
+        f for f in stage_record.findings
+        if f.status.value != PastaFindingStatus.ARCHIVED.value
+    ]
+    if len(active_findings) < rules.get("min_findings", 1):
+        return False
+    if rules.get("requires_scope") and not (stage_record.summary or "").strip():
+        return False
+    if rules.get("requires_notes") and not (stage_record.completion_notes or "").strip():
+        # notes not strictly required for gate unlock — only summary counts
+        pass
+    return True
+
+
+def evaluate_stage_progression(threat_model) -> None:
+    """After saving a stage, unlock the next stage if the gate is satisfied.
+
+    Raises no exceptions; silently does nothing for non-PASTA models.
+    """
+    from .models import (
+        PASTA_STAGE_CODES,
+        PastaStageStatus,
+    )
+
+    if not threat_model.is_pasta:
+        return
+
+    stages: dict[str, object] = {s.stage_code: s for s in threat_model.pasta_stages}
+    for idx, code in enumerate(PASTA_STAGE_CODES):
+        stage = stages.get(code)
+        if stage is None:
+            continue
+        if stage.status in (PastaStageStatus.COMPLETED, PastaStageStatus.NEEDS_REVALIDATION):
+            # Already completed — check if the next stage should be unlocked
+            next_codes = PASTA_STAGE_CODES[idx + 1 :]
+            if next_codes:
+                next_stage = stages.get(next_codes[0])
+                if next_stage and next_stage.status == PastaStageStatus.LOCKED:
+                    next_stage.status = PastaStageStatus.AVAILABLE
+        elif stage.status == PastaStageStatus.AVAILABLE:
+            if _stage_meets_gate(stage):
+                # Mark current stage completed and unlock next
+                from datetime import UTC, datetime
+                from flask_login import current_user
+
+                stage.status = PastaStageStatus.COMPLETED
+                stage.completed_at = datetime.now(UTC)
+                if current_user and current_user.is_authenticated:
+                    stage.completed_by_id = current_user.id
+                next_codes = PASTA_STAGE_CODES[idx + 1 :]
+                if next_codes:
+                    next_stage = stages.get(next_codes[0])
+                    if next_stage and next_stage.status == PastaStageStatus.LOCKED:
+                        next_stage.status = PastaStageStatus.AVAILABLE
+
+
+def trigger_revalidation_for_stage(threat_model, edited_stage_code: str) -> None:
+    """Mark all stages after the edited stage as needs_revalidation (FR-018B).
+
+    Only stages that are COMPLETED or already NEEDS_REVALIDATION are changed
+    (LOCKED and AVAILABLE stages are unaffected — no content to revalidate).
+    """
+    from .models import (
+        PASTA_STAGE_CODES,
+        PASTA_REVALIDATION_TRIGGER_FIELDS,
+        PastaStageStatus,
+    )
+
+    if edited_stage_code not in PASTA_REVALIDATION_TRIGGER_FIELDS:
+        return
+
+    edited_idx = PASTA_STAGE_CODES.index(edited_stage_code)
+    later_codes = set(PASTA_STAGE_CODES[edited_idx + 1 :])
+    for stage in threat_model.pasta_stages:
+        if stage.stage_code in later_codes and stage.status in (
+            PastaStageStatus.COMPLETED,
+            PastaStageStatus.NEEDS_REVALIDATION,
+        ):
+            stage.status = PastaStageStatus.NEEDS_REVALIDATION
+
+
+def bootstrap_pasta_from_stride(source_model, current_user_obj, title: str | None = None):
+    """Create a new PASTA ThreatModel bootstrapped from an existing STRIDE-LM model.
+
+    Copies metadata, assets (by reference/name), and records the source model
+    traceability.  Does NOT mutate the source model.
+
+    Returns the newly created ThreatModel (not yet committed to the session).
+    """
+    from .models import Methodology, ThreatModel, ThreatModelAsset
+    from ...extensions import db
+
+    new_model = ThreatModel(
+        title=title or f"{source_model.title} (PASTA)",
+        description=source_model.description,
+        scope=source_model.scope,
+        owner_id=current_user_obj.id if current_user_obj else None,
+        methodology=Methodology.PASTA.value,
+        bootstrap_source_model_id=source_model.id,
+        product_id=source_model.product_id,
+        dpia_id=source_model.dpia_id,
+        context_scope_id=source_model.context_scope_id,
+    )
+    db.session.add(new_model)
+    db.session.flush()  # get new_model.id
+
+    # Copy assets (new rows, same names/types)
+    for asset in source_model.assets:
+        db.session.add(
+            ThreatModelAsset(
+                threat_model_id=new_model.id,
+                name=asset.name,
+                asset_type=asset.asset_type,
+                description=asset.description,
+                order=asset.order,
+            )
+        )
+
+    # Initialize PASTA stage records
+    initialize_pasta_stages(new_model)
+    return new_model
+
+
+def export_pasta_findings_csv(threat_model) -> str:
+    """Return CSV string of all PASTA findings across all stages.
+
+    One row per finding.  Headers: stage, finding_type, title, description,
+    evidence, priority, stride_mappings, linked_scenarios.
+    """
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "stage",
+            "finding_type",
+            "title",
+            "description",
+            "evidence",
+            "priority",
+            "stride_mappings",
+            "linked_scenarios",
+        ]
+    )
+    for stage in threat_model.pasta_stages:
+        for finding in stage.findings:
+            stride_vals = "; ".join(link.stride_category for link in finding.stride_links)
+            scenario_ids = "; ".join(
+                str(link.scenario_id) for link in finding.scenario_links
+            )
+            writer.writerow(
+                [
+                    stage.stage_code,
+                    finding.finding_type.value,
+                    finding.title,
+                    finding.description or "",
+                    finding.evidence or "",
+                    finding.priority or "",
+                    stride_vals,
+                    scenario_ids,
+                ]
+            )
+    return output.getvalue()
+

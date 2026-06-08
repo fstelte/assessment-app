@@ -22,6 +22,106 @@ def _enum_column(enum_cls: type[enum.Enum], *, name: str) -> sa.Enum:
     )
 
 
+class Methodology(enum.Enum):
+    STRIDE = "STRIDE"
+    PASTA = "PASTA"
+    LINDDUN = "LINDDUN"
+    OWASP = "OWASP"
+
+
+# Canonical PASTA stage codes in ordered sequence
+PASTA_STAGE_CODES: list[str] = [
+    "define_objectives",
+    "define_technical_scope",
+    "decompose_application",
+    "analyze_threats",
+    "vulnerability_analysis",
+    "attack_analysis",
+    "risk_impact_analysis",
+]
+
+# Human-readable labels keyed by stage code (used for display/localization lookup)
+PASTA_STAGE_LABELS: dict[str, str] = {
+    "define_objectives": "Define Objectives",
+    "define_technical_scope": "Define Technical Scope",
+    "decompose_application": "Decompose Application",
+    "analyze_threats": "Analyze Threats",
+    "vulnerability_analysis": "Vulnerability Analysis",
+    "attack_analysis": "Attack Analysis",
+    "risk_impact_analysis": "Risk & Impact Analysis",
+}
+
+# Minimum content required to advance past each stage gate (FR-003B)
+PASTA_STAGE_GATE_RULES: dict[str, dict] = {
+    "define_objectives": {"min_findings": 1, "requires_scope": True},
+    "define_technical_scope": {"min_findings": 1, "requires_notes": True},
+    "decompose_application": {"min_findings": 1, "requires_notes": False},
+    "analyze_threats": {"min_findings": 1, "requires_notes": False},
+    "vulnerability_analysis": {"min_findings": 1, "requires_notes": False},
+    "attack_analysis": {"min_findings": 1, "requires_notes": False},
+    "risk_impact_analysis": {"min_findings": 1, "requires_notes": False},
+}
+
+
+class PastaStageStatus(enum.Enum):
+    LOCKED = "locked"
+    AVAILABLE = "available"
+    COMPLETED = "completed"
+    NEEDS_REVALIDATION = "needs_revalidation"
+
+
+class PastaFindingType(enum.Enum):
+    OBJECTIVE = "objective"
+    SCOPE_ITEM = "scope_item"
+    DECOMPOSITION_ITEM = "decomposition_item"
+    THREAT = "threat"
+    VULNERABILITY = "vulnerability"
+    ATTACK_PATH = "attack_path"
+    RISK_CONCLUSION = "risk_conclusion"
+
+
+# Which finding types are eligible for downstream scenario generation (FR-016A)
+PASTA_THREAT_FINDING_TYPES: frozenset[str] = frozenset(
+    [
+        PastaFindingType.THREAT.value,
+        PastaFindingType.VULNERABILITY.value,
+        PastaFindingType.ATTACK_PATH.value,
+        PastaFindingType.RISK_CONCLUSION.value,
+    ]
+)
+
+# Default finding type per stage
+PASTA_STAGE_DEFAULT_FINDING_TYPE: dict[str, str] = {
+    "define_objectives": PastaFindingType.OBJECTIVE.value,
+    "define_technical_scope": PastaFindingType.SCOPE_ITEM.value,
+    "decompose_application": PastaFindingType.DECOMPOSITION_ITEM.value,
+    "analyze_threats": PastaFindingType.THREAT.value,
+    "vulnerability_analysis": PastaFindingType.VULNERABILITY.value,
+    "attack_analysis": PastaFindingType.ATTACK_PATH.value,
+    "risk_impact_analysis": PastaFindingType.RISK_CONCLUSION.value,
+}
+
+
+class PastaFindingStatus(enum.Enum):
+    DRAFT = "draft"
+    CURRENT = "current"
+    NEEDS_REVALIDATION = "needs_revalidation"
+    ARCHIVED = "archived"
+
+
+# Revalidation trigger: stages that become needs_revalidation when an earlier
+# stage with significant content changes. Index = stage position (1-based).
+# Editing stage N marks stages N+1 through 7 as needs_revalidation (FR-018B).
+PASTA_REVALIDATION_TRIGGER_FIELDS: frozenset[str] = frozenset(
+    [
+        "define_objectives",       # changes trigger all later stages
+        "define_technical_scope",  # changes trigger stages 3-7
+        "decompose_application",   # changes trigger stages 4-7
+        "analyze_threats",         # changes trigger stages 5-7
+    ]
+)
+
+
 class AssetType(enum.Enum):
     COMPONENT = "component"
     DATA_FLOW = "data_flow"
@@ -160,6 +260,30 @@ class ThreatModel(TimestampMixin, db.Model):
         back_populates="threat_model",
         cascade="all, delete-orphan",
     )
+    # PASTA workflow extension fields
+    methodology = db.Column(db.String(20), nullable=False, default=Methodology.STRIDE.value)
+    bootstrap_source_model_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_models.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    bootstrap_source = db.relationship(
+        "ThreatModel",
+        foreign_keys="[ThreatModel.bootstrap_source_model_id]",
+        primaryjoin="ThreatModel.bootstrap_source_model_id == ThreatModel.id",
+        remote_side="ThreatModel.id",
+        uselist=False,
+    )
+    pasta_stages = db.relationship(
+        "PastaStageRecord",
+        back_populates="threat_model",
+        cascade="all, delete-orphan",
+        order_by="PastaStageRecord.display_order",
+    )
+
+    @property
+    def is_pasta(self) -> bool:
+        return self.methodology == Methodology.PASTA.value
 
 
 class ThreatModelAsset(TimestampMixin, db.Model):
@@ -378,3 +502,173 @@ class ThreatMitigationAction(TimestampMixin, db.Model):
     scenario = db.relationship("ThreatScenario", back_populates="mitigation_actions")
     library_entry = db.relationship("ThreatLibraryEntry", foreign_keys=[library_entry_id])
     assigned_to = db.relationship("User", foreign_keys=[assigned_to_id])
+
+
+# ---------------------------------------------------------------------------
+# PASTA workflow models (model-level workflow extension)
+# ---------------------------------------------------------------------------
+
+
+class PastaStageRecord(TimestampMixin, db.Model):
+    """One of the seven ordered PASTA stages for a PASTA ThreatModel."""
+
+    __tablename__ = "pasta_stage_records"
+    __table_args__ = (
+        sa.UniqueConstraint("threat_model_id", "stage_code", name="uq_pasta_stage_model_code"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    threat_model_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_models.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    stage_code = db.Column(db.String(60), nullable=False)
+    display_order = db.Column(db.Integer, nullable=False)
+    status = db.Column(
+        _enum_column(PastaStageStatus, name="pasta_stage_status_enum"),
+        nullable=False,
+        default=PastaStageStatus.LOCKED,
+    )
+    summary = db.Column(db.Text)
+    completion_notes = db.Column(db.Text)
+    completed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    completed_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    last_revalidated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    threat_model = db.relationship("ThreatModel", back_populates="pasta_stages")
+    completed_by = db.relationship("User", foreign_keys=[completed_by_id])
+    findings = db.relationship(
+        "PastaFinding",
+        back_populates="stage_record",
+        cascade="all, delete-orphan",
+        order_by="PastaFinding.id",
+    )
+
+    @property
+    def label(self) -> str:
+        from .models import PASTA_STAGE_LABELS
+        return PASTA_STAGE_LABELS.get(self.stage_code, self.stage_code)
+
+
+class PastaFinding(TimestampMixin, db.Model):
+    """A reviewable finding captured within one PASTA stage."""
+
+    __tablename__ = "pasta_findings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    stage_record_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pasta_stage_records.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    finding_type = db.Column(
+        _enum_column(PastaFindingType, name="pasta_finding_type_enum"),
+        nullable=False,
+    )
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    evidence = db.Column(db.Text)
+    priority = db.Column(db.String(20), nullable=True)
+    status = db.Column(
+        _enum_column(PastaFindingStatus, name="pasta_finding_status_enum"),
+        nullable=False,
+        default=PastaFindingStatus.CURRENT,
+    )
+    source_library_entry_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_library_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    stage_record = db.relationship("PastaStageRecord", back_populates="findings")
+    source_library_entry = db.relationship("ThreatLibraryEntry", foreign_keys=[source_library_entry_id])
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+    updated_by = db.relationship("User", foreign_keys=[updated_by_id])
+    asset_links = db.relationship(
+        "PastaFindingAssetLink",
+        back_populates="finding",
+        cascade="all, delete-orphan",
+    )
+    stride_links = db.relationship(
+        "PastaFindingStrideCategoryLink",
+        back_populates="finding",
+        cascade="all, delete-orphan",
+    )
+    scenario_links = db.relationship(
+        "PastaFindingThreatScenarioLink",
+        back_populates="finding",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def is_threat_oriented(self) -> bool:
+        from .models import PASTA_THREAT_FINDING_TYPES
+        return self.finding_type.value in PASTA_THREAT_FINDING_TYPES
+
+
+class PastaFindingAssetLink(db.Model):
+    """M2M: PastaFinding <-> ThreatModelAsset."""
+
+    __tablename__ = "pasta_finding_asset_links"
+    __table_args__ = (
+        sa.UniqueConstraint("finding_id", "asset_id", name="uq_pasta_finding_asset"),
+    )
+
+    finding_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pasta_findings.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    asset_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_model_assets.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    finding = db.relationship("PastaFinding", back_populates="asset_links")
+    asset = db.relationship("ThreatModelAsset")
+
+
+class PastaFindingStrideCategoryLink(db.Model):
+    """Optional STRIDE-LM category mapping for a PASTA finding."""
+
+    __tablename__ = "pasta_finding_stride_links"
+    __table_args__ = (
+        sa.UniqueConstraint("finding_id", "stride_category", name="uq_pasta_finding_stride"),
+    )
+
+    finding_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pasta_findings.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    stride_category = db.Column(db.String(50), nullable=False, primary_key=True)
+
+    finding = db.relationship("PastaFinding", back_populates="stride_links")
+
+
+class PastaFindingThreatScenarioLink(db.Model):
+    """Traceability link: PastaFinding -> ThreatScenario (generated or linked)."""
+
+    __tablename__ = "pasta_finding_scenario_links"
+    __table_args__ = (
+        sa.UniqueConstraint("finding_id", "scenario_id", name="uq_pasta_finding_scenario"),
+    )
+
+    finding_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pasta_findings.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    scenario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("threat_scenarios.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    link_type = db.Column(db.String(20), nullable=False, default="linked")  # "generated" | "linked"
+
+    finding = db.relationship("PastaFinding", back_populates="scenario_links")
+    scenario = db.relationship("ThreatScenario")

@@ -44,17 +44,28 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 
 ## Threat Modeling Domain
 
-- `ThreatModel`: top-level container for a threat model, scoped with a title, description, scope narrative, and optional owner. Supports archiving.
+- `ThreatModel`: top-level container for a threat model, scoped with a title, description, scope narrative, and optional owner. Supports archiving. Now carries a `methodology` field (`STRIDE`, `PASTA`, `LINDDUN`, `OWASP`) and an optional `bootstrap_source_model_id` for one-way traceability when a PASTA model is created from an existing STRIDE model.
 - `ThreatModelAsset`: assets within a model (components, data flows, trust boundaries, external entities, data stores), ordered by position.
 - `ThreatScenario`: core record per identified threat. Captures STRIDE-LM category, likelihood (1-5), impact (1-5), computed risk score and level (`low`/`medium`/`high`/`critical`), treatment option (`accept`/`mitigate`/`transfer`/`avoid`), residual risk breakdown (likelihood, impact, score, level), affected CIA aspects, lifecycle status (`identified` → `analysed` → `mitigated` → `accepted` → `closed`), and optional links to BIA `Component` records and CSA `Control` entries via the `threat_scenario_controls` join table.
 - `threat_scenario_controls`: many-to-many join between `ThreatScenario` and CSA `Control`.
 
-Risk scoring follows `likelihood × impact_score`; `RiskLevel` thresholds are hardcoded (`low ≤ 4`, `medium ≤ 9`, `high ≤ 14`, `critical ≥ 15`). The `services.py` module exposes `apply_risk_score` and `apply_residual_risk_score` helpers, plus a `export_scenarios_csv` function.
+### PASTA Workflow Models
+
+PASTA threat models have a model-level workflow with seven ordered stages. These records are separate from existing STRIDE-LM per-scenario fields, which remain untouched.
+
+- `PastaStageRecord`: one row per PASTA stage per model (seven total). Tracks `stage_code`, `display_order`, `status` (`available` / `locked` / `completed` / `needs_revalidation`), `summary`, `completion_notes`, and a `completed_at` / `completed_by` audit trail.
+- `PastaFinding`: a reviewable finding captured within one PASTA stage. Carries `finding_type` (`objective`, `scope_item`, `decomposition_item`, `threat`, `vulnerability`, `attack_path`, `risk_conclusion`), `title`, `description`, `evidence`, `priority`, and `status` (`current` / `needs_revalidation` / `archived`). Threat-oriented findings (`THREAT`, `VULNERABILITY`, `ATTACK_PATH`) can generate or link standard `ThreatScenario` records.
+- `PastaFindingAssetLink`: link from a finding to one of the model's `ThreatModelAsset` records.
+- `PastaFindingStrideCategoryLink`: optional STRIDE-LM category annotation on a finding (finding can have zero or many STRIDE categories).
+- `PastaFindingThreatScenarioLink`: traceability link from a PASTA finding to a generated or manually linked `ThreatScenario`, with a `link_type` field (`generated` / `linked`).
+
+Risk scoring follows `likelihood × impact_score`; `RiskLevel` thresholds are hardcoded (`low ≤ 4`, `medium ≤ 9`, `high ≤ 14`, `critical ≥ 15`). The `services.py` module exposes `apply_risk_score` and `apply_residual_risk_score` helpers, plus `export_scenarios_csv` (STRIDE) and `export_pasta_findings_csv` (PASTA), `bootstrap_pasta_from_stride`, `initialize_pasta_stages`, `evaluate_stage_progression`, and `trigger_revalidation_for_stage`.
 
 ### Threat Model Migrations
 
 - `20260317_0001_add_threat_modeling_module`: creates `threat_models`, `threat_model_assets`, `threat_scenarios`, and `threat_scenario_controls`.
 - `20260317_0002_threat_scenario_residual_risk_breakdown`: replaces the single `residual_risk` text column with structured `residual_likelihood`, `residual_impact`, `residual_risk_score`, and `residual_risk_level` columns.
+- `20260608_0001_pasta_threat_modeling`: adds `methodology` and `bootstrap_source_model_id` to `threat_models`; creates `pasta_stage_records`, `pasta_findings`, `pasta_finding_asset_links`, `pasta_finding_stride_links`, and `pasta_finding_scenario_links`.
 
 ```mermaid
 erDiagram

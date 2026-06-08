@@ -2826,6 +2826,10 @@
       "label_description": "Beschrijving",
       "label_scope": "Scope",
       "help_scope": "Beschrijf welke systemen en assets in scope zijn.",
+      "help": {
+        "methodology": "Kies de modelleermethode voor dit dreigingsmodel. <strong>STRIDE-LM</strong> start met scenario-gebaseerde dreigingsanalyse. <strong>PASTA</strong> maakt een gefaseerde analyseworkflow van doelstellingen en scope tot dreigingen, kwetsbaarheden, aanvalspaden en risicoconclusies.",
+        "bia_id": "Importeer optioneel systeemcontext uit een Business Impact Analyse zodat het model start met bekende componenten en eigenaarschap. Laat leeg als deze analyse losstaat van een BIA-record."
+      },
       "bia_import_heading": "Assets importeren vanuit BIA (optioneel)",
       "bia_import_hint": "Selecteer een Business Impact Analyse om de componenten automatisch als assets toe te voegen. Laat leeg voor een zelfstandig dreigingsmodel."
     },
@@ -2891,7 +2895,9 @@
         "owner_id": "De persoon die verantwoordelijk is voor het bewaken en oplossen van dit dreigingsscenario.",
         "csa_control_ids": "Koppel een of meer CSA-beheersmaatregelen die dit scenario aanpakken of beperken. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren.",
         "asset_ids": "Selecteer alle assets die door dit scenario worden bedreigd. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren.",
-        "stride_category_ids": "Selecteer alle toepasselijke STRIDE-LM categorieÃ«n voor dit scenario. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren."
+        "stride_category_ids": "Selecteer alle toepasselijke STRIDE-LM categorieÃ«n voor dit scenario. Houd Ctrl / Cmd ingedrukt om meerdere te selecteren.",
+        "methodology": "Leg vast uit welk modelleerraamwerk dit scenario komt. Zo kunnen klassieke STRIDE-LM scenario's worden onderscheiden van scenario's die uit een PASTA-analyse voortkomen.",
+        "pasta_stage": "Als dit scenario uit een PASTA-workflow komt, leg dan vast in welke fase het is ontstaan zodat beoordelaars het kunnen herleiden naar de oorspronkelijke analysestap."
       },
       "label_assets": "Bedreigde assets",
       "label_stride_categories": "STRIDE-LM categorieÃ«n",
@@ -3049,6 +3055,95 @@
       "mitigated": "Gemitigeerd",
       "accepted": "Geaccepteerd",
       "closed": "Gesloten"
+    },
+    "pasta": {
+      "methodology_label": "PASTA",
+      "new_pasta_model": "Nieuw PASTA-model",
+      "bootstrap_from_stride": "Opstarten vanuit STRIDE-LM",
+      "bootstrap_source_label": "Bron STRIDE-LM model",
+      "bootstrap_confirm": "Een nieuw PASTA-analyse opstarten vanuit dit STRIDE-LM model?",
+      "help": {
+        "stage_summary": "Vat de huidige uitkomst van deze fase samen: wat is beoordeeld, welke beslissingen zijn genomen en wat latere beoordelaars moeten weten voordat ze verdergaan.",
+        "completion_notes": "Leg akkoordnotities, aannames, open vragen of bewijs vast die verklaren waarom deze fase als afgerond geldt.",
+        "finding_type": "Classificeer de invoer op basis van het soort analyse-uitkomst. Vroege fasen leggen meestal doelstellingen, scope-items of ontledingsnotities vast; latere fasen bevatten vaak dreigingen, kwetsbaarheden, aanvalspaden en risicoconclusies.",
+        "finding_title": "Gebruik een korte omschrijving zodat de bevinding snel scanbaar is in fase-overzichten en exports.",
+        "finding_description": "Beschrijf de observatie zo dat een andere beoordelaar het punt, besluit of de conclusie begrijpt zonder workshopnotities opnieuw te moeten openen.",
+        "finding_evidence": "Leg het bewijs vast dat deze bevinding ondersteunt, zoals diagrammen, tickets, logs, workshopuitkomsten, controlereviews of links naar externe documentatie.",
+        "finding_priority": "Optionele triagewaarde om bevindingen te ordenen voor opvolging of mitigatie. Laat leeg als prioritering nog niet heeft plaatsgevonden.",
+        "asset_ids": "Koppel de assets die door deze bevinding worden geraakt. Dit verbindt fase-uitkomsten met de gemodelleerde systeemcomponenten en verbetert de traceerbaarheid in exports.",
+        "stride_category_values": "Koppel optioneel een of meer STRIDE-LM categorieën als de bevinding een duidelijke dreigingsclassificatie heeft. Dit is vooral nuttig voor dreigings- en kwetsbaarheidsgerichte bevindingen."
+      },
+      "stage_status": {
+        "locked": "Vergrendeld",
+        "available": "Beschikbaar",
+        "completed": "Afgerond",
+        "needs_revalidation": "Hervalidatie vereist"
+      },
+      "stage_labels": {
+        "define_objectives": "Doelstellingen bepalen",
+        "define_technical_scope": "Technisch bereik bepalen",
+        "decompose_application": "Applicatie ontleden",
+        "analyze_threats": "Dreigingen analyseren",
+        "vulnerability_analysis": "Kwetsbaarheidsanalyse",
+        "attack_analysis": "Aanvalsanalyse",
+        "risk_impact_analysis": "Risico & impact analyse"
+      },
+      "finding_type": {
+        "objective": "Doelstelling",
+        "scope_item": "Bereikitem",
+        "decomposition_item": "Ontledingsitem",
+        "threat": "Dreiging",
+        "vulnerability": "Kwetsbaarheid",
+        "attack_path": "Aanvalspad",
+        "risk_conclusion": "Risicoconclusie"
+      },
+      "finding_status": {
+        "draft": "Concept",
+        "current": "Actueel",
+        "needs_revalidation": "Hervalidatie vereist",
+        "archived": "Gearchiveerd"
+      },
+      "stage_heading": "Fase {order}: {label}",
+      "stage_summary_label": "Fasesamenvatting",
+      "completion_notes_label": "Afrondingsnotities",
+      "findings_heading": "Bevindingen",
+      "add_finding": "Bevinding toevoegen",
+      "edit_finding": "Bevinding bewerken",
+      "delete_finding": "Bevinding verwijderen",
+      "finding_title_label": "Titel",
+      "finding_description_label": "Omschrijving",
+      "finding_evidence_label": "Bewijs",
+      "finding_priority_label": "Prioriteit",
+      "stride_mappings_label": "STRIDE-LM koppelingen (optioneel)",
+      "linked_assets_label": "Gekoppelde assets",
+      "revalidation_notice": "Deze fase vereist hervalidatie omdat een eerdere fase is gewijzigd.",
+      "locked_notice": "Deze fase is vergrendeld totdat de vorige fase is afgerond.",
+      "no_findings": "Nog geen bevindingen voor deze fase.",
+      "review_heading": "PASTA-analyse overzicht",
+      "overall_status_label": "Algehele status",
+      "bootstrap_source_info": "Opgestart vanuit",
+      "generate_scenario": "Dreigingsscenario genereren",
+      "link_scenario": "Bestaand scenario koppelen",
+      "linked_scenarios_heading": "Gekoppelde dreigingsscenario's",
+      "scenario_link_type": {
+        "generated": "Gegenereerd",
+        "linked": "Gekoppeld"
+      },
+      "export_heading": "PASTA-model exporteren",
+      "export_csv_desc": "Exporteer alle bevindingen als CSV-spreadsheet.",
+      "flash": {
+        "pasta_created": "PASTA-dreigingsmodel aangemaakt.",
+        "bootstrap_created": "PASTA-model opgestart vanuit bronmodel.",
+        "stage_saved": "Fase opgeslagen.",
+        "stage_completed": "Fase afgerond. Volgende fase is nu beschikbaar.",
+        "stage_revalidation_triggered": "Bovenstrooms wijziging gedetecteerd. Latere fasen kunnen hervalidatie vereisen.",
+        "finding_created": "Bevinding toegevoegd.",
+        "finding_updated": "Bevinding bijgewerkt.",
+        "finding_deleted": "Bevinding verwijderd.",
+        "scenario_generated": "Dreigingsscenario gegenereerd vanuit bevinding.",
+        "scenario_linked": "Dreigingsscenario gekoppeld aan bevinding.",
+        "scenario_unlinked": "Scenariokoppeling verwijderd."
+      }
     }
   },
   "ssp": {
