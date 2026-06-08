@@ -282,3 +282,109 @@ def test_finding_added_to_earlier_stage_triggers_revalidation(client, app, admin
         model = db.session.get(ThreatModel, model_id)
         stage2 = next(s for s in model.pasta_stages if s.display_order == 2)
         assert stage2.status == PastaStageStatus.NEEDS_REVALIDATION
+
+
+# ---------------------------------------------------------------------------
+# T020 — revalidation blocks publication gate
+# ---------------------------------------------------------------------------
+
+from scaffold.apps.threat.models import (
+    PastaFindingType,
+    PastaPublicationState,
+    PastaRiskConclusion,
+)
+from scaffold.apps.threat.services import apply_pasta_conclusion_scores
+
+
+def test_revalidation_blocks_is_publishable(app):
+    """When the owning stage is needs_revalidation, is_publishable must be False."""
+    with app.app_context():
+        model = ThreatModel(title="Reval Block", methodology="PASTA")
+        db.session.add(model)
+        db.session.flush()
+        from scaffold.apps.threat.services import initialize_pasta_stages
+        initialize_pasta_stages(model)
+        db.session.flush()
+
+        stage7 = next(s for s in model.pasta_stages if s.stage_code == "risk_impact_analysis")
+        stage7.status = PastaStageStatus.NEEDS_REVALIDATION
+
+        finding = PastaFinding(
+            stage_record_id=stage7.id,
+            finding_type=PastaFindingType.RISK_CONCLUSION,
+            title="API exposure",
+            description="Sensitive data exposed via public endpoint.",
+            status=PastaFindingStatus.CURRENT,
+        )
+        db.session.add(finding)
+        db.session.flush()
+
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=3,
+            impact_score=3,
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        apply_pasta_conclusion_scores(conclusion)
+        db.session.flush()
+
+        # Stage is NEEDS_REVALIDATION → must NOT be publishable
+        assert conclusion.is_publishable is False
+        reasons = conclusion.blocked_reasons
+        assert any("revalidation" in r for r in reasons)
+
+
+def test_republish_does_not_create_duplicate_risk_row(app):
+    """Publishing twice must update the existing Risk row, not create a second one."""
+    with app.app_context():
+        model = ThreatModel(title="Reuse Row", methodology="PASTA")
+        db.session.add(model)
+        db.session.flush()
+        from scaffold.apps.threat.services import initialize_pasta_stages
+        initialize_pasta_stages(model)
+        db.session.flush()
+        stage7 = next(s for s in model.pasta_stages if s.stage_code == "risk_impact_analysis")
+        finding = PastaFinding(
+            stage_record_id=stage7.id,
+            finding_type=PastaFindingType.RISK_CONCLUSION,
+            title="Duplicate check",
+            description="Check no duplicate.",
+            status=PastaFindingStatus.CURRENT,
+        )
+        db.session.add(finding)
+        db.session.flush()
+        conclusion = PastaRiskConclusion(
+            finding_id=finding.id,
+            likelihood_score=2,
+            impact_score=2,
+        )
+        db.session.add(conclusion)
+        db.session.flush()
+        apply_pasta_conclusion_scores(conclusion)
+        db.session.commit()
+
+    with app.app_context():
+        from scaffold.apps.threat.models import PastaFinding as PF
+        from scaffold.apps.threat.services import publish_pasta_conclusion_to_risk
+        from scaffold.apps.identity.models import User as U, UserStatus
+        finding = PF.query.filter_by(title="Duplicate check").first()
+        user = U.query.first()
+        if user is None:
+            user = U()
+            user.email = "test@dup.com"
+            user.status = UserStatus.ACTIVE
+            user.set_password("Password123!")
+            db.session.add(user)
+            db.session.commit()
+            finding = PF.query.filter_by(title="Duplicate check").first()
+
+        publish_pasta_conclusion_to_risk(finding.risk_conclusion, user)
+        db.session.commit()
+        first_risk_id = finding.risk_conclusion.published_risk_id
+
+        publish_pasta_conclusion_to_risk(finding.risk_conclusion, user)
+        db.session.commit()
+        second_risk_id = finding.risk_conclusion.published_risk_id
+
+        assert first_risk_id == second_risk_id, "Republishing must reuse the same Risk row"

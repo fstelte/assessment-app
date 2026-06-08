@@ -193,10 +193,34 @@ body[data-theme="dark"] .threat-scenario-card {
             </div>
             {% if finding.finding_type.value in PASTA_THREAT_FINDING_TYPES %}
             <div class="shrink-0 flex gap-2">
+              {% if finding.finding_type.value == 'risk_conclusion' %}
+              <a href="{{ url_for('threat.pasta_risk_conclusion_edit', model_id=model.id, finding_id=finding.id) }}"
+                 class="text-xs text-indigo-600 hover:underline font-medium">
+                {% if finding.risk_conclusion and finding.risk_conclusion.overall_score %}{{ _("threat.pasta.risk_conclusion.edit_scores_label") }}{% else %}{{ _("threat.pasta.risk_conclusion.add_scores_label") }}{% endif %}
+              </a>
+              {% if finding.risk_conclusion %}
+              <span class="text-xs px-1.5 py-0.5 rounded font-semibold
+                {% if finding.risk_conclusion.publication_state.value == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                {% elif finding.risk_conclusion.publication_state.value == 'needs_revalidation' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                {% else %}bg-slate-100 text-slate-500
+                {% endif %}">
+                {{ finding.risk_conclusion.publication_state.value | replace('_', ' ') | title }}
+              </span>
+              {% if finding.risk_conclusion.is_publishable %}
+              <form method="post" action="{{ url_for('threat.pasta_publish_risk', model_id=model.id, finding_id=finding.id) }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs text-green-700 hover:underline font-medium">
+                  {% if finding.risk_conclusion.published_risk_id %}{{ _("threat.pasta.risk_conclusion.republish_label") }}{% else %}{{ _("threat.pasta.risk_conclusion.publish_label") }}{% endif %}
+                </button>
+              </form>
+              {% endif %}
+              {% endif %}
+              {% else %}
               <form method="post" action="{{ url_for('threat.pasta_finding_generate_scenario', model_id=model.id, finding_id=finding.id) }}" class="inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="text-xs text-primary-600 hover:underline">{{ _("threat.pasta.generate_scenario") }}</button>
               </form>
+              {% endif %}
             </div>
             {% endif %}
           </li>

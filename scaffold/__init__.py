@@ -23,6 +23,7 @@ from flask import Flask, g, render_template, request, send_file, session, url_fo
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BuildError
 from flask_login import current_user
+import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.exceptions import Forbidden
 from jinja2 import TemplateError
@@ -406,25 +407,33 @@ def _register_cli_commands(app: Flask) -> None:
     def encrypt_existing_secrets() -> None:
         """Encrypt existing plaintext MFA secrets and backup codes (idempotent)."""
 
-        import json as _json
         from .apps.identity.models import MFASetting
-        from .core.encryption import _load_fernet
         from .extensions import db as _db
 
-        fernet = _load_fernet()
         count = 0
 
-        for mfa in MFASetting.query.all():
+        rows = _db.session.execute(
+            sa.text("SELECT id, secret, backup_codes FROM mfa_settings")
+        ).mappings()
+
+        for row in rows:
             changed = False
-            # Detect whether value is already Fernet ciphertext (starts with "gAAAAA")
-            if mfa.secret and not mfa.secret.startswith("gAAAAA"):
-                mfa.secret = fernet.encrypt(mfa.secret.encode()).decode()
+            mfa = _db.session.get(MFASetting, row["id"])
+            if mfa is None:
+                continue
+
+            raw_secret = row["secret"]
+            if isinstance(raw_secret, str) and raw_secret and not raw_secret.startswith("gAAAAA"):
+                mfa.secret = raw_secret
                 changed = True
 
-            if mfa.backup_codes is not None and isinstance(mfa.backup_codes, list):
-                serialized = _json.dumps(mfa.backup_codes)
-                mfa.backup_codes = fernet.encrypt(serialized.encode()).decode()
-                changed = True
+            raw_backup_codes = row["backup_codes"]
+            if isinstance(raw_backup_codes, str) and raw_backup_codes and not raw_backup_codes.startswith("gAAAAA"):
+                try:
+                    mfa.backup_codes = json.loads(raw_backup_codes)
+                    changed = True
+                except json.JSONDecodeError:
+                    pass
 
             if changed:
                 count += 1

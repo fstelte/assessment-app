@@ -413,3 +413,48 @@ class PastaFindingForm(FlaskForm):
         description=_l("threat.pasta.help.stride_category_values"),
     )
     submit = SubmitField("Save Finding")
+
+
+# ---------------------------------------------------------------------------
+# PASTA risk-conclusion scoring form (T008)
+# ---------------------------------------------------------------------------
+
+PASTA_TREATMENT_CHOICES = [
+    ("mitigate", "Mitigate"),
+    ("accept", "Accept"),
+    ("transfer", "Transfer"),
+    ("avoid", "Avoid"),
+]
+
+
+class PastaRiskConclusionForm(FlaskForm):
+    """Form for recording structured stage-seven likelihood, impact, and treatment."""
+
+    likelihood_score = SelectField(
+        "Likelihood",
+        validators=[DataRequired()],
+        choices=LIKELIHOOD_CHOICES,
+        coerce=int,
+        description=_l("threat.pasta.risk_conclusion.help.likelihood"),
+    )
+    impact_score = SelectField(
+        "Impact",
+        validators=[DataRequired()],
+        choices=IMPACT_CHOICES,
+        coerce=int,
+        description=_l("threat.pasta.risk_conclusion.help.impact"),
+    )
+    treatment = SelectField(
+        "Treatment",
+        validators=[Optional()],
+        choices=PASTA_TREATMENT_CHOICES,
+        default="mitigate",
+        description=_l("threat.pasta.risk_conclusion.help.treatment"),
+    )
+    publication_notes = TextAreaField(
+        "Publication Notes",
+        validators=[Optional()],
+        render_kw={"rows": 2},
+        description=_l("threat.pasta.risk_conclusion.help.publication_notes"),
+    )
+    submit = SubmitField("Save Scores")

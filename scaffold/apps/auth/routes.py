@@ -25,7 +25,7 @@ from .flow import (
     queue_mfa_verification,
 )
 from .forms import LoginForm, MFAEnrollForm, MFAVerifyForm, ProfileForm, RegistrationForm
-from .mfa import validate_token
+from .mfa import normalize_secret, validate_token
 from .role_sync import RoleSyncService
 from .saml import (
     attribute_first,
@@ -458,7 +458,10 @@ def mfa_verify():
 
     if request.method == "POST" and form is not None and form.validate_on_submit():
         if has_totp and user.mfa_setting:
-            if validate_token(user.mfa_setting.secret, form.otp_token.data or ""):
+            normalized_secret = normalize_secret(user.mfa_setting.secret)
+            if normalized_secret and normalized_secret != user.mfa_setting.secret:
+                user.mfa_setting.secret = normalized_secret
+            if validate_token(normalized_secret or user.mfa_setting.secret, form.otp_token.data or ""):
                 user.mfa_setting.mark_verified()
                 db.session.commit()
                 remember = bool(current_remember_me() or form.remember_device.data)

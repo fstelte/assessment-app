@@ -32,6 +32,30 @@
     </div>
     {% endif %}
 
+    {# Stage guidance: purpose, expected inputs, downstream outputs (FR-002) #}
+    {% if stage_guidance %}
+    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+      {% if stage_guidance.purpose %}
+      <div class="p-3 rounded bg-blue-50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
+        <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 mb-1">{{ _("threat.pasta.stage_guidance.purpose_label") }}</p>
+        <p class="text-blue-800 dark:text-blue-200">{{ _(stage_guidance.purpose) }}</p>
+      </div>
+      {% endif %}
+      {% if stage_guidance.inputs %}
+      <div class="p-3 rounded bg-slate-50 border border-slate-100 dark:bg-slate-800/40 dark:border-slate-700">
+        <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _("threat.pasta.stage_guidance.inputs_label") }}</p>
+        <p class="text-[var(--color-text)]">{{ _(stage_guidance.inputs) }}</p>
+      </div>
+      {% endif %}
+      {% if stage_guidance.outputs %}
+      <div class="p-3 rounded bg-green-50 border border-green-100 dark:bg-green-900/20 dark:border-green-800">
+        <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-green-300 mb-1">{{ _("threat.pasta.stage_guidance.outputs_label") }}</p>
+        <p class="text-green-800 dark:text-green-200">{{ _(stage_guidance.outputs) }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <form method="post" class="mt-5">
       {{ form.hidden_tag() }}
       {{ render_field_with_help(form.summary) }}
@@ -69,8 +93,25 @@
           {% endif %}
         </div>
         <div class="flex gap-2 shrink-0">
+          {# For risk_conclusion type: show scoring link and publication state #}
+          {% if finding.finding_type.value == 'risk_conclusion' %}
+          <a href="{{ url_for('threat.pasta_risk_conclusion_edit', model_id=model.id, finding_id=finding.id) }}"
+             class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline transition-colors">
+            {% if finding.risk_conclusion and finding.risk_conclusion.overall_score %}{{ _("threat.pasta.risk_conclusion.edit_scores_label") }}{% else %}{{ _("threat.pasta.risk_conclusion.add_scores_label") }}{% endif %}
+          </a>
+          {% if finding.risk_conclusion %}
+          <span class="px-1.5 py-0.5 text-xs rounded
+            {% if finding.risk_conclusion.publication_state.value == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+            {% elif finding.risk_conclusion.publication_state.value == 'needs_revalidation' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+            {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400
+            {% endif %}">
+            {{ finding.risk_conclusion.publication_state.value | replace('_', ' ') | title }}
+          </span>
+          {% endif %}
+          {% else %}
           <a href="{{ url_for('threat.pasta_finding_edit', model_id=model.id, finding_id=finding.id) }}"
              class="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors">Edit</a>
+          {% endif %}
           <form method="post" action="{{ url_for('threat.pasta_finding_delete', model_id=model.id, finding_id=finding.id) }}"
                 onsubmit="return confirm('Delete this finding?')">
             {{ form.hidden_tag() }}

@@ -561,3 +561,152 @@ def export_pasta_findings_csv(threat_model) -> str:
             )
     return output.getvalue()
 
+
+# ---------------------------------------------------------------------------
+# PASTA risk-conclusion scoring and publication helpers (T007)
+# ---------------------------------------------------------------------------
+
+
+def compute_pasta_overall_score(likelihood: int, impact: int) -> tuple[int, str]:
+    """Return (overall_score, risk_level_string) for a PASTA risk conclusion.
+
+    Delegates to the same matrix used by STRIDE scenarios for comparability (FR-008).
+    """
+    return compute_risk_score(likelihood, impact)
+
+
+def apply_pasta_conclusion_scores(conclusion) -> None:
+    """Recalculate and persist likelihood/impact/overall_score on a PastaRiskConclusion."""
+    if conclusion.likelihood_score and conclusion.impact_score:
+        score, _ = compute_pasta_overall_score(conclusion.likelihood_score, conclusion.impact_score)
+        conclusion.overall_score = score
+
+
+def publish_pasta_conclusion_to_risk(conclusion, published_by_user) -> None:
+    """Create or refresh the linked Risk workspace record from a PastaRiskConclusion.
+
+    - First publish: creates a new Risk row and stores the link on the conclusion.
+    - Republish: refreshes the existing linked Risk row in-place (no duplicate).
+    - PASTA remains the source of truth; the Risk row is a projection.
+
+    Raises ValueError if the conclusion is not publishable (FR-011A).
+    """
+    import datetime as _dt
+    from datetime import UTC, datetime
+
+    from ...extensions import db
+    from ..risk.models import Risk, RiskChance, RiskImpact, RiskTreatmentOption
+    from .models import PastaPublicationState
+
+    if not conclusion.is_publishable:
+        raise ValueError("pasta.risk_conclusion.error.not_publishable")
+
+    likelihood = max(1, min(5, conclusion.likelihood_score or 1))
+    impact = max(1, min(5, conclusion.impact_score or 1))
+
+    treatment_str = conclusion.treatment or "mitigate"
+    try:
+        treatment = RiskTreatmentOption(treatment_str)
+    except ValueError:
+        treatment = RiskTreatmentOption.MITIGATE
+
+    finding = conclusion.finding
+    title = finding.title if finding else "PASTA Risk Conclusion"
+    description = (finding.description or title).strip()
+
+    fields = {
+        "title": title,
+        "description": description,
+        "chance": RiskChance(_CHANCE_MAP[likelihood]),
+        "impact": RiskImpact(_IMPACT_MAP[impact]),
+        "treatment": treatment,
+    }
+
+    if conclusion.published_risk_id is None:
+        risk = Risk(discovered_on=_dt.date.today(), **fields)
+        db.session.add(risk)
+        db.session.flush()
+        conclusion.published_risk_id = risk.id
+    else:
+        risk = db.session.get(Risk, conclusion.published_risk_id)
+        if risk:
+            for key, value in fields.items():
+                setattr(risk, key, value)
+            if risk.closed_at:
+                risk.closed_at = None
+
+    conclusion.publication_state = PastaPublicationState.PUBLISHED
+    conclusion.last_published_at = datetime.now(UTC)
+    if published_by_user and getattr(published_by_user, "id", None):
+        conclusion.last_published_by_id = published_by_user.id
+
+
+def export_pasta_findings_csv_with_scores(threat_model) -> str:
+    """Return CSV with stage-seven score columns added (T028).
+
+    Extends the base CSV with: likelihood_score, impact_score, overall_score,
+    risk_priority, publication_state, published_risk_id.
+    Non-stage-seven rows leave those columns blank.
+    """
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "stage",
+            "finding_type",
+            "title",
+            "description",
+            "evidence",
+            "priority",
+            "stride_mappings",
+            "linked_scenarios",
+            "likelihood_score",
+            "impact_score",
+            "overall_score",
+            "risk_priority",
+            "publication_state",
+            "published_risk_id",
+        ]
+    )
+    for stage in threat_model.pasta_stages:
+        for finding in stage.findings:
+            stride_vals = "; ".join(link.stride_category for link in finding.stride_links)
+            scenario_ids = "; ".join(str(link.scenario_id) for link in finding.scenario_links)
+            rc = getattr(finding, "risk_conclusion", None)
+            if rc:
+                _, risk_level = compute_pasta_overall_score(
+                    rc.likelihood_score or 1, rc.impact_score or 1
+                )
+                writer.writerow(
+                    [
+                        stage.stage_code,
+                        finding.finding_type.value,
+                        finding.title,
+                        finding.description or "",
+                        finding.evidence or "",
+                        finding.priority or "",
+                        stride_vals,
+                        scenario_ids,
+                        rc.likelihood_score or "",
+                        rc.impact_score or "",
+                        rc.overall_score or "",
+                        risk_level if rc.overall_score else "",
+                        rc.publication_state.value if rc.publication_state else "",
+                        rc.published_risk_id or "",
+                    ]
+                )
+            else:
+                writer.writerow(
+                    [
+                        stage.stage_code,
+                        finding.finding_type.value,
+                        finding.title,
+                        finding.description or "",
+                        finding.evidence or "",
+                        finding.priority or "",
+                        stride_vals,
+                        scenario_ids,
+                        "", "", "", "", "", "",
+                    ]
+                )
+    return output.getvalue()

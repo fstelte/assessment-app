@@ -78,6 +78,30 @@
         {% for sl in finding.scenario_links %}{{ sl.scenario.title }} ({{ sl.link_type }}){% if not loop.last %}, {% endif %}{% endfor %}
       </span>
       {% endif %}
+      {# Stage-seven risk scores and publication state (FR-007, FR-018, T029) #}
+      {% if finding.finding_type.value == 'risk_conclusion' and finding.risk_conclusion %}
+      {% set rc = finding.risk_conclusion %}
+      <br>
+      <table style="width:auto;margin:0.5rem 0;font-size:0.8rem;">
+        <tr>
+          <th>Likelihood</th>
+          <th>Impact</th>
+          <th>Overall Score</th>
+          <th>Publication State</th>
+          {% if rc.published_risk_id %}<th>Risk Workspace ID</th>{% endif %}
+        </tr>
+        <tr>
+          <td>{{ rc.likelihood_score or '—' }}</td>
+          <td>{{ rc.impact_score or '—' }}</td>
+          <td>{{ rc.overall_score or '—' }}</td>
+          <td>{{ rc.publication_state.value | replace('_', ' ') | title }}</td>
+          {% if rc.published_risk_id %}<td>{{ rc.published_risk_id }}</td>{% endif %}
+        </tr>
+      </table>
+      {% if rc.publication_state.value == 'needs_revalidation' %}
+      <div class="revalidation-notice" style="margin-top:0.25rem;">⚠ This conclusion is a linked projection of the PASTA source and requires revalidation before the risk workspace entry is considered current.</div>
+      {% endif %}
+      {% endif %}
     </div>
     {% endfor %}
     {% endif %}
