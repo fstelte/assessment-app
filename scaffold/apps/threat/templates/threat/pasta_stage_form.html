@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from "partials/forms.html" import render_field_with_help %}
+{% block title %}{{ stage.label }} — {{ model.title }}{% endblock %}
+{% block content %}
+<div class="py-6 max-w-3xl mx-auto">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+      <li><a href="{{ url_for('threat.dashboard') }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">Threats</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li><a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="hover:text-[var(--color-text)] transition-colors no-underline text-inherit">{{ model.title }}</a></li>
+      <li class="select-none text-[var(--color-border)]">/</li>
+      <li class="font-medium text-[var(--color-text)]">{{ stage.label }}</li>
+    </ol>
+  </nav>
+
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm mb-6">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">Stage {{ stage.display_order }} of 7</span>
+      <span class="px-2 py-0.5 rounded text-xs font-semibold
+        {% if stage.status.value == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+        {% elif stage.status.value == 'needs_revalidation' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+        {% elif stage.status.value == 'available' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+        {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400
+        {% endif %}">
+        {{ stage.status.value | replace('_', ' ') | title }}
+      </span>
+    </div>
+    <h1 class="text-xl font-bold mb-1">{{ stage.label }}</h1>
+    {% if stage.status.value == 'needs_revalidation' %}
+    <div class="mt-3 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+      {{ _("threat.pasta.revalidation_notice") }}
+    </div>
+    {% endif %}
+
+    <form method="post" class="mt-5">
+      {{ form.hidden_tag() }}
+      {{ render_field_with_help(form.summary) }}
+      {{ render_field_with_help(form.completion_notes) }}
+      <div class="flex gap-2 mt-4">
+        {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm bg-primary-600 text-white hover:bg-primary-700 transition-colors") }}
+        <a href="{{ url_for('threat.model_detail', model_id=model.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10 transition-colors">
+          {{ _("actions.cancel") }}
+        </a>
+      </div>
+    </form>
+  </div>
+
+  {# Findings section #}
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">{{ _("threat.pasta.findings_heading") }}</h2>
+    </div>
+
+    {% if stage.findings %}
+    <ul class="divide-y divide-[var(--color-border)]">
+      {% for finding in stage.findings %}
+      {% if finding.status.value != 'archived' %}
+      <li class="py-3 flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <span class="text-xs font-medium text-[var(--color-muted)] uppercase tracking-wide">{{ finding.finding_type.value | replace('_', ' ') | title }}</span>
+          <p class="font-medium text-sm mt-0.5 truncate">{{ finding.title }}</p>
+          {% if finding.description %}<p class="text-xs text-[var(--color-muted)] mt-0.5 line-clamp-2">{{ finding.description }}</p>{% endif %}
+          {% if finding.stride_links %}
+          <div class="flex flex-wrap gap-1 mt-1">
+            {% for link in finding.stride_links %}
+            <span class="px-1.5 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{{ link.stride_category | replace('_', ' ') | title }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <a href="{{ url_for('threat.pasta_finding_edit', model_id=model.id, finding_id=finding.id) }}"
+             class="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors">Edit</a>
+          <form method="post" action="{{ url_for('threat.pasta_finding_delete', model_id=model.id, finding_id=finding.id) }}"
+                onsubmit="return confirm('Delete this finding?')">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="text-xs text-red-500 hover:text-red-700 transition-colors">Delete</button>
+          </form>
+        </div>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-[var(--color-muted)]">{{ _("threat.pasta.no_findings") }}</p>
+    {% endif %}
+
+    {# Add finding inline form #}
+    <div class="mt-5 pt-5 border-t border-[var(--color-border)]">
+      <h3 class="text-sm font-semibold mb-3">{{ _("threat.pasta.add_finding") }}</h3>
+      {% from "partials/forms.html" import render_field_with_help %}
+      {% set finding_form = finding_form if finding_form is defined else none %}
+      <form method="post" action="{{ url_for('threat.pasta_finding_create', model_id=model.id, stage_code=stage.stage_code) }}">
+        {{ form.hidden_tag() }}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ _("threat.pasta.finding_type.objective") | replace('Objective', 'Type') }}</label>
+            <select name="finding_type" class="block w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm">
+              {% for val, label in [
+                ('objective', 'Objective'),
+                ('scope_item', 'Scope Item'),
+                ('decomposition_item', 'Decomposition Item'),
+                ('threat', 'Threat'),
+                ('vulnerability', 'Vulnerability'),
+                ('attack_path', 'Attack Path'),
+                ('risk_conclusion', 'Risk Conclusion')
+              ] %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <p class="mt-1 text-xs text-[var(--color-muted)]">{{ _("threat.pasta.help.finding_type") }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1">{{ _("threat.pasta.finding_title_label") }}</label>
+            <input type="text" name="title" required class="block w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm" placeholder="Finding title">
+            <p class="mt-1 text-xs text-[var(--color-muted)]">{{ _("threat.pasta.help.finding_title") }}</p>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="block text-xs font-medium mb-1">{{ _("threat.pasta.finding_description_label") }}</label>
+          <textarea name="description" rows="2" class="block w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"></textarea>
+          <p class="mt-1 text-xs text-[var(--color-muted)]">{{ _("threat.pasta.help.finding_description") }}</p>
+        </div>
+        <button type="submit" class="mt-3 inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+          + {{ _("threat.pasta.add_finding") }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

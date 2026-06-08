@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PASTA Threat Model — {{ model.title }}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 2rem; color: #1e293b; background: #fff; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.25rem; }
+    .meta { color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .stage-card { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .stage-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .stage-order { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+    .stage-label { font-weight: 600; }
+    .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-completed { background: #d1fae5; color: #065f46; }
+    .badge-available { background: #dbeafe; color: #1e40af; }
+    .badge-needs_revalidation { background: #fef3c7; color: #92400e; }
+    .badge-locked { background: #f1f5f9; color: #64748b; }
+    .finding { padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; }
+    .finding:last-child { border-bottom: none; }
+    .finding-type { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: #64748b; margin-right: 0.5rem; }
+    .stride-tag { display: inline-block; background: #e0e7ff; color: #3730a3; padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-size: 0.65rem; font-weight: 600; margin-right: 0.25rem; }
+    .revalidation-notice { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.8rem; color: #92400e; margin: 0.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin: 1rem 0; }
+    th { text-align: left; border-bottom: 2px solid #e2e8f0; padding: 0.5rem; color: #475569; font-weight: 600; }
+    td { padding: 0.5rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    @media print { body { padding: 1rem; } }
+  </style>
+</head>
+<body>
+  <h1>{{ model.title }}</h1>
+  <div class="meta">
+    <strong>Methodology:</strong> PASTA &nbsp;|&nbsp;
+    {% if model.owner %}<strong>Owner:</strong> {{ model.owner.email }} &nbsp;|&nbsp;{% endif %}
+    <strong>Created:</strong> {{ model.created_at.strftime('%Y-%m-%d') if model.created_at else '—' }}
+    {% if model.bootstrap_source %}
+    &nbsp;|&nbsp; <strong>Bootstrapped from:</strong> {{ model.bootstrap_source.title }}
+    {% endif %}
+  </div>
+  {% if model.description %}<p>{{ model.description }}</p>{% endif %}
+  {% if model.scope %}<p><strong>Scope:</strong> {{ model.scope }}</p>{% endif %}
+
+  <h2>PASTA Stage Analysis</h2>
+
+  {% for stage in model.pasta_stages %}
+  <div class="stage-card">
+    <div class="stage-header">
+      <span class="stage-order">Stage {{ stage.display_order }}</span>
+      <span class="stage-label">{{ stage.label }}</span>
+      <span class="badge badge-{{ stage.status.value }}">{{ stage.status.value | replace('_', ' ') | title }}</span>
+    </div>
+
+    {% if stage.status.value == 'needs_revalidation' %}
+    <div class="revalidation-notice">⚠ This stage requires revalidation — earlier-stage content was updated after this stage was completed.</div>
+    {% endif %}
+
+    {% if stage.summary %}<p>{{ stage.summary }}</p>{% endif %}
+    {% if stage.completion_notes %}<p><em>Notes: {{ stage.completion_notes }}</em></p>{% endif %}
+    {% if stage.completed_at %}<p class="meta">Completed: {{ stage.completed_at.strftime('%Y-%m-%d') }}</p>{% endif %}
+
+    {% set active_findings = stage.findings | selectattr('status.value', 'ne', 'archived') | list %}
+    {% if active_findings %}
+    <h3>Findings</h3>
+    {% for finding in active_findings %}
+    <div class="finding">
+      <span class="finding-type">{{ finding.finding_type.value | replace('_', ' ') }}</span>
+      <strong>{{ finding.title }}</strong>
+      {% if finding.stride_links %}
+      {% for sl in finding.stride_links %}<span class="stride-tag">{{ sl.stride_category | replace('_', ' ') | title }}</span>{% endfor %}
+      {% endif %}
+      {% if finding.description %}<br><span style="font-size:0.85rem;color:#475569">{{ finding.description }}</span>{% endif %}
+      {% if finding.evidence %}<br><span style="font-size:0.8rem;color:#64748b"><em>Evidence: {{ finding.evidence }}</em></span>{% endif %}
+      {% if finding.scenario_links %}
+      <br><span style="font-size:0.78rem;color:#6366f1">→ Linked scenarios:
+        {% for sl in finding.scenario_links %}{{ sl.scenario.title }} ({{ sl.link_type }}){% if not loop.last %}, {% endif %}{% endfor %}
+      </span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if model.scenarios %}
+  <h2>Downstream Threat Scenarios</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>STRIDE</th>
+        <th>Risk</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in model.scenarios %}
+      {% if s.methodology == 'PASTA' or s.methodology == 'STRIDE' %}
+      <tr>
+        <td>{{ s.title }}</td>
+        <td>{{ s.stride_category.value if s.stride_category else '—' }}</td>
+        <td>{{ s.risk_level.value if s.risk_level else '—' }}</td>
+        <td>{{ s.status.value if s.status else '—' }}</td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+</body>
+</html>

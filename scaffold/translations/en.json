@@ -2756,6 +2756,10 @@
       "label_description": "Description",
       "label_scope": "Scope",
       "help_scope": "Describe what systems and assets are in scope.",
+      "help": {
+        "methodology": "Choose the modeling method for this threat model. <strong>STRIDE-LM</strong> starts with scenario-based threat analysis. <strong>PASTA</strong> creates a staged analysis workflow that moves from objectives and scope through threats, vulnerabilities, attack paths, and risk conclusions.",
+        "bia_id": "Optionally import system context from a Business Impact Analysis so the model starts with known components and ownership information. Leave blank if this analysis is independent from a BIA record."
+      },
       "bia_import_heading": "Import assets from BIA (optional)",
       "bia_import_hint": "Select a Business Impact Analysis to automatically add its components as assets. Leave blank for a standalone threat model."
     },
@@ -2821,7 +2825,9 @@
         "owner_id": "The person accountable for monitoring and resolving this threat scenario.",
         "csa_control_ids": "Link one or more CSA controls that address or mitigate this scenario. Hold Ctrl / Cmd to select multiple.",
         "asset_ids": "Select all assets threatened by this scenario. Hold Ctrl / Cmd to select multiple.",
-        "stride_category_ids": "Select all applicable STRIDE-LM categories for this scenario. Hold Ctrl / Cmd to select multiple."
+        "stride_category_ids": "Select all applicable STRIDE-LM categories for this scenario. Hold Ctrl / Cmd to select multiple.",
+        "methodology": "Identify the modeling framework this scenario came from. Use this to distinguish classic STRIDE-LM scenarios from scenarios produced as part of a PASTA analysis.",
+        "pasta_stage": "If this scenario was derived from a PASTA workflow, record the stage where it emerged so reviewers can trace it back to the original analysis step."
       },
       "label_assets": "Threatened assets",
       "label_stride_categories": "STRIDE-LM categories",
@@ -2979,6 +2985,95 @@
       "mitigated": "Mitigated",
       "accepted": "Accepted",
       "closed": "Closed"
+    },
+    "pasta": {
+      "methodology_label": "PASTA",
+      "new_pasta_model": "New PASTA Model",
+      "bootstrap_from_stride": "Bootstrap from STRIDE-LM",
+      "bootstrap_source_label": "Source STRIDE-LM model",
+      "bootstrap_confirm": "Create a new PASTA analysis from this STRIDE-LM model?",
+      "help": {
+        "stage_summary": "Summarize the current output of this stage: what was reviewed, what decisions were made, and what should downstream reviewers understand before moving on.",
+        "completion_notes": "Capture sign-off notes, assumptions, open questions, or evidence that explains why this stage is complete.",
+        "finding_type": "Classify the entry by the kind of analysis output it represents. Early stages usually capture objectives, scope items, or decomposition notes; later stages typically record threats, vulnerabilities, attack paths, and risk conclusions.",
+        "finding_title": "Use a short statement that makes the finding scannable in stage reviews and exports.",
+        "finding_description": "Describe the observation in enough detail that another reviewer can understand the issue, decision, or conclusion without reopening workshop notes.",
+        "finding_evidence": "Record the evidence that supports this finding, such as diagrams, tickets, logs, workshop outputs, control reviews, or links to external documentation.",
+        "finding_priority": "Optional triage value to help teams sort findings for remediation or follow-up. Leave blank if prioritization has not happened yet.",
+        "asset_ids": "Link the assets affected by this finding. This helps connect stage outputs to the modeled system components and improves export traceability.",
+        "stride_category_values": "Optionally map the finding to one or more STRIDE-LM categories when the output has a clear threat classification. This is most useful for threat and vulnerability oriented findings."
+      },
+      "stage_status": {
+        "locked": "Locked",
+        "available": "Available",
+        "completed": "Completed",
+        "needs_revalidation": "Needs Revalidation"
+      },
+      "stage_labels": {
+        "define_objectives": "Define Objectives",
+        "define_technical_scope": "Define Technical Scope",
+        "decompose_application": "Decompose Application",
+        "analyze_threats": "Analyze Threats",
+        "vulnerability_analysis": "Vulnerability Analysis",
+        "attack_analysis": "Attack Analysis",
+        "risk_impact_analysis": "Risk & Impact Analysis"
+      },
+      "finding_type": {
+        "objective": "Objective",
+        "scope_item": "Scope Item",
+        "decomposition_item": "Decomposition Item",
+        "threat": "Threat",
+        "vulnerability": "Vulnerability",
+        "attack_path": "Attack Path",
+        "risk_conclusion": "Risk Conclusion"
+      },
+      "finding_status": {
+        "draft": "Draft",
+        "current": "Current",
+        "needs_revalidation": "Needs Revalidation",
+        "archived": "Archived"
+      },
+      "stage_heading": "Stage {order}: {label}",
+      "stage_summary_label": "Stage Summary",
+      "completion_notes_label": "Completion Notes",
+      "findings_heading": "Findings",
+      "add_finding": "Add Finding",
+      "edit_finding": "Edit Finding",
+      "delete_finding": "Delete Finding",
+      "finding_title_label": "Title",
+      "finding_description_label": "Description",
+      "finding_evidence_label": "Evidence",
+      "finding_priority_label": "Priority",
+      "stride_mappings_label": "STRIDE-LM Mappings (optional)",
+      "linked_assets_label": "Linked Assets",
+      "revalidation_notice": "This stage needs revalidation because an earlier stage was updated.",
+      "locked_notice": "This stage is locked until the preceding stage is completed.",
+      "no_findings": "No findings yet for this stage.",
+      "review_heading": "PASTA Analysis Review",
+      "overall_status_label": "Overall Status",
+      "bootstrap_source_info": "Bootstrapped from",
+      "generate_scenario": "Generate Threat Scenario",
+      "link_scenario": "Link Existing Scenario",
+      "linked_scenarios_heading": "Linked Threat Scenarios",
+      "scenario_link_type": {
+        "generated": "Generated",
+        "linked": "Linked"
+      },
+      "export_heading": "PASTA Model Export",
+      "export_csv_desc": "Export all findings as a CSV spreadsheet.",
+      "flash": {
+        "pasta_created": "PASTA threat model created.",
+        "bootstrap_created": "PASTA model bootstrapped from source model.",
+        "stage_saved": "Stage saved.",
+        "stage_completed": "Stage completed. Next stage is now available.",
+        "stage_revalidation_triggered": "Upstream change detected. Later stages may need revalidation.",
+        "finding_created": "Finding added.",
+        "finding_updated": "Finding updated.",
+        "finding_deleted": "Finding deleted.",
+        "scenario_generated": "Threat scenario generated from finding.",
+        "scenario_linked": "Threat scenario linked to finding.",
+        "scenario_unlinked": "Scenario link removed."
+      }
     }
   },
   "ssp": {

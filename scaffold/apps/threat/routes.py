@@ -31,10 +31,21 @@ from .forms import (
     ThreatModelForm,
     ThreatProductForm,
     ThreatScenarioForm,
+    PastaStageForm,
+    PastaFindingForm,
 )
 from .models import (
     AssetType,
     MitigationStatus,
+    Methodology,
+    PastaFinding,
+    PastaFindingStatus,
+    PastaFindingThreatScenarioLink,
+    PastaStageRecord,
+    PastaStageStatus,
+    PASTA_STAGE_CODES,
+    PASTA_STAGE_DEFAULT_FINDING_TYPE,
+    PASTA_THREAT_FINDING_TYPES,
     RiskLevel,
     ScenarioStatus,
     StrideCategory,
@@ -47,7 +58,7 @@ from .models import (
     ThreatScenario,
     TreatmentOption,
 )
-from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, set_scenario_assets, set_scenario_stride_categories, sync_scenario_to_risk, user_choices
+from .services import apply_residual_risk_score, apply_risk_score, export_scenarios_csv, set_scenario_assets, set_scenario_stride_categories, sync_scenario_to_risk, user_choices, initialize_pasta_stages, evaluate_stage_progression, trigger_revalidation_for_stage, bootstrap_pasta_from_stride, export_pasta_findings_csv
 from ..ssp.services import sync_mitigation_to_poam, sync_scenario_controls_to_ssp
 
 bp = Blueprint(
@@ -174,12 +185,14 @@ def model_new():
     form.bia_id.choices = _bia_choices()
     if form.validate_on_submit():
         bia_id = form.bia_id.data
+        methodology = form.methodology.data or Methodology.STRIDE.value
         model = ThreatModel(
             title=(form.title.data or "").strip(),
             description=form.description.data,
             scope=form.scope.data,
             owner_id=current_user.id,
             context_scope_id=int(bia_id) if bia_id else None,
+            methodology=methodology,
         )
         db.session.add(model)
         db.session.flush()
@@ -202,11 +215,16 @@ def model_new():
                     order=idx,
                 )
                 db.session.add(asset)
+        # ------------------------------------------------------------------
+        # If PASTA methodology, initialize the seven stage records.
+        # ------------------------------------------------------------------
+        if methodology == Methodology.PASTA.value:
+            initialize_pasta_stages(model)
         log_event(
             action="threat_model_created",
             entity_type="threat_model",
             entity_id=model.id,
-            details={"title": model.title, "bia_id": bia_id or None},
+            details={"title": model.title, "methodology": methodology, "bia_id": bia_id or None},
         )
         db.session.commit()
         flash(_("threat.flash.created"), "success")
@@ -219,6 +237,14 @@ def model_new():
 def model_detail(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
+    if model.is_pasta:
+        return render_template(
+            "threat/model_detail.html",
+            model=model,
+            pasta_stages=model.pasta_stages,
+            PastaStageStatus=PastaStageStatus,
+            PASTA_THREAT_FINDING_TYPES=PASTA_THREAT_FINDING_TYPES,
+        )
     scenarios_by_category: dict[str, list[ThreatScenario]] = {}
     for cat in StrideCategory:
         scenarios_by_category[cat.value] = [
@@ -282,6 +308,347 @@ def model_archive(model_id: int):
     db.session.commit()
     flash(_("threat.flash.archived") if model.is_archived else _("threat.flash.unarchived"), "info")
     return redirect(url_for("threat.dashboard"))
+
+
+# ---------------------------------------------------------------------------
+# PASTA workflow routes
+# ---------------------------------------------------------------------------
+
+
+def _get_pasta_stage_or_404(model: ThreatModel, stage_code: str) -> PastaStageRecord:
+    stage = next(
+        (s for s in model.pasta_stages if s.stage_code == stage_code),
+        None,
+    )
+    if stage is None:
+        abort(404)
+    return stage
+
+
+@bp.route("/<int:source_model_id>/bootstrap-pasta", methods=["POST"])
+@login_required
+def pasta_bootstrap(source_model_id: int):
+    """Create a new PASTA model bootstrapped from an existing STRIDE-LM model."""
+    _require_edit_access()
+    source = _get_model_or_404(source_model_id)
+    if source.is_archived:
+        abort(404)
+    new_model = bootstrap_pasta_from_stride(source, current_user)
+    db.session.flush()
+    log_event(
+        action="pasta_model_bootstrapped",
+        entity_type="threat_model",
+        entity_id=new_model.id,
+        details={"source_model_id": source.id, "new_model_id": new_model.id},
+    )
+    db.session.commit()
+    flash(_("threat.pasta.flash.bootstrap_created"), "success")
+    return redirect(url_for("threat.model_detail", model_id=new_model.id))
+
+
+@bp.route("/<int:model_id>/pasta/stages/<stage_code>", methods=["GET", "POST"])
+@login_required
+def pasta_stage_edit(model_id: int, stage_code: str):
+    """Edit a PASTA stage summary and findings."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    if stage_code not in PASTA_STAGE_CODES:
+        abort(404)
+    stage = _get_pasta_stage_or_404(model, stage_code)
+    if stage.status == PastaStageStatus.LOCKED:
+        flash(_("threat.pasta.locked_notice"), "warning")
+        return redirect(url_for("threat.model_detail", model_id=model.id))
+
+    form = PastaStageForm(obj=stage)
+    if form.validate_on_submit():
+        old_summary = stage.summary or ""
+        old_notes = stage.completion_notes or ""
+        stage.summary = form.summary.data
+        stage.completion_notes = form.completion_notes.data
+        content_changed = (
+            stage.summary != old_summary or stage.completion_notes != old_notes
+        )
+        if content_changed:
+            trigger_revalidation_for_stage(model, stage_code)
+        evaluate_stage_progression(model)
+        log_event(
+            action="pasta_stage_saved",
+            entity_type="pasta_stage_record",
+            entity_id=stage.id,
+            details={
+                "model_id": model.id,
+                "stage_code": stage_code,
+                "status": stage.status.value,
+            },
+        )
+        db.session.commit()
+        if stage.status == PastaStageStatus.COMPLETED:
+            flash(_("threat.pasta.flash.stage_completed"), "success")
+        else:
+            flash(_("threat.pasta.flash.stage_saved"), "success")
+        return redirect(url_for("threat.model_detail", model_id=model.id))
+    return render_template(
+        "threat/pasta_stage_form.html",
+        form=form,
+        model=model,
+        stage=stage,
+    )
+
+
+@bp.route("/<int:model_id>/pasta/stages/<stage_code>/findings", methods=["POST"])
+@login_required
+def pasta_finding_create(model_id: int, stage_code: str):
+    """Create a new PASTA finding within a stage."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    stage = _get_pasta_stage_or_404(model, stage_code)
+    if stage.status == PastaStageStatus.LOCKED:
+        abort(403)
+
+    from .models import PastaFindingType
+
+    form = PastaFindingForm()
+    form.asset_ids.choices = [(str(a.id), a.name) for a in model.assets]
+    if form.validate_on_submit():
+        finding = PastaFinding(
+            stage_record_id=stage.id,
+            finding_type=PastaFindingType(form.finding_type.data),
+            title=(form.title.data or "").strip(),
+            description=form.description.data,
+            evidence=form.evidence.data,
+            priority=form.priority.data or None,
+            status=PastaFindingStatus.CURRENT,
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        db.session.add(finding)
+        db.session.flush()
+        # Asset links
+        for asset_id_str in (form.asset_ids.data or []):
+            from .models import PastaFindingAssetLink
+            db.session.add(PastaFindingAssetLink(
+                finding_id=finding.id,
+                asset_id=int(asset_id_str),
+            ))
+        # STRIDE-LM links
+        for cat_val in (form.stride_category_values.data or []):
+            from .models import PastaFindingStrideCategoryLink, StrideCategory as SC
+            valid_vals = {c.value for c in SC}
+            if cat_val in valid_vals:
+                db.session.add(PastaFindingStrideCategoryLink(
+                    finding_id=finding.id,
+                    stride_category=cat_val,
+                ))
+        trigger_revalidation_for_stage(model, stage_code)
+        evaluate_stage_progression(model)
+        log_event(
+            action="pasta_finding_created",
+            entity_type="pasta_finding",
+            entity_id=finding.id,
+            details={"model_id": model.id, "stage_code": stage_code, "title": finding.title},
+        )
+        db.session.commit()
+        flash(_("threat.pasta.flash.finding_created"), "success")
+    return redirect(url_for("threat.pasta_stage_edit", model_id=model.id, stage_code=stage_code))
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/edit", methods=["GET", "POST"])
+@login_required
+def pasta_finding_edit(model_id: int, finding_id: int):
+    """Edit an existing PASTA finding."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+
+    from .models import PastaFindingType, PastaFindingAssetLink, PastaFindingStrideCategoryLink
+
+    form = PastaFindingForm(obj=finding)
+    form.asset_ids.choices = [(str(a.id), a.name) for a in model.assets]
+    if request.method == "GET":
+        form.finding_type.data = finding.finding_type.value
+        form.asset_ids.data = [str(link.asset_id) for link in finding.asset_links]
+        form.stride_category_values.data = [link.stride_category for link in finding.stride_links]
+        form.priority.data = finding.priority or ""
+
+    if form.validate_on_submit():
+        stage_code = finding.stage_record.stage_code
+        finding.finding_type = PastaFindingType(form.finding_type.data)
+        finding.title = (form.title.data or "").strip()
+        finding.description = form.description.data
+        finding.evidence = form.evidence.data
+        finding.priority = form.priority.data or None
+        finding.updated_by_id = current_user.id
+
+        # Replace asset links
+        for link in list(finding.asset_links):
+            db.session.delete(link)
+        db.session.flush()
+        for asset_id_str in (form.asset_ids.data or []):
+            db.session.add(PastaFindingAssetLink(finding_id=finding.id, asset_id=int(asset_id_str)))
+
+        # Replace STRIDE links
+        for link in list(finding.stride_links):
+            db.session.delete(link)
+        db.session.flush()
+        valid_vals = {c.value for c in StrideCategory}
+        for cat_val in (form.stride_category_values.data or []):
+            if cat_val in valid_vals:
+                db.session.add(PastaFindingStrideCategoryLink(
+                    finding_id=finding.id,
+                    stride_category=cat_val,
+                ))
+
+        trigger_revalidation_for_stage(model, stage_code)
+        evaluate_stage_progression(model)
+        log_event(
+            action="pasta_finding_updated",
+            entity_type="pasta_finding",
+            entity_id=finding.id,
+            details={"model_id": model.id, "stage_code": stage_code, "title": finding.title},
+        )
+        db.session.commit()
+        flash(_("threat.pasta.flash.finding_updated"), "success")
+        return redirect(url_for("threat.pasta_stage_edit", model_id=model.id, stage_code=stage_code))
+    return render_template(
+        "threat/pasta_finding_form.html",
+        form=form,
+        model=model,
+        finding=finding,
+        stage=finding.stage_record,
+    )
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/delete", methods=["POST"])
+@login_required
+def pasta_finding_delete(model_id: int, finding_id: int):
+    """Delete a PASTA finding."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+    stage_code = finding.stage_record.stage_code
+    log_event(
+        action="pasta_finding_deleted",
+        entity_type="pasta_finding",
+        entity_id=finding.id,
+        details={"model_id": model.id, "stage_code": stage_code, "title": finding.title},
+    )
+    db.session.delete(finding)
+    trigger_revalidation_for_stage(model, stage_code)
+    evaluate_stage_progression(model)
+    db.session.commit()
+    flash(_("threat.pasta.flash.finding_deleted"), "info")
+    return redirect(url_for("threat.pasta_stage_edit", model_id=model.id, stage_code=stage_code))
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/generate-scenario", methods=["POST"])
+@login_required
+def pasta_finding_generate_scenario(model_id: int, finding_id: int):
+    """Generate a standard ThreatScenario from a threat-oriented PASTA finding."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+    if not finding.is_threat_oriented:
+        abort(400)
+
+    scenario = ThreatScenario(
+        threat_model_id=model.id,
+        stride_category=StrideCategory.SPOOFING,  # default; user can edit after
+        title=finding.title,
+        description=finding.description or "",
+        methodology="PASTA",
+        status=ScenarioStatus.IDENTIFIED,
+        likelihood=1,
+        impact_score=1,
+        risk_score=1,
+    )
+    from .services import apply_risk_score
+    apply_risk_score(scenario)
+    db.session.add(scenario)
+    db.session.flush()
+    link = PastaFindingThreatScenarioLink(
+        finding_id=finding.id,
+        scenario_id=scenario.id,
+        link_type="generated",
+    )
+    db.session.add(link)
+    log_event(
+        action="pasta_scenario_generated",
+        entity_type="pasta_finding",
+        entity_id=finding.id,
+        details={
+            "model_id": model.id,
+            "finding_id": finding.id,
+            "scenario_id": scenario.id,
+            "link_type": "generated",
+        },
+    )
+    db.session.commit()
+    flash(_("threat.pasta.flash.scenario_generated"), "success")
+    return redirect(url_for("threat.model_detail", model_id=model.id))
+
+
+@bp.route("/<int:model_id>/pasta/findings/<int:finding_id>/link-scenario", methods=["POST"])
+@login_required
+def pasta_finding_link_scenario(model_id: int, finding_id: int):
+    """Link an existing ThreatScenario to a PASTA finding."""
+    _require_edit_access()
+    model = _get_model_or_404(model_id)
+    if not model.is_pasta:
+        abort(404)
+    finding = PastaFinding.query.get_or_404(finding_id)
+    if finding.stage_record.threat_model_id != model.id:
+        abort(403)
+    if not finding.is_threat_oriented:
+        abort(400)
+
+    scenario_id_str = request.form.get("scenario_id", "").strip()
+    if not scenario_id_str or not scenario_id_str.isdigit():
+        abort(400)
+    scenario = ThreatScenario.query.get_or_404(int(scenario_id_str))
+    if scenario.threat_model_id != model.id:
+        abort(403)
+
+    existing = PastaFindingThreatScenarioLink.query.filter_by(
+        finding_id=finding.id,
+        scenario_id=scenario.id,
+    ).first()
+    if not existing:
+        link = PastaFindingThreatScenarioLink(
+            finding_id=finding.id,
+            scenario_id=scenario.id,
+            link_type="linked",
+        )
+        db.session.add(link)
+        log_event(
+            action="pasta_scenario_linked",
+            entity_type="pasta_finding",
+            entity_id=finding.id,
+            details={
+                "model_id": model.id,
+                "finding_id": finding.id,
+                "scenario_id": scenario.id,
+                "link_type": "linked",
+            },
+        )
+        db.session.commit()
+        flash(_("threat.pasta.flash.scenario_linked"), "success")
+    return redirect(url_for("threat.model_detail", model_id=model.id))
 
 
 # ---------------------------------------------------------------------------
@@ -602,7 +969,10 @@ def scenario_delete(model_id: int, scenario_id: int):
 def export_csv(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
-    csv_data = export_scenarios_csv(model.scenarios)
+    if model.is_pasta:
+        csv_data = export_pasta_findings_csv(model)
+    else:
+        csv_data = export_scenarios_csv(model.scenarios)
     response = make_response(csv_data)
     response.headers["Content-Type"] = "text/csv; charset=utf-8"
     slug = model.title.lower().replace(" ", "_")[:40]
@@ -613,7 +983,7 @@ def export_csv(model_id: int):
         action="threat_model.exported",
         entity_type="threat_model",
         entity_id=model.id,
-        details={"format": "csv", "title": model.title},
+        details={"format": "csv", "title": model.title, "methodology": model.methodology},
     )
     db.session.commit()
     return response
@@ -625,14 +995,16 @@ def export_html(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
     theme = "dark" if not (current_user.is_authenticated and current_user.theme_preference == "light") else "light"
+    template = "threat/pasta_export_report.html" if model.is_pasta else "threat/export_report.html"
     html = render_template(
-        "threat/export_report.html",
+        template,
         model=model,
         export_mode=True,
         theme=theme,
         StrideCategory=StrideCategory,
         RiskLevel=RiskLevel,
         ScenarioStatus=ScenarioStatus,
+        PastaStageStatus=PastaStageStatus,
     )
     response = make_response(html)
     response.headers["Content-Type"] = "text/html; charset=utf-8"
@@ -656,14 +1028,16 @@ def export_pdf(model_id: int):
     _require_access()
     model = _get_model_or_404(model_id)
     theme = "dark" if not (current_user.is_authenticated and current_user.theme_preference == "light") else "light"
+    template = "threat/pasta_export_report.html" if model.is_pasta else "threat/export_report.html"
     html = render_template(
-        "threat/export_report.html",
+        template,
         model=model,
         export_mode=True,
         theme=theme,
         StrideCategory=StrideCategory,
         RiskLevel=RiskLevel,
         ScenarioStatus=ScenarioStatus,
+        PastaStageStatus=PastaStageStatus,
     )
     from ...core.pdf_export import html_to_pdf_bytes
 

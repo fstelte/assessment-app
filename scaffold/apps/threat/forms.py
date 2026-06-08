@@ -19,7 +19,10 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 from scaffold.core.i18n import lazy_gettext as _l
 
-from .models import AssetType, MitigationStatus, ScenarioStatus, StrideCategory, TreatmentOption
+from .models import AssetType, MitigationStatus, Methodology, ScenarioStatus, StrideCategory, TreatmentOption
+
+
+METHODOLOGY_CHOICES = [(m.value, m.value) for m in Methodology]
 
 
 BIA_CHOICES_PLACEHOLDER: list = []  # populated at runtime in routes
@@ -60,11 +63,19 @@ class ThreatModelForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired(), Length(max=255)])
     description = TextAreaField("Description", validators=[Optional()], render_kw={"rows": 3})
     scope = TextAreaField("Scope", validators=[Optional()], render_kw={"rows": 4})
+    methodology = SelectField(
+        "Methodology",
+        validators=[DataRequired()],
+        choices=METHODOLOGY_CHOICES,
+        default="STRIDE",
+        description=_l("threat.model_form.help.methodology"),
+    )
     bia_id = SelectField(
         "Import components from BIA",
         validators=[Optional()],
         choices=[],
         coerce=str,
+        description=_l("threat.model_form.help.bia_id"),
     )
     submit = SubmitField("Save")
 
@@ -221,6 +232,7 @@ class ThreatScenarioForm(FlaskForm):
             ("OWASP", "OWASP Top 10"),
         ],
         default="STRIDE",
+        description=_l("threat.scenario_form.help.methodology"),
     )
     pasta_stage = SelectField(
         "PASTA stage",
@@ -235,6 +247,7 @@ class ThreatScenarioForm(FlaskForm):
             ("Attack Analysis", "Attack Analysis"),
             ("Impact Analysis", "Impact Analysis"),
         ],
+        description=_l("threat.scenario_form.help.pasta_stage"),
     )
     submit = SubmitField("Save scenario")
 
@@ -316,3 +329,87 @@ class ThreatMitigationActionForm(FlaskForm):
         render_kw={"rows": 2},
     )
     submit = SubmitField("Save")
+
+
+# ---------------------------------------------------------------------------
+# PASTA workflow forms
+# ---------------------------------------------------------------------------
+
+from .models import PastaFindingType  # noqa: E402
+
+PASTA_FINDING_TYPE_CHOICES = [
+    (t.value, t.value.replace("_", " ").title()) for t in PastaFindingType
+]
+
+PRIORITY_CHOICES = [
+    ("", "— not set —"),
+    ("low", "Low"),
+    ("medium", "Medium"),
+    ("high", "High"),
+    ("critical", "Critical"),
+]
+
+
+class PastaStageForm(FlaskForm):
+    """Form for editing a PASTA stage summary and completion notes."""
+
+    summary = TextAreaField(
+        "Stage Summary",
+        validators=[Optional()],
+        render_kw={"rows": 5},
+        description=_l("threat.pasta.help.stage_summary"),
+    )
+    completion_notes = TextAreaField(
+        "Completion Notes",
+        validators=[Optional()],
+        render_kw={"rows": 3},
+        description=_l("threat.pasta.help.completion_notes"),
+    )
+    submit = SubmitField("Save Stage")
+
+
+class PastaFindingForm(FlaskForm):
+    """Form for creating or editing a PASTA finding."""
+
+    finding_type = SelectField(
+        "Finding Type",
+        validators=[DataRequired()],
+        choices=PASTA_FINDING_TYPE_CHOICES,
+        description=_l("threat.pasta.help.finding_type"),
+    )
+    title = StringField(
+        "Title",
+        validators=[DataRequired(), Length(max=255)],
+        description=_l("threat.pasta.help.finding_title"),
+    )
+    description = TextAreaField(
+        "Description",
+        validators=[Optional()],
+        render_kw={"rows": 4},
+        description=_l("threat.pasta.help.finding_description"),
+    )
+    evidence = TextAreaField(
+        "Evidence",
+        validators=[Optional()],
+        render_kw={"rows": 3},
+        description=_l("threat.pasta.help.finding_evidence"),
+    )
+    priority = SelectField(
+        "Priority",
+        validators=[Optional()],
+        choices=PRIORITY_CHOICES,
+        description=_l("threat.pasta.help.finding_priority"),
+    )
+    asset_ids = SelectMultipleField(
+        "Linked Assets",
+        validators=[Optional()],
+        choices=[],
+        description=_l("threat.pasta.help.asset_ids"),
+    )
+    stride_category_values = SelectMultipleField(
+        "STRIDE-LM Mappings (optional)",
+        validators=[Optional()],
+        choices=STRIDE_CHOICES,
+        description=_l("threat.pasta.help.stride_category_values"),
+    )
+    submit = SubmitField("Save Finding")

@@ -131,6 +131,115 @@ body[data-theme="dark"] .threat-scenario-card {
     {% endif %}
   </div>
 
+  {% if model.is_pasta %}
+  {# ------------------------------------------------------------------ #}
+  {# PASTA workflow view                                                  #}
+  {# ------------------------------------------------------------------ #}
+
+  {% if model.bootstrap_source %}
+  <div class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-3 text-sm text-[var(--color-muted)]">
+    {{ _("threat.pasta.bootstrap_source_info") }}:
+    <a href="{{ url_for('threat.model_detail', model_id=model.bootstrap_source.id) }}" class="font-medium text-[var(--color-text)] hover:underline">
+      {{ model.bootstrap_source.title }}
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="flex flex-col gap-4">
+    {% for stage in pasta_stages %}
+    <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)]
+        {% if stage.status.value == 'locked' %}opacity-50{% endif %}">
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-[var(--color-muted)] font-semibold">{{ stage.display_order }}</span>
+          <span class="font-semibold text-sm">{{ stage.label }}</span>
+          <span class="px-2 py-0.5 rounded text-xs font-semibold
+            {% if stage.status.value == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+            {% elif stage.status.value == 'needs_revalidation' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+            {% elif stage.status.value == 'available' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+            {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400
+            {% endif %}">
+            {{ stage.status.value | replace('_', ' ') | title }}
+          </span>
+        </div>
+        {% if stage.status.value != 'locked' %}
+        <a href="{{ url_for('threat.pasta_stage_edit', model_id=model.id, stage_code=stage.stage_code) }}"
+           class="text-xs text-primary-600 hover:underline font-medium">
+          {{ _("actions.edit") }}
+        </a>
+        {% endif %}
+      </div>
+
+      {% if stage.status.value != 'locked' %}
+      <div class="px-5 py-4">
+        {% if stage.status.value == 'needs_revalidation' %}
+        <p class="text-xs text-yellow-700 dark:text-yellow-300 mb-3 italic">{{ _("threat.pasta.revalidation_notice") }}</p>
+        {% endif %}
+        {% if stage.summary %}<p class="text-sm mb-3">{{ stage.summary }}</p>{% endif %}
+        {% set active_findings = stage.findings | selectattr('status.value', 'ne', 'archived') | list %}
+        {% if active_findings %}
+        <ul class="space-y-2">
+          {% for finding in active_findings %}
+          <li class="flex items-start gap-3 text-sm">
+            <span class="shrink-0 text-xs font-medium uppercase tracking-wide text-[var(--color-muted)] pt-0.5">{{ finding.finding_type.value | replace('_', ' ') }}</span>
+            <div class="flex-1 min-w-0">
+              <span class="font-medium">{{ finding.title }}</span>
+              {% if finding.stride_links %}
+              <span class="ml-2">{% for sl in finding.stride_links %}<span class="px-1.5 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 mr-1">{{ sl.stride_category | replace('_', ' ') | title }}</span>{% endfor %}</span>
+              {% endif %}
+              {% if finding.scenario_links %}
+              <span class="ml-2 text-xs text-[var(--color-muted)]">→ {{ finding.scenario_links | length }} scenario(s)</span>
+              {% endif %}
+            </div>
+            {% if finding.finding_type.value in PASTA_THREAT_FINDING_TYPES %}
+            <div class="shrink-0 flex gap-2">
+              <form method="post" action="{{ url_for('threat.pasta_finding_generate_scenario', model_id=model.id, finding_id=finding.id) }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs text-primary-600 hover:underline">{{ _("threat.pasta.generate_scenario") }}</button>
+              </form>
+            </div>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-xs text-[var(--color-muted)] italic">{{ _("threat.pasta.no_findings") }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Downstream scenarios generated/linked from PASTA findings #}
+  {% set linked_scenarios = [] %}
+  {% for stage in pasta_stages %}
+    {% for finding in stage.findings %}
+      {% for sl in finding.scenario_links %}
+        {% set _ = linked_scenarios.append(sl) %}
+      {% endfor %}
+    {% endfor %}
+  {% endfor %}
+  {% if linked_scenarios %}
+  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
+    <h2 class="text-lg font-semibold mb-3">{{ _("threat.pasta.linked_scenarios_heading") }}</h2>
+    <ul class="divide-y divide-[var(--color-border)]">
+      {% for sl in linked_scenarios %}
+      <li class="py-2 flex items-center justify-between gap-3 text-sm">
+        <span class="font-medium">{{ sl.scenario.title }}</span>
+        <span class="text-xs text-[var(--color-muted)]">{{ sl.link_type | title }}</span>
+        <a href="{{ url_for('threat.scenario_detail', model_id=model.id, scenario_id=sl.scenario_id) }}" class="text-xs text-primary-600 hover:underline">View</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% else %}
+  {# ------------------------------------------------------------------ #}
+  {# STRIDE / non-PASTA view (existing content)                          #}
+  {# ------------------------------------------------------------------ #}
+
   <!-- Stat chips -->
   <div class="flex flex-wrap gap-3">
     {% set total = model.scenarios | length %}
@@ -252,5 +361,6 @@ body[data-theme="dark"] .threat-scenario-card {
       {% endif %}
     </div>
   </div>
+  {% endif %}{# end STRIDE / non-PASTA view #}
 </div>
 {% endblock %}

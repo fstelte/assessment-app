@@ -225,6 +225,9 @@ def _ensure_sqlite_uri(app: Flask) -> None:
         return
 
     relative_path = raw_uri.replace("sqlite:///", "", 1)
+    # In-memory databases (e.g. used in tests) must not be path-normalised.
+    if relative_path == ":memory:" or relative_path.startswith(":memory:"):
+        return
     sqlite_path = Path(relative_path)
     if not sqlite_path.is_absolute():
         project_root = Path(app.root_path).parent
