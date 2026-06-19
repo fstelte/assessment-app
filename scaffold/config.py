@@ -92,6 +92,9 @@ class Settings:
     backup_dir: str = field(default_factory=lambda: os.getenv("BACKUP_DIR", "/backups"))
     backup_encryption_key: str | None = field(default_factory=lambda: os.getenv("BACKUP_ENCRYPTION_KEY") or None)
     restore_watch_dir: str = field(default_factory=lambda: os.getenv("RESTORE_WATCH_DIR", "/restore/incoming"))
+    nvd_api_key: str = ""
+    nvd_lookup_timeout_seconds: int = 5
+    kev_lookup_timeout_seconds: int = 5
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -171,6 +174,15 @@ class Settings:
             backup_dir=os.getenv("BACKUP_DIR", defaults.backup_dir),
             backup_encryption_key=os.getenv("BACKUP_ENCRYPTION_KEY") or None,
             restore_watch_dir=os.getenv("RESTORE_WATCH_DIR", defaults.restore_watch_dir),
+            nvd_api_key=os.getenv("NVD_API_KEY", defaults.nvd_api_key),
+            nvd_lookup_timeout_seconds=_int_env(
+                "NVD_LOOKUP_TIMEOUT_SECONDS",
+                defaults.nvd_lookup_timeout_seconds,
+            ),
+            kev_lookup_timeout_seconds=_int_env(
+                "KEV_LOOKUP_TIMEOUT_SECONDS",
+                defaults.kev_lookup_timeout_seconds,
+            ),
         )
 
     def flask_config(self) -> dict[str, object]:
@@ -245,6 +257,9 @@ class Settings:
             "BACKUP_DIR": self.backup_dir,
             "BACKUP_ENCRYPTION_KEY": self.backup_encryption_key,
             "RESTORE_WATCH_DIR": self.restore_watch_dir,
+            "NVD_API_KEY": self.nvd_api_key,
+            "NVD_LOOKUP_TIMEOUT_SECONDS": self.nvd_lookup_timeout_seconds,
+            "KEV_LOOKUP_TIMEOUT_SECONDS": self.kev_lookup_timeout_seconds,
         }
 
     def saml_allowed_groups(self) -> List[str]:

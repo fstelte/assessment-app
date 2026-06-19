@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scaffold-app"
-version = "2026.6.3"
+version = "2026.6.4"
 description = "Unified scaffold for applications"
 authors = ["Ferry Stelte"]
 readme = "README.md"
@@ -31,7 +31,7 @@ psycopg = { extras = ["binary"], version = "^3.1.18" }
 pyotp = "^2.9.0"
 webauthn = ">=2.1.0"
 cbor2 = ">=5.9.0"
-cryptography = ">=46.0.6"
+cryptography = ">=46.0.7"
 pyopenssl = ">=26.0.0"
 pyasn1 = ">=0.6.3"
 python-dotenv = "^1.0.1"

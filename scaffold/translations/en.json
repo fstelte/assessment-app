@@ -2711,6 +2711,81 @@
     "index": {
       "title": "Security Tools",
       "subtitle": "A collection of standalone security and compliance tools."
+    },
+    "cvss": {
+      "title": "CVSS Risk Calculator",
+      "subtitle": "Combine CVSSv3, business impact, exposure, and exploit availability into one adjusted risk score.",
+      "vulnerability": {
+        "label": "Vulnerability identifier",
+        "help": "Optional CVE lookup. Leave empty for fully manual scoring."
+      },
+      "lookup": {
+        "action": "Lookup",
+        "manual_mode": "Manual mode: enter a CVSSv3 base score and choose exploit availability.",
+        "loading": "Looking up NVD and KEV data...",
+        "retrieved": "Lookup complete. Review the retrieved values before calculating.",
+        "manual_base_required": "Lookup data is unavailable. Enter the CVSSv3 base score and exploit availability manually."
+      },
+      "base_score": {
+        "label": "CVSSv3 Base Score",
+        "help": "Use the NVD value when a CVE is found, otherwise enter a value from 0.0 to 10.0."
+      },
+      "exploit": {
+        "label": "Exploit availability",
+        "help": "KEV listed vulnerabilities add 1. When lookup is unavailable, choose the manual override.",
+        "none": "0 - No exploit available",
+        "available": "1 - Exploit available"
+      },
+      "impact": {
+        "label": "Business Impact",
+        "help": "How critical is the affected asset or service?",
+        "low": "Low (0) - Non-critical system",
+        "average": "Average (1) - Important business system",
+        "high": "High (2) - Critical business system"
+      },
+      "exposure": {
+        "label": "Exposure Level",
+        "help": "Where is the vulnerable component reachable?",
+        "internal": "Internal (0) - Internal network only",
+        "dmz": "DMZ (1) - Limited external exposure",
+        "external": "External (2) - Internet-facing"
+      },
+      "calculate": "Calculate Risk Score",
+      "export_pdf": "Export as PDF",
+      "export_generating": "Generating PDF...",
+      "source": {
+        "manual_base": "Source: manual base score",
+        "nvd31": "Source: NVD CVSS v3.1",
+        "nvd30": "Source: NVD CVSS v3.0",
+        "nvd40": "Source: NVD CVSS v4.0",
+        "unavailable": "Source: NVD unavailable",
+        "manual_no_identifier": "Source: manual no-identifier selection",
+        "kev_listed": "Source: CISA KEV listed",
+        "kev_not_listed": "Source: CISA KEV not listed",
+        "manual_override": "Source: manual override because KEV is unavailable"
+      },
+      "error": {
+        "invalid_cve": "Enter a CVE identifier such as CVE-2024-12345, or leave it blank for manual scoring.",
+        "invalid_score": "Enter a CVSSv3 base score between 0.0 and 10.0.",
+        "lookup_required": "Run the lookup for this CVE, or clear the field to score manually.",
+        "exploit_required": "Choose exploit availability."
+      },
+      "result": {
+        "severity": "Severity",
+        "base_source": "Base score source",
+        "cvss": "CVSS weighted (x0.6)",
+        "impact": "Business impact",
+        "exposure": "Exposure",
+        "exploit": "Exploit adjustment",
+        "exploit_source": "Exploit source",
+        "total": "Total"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
     }
   },
   "threat": {
