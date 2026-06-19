@@ -17,7 +17,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock README.md /app/
-RUN poetry install --only main --no-interaction --no-ansi --no-root \
+RUN poetry install --only main --no-interaction --no-ansi --no-root --no-cache \
     && playwright install --with-deps chromium \
     && apt-get purge -y libncursesw6 \
     && apt-get autoremove -y \
