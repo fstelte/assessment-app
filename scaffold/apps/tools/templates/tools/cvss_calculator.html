@@ -1,491 +1,509 @@
 {% extends "base.html" %}
-{% block title %}CVSS Risk Calculator{% endblock %}
+{% block title %}{{ _("tools.cvss.title") }}{% endblock %}
 
 {% block main_container_class %}container mx-auto max-w-4xl px-4 sm:px-6 grow{% endblock %}
 
 {% block extra_css %}
-    <style nonce="{{ csp_nonce }}">
-*, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<style nonce="{{ csp_nonce }}">
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg:         #0f1117;
-      --surface:    #1a1d27;
-      --surface-2:  #22263a;
-      --border:     #2e3350;
-      --accent:     #6c8ef5;
-      --accent-dim: #3a4a8a;
-      --text:       #e2e6f3;
-      --text-muted: #7a82a8;
-      --low:        #34d399;
-      --medium:     #fbbf24;
-      --high:       #f97316;
-      --critical:   #ef4444;
-      --radius:     14px;
-      --transition: 0.25s ease;
-    }
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-2: #22263a;
+  --border: #2e3350;
+  --accent: #6c8ef5;
+  --accent-dim: #3a4a8a;
+  --text: #e2e6f3;
+  --text-muted: #9aa3c7;
+  --low: #34d399;
+  --medium: #fbbf24;
+  --high: #f97316;
+  --critical: #ef4444;
+  --radius: 8px;
+  --transition: 0.2s ease;
+}
 
-    .tool-body-wrap {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
-    }
+.tool-body-wrap {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 520px;
-      padding: 2.5rem 2rem;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
-    }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 620px;
+  padding: 2rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
 
-    .card-header {
-      margin-bottom: 2rem;
-    }
+.card-header { margin-bottom: 1.5rem; }
+.card-header h1 { color: var(--text); font-size: 1.5rem; font-weight: 700; letter-spacing: 0; }
+.card-header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.4rem; }
 
-    .card-header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
+.steps { display: flex; flex-direction: column; gap: 1rem; }
+.step { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; transition: border-color var(--transition); }
+.step:focus-within { border-color: var(--accent-dim); }
+.step-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.85rem; }
+.step-badge { align-items: center; background: var(--accent-dim); border-radius: 50%; color: var(--accent); display: flex; flex-shrink: 0; font-size: 0.75rem; font-weight: 700; height: 26px; justify-content: center; width: 26px; }
+.step-label { color: var(--text); font-size: 0.95rem; font-weight: 600; }
+.step-desc { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.15rem; }
 
-    .card-header p {
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
+input[type="number"], input[type="text"], select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  padding: 0.6rem 0.85rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
 
-    /* ── Steps ─────────────────────────────────── */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 142, 245, 0.15);
+}
 
-    .step {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.25rem 1rem;
-      transition: border-color var(--transition);
-    }
+input[disabled], select[disabled] { cursor: not-allowed; opacity: 0.72; }
+input::placeholder { color: var(--text-muted); }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
 
-    .step:focus-within {
-      border-color: var(--accent-dim);
-    }
+.input-row { display: grid; gap: 0.6rem; grid-template-columns: minmax(0, 1fr) auto; }
+.lookup-btn, .calc-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.65rem 0.9rem;
+  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+.lookup-btn:hover, .calc-btn:hover { background: #7ea0ff; box-shadow: 0 4px 20px rgba(108, 142, 245, 0.35); }
+.lookup-btn:active, .calc-btn:active { transform: scale(0.98); }
+.lookup-btn[disabled], .calc-btn[disabled] { cursor: not-allowed; opacity: 0.65; }
+.calc-btn { margin-top: 1.25rem; width: 100%; }
 
-    .step-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
-    }
+.select-wrap { position: relative; }
+.select-wrap::after { border: 5px solid transparent; border-bottom: 0; border-top-color: var(--text-muted); content: ''; pointer-events: none; position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%); }
+select option { background: var(--surface-2); }
 
-    .step-badge {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--accent-dim);
-      color: var(--accent);
-      font-size: 0.75rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+.error-msg, .status-msg { font-size: 0.78rem; margin-top: 0.45rem; }
+.error-msg { color: var(--critical); display: none; }
+.error-msg.visible { display: block; }
+.status-msg { color: var(--text-muted); min-height: 1rem; }
+.source-pill { color: var(--text-muted); display: block; font-size: 0.78rem; margin-top: 0.45rem; }
 
-    .step-label {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text);
-    }
+.result { animation: fadeUp 0.3s ease; border: 1px solid var(--border); border-radius: var(--radius); display: none; margin-top: 1.5rem; overflow: hidden; }
+.result.visible { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.result-header { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.75rem 1.25rem; text-transform: uppercase; }
+.result-body { align-items: center; background: var(--surface-2); display: flex; gap: 1.25rem; padding: 1.25rem; }
+.result-score-circle { align-items: center; border: 3px solid; border-radius: 50%; display: flex; flex-direction: column; flex-shrink: 0; height: 80px; justify-content: center; width: 80px; }
+.result-score-circle .score-num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+.result-score-circle .score-max { color: var(--text-muted); font-size: 0.7rem; }
+.result-details { flex: 1; }
+.result-severity { font-size: 1.15rem; font-weight: 800; letter-spacing: 0; }
+.result-breakdown { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.6rem; }
+.breakdown-row { color: var(--text-muted); display: flex; font-size: 0.8rem; gap: 1rem; justify-content: space-between; }
+.breakdown-row span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
+.total-row { border-top: 1px solid var(--border); margin-top: 0.1rem; padding-top: 0.3rem; }
+.total-row span { color: var(--text); font-weight: 700; }
+.sev-low { --sev: var(--low); background: rgba(52, 211, 153, 0.08); }
+.sev-medium { --sev: var(--medium); background: rgba(251, 191, 36, 0.08); }
+.sev-high { --sev: var(--high); background: rgba(249, 115, 22, 0.08); }
+.sev-critical { --sev: var(--critical); background: rgba(239, 68, 68, 0.08); }
+.result-header, .result-score-circle, .result-severity { color: var(--sev); }
+.result-score-circle { border-color: var(--sev); }
 
-    .step-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 0.15rem;
-    }
-
-    /* ── Inputs ─────────────────────────────────── */
-    input[type="number"],
-    select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.95rem;
-      padding: 0.6rem 0.85rem;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-      transition: border-color var(--transition), box-shadow var(--transition);
-    }
-
-    input[type="number"]:focus,
-    select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(108, 142, 245, 0.15);
-    }
-
-    input[type="number"]::placeholder {
-      color: var(--text-muted);
-    }
-
-    /* hide number spinners */
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"] { -moz-appearance: textfield; }
-
-    /* custom select arrow */
-    .select-wrap {
-      position: relative;
-    }
-
-    .select-wrap::after {
-      content: '';
-      pointer-events: none;
-      position: absolute;
-      right: 0.85rem;
-      top: 50%;
-      transform: translateY(-50%);
-      border: 5px solid transparent;
-      border-top-color: var(--text-muted);
-      border-bottom: 0;
-    }
-
-    select option {
-      background: var(--surface-2);
-    }
-
-    /* ── Calculate button ────────────────────────── */
-    .calc-btn {
-      width: 100%;
-      margin-top: 1.5rem;
-      padding: 0.8rem;
-      background: var(--accent);
-      color: #fff;
-      font-size: 0.97rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background var(--transition), transform var(--transition),
-                  box-shadow var(--transition);
-    }
-
-    .calc-btn:hover {
-      background: #7ea0ff;
-      box-shadow: 0 4px 20px rgba(108, 142, 245, 0.45);
-    }
-
-    .calc-btn:active {
-      transform: scale(0.98);
-    }
-
-    /* ── Result ──────────────────────────────────── */
-    .result {
-      margin-top: 1.5rem;
-      border-radius: var(--radius);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      display: none;
-      animation: fadeUp 0.3s ease;
-    }
-
-    .result.visible { display: block; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .result-header {
-      padding: 0.75rem 1.25rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .result-body {
-      background: var(--surface-2);
-      padding: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
-
-    .result-score-circle {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      border: 3px solid;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .result-score-circle .score-num {
-      font-size: 1.6rem;
-      font-weight: 800;
-      line-height: 1;
-    }
-
-    .result-score-circle .score-max {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-    }
-
-    .result-details {
-      flex: 1;
-    }
-
-    .result-severity {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-    }
-
-    .result-breakdown {
-      margin-top: 0.6rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .breakdown-row {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .breakdown-row span:last-child {
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* severity colour themes */
-    .sev-low    { --sev: var(--low);      background: rgba(52, 211, 153, 0.08); }
-    .sev-medium { --sev: var(--medium);   background: rgba(251, 191, 36, 0.08); }
-    .sev-high   { --sev: var(--high);     background: rgba(249, 115, 22, 0.08); }
-    .sev-critical { --sev: var(--critical); background: rgba(239, 68, 68, 0.08); }
-
-    .result-header { color: var(--sev); }
-    .result-score-circle { border-color: var(--sev); color: var(--sev); }
-    .result-severity { color: var(--sev); }
-
-    /* validation */
-    .error-msg {
-      font-size: 0.78rem;
-      color: var(--critical);
-      margin-top: 0.4rem;
-      display: none;
-    }
-    .error-msg.visible { display: block; }
-    </style>
+@media (max-width: 520px) { .input-row { grid-template-columns: 1fr; } .result-body { align-items: flex-start; flex-direction: column; } }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="tool-body-wrap py-6">
-<div class="card">
-  <div class="card-header">
-    <h1>CVSS Risk Calculator</h1>
-    <p>Calculates an adjusted risk score based on CVSS, business impact, and exposure.</p>
+  <div class="card">
+    <div class="card-header">
+      <h1>{{ _("tools.cvss.title") }}</h1>
+      <p>{{ _("tools.cvss.subtitle") }}</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-header">
+          <div class="step-badge">1</div>
+          <div>
+            <div class="step-label">{{ _("tools.cvss.vulnerability.label") }}</div>
+            <div class="step-desc">{{ _("tools.cvss.vulnerability.help") }}</div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input type="text" id="vulnerabilityInput" placeholder="CVE-2024-12345" autocomplete="off" />
+          <button class="lookup-btn" id="lookupBtn" data-fn="lookupVulnerability">{{ _("tools.cvss.lookup.action") }}</button>
+        </div>
+        <div class="error-msg" id="vulnerabilityError">{{ _("tools.cvss.error.invalid_cve") }}</div>
+        <div class="status-msg" id="lookupStatus">{{ _("tools.cvss.lookup.manual_mode") }}</div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-badge">2</div>
+          <div>
+            <div class="step-label">{{ _("tools.cvss.base_score.label") }}</div>
+            <div class="step-desc">{{ _("tools.cvss.base_score.help") }}</div>
+          </div>
+        </div>
+        <input type="number" id="cvssInput" min="0" max="10" step="0.1" placeholder="7.5" />
+        <span class="source-pill" id="baseSourceLabel">{{ _("tools.cvss.source.manual_base") }}</span>
+        <div class="error-msg" id="cvssError">{{ _("tools.cvss.error.invalid_score") }}</div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-badge">3</div>
+          <div>
+            <div class="step-label">{{ _("tools.cvss.exploit.label") }}</div>
+            <div class="step-desc">{{ _("tools.cvss.exploit.help") }}</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="exploitSelect">
+            <option value="0">{{ _("tools.cvss.exploit.none") }}</option>
+            <option value="1">{{ _("tools.cvss.exploit.available") }}</option>
+          </select>
+        </div>
+        <span class="source-pill" id="exploitSourceLabel">{{ _("tools.cvss.source.manual_no_identifier") }}</span>
+        <div class="error-msg" id="exploitError">{{ _("tools.cvss.error.exploit_required") }}</div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-badge">4</div>
+          <div>
+            <div class="step-label">{{ _("tools.cvss.impact.label") }}</div>
+            <div class="step-desc">{{ _("tools.cvss.impact.help") }}</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="impactSelect">
+            <option value="0">{{ _("tools.cvss.impact.low") }}</option>
+            <option value="1">{{ _("tools.cvss.impact.average") }}</option>
+            <option value="2">{{ _("tools.cvss.impact.high") }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-header">
+          <div class="step-badge">5</div>
+          <div>
+            <div class="step-label">{{ _("tools.cvss.exposure.label") }}</div>
+            <div class="step-desc">{{ _("tools.cvss.exposure.help") }}</div>
+          </div>
+        </div>
+        <div class="select-wrap">
+          <select id="exposureSelect">
+            <option value="0">{{ _("tools.cvss.exposure.internal") }}</option>
+            <option value="1">{{ _("tools.cvss.exposure.dmz") }}</option>
+            <option value="2">{{ _("tools.cvss.exposure.external") }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="calc-btn" data-fn="calculate">{{ _("tools.cvss.calculate") }}</button>
+
+    <div class="result" id="result">
+      <div class="result-header" id="resultHeader">{{ _("tools.cvss.result.severity") }}</div>
+      <div class="result-body">
+        <div class="result-score-circle" id="scoreCircle">
+          <span class="score-num" id="scoreNum">0</span>
+          <span class="score-max">/ 10</span>
+        </div>
+        <div class="result-details">
+          <div class="result-severity" id="severityLabel"></div>
+          <div class="result-breakdown">
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.base_source") }}</span><span id="bBaseSource"></span></div>
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.cvss") }}</span><span id="bCvss"></span></div>
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.impact") }}</span><span id="bImpact"></span></div>
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.exposure") }}</span><span id="bExposure"></span></div>
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.exploit") }}</span><span id="bExploit"></span></div>
+            <div class="breakdown-row"><span>{{ _("tools.cvss.result.exploit_source") }}</span><span id="bExploitSource"></span></div>
+            <div class="breakdown-row total-row"><span>{{ _("tools.cvss.result.total") }}</span><span id="bTotal"></span></div>
+          </div>
+          <div id="pdf-export-section" style="display:none; margin-top:1.5rem; text-align:center;">
+            <button class="calc-btn" id="exportPdfBtn" data-fn="exportPDF" style="max-width:260px;">{{ _("tools.cvss.export_pdf") }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="steps">
-
-    <!-- Step 1: CVSSv3 -->
-    <div class="step">
-      <div class="step-header">
-        <div class="step-badge">1</div>
-        <div>
-          <div class="step-label">CVSSv3 Base Score</div>
-          <div class="step-desc">Enter a value between 0.0 and 10.0 &mdash; will be weighted &times; 0.6</div>
-        </div>
-      </div>
-      <input
-        type="number"
-        id="cvssInput"
-        min="0" max="10" step="0.1"
-        placeholder="e.g. 7.5"
-      />
-      <div class="error-msg" id="cvssError">Please enter a CVSSv3 score between 0.0 and 10.0.</div>
-    </div>
-
-    <!-- Step 2: Business Impact -->
-    <div class="step">
-      <div class="step-header">
-        <div class="step-badge">2</div>
-        <div>
-          <div class="step-label">Business Impact</div>
-          <div class="step-desc">How critical is this asset to business operations?</div>
-        </div>
-      </div>
-      <div class="select-wrap">
-        <select id="impactSelect">
-          <option value="0">0 &mdash; Low (supporting system)</option>
-          <option value="1">1 &mdash; Average (important, not business-critical)</option>
-          <option value="2">2 &mdash; High (authentication / core services)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Step 3: Exposure -->
-    <div class="step">
-      <div class="step-header">
-        <div class="step-badge">3</div>
-        <div>
-          <div class="step-label">Exposure</div>
-          <div class="step-desc">Where is the asset reachable from?</div>
-        </div>
-      </div>
-      <div class="select-wrap">
-        <select id="exposureSelect">
-          <option value="0">0 &mdash; Internal</option>
-          <option value="1">1 &mdash; DMZ</option>
-          <option value="2">2 &mdash; External / Untrusted</option>
-        </select>
-      </div>
-    </div>
-
-  </div><!-- /steps -->
-
-  <button class="calc-btn" data-fn="calculate">Calculate Risk Score</button>
-
-  <!-- Result -->
-  <div class="result" id="result">
-    <div class="result-header" id="resultHeader">&#9679; SEVERITY</div>
-    <div class="result-body">
-      <div class="result-score-circle" id="scoreCircle">
-        <span class="score-num" id="scoreNum">0</span>
-        <span class="score-max">/ 10</span>
-      </div>
-      <div class="result-details">
-        <div class="result-severity" id="severityLabel"></div>
-        <div class="result-breakdown">
-          <div class="breakdown-row">
-            <span>CVSSv3 &times; 0.6</span>
-            <span id="bCvss"></span>
-          </div>
-          <div class="breakdown-row">
-            <span>+ Business Impact</span>
-            <span id="bImpact"></span>
-          </div>
-          <div class="breakdown-row">
-            <span>+ Exposure</span>
-            <span id="bExposure"></span>
-          </div>
-          <div class="breakdown-row" style="border-top:1px solid #2e3350; padding-top:0.3rem; margin-top:0.1rem;">
-            <span style="color:var(--text); font-weight:600;">Total Risk Score</span>
-            <span id="bTotal" style="color:var(--text); font-weight:700;"></span>
-          </div>
-        </div>
-  <div id="pdf-export-section" style="display:none; margin-top:1.5rem; text-align:center;">
-    <button class="calc-btn" id="exportPdfBtn" data-fn="exportPDF" style="background: var(--accent); max-width:260px;">&#8659; Export as PDF</button>
-  </div>
-      </div>
-    </div>
-  </div>
-
-</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script nonce="{{ csp_nonce }}">
-  function calculate() {
-    const cvssRaw = parseFloat(document.getElementById('cvssInput').value);
-    const cvssError = document.getElementById('cvssError');
+  const lookupUrl = {{ url_for('tools.cvss_calculator_lookup')|tojson }};
+  const labels = {
+    lookupManual: {{ _("tools.cvss.lookup.manual_mode")|tojson }},
+    lookupLoading: {{ _("tools.cvss.lookup.loading")|tojson }},
+    lookupRetrieved: {{ _("tools.cvss.lookup.retrieved")|tojson }},
+    lookupManualBase: {{ _("tools.cvss.lookup.manual_base_required")|tojson }},
+    invalidCve: {{ _("tools.cvss.error.invalid_cve")|tojson }},
+    invalidScore: {{ _("tools.cvss.error.invalid_score")|tojson }},
+    lookupRequired: {{ _("tools.cvss.error.lookup_required")|tojson }},
+    manualBase: {{ _("tools.cvss.source.manual_base")|tojson }},
+    nvd31: {{ _("tools.cvss.source.nvd31")|tojson }},
+    nvd30: {{ _("tools.cvss.source.nvd30")|tojson }},
+    nvd40: {{ _("tools.cvss.source.nvd40")|tojson }},
+    sourceUnavailable: {{ _("tools.cvss.source.unavailable")|tojson }},
+    manualNoIdentifier: {{ _("tools.cvss.source.manual_no_identifier")|tojson }},
+    kevListed: {{ _("tools.cvss.source.kev_listed")|tojson }},
+    kevNotListed: {{ _("tools.cvss.source.kev_not_listed")|tojson }},
+    manualOverride: {{ _("tools.cvss.source.manual_override")|tojson }},
+    low: {{ _("tools.cvss.severity.low")|tojson }},
+    medium: {{ _("tools.cvss.severity.medium")|tojson }},
+    high: {{ _("tools.cvss.severity.high")|tojson }},
+    critical: {{ _("tools.cvss.severity.critical")|tojson }}
+  };
 
-    // Validate CVSS input
-    if (isNaN(cvssRaw) || cvssRaw < 0 || cvssRaw > 10) {
-      cvssError.classList.add('visible');
-      document.getElementById('result').classList.remove('visible');
+  const cvePattern = /^CVE-\d{4}-\d{4,}$/;
+  let lookupState = {
+    identifier: '',
+    baseScore: null,
+    baseScoreSource: 'manual',
+    kevStatus: 'manual',
+    exploitAdjustment: null,
+    requiresManualBaseScore: true,
+    requiresManualExploitAdjustment: false,
+    hasLookup: false
+  };
+
+  function el(id) { return document.getElementById(id); }
+  function normalizeIdentifier(value) { return (value || '').trim().toUpperCase(); }
+  function sourceLabel(source) {
+    if (source === 'nvd_cvss_v31') return labels.nvd31;
+    if (source === 'nvd_cvss_v30') return labels.nvd30;
+    if (source === 'nvd_cvss_v40') return labels.nvd40;
+    if (source === 'unavailable') return labels.sourceUnavailable;
+    return labels.manualBase;
+  }
+  function exploitSourceLabel(source) {
+    if (source === 'kev_listed') return labels.kevListed;
+    if (source === 'kev_not_listed') return labels.kevNotListed;
+    if (source === 'manual_kev_unavailable') return labels.manualOverride;
+    return labels.manualNoIdentifier;
+  }
+  function setError(element, visible, message) {
+    element.textContent = message || element.textContent;
+    element.classList.toggle('visible', visible);
+  }
+
+  function resetLookupState() {
+    lookupState = {
+      identifier: '',
+      baseScore: null,
+      baseScoreSource: 'manual',
+      kevStatus: 'manual',
+      exploitAdjustment: null,
+      requiresManualBaseScore: true,
+      requiresManualExploitAdjustment: false,
+      hasLookup: false
+    };
+    el('cvssInput').disabled = false;
+    el('baseSourceLabel').textContent = labels.manualBase;
+    el('exploitSelect').disabled = false;
+    el('exploitSelect').value = '0';
+    el('exploitSourceLabel').textContent = labels.manualNoIdentifier;
+    el('lookupStatus').textContent = labels.lookupManual;
+    setError(el('vulnerabilityError'), false);
+    setError(el('exploitError'), false);
+    el('result').classList.remove('visible');
+  }
+
+  function applyLookupResult(data) {
+    lookupState.identifier = data.vulnerability_identifier || '';
+    lookupState.baseScore = data.base_score;
+    lookupState.baseScoreSource = data.base_score_source || 'manual_required';
+    lookupState.kevStatus = data.kev_status || 'unavailable';
+    lookupState.exploitAdjustment = data.exploit_adjustment;
+    lookupState.requiresManualBaseScore = Boolean(data.requires_manual_base_score);
+    lookupState.requiresManualExploitAdjustment = Boolean(data.requires_manual_exploit_adjustment);
+    lookupState.hasLookup = data.identifier_status === 'valid';
+
+    if (data.identifier_status === 'invalid') {
+      resetLookupState();
+      setError(el('vulnerabilityError'), true, labels.invalidCve);
       return;
     }
-    cvssError.classList.remove('visible');
 
-    const impact   = parseInt(document.getElementById('impactSelect').value, 10);
-    const exposure = parseInt(document.getElementById('exposureSelect').value, 10);
+    setError(el('vulnerabilityError'), false);
+    el('lookupStatus').textContent = (data.messages && data.messages.length) ? data.messages.join(' ') : labels.lookupRetrieved;
+
+    if (data.base_score !== null && data.base_score !== undefined) {
+      el('cvssInput').value = data.base_score;
+      el('cvssInput').disabled = true;
+    } else {
+      el('cvssInput').disabled = false;
+    }
+    el('baseSourceLabel').textContent = data.base_score !== null && data.base_score !== undefined ? sourceLabel(data.base_score_source) : labels.manualBase;
+
+    if (data.kev_status === 'listed') {
+      el('exploitSelect').value = '1';
+      el('exploitSelect').disabled = true;
+      el('exploitSourceLabel').textContent = labels.kevListed;
+    } else if (data.kev_status === 'not_listed') {
+      el('exploitSelect').value = '0';
+      el('exploitSelect').disabled = true;
+      el('exploitSourceLabel').textContent = labels.kevNotListed;
+    } else {
+      el('exploitSelect').disabled = false;
+      el('exploitSourceLabel').textContent = labels.manualOverride;
+    }
+  }
+
+  async function lookupVulnerability() {
+    const identifier = normalizeIdentifier(el('vulnerabilityInput').value);
+    el('vulnerabilityInput').value = identifier;
+    if (!identifier) {
+      resetLookupState();
+      return;
+    }
+    if (!cvePattern.test(identifier)) {
+      resetLookupState();
+      el('vulnerabilityInput').value = identifier;
+      setError(el('vulnerabilityError'), true, labels.invalidCve);
+      return;
+    }
+
+    el('lookupBtn').disabled = true;
+    el('lookupStatus').textContent = labels.lookupLoading;
+    try {
+      const response = await fetch(`${lookupUrl}?vulnerability_identifier=${encodeURIComponent(identifier)}`);
+      const data = await response.json();
+      applyLookupResult(data);
+    } catch (error) {
+      lookupState.identifier = identifier;
+      lookupState.hasLookup = true;
+      lookupState.baseScore = null;
+      lookupState.baseScoreSource = 'unavailable';
+      lookupState.requiresManualBaseScore = true;
+      lookupState.kevStatus = 'unavailable';
+      lookupState.exploitAdjustment = null;
+      lookupState.requiresManualExploitAdjustment = true;
+      el('cvssInput').disabled = false;
+      el('exploitSelect').disabled = false;
+      el('baseSourceLabel').textContent = labels.sourceUnavailable;
+      el('exploitSourceLabel').textContent = labels.manualOverride;
+      el('lookupStatus').textContent = labels.lookupManualBase;
+    } finally {
+      el('lookupBtn').disabled = false;
+    }
+  }
+
+  function calculate() {
+    const identifier = normalizeIdentifier(el('vulnerabilityInput').value);
+    if (identifier && !lookupState.hasLookup) {
+      setError(el('vulnerabilityError'), true, labels.lookupRequired);
+      el('result').classList.remove('visible');
+      return;
+    }
+    setError(el('vulnerabilityError'), false);
+
+    const cvssRaw = parseFloat(el('cvssInput').value);
+    if (isNaN(cvssRaw) || cvssRaw < 0 || cvssRaw > 10) {
+      setError(el('cvssError'), true, labels.invalidScore);
+      el('result').classList.remove('visible');
+      return;
+    }
+    setError(el('cvssError'), false);
+
+    const impact = parseInt(el('impactSelect').value, 10);
+    const exposure = parseInt(el('exposureSelect').value, 10);
+    let exploitAdjustment;
+    let exploitSource;
+    if (!identifier) {
+      exploitAdjustment = parseInt(el('exploitSelect').value, 10);
+      exploitSource = 'manual_no_identifier';
+    } else if (lookupState.requiresManualExploitAdjustment) {
+      exploitAdjustment = parseInt(el('exploitSelect').value, 10);
+      exploitSource = 'manual_kev_unavailable';
+    } else {
+      exploitAdjustment = lookupState.exploitAdjustment || 0;
+      exploitSource = lookupState.kevStatus === 'listed' ? 'kev_listed' : 'kev_not_listed';
+    }
 
     const cvssWeighted = cvssRaw * 0.6;
-    const total        = cvssWeighted + impact + exposure;
+    const total = Math.min(10, cvssWeighted + impact + exposure + exploitAdjustment);
     const totalRounded = Math.round(total * 10) / 10;
 
-    // Severity bands: 0–3.9 Low | 4–6.9 Medium | 7–8.9 High | 9–10 Critical
     let severity, sevClass;
-    if (total < 4)       { severity = 'Low';      sevClass = 'sev-low'; }
-    else if (total < 7)  { severity = 'Medium';   sevClass = 'sev-medium'; }
-    else if (total < 9)  { severity = 'High';     sevClass = 'sev-high'; }
-    else                 { severity = 'Critical';  sevClass = 'sev-critical'; }
+    if (totalRounded < 4) { severity = labels.low; sevClass = 'sev-low'; }
+    else if (totalRounded < 7) { severity = labels.medium; sevClass = 'sev-medium'; }
+    else if (totalRounded < 9) { severity = labels.high; sevClass = 'sev-high'; }
+    else { severity = labels.critical; sevClass = 'sev-critical'; }
 
-    // Populate result
-    const resultEl = document.getElementById('result');
+    const resultEl = el('result');
     resultEl.className = `result visible ${sevClass}`;
-
-    document.getElementById('resultHeader').textContent  = `\u25CF  ${severity.toUpperCase()} RISK`;
-    document.getElementById('scoreNum').textContent      = totalRounded;
-    document.getElementById('severityLabel').textContent = severity;
-    document.getElementById('bCvss').textContent         = cvssWeighted.toFixed(2);
-    document.getElementById('bImpact').textContent       = `+${impact}`;
-    document.getElementById('bExposure').textContent     = `+${exposure}`;
-    document.getElementById('bTotal').textContent        = totalRounded;
+    el('resultHeader').textContent = severity.toUpperCase();
+    el('scoreNum').textContent = totalRounded.toFixed(1).replace(/\.0$/, '');
+    el('severityLabel').textContent = severity;
+    el('bBaseSource').textContent = sourceLabel(lookupState.baseScoreSource);
+    el('bCvss').textContent = cvssWeighted.toFixed(2);
+    el('bImpact').textContent = `+${impact}`;
+    el('bExposure').textContent = `+${exposure}`;
+    el('bExploit').textContent = `+${exploitAdjustment}`;
+    el('bExploitSource').textContent = exploitSourceLabel(exploitSource);
+    el('bTotal').textContent = totalRounded.toFixed(1).replace(/\.0$/, '');
+    el('pdf-export-section').style.display = 'block';
   }
 
-  // Allow Enter key to trigger calculation
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter') calculate();
-  });
-
-  /* ── Event delegation (CSP-safe inline-handler replacement) ── */
-  document.addEventListener('click', function (e) {
-    const el = e.target.closest('[data-fn]');
-    if (!el) return;
-    const map = { calculate, exportPDF };
-    const f = map[el.dataset.fn];
-    if (f) f();
-  });
-
-</script>
-<script nonce="{{ csp_nonce }}">
   function exportPDF() {
-    var btn = document.getElementById("exportPdfBtn");
-    var old = btn.textContent;
-    btn.textContent = "Generating...";
+    const btn = el('exportPdfBtn');
+    const old = btn.textContent;
+    btn.textContent = {{ _("tools.cvss.export_generating")|tojson }};
     btn.disabled = true;
-    var el = document.querySelector(".card");
-    html2pdf().set({margin:10,filename:"CVSS-"+new Date().toISOString().split("T")[0]+".pdf",image:{type:"jpeg",quality:.95},html2canvas:{scale:2,backgroundColor:"#0f1117"},jsPDF:{unit:"mm",format:"a4"}}).from(el).save().then(function(){btn.textContent=old;btn.disabled=false;});
+    html2pdf().set({ margin: 10, filename: `CVSS-${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, backgroundColor: '#0f1117' }, jsPDF: { unit: 'mm', format: 'a4' } }).from(document.querySelector('.card')).save().then(function () {
+      btn.textContent = old;
+      btn.disabled = false;
+    });
   }
-  document.addEventListener("DOMContentLoaded", function() {
-    var calcBtn = document.querySelector(".calc-btn");
-    if (calcBtn) {
-      calcBtn.addEventListener("click", function() {
-        setTimeout(function(){
-          var r = document.getElementById("result");
-          if (r && r.classList.contains("visible")) document.getElementById("pdf-export-section").style.display="block";
-        }, 150);
-      });
-    }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') calculate();
   });
 
+  document.addEventListener('click', function (event) {
+    const target = event.target.closest('[data-fn]');
+    if (!target) return;
+    const actions = { calculate, lookupVulnerability, exportPDF };
+    const action = actions[target.dataset.fn];
+    if (action) action();
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    el('vulnerabilityInput').addEventListener('input', function () {
+      resetLookupState();
+    });
+    el('vulnerabilityInput').addEventListener('blur', function () {
+      const identifier = normalizeIdentifier(el('vulnerabilityInput').value);
+      if (identifier && cvePattern.test(identifier)) lookupVulnerability();
+    });
+  });
 </script>
 {% endblock %}

@@ -25,6 +25,11 @@ Follow these steps to provision a local development environment for the scaffold
 | `SCAFFOLD_APP_MODULES` | Comma-separated list of app modules to load | `scaffold.apps.auth.routes,scaffold.apps.admin,scaffold.apps.bia,scaffold.apps.csa,scaffold.apps.dpia,scaffold.apps.risk,scaffold.apps.risk.api,scaffold.apps.pages,scaffold.apps.maturity,scaffold.apps.template,scaffold.apps.tools,scaffold.apps.threat` |
 | `SESSION_COOKIE_SECURE` | Marks cookies as secure (HTTPS only) | `true` |
 | `PASSWORD_LOGIN_ENABLED` | Enable the legacy email/password login form for break-glass access | `false` |
+| `NVD_API_KEY` | Optional API key sent from the server to the NVD CVE API for CVSS calculator lookups | empty |
+| `NVD_LOOKUP_TIMEOUT_SECONDS` | Server-side timeout for NVD CVE API requests used by the CVSS calculator | `5` |
+| `KEV_LOOKUP_TIMEOUT_SECONDS` | Server-side timeout for CISA KEV feed requests used by the CVSS calculator | `5` |
+
+The CVSS calculator can optionally look up `CVE-YYYY-NNNN+` identifiers through the NVD CVE API and CISA Known Exploited Vulnerabilities feed. Deployments that use this feature need outbound HTTPS access to `services.nvd.nist.gov` and `www.cisa.gov`. If a CVE is omitted, NVD is unavailable, or KEV status cannot be confirmed, the calculator falls back to clearly labeled manual score or exploit availability inputs.
 
 ### Database URLs
 

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, render_template, request
+from flask import Blueprint, abort, current_app, jsonify, render_template, request
 
 from ...core.pdf_export import html_to_pdf_bytes
+from .services import lookup_vulnerability
 
 bp = Blueprint(
     "tools",
@@ -19,7 +20,7 @@ TOOLS_MENU = [
     {
         "endpoint": "tools.cvss_calculator",
         "label": "CVSS Risk Calculator",
-        "description": "Calculate an adjusted risk score from CVSSv3, business impact, and exposure.",
+        "description": "Calculate adjusted risk from CVSSv3, business impact, exposure, and exploit availability.",
         "icon": "🔢",
     },
     {
@@ -57,6 +58,17 @@ def index():
 @bp.get("/cvss-calculator")
 def cvss_calculator():
     return render_template("tools/cvss_calculator.html")
+
+
+@bp.get("/cvss-calculator/lookup")
+def cvss_calculator_lookup():
+    result = lookup_vulnerability(
+        request.args.get("vulnerability_identifier"),
+        nvd_api_key=current_app.config.get("NVD_API_KEY", ""),
+        nvd_timeout=current_app.config.get("NVD_LOOKUP_TIMEOUT_SECONDS", 5),
+        kev_timeout=current_app.config.get("KEV_LOOKUP_TIMEOUT_SECONDS", 5),
+    )
+    return jsonify(result)
 
 
 @bp.get("/risk-tool")

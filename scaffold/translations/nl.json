@@ -2781,6 +2781,81 @@
     "index": {
       "title": "Beveiligingstools",
       "subtitle": "Een verzameling standalone beveiligings- en compliancetools."
+    },
+    "cvss": {
+      "title": "CVSS Risicocalculator",
+      "subtitle": "Combineer CVSSv3, business impact, blootstelling en exploitbeschikbaarheid in een aangepaste risicoscore.",
+      "vulnerability": {
+        "label": "Kwetsbaarheids-ID",
+        "help": "Optionele CVE-lookup. Laat leeg voor volledig handmatig scoren."
+      },
+      "lookup": {
+        "action": "Opzoeken",
+        "manual_mode": "Handmatige modus: vul een CVSSv3 basisscore in en kies exploitbeschikbaarheid.",
+        "loading": "NVD- en KEV-data worden opgehaald...",
+        "retrieved": "Lookup voltooid. Controleer de opgehaalde waarden voor het berekenen.",
+        "manual_base_required": "Lookupdata is niet beschikbaar. Vul de CVSSv3 basisscore en exploitbeschikbaarheid handmatig in."
+      },
+      "base_score": {
+        "label": "CVSSv3 Basisscore",
+        "help": "Gebruik de NVD-waarde wanneer een CVE is gevonden, of vul een waarde van 0.0 tot 10.0 in."
+      },
+      "exploit": {
+        "label": "Exploitbeschikbaarheid",
+        "help": "Kwetsbaarheden in KEV krijgen +1. Als lookup niet beschikbaar is, kies de handmatige override.",
+        "none": "0 - Geen exploit beschikbaar",
+        "available": "1 - Exploit beschikbaar"
+      },
+      "impact": {
+        "label": "Business impact",
+        "help": "Hoe kritisch is de geraakte asset of service?",
+        "low": "Laag (0) - Niet-kritisch systeem",
+        "average": "Gemiddeld (1) - Belangrijk bedrijfssysteem",
+        "high": "Hoog (2) - Kritisch bedrijfssysteem"
+      },
+      "exposure": {
+        "label": "Blootstelling",
+        "help": "Waar is het kwetsbare component bereikbaar?",
+        "internal": "Intern (0) - Alleen intern netwerk",
+        "dmz": "DMZ (1) - Beperkte externe blootstelling",
+        "external": "Extern (2) - Internet-facing"
+      },
+      "calculate": "Bereken risicoscore",
+      "export_pdf": "Exporteer als PDF",
+      "export_generating": "PDF genereren...",
+      "source": {
+        "manual_base": "Bron: handmatige basisscore",
+        "nvd31": "Bron: NVD CVSS v3.1",
+        "nvd30": "Bron: NVD CVSS v3.0",
+        "nvd40": "Bron: NVD CVSS v4.0",
+        "unavailable": "Bron: NVD niet beschikbaar",
+        "manual_no_identifier": "Bron: handmatige selectie zonder CVE",
+        "kev_listed": "Bron: CISA KEV vermeld",
+        "kev_not_listed": "Bron: CISA KEV niet vermeld",
+        "manual_override": "Bron: handmatige override omdat KEV niet beschikbaar is"
+      },
+      "error": {
+        "invalid_cve": "Vul een CVE-ID in zoals CVE-2024-12345, of laat leeg voor handmatig scoren.",
+        "invalid_score": "Vul een CVSSv3 basisscore in tussen 0.0 en 10.0.",
+        "lookup_required": "Voer de lookup uit voor deze CVE, of maak het veld leeg om handmatig te scoren.",
+        "exploit_required": "Kies exploitbeschikbaarheid."
+      },
+      "result": {
+        "severity": "Ernst",
+        "base_source": "Bron basisscore",
+        "cvss": "CVSS gewogen (x0.6)",
+        "impact": "Business impact",
+        "exposure": "Blootstelling",
+        "exploit": "Exploitcorrectie",
+        "exploit_source": "Exploitbron",
+        "total": "Totaal"
+      },
+      "severity": {
+        "low": "Laag",
+        "medium": "Middel",
+        "high": "Hoog",
+        "critical": "Kritiek"
+      }
     }
   },
   "threat": {
