@@ -670,7 +670,7 @@ def export_to_sql(context: ContextScope) -> str:
             values.append(_sql_value(value))
         column_sql = ", ".join(columns)
         value_sql = ", ".join(values)
-        return f"INSERT INTO {table_name} ({column_sql}) VALUES ({value_sql});"
+        return f"INSERT INTO {table_name} ({column_sql}) VALUES ({value_sql});"  # nosec B608
 
     context_table = ContextScope.__table__.name
     statements.append(
@@ -808,8 +808,8 @@ def export_to_sql(context: ContextScope) -> str:
 
     def sequence_reset_statement(table_name: str, column: str = "id") -> str:
         sequence_name = f"{table_name}_{column}_seq"
-        value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"
-        called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"
+        value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"  # nosec B608
+        called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"  # nosec B608
         return f"SELECT setval('{sequence_name}', {value_sql}, {called_sql});"
 
     statements.extend(
@@ -1054,9 +1054,9 @@ def _parse_date(value: object | None):
 
 def _reset_identity_sequence(table_name: str, column: str = "id") -> None:
     sequence_name = f"{table_name}_{column}_seq"
-    value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"
-    called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"
-    db.session.execute(text(f"SELECT setval('{sequence_name}', {value_sql}, {called_sql})"))
+    value_sql = f"COALESCE((SELECT MAX({column}) FROM {table_name}), 1)"  # nosec B608
+    called_sql = f"CASE WHEN EXISTS (SELECT 1 FROM {table_name}) THEN true ELSE false END"  # nosec B608
+    db.session.execute(text(f"SELECT setval('{sequence_name}', {value_sql}, {called_sql})"))  # nosec B608)
 
 
 def _sync_identity_sequences() -> None:

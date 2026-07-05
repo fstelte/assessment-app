@@ -132,9 +132,11 @@ def fetch_kev_status(identifier: str, *, timeout: int = 5) -> bool:
 
 
 def fetch_json(url: str, *, timeout: int = 5, headers: dict[str, str] | None = None) -> dict[str, Any]:
+    if not url.startswith("https://"):
+        raise LookupSourceError("Only HTTPS URLs are permitted")
     request = urllib.request.Request(url, headers=headers or {})
     try:
-        with urllib.request.urlopen(request, timeout=max(timeout, 1)) as response:
+        with urllib.request.urlopen(request, timeout=max(timeout, 1)) as response:  # nosec B310
             payload = response.read().decode("utf-8")
     except (TimeoutError, OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
         raise LookupSourceError(str(exc)) from exc
