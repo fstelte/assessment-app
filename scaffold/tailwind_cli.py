@@ -74,7 +74,9 @@ def _download_binary(version: str) -> Path:
     temp_path = target_path.with_suffix(target_path.suffix + ".download")
 
     try:
-        with urllib.request.urlopen(asset_url) as response, open(temp_path, "wb") as handle:
+        if not asset_url.startswith("https://"):
+            raise TailwindCLIError(f"Refusing to download from non-HTTPS URL: {asset_url}")
+        with urllib.request.urlopen(asset_url) as response, open(temp_path, "wb") as handle:  # nosec B310
             shutil.copyfileobj(response, handle)
     except urllib.error.URLError as exc:  # pragma: no cover - network failure path
         raise TailwindCLIError(

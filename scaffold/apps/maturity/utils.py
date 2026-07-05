@@ -63,7 +63,7 @@ def export_to_sql() -> str:
 
         column_sql = ", ".join(columns)
         value_sql = ", ".join(values)
-        return f"INSERT INTO {table_name} ({column_sql}) VALUES ({value_sql});"
+        return f"INSERT INTO {table_name} ({column_sql}) VALUES ({value_sql});"  # nosec B608
 
     # --- Maturity Tables ---
     

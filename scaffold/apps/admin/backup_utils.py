@@ -30,6 +30,25 @@ except ImportError:  # pragma: no cover
     _sa_text = None  # type: ignore[assignment]
 
 # ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+_SAFE_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _validate_table_name(name: str) -> str:
+    """Raise ValueError if *name* is not a safe SQL identifier.
+
+    Only alphanumeric characters and underscores are allowed, and the name must
+    start with a letter or underscore. This prevents SQL injection when table
+    names are interpolated into raw SQL strings.
+    """
+    if not _SAFE_IDENTIFIER_RE.match(name):
+        raise ValueError(f"Unsafe table name rejected: {name!r}")
+    return name
+
+
+# ---------------------------------------------------------------------------
 # Partial restore – constants
 # ---------------------------------------------------------------------------
 
@@ -252,8 +271,9 @@ def inspect_sqlite_backup(data: bytes) -> list[RestorableTable]:
             table_names = [row[0] for row in cur.fetchall()]
 
             for t_name in table_names:
+                _validate_table_name(t_name)
                 # Row count
-                cur.execute(f"SELECT COUNT(*) FROM [{t_name}]")  # noqa: S608
+                cur.execute(f"SELECT COUNT(*) FROM [{t_name}]")  # nosec B608
                 row_count = cur.fetchone()[0]
 
                 # Primary key columns
@@ -440,7 +460,8 @@ def detect_conflicts_sqlite(
         backup_conn = sqlite3.connect(tmp_path)
         try:
             cur = backup_conn.cursor()
-            cur.execute(f"SELECT COUNT(*) FROM [{table_name}]")  # noqa: S608
+            _validate_table_name(table_name)
+            cur.execute(f"SELECT COUNT(*) FROM [{table_name}]")  # nosec B608
             backup_row_count: int = cur.fetchone()[0]
 
             cur.execute(f"PRAGMA table_info([{table_name}])")
@@ -468,7 +489,7 @@ def detect_conflicts_sqlite(
 
     with engine.connect() as conn:
         try:
-            result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))  # noqa: S608
+            result = conn.execute(text(f"SELECT COUNT(*) FROM {_validate_table_name(table_name)}"))  # nosec B608
             existing_row_count: int = result.scalar() or 0
         except Exception:
             existing_row_count = 0
@@ -493,8 +514,9 @@ def detect_conflicts_sqlite(
                         f"main.{table_name}.{c} = backup_db.{table_name}.{c}"
                         for c in pk_cols
                     )
+                    _validate_table_name(table_name)
                     result = raw_live.execute(
-                        f"SELECT COUNT(*) FROM main.{table_name} "  # noqa: S608
+                        f"SELECT COUNT(*) FROM main.{table_name} "  # nosec B608
                         f"INNER JOIN backup_db.{table_name} ON {key_cond}"
                     )
                     conflict_count = result.fetchone()[0]
@@ -595,12 +617,13 @@ def execute_partial_restore_sqlite(
             try:
                 for table_name in selected_tables:
                     try:
+                        _validate_table_name(table_name)
                         # Get all column names from backup table
                         backup_conn = sqlite3.connect(tmp_path)
                         cur = backup_conn.cursor()
                         cur.execute(f"PRAGMA table_info([{table_name}])")
                         cols = [r[1] for r in cur.fetchall()]
-                        cur.execute(f"SELECT COUNT(*) FROM [{table_name}]")
+                        cur.execute(f"SELECT COUNT(*) FROM [{table_name}]")  # nosec B608
                         backup_row_count = cur.fetchone()[0]
                         backup_conn.close()
 
@@ -616,18 +639,18 @@ def execute_partial_restore_sqlite(
 
                         # Count rows before insert
                         before_result = raw.execute(
-                            f"SELECT COUNT(*) FROM main.{table_name}"  # noqa: S608
+                            f"SELECT COUNT(*) FROM main.{table_name}"  # nosec B608
                         )
                         before_count = before_result.fetchone()[0]
 
                         raw.execute(
-                            f"INSERT OR IGNORE INTO main.{table_name} ({col_list}) "  # noqa: S608
+                            f"INSERT OR IGNORE INTO main.{table_name} ({col_list}) "  # nosec B608
                             f"SELECT {col_list} FROM backup_db.{table_name}"
                         )
                         raw.commit()  # type: ignore[attr-defined]
 
                         after_result = raw.execute(
-                            f"SELECT COUNT(*) FROM main.{table_name}"  # noqa: S608
+                            f"SELECT COUNT(*) FROM main.{table_name}"  # nosec B608
                         )
                         after_count = after_result.fetchone()[0]
                         restored = after_count - before_count
