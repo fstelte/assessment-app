@@ -16,7 +16,7 @@
 
 <div class="flex justify-between items-center mb-6">
   <h1 class="text-2xl font-bold mb-0 text-[var(--color-text)]">{{ _('bia.view_consequences.heading', component=component.name) }}</h1>
-  <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" data-modal-target="addConsequenceModal">
+  <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" data-modal-target="addConsequenceModal" data-add-url="{{ url_for('bia.add_consequence', component_id=component.id) }}">
     <i class="fas fa-plus mr-2"></i> {{ _('bia.view_consequences.actions.add') }}
   </button>
 </div>
@@ -213,6 +213,166 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === modal) {
                closeModal(modal);
             }
+        });
+    });
+
+    // --- Consequence CRUD wiring ---
+    const csrfToken = document.getElementById('csrf-token').value;
+
+    function postJSON(url, payload) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).then(r => r.json().then(data => ({ ok: r.ok, data })));
+    }
+
+    function flattenErrors(errors) {
+        if (!errors) return 'Something went wrong.';
+        return Object.values(errors).flat().join(' ');
+    }
+
+    // Add consequence
+    const addBtn = document.getElementById('saveConsequenceBtn');
+    const addForm = document.getElementById('add-consequence-form');
+    if (addBtn && addForm) {
+        addBtn.addEventListener('click', () => {
+            const categorySelect = addForm.querySelector('[name="consequence_category"]');
+            const payload = {
+                consequence_category: categorySelect ? Array.from(categorySelect.selectedOptions).map(o => o.value) : [],
+                security_property: addForm.querySelector('[name="security_property"]').value,
+                consequence_worstcase: addForm.querySelector('[name="consequence_worstcase"]').value,
+                justification_worstcase: addForm.querySelector('[name="justification_worstcase"]').value,
+                consequence_realisticcase: addForm.querySelector('[name="consequence_realisticcase"]').value,
+                justification_realisticcase: addForm.querySelector('[name="justification_realisticcase"]').value,
+            };
+            const addUrl = document.querySelector('[data-add-url]').getAttribute('data-add-url');
+            postJSON(addUrl, payload).then(({ ok, data }) => {
+                if (ok && data.success) {
+                    window.location.reload();
+                } else {
+                    alert(flattenErrors(data.errors) || 'Failed to add consequence.');
+                }
+            }).catch(() => alert('Failed to add consequence.'));
+        });
+    }
+
+    // Edit consequence
+    const editModal = document.getElementById('editConsequenceModal');
+    const editBody = document.getElementById('edit-consequence-modal-body');
+    const updateBtn = document.getElementById('updateConsequenceBtn');
+    const categoryChoices = [
+        ['financial', 'Financial'],
+        ['operational', 'Operational'],
+        ['reputation and trust', 'Reputation and Trust'],
+        ['regulatory', 'Regulatory'],
+        ['human and safety', 'Human and Safety'],
+        ['privacy', 'Privacy'],
+    ];
+    const propertyChoices = [
+        ['confidentiality', 'Confidentiality'],
+        ['integrity', 'Integrity'],
+        ['availability', 'Availability'],
+    ];
+    const caseChoices = [
+        ['catastrophic', 'Catastrophic'],
+        ['major', 'Major'],
+        ['moderate', 'Moderate'],
+        ['minor', 'Minor'],
+        ['insignificant', 'Insignificant'],
+    ];
+
+    function selectOptions(choices, selected) {
+        return choices.map(([value, label]) =>
+            `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`
+        ).join('');
+    }
+
+    function fieldClasses() {
+        return 'w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30';
+    }
+
+    document.querySelectorAll('[data-edit-consequence]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const editUrl = btn.getAttribute('data-edit-url');
+            const updateUrl = btn.getAttribute('data-update-url');
+            fetch(editUrl).then(r => r.json()).then(consequence => {
+                editBody.innerHTML = `
+                    <form id="edit-consequence-form" class="flex flex-col gap-5">
+                        <div>
+                            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.category') }}</label>
+                            <select name="consequence_category" class="${fieldClasses()}">${selectOptions(categoryChoices, consequence.consequence_category)}</select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.security_property') }}</label>
+                                <select name="security_property" class="${fieldClasses()}">${selectOptions(propertyChoices, consequence.security_property)}</select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.worst_case') }}</label>
+                                <select name="consequence_worstcase" class="${fieldClasses()}">${selectOptions(caseChoices, consequence.consequence_worstcase)}</select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.justification_worst') }}</label>
+                            <textarea name="justification_worstcase" rows="2" class="${fieldClasses()}">${consequence.justification_worstcase || ''}</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.realistic_case') }}</label>
+                                <select name="consequence_realisticcase" class="${fieldClasses()}">${selectOptions(caseChoices, consequence.consequence_realisticcase)}</select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.justification_realistic') }}</label>
+                                <textarea name="justification_realisticcase" rows="2" class="${fieldClasses()}">${consequence.justification_realisticcase || ''}</textarea>
+                            </div>
+                        </div>
+                    </form>`;
+                updateBtn.setAttribute('data-update-url', updateUrl);
+                openModal('editConsequenceModal');
+            }).catch(() => alert('Failed to load consequence.'));
+        });
+    });
+
+    if (updateBtn) {
+        updateBtn.addEventListener('click', () => {
+            const form = document.getElementById('edit-consequence-form');
+            if (!form) return;
+            const updateUrl = updateBtn.getAttribute('data-update-url');
+            const payload = {
+                consequence_category: form.querySelector('[name="consequence_category"]').value,
+                security_property: form.querySelector('[name="security_property"]').value,
+                consequence_worstcase: form.querySelector('[name="consequence_worstcase"]').value,
+                justification_worstcase: form.querySelector('[name="justification_worstcase"]').value,
+                consequence_realisticcase: form.querySelector('[name="consequence_realisticcase"]').value,
+                justification_realisticcase: form.querySelector('[name="justification_realisticcase"]').value,
+            };
+            postJSON(updateUrl, payload).then(({ ok, data }) => {
+                if (ok && data.success) {
+                    window.location.reload();
+                } else {
+                    alert(flattenErrors(data.errors) || 'Failed to update consequence.');
+                }
+            }).catch(() => alert('Failed to update consequence.'));
+        });
+    }
+
+    // Delete consequence
+    document.querySelectorAll('[data-delete-consequence]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!window.confirm('{{ _('bia.components.table.confirm_delete') }}')) return;
+            const deleteUrl = btn.getAttribute('data-delete-url');
+            const row = btn.closest('tr');
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    row.remove();
+                } else {
+                    alert('Failed to delete consequence.');
+                }
+            }).catch(() => alert('Failed to delete consequence.'));
         });
     });
 });

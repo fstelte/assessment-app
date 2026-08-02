@@ -35,6 +35,7 @@
       </style>
     {% else %}
       <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
     {% endif %}
     {% block extra_css %}{% endblock %}
   </head>
