@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.14-slim-trixie AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    POETRY_VERSION=2.2.1
+    POETRY_VERSION=2.2.1 \
+    POETRY_INSTALLER_NO_BINARY=lxml
 
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl gnupg lsb-release wget postgresql-client libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config \
+    && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl gnupg lsb-release wget postgresql-client libxml2-dev libxslt1-dev libxmlsec1-dev libxmlsec1-openssl libffi-dev zlib1g-dev pkg-config \
     && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
