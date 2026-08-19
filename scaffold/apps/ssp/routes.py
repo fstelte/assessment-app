@@ -579,7 +579,7 @@ def add_poam_item(ssp_id: int):
         )
         db.session.add(item)
         db.session.commit()
-        log_event("poam_item_created", resource_type="SSPlan", resource_id=ssp.id)
+        log_event("poam_item_created", entity_type="SSPlan", entity_id=ssp.id)
         flash("POA&M item added.", "success")
         return redirect(url_for("ssp.poam", ssp_id=ssp.id))
     return render_template("ssp/poam_item_form.html", ssp=ssp, context=ssp.context_scope, form=form, item=None)
@@ -603,7 +603,7 @@ def edit_poam_item(ssp_id: int, item_id: int):
         item.estimated_cost = form.estimated_cost.data or None
         item.status = POAMStatus(form.status.data)
         db.session.commit()
-        log_event("poam_item_updated", resource_type="SSPlan", resource_id=ssp.id)
+        log_event("poam_item_updated", entity_type="SSPlan", entity_id=ssp.id)
         flash("POA&M item updated.", "success")
         return redirect(url_for("ssp.edit_poam_item", ssp_id=ssp.id, item_id=item.id))
     if milestone_form.validate_on_submit() and "add_milestone" in request.form:
@@ -635,7 +635,7 @@ def delete_poam_item(ssp_id: int, item_id: int):
     item = POAMItem.query.filter_by(id=item_id, ssp_id=ssp.id).first_or_404()
     db.session.delete(item)
     db.session.commit()
-    log_event("poam_item_deleted", resource_type="SSPlan", resource_id=ssp.id)
+    log_event("poam_item_deleted", entity_type="SSPlan", entity_id=ssp.id)
     flash("POA&M item deleted.", "success")
     return redirect(url_for("ssp.poam", ssp_id=ssp.id))
 
