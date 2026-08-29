@@ -139,6 +139,6 @@ records on System Security Plans, per `design.md` and decision records
 - [x] Task 7: ADR forms
 - [x] Task 8: ADR routes + supersession/delete-guard logic
 - [x] Task 9: ADR templates
-- [ ] Task 10: Pytest — principle admin CRUD + import
+- [x] Task 10: Pytest — principle admin CRUD + import
 - [ ] Task 11: Pytest — ADR creation + supersession + principle-delete guard
 - [ ] Task 12: Docs update
