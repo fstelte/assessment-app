@@ -201,7 +201,7 @@ depends on the previous one, no parallel track this time.
 - [x] Task 14: Upload form + image validation *(evidence not locally verified — see Notes)*
 - [x] Task 15: Upload / serve-image / restore routes *(evidence not locally verified — see Notes)*
 - [x] Task 16: SSP overview template — image display + history + restore *(evidence not locally verified — see Notes)*
-- [ ] Task 17: Pytest — upload, versioning, restore, cascade delete, audit log
+- [x] Task 17: Pytest — upload, versioning, restore, cascade delete, audit log *(written but not run — see Notes)*
 - [ ] Task 18: Docs update
 
 ## Notes
