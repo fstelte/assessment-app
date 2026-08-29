@@ -276,3 +276,18 @@ class POAMMilestone(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<POAMMilestone item_id={self.item_id}>"
+
+
+class ArchitecturePrinciple(db.Model):
+    """Admin-governed architecture principle that ADRs are anchored to."""
+
+    __tablename__ = "architecture_principles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<ArchitecturePrinciple {self.name!r}>"
