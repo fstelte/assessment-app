@@ -6,6 +6,7 @@ import re
 import unicodedata
 from datetime import date
 
+import sqlalchemy as sa
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -13,11 +14,36 @@ from ...core.audit import log_event
 from ...extensions import db
 from ..bia.models import ContextScope
 from . import bp
-from .forms import POAMItemForm, POAMMilestoneForm, SSPControlEntryForm, SSPEditForm, SSPInterconnectionForm
-from .models import FipsRating, POAMItem, POAMMilestone, POAMStatus, SSPControlEntry, SSPInterconnection, SSPlan
+from .forms import (
+    ADRCreateForm,
+    ADRUpdateForm,
+    POAMItemForm,
+    POAMMilestoneForm,
+    SSPControlEntryForm,
+    SSPEditForm,
+    SSPInterconnectionForm,
+)
+from .models import (
+    ADRRecord,
+    ADRStatus,
+    ArchitecturePrinciple,
+    FipsRating,
+    POAMItem,
+    POAMMilestone,
+    POAMStatus,
+    SSPControlEntry,
+    SSPInterconnection,
+    SSPlan,
+)
 from ..bia.utils import get_cia_impact
 from ..bia.routes import _load_export_css, _send_export_response
-from .services import build_environment_summary, seed_controls, seed_interconnections, sync_scenario_controls_to_ssp
+from .services import (
+    build_environment_summary,
+    configure_adr_form,
+    seed_controls,
+    seed_interconnections,
+    sync_scenario_controls_to_ssp,
+)
 
 
 def _safe_filename(name: str) -> str:
@@ -664,3 +690,184 @@ def delete_poam_milestone(ssp_id: int, item_id: int, ms_id: int):
     db.session.commit()
     flash("Milestone removed.", "success")
     return redirect(url_for("ssp.edit_poam_item", ssp_id=ssp.id, item_id=item.id))
+
+
+# Status transitions allowed by direct edit (FR-007). Accepted -> Superseded is
+# deliberately absent: that transition only happens via the supersede action in
+# add_adr(), never through a direct status edit on this ADR itself.
+_ALLOWED_ADR_TRANSITIONS: dict[ADRStatus, set[ADRStatus]] = {
+    ADRStatus.PROPOSED: {ADRStatus.ACCEPTED, ADRStatus.REJECTED},
+    ADRStatus.ACCEPTED: {ADRStatus.DEPRECATED},
+    ADRStatus.REJECTED: set(),
+    ADRStatus.DEPRECATED: set(),
+    ADRStatus.SUPERSEDED: set(),
+}
+_CREATABLE_ADR_STATUSES = {ADRStatus.PROPOSED, ADRStatus.ACCEPTED, ADRStatus.REJECTED}
+
+
+@bp.route("/<int:ssp_id>/adrs", methods=["GET"])
+@login_required
+def adrs(ssp_id: int):
+    """List an SSP's Architecture Decision Records, filterable by status/principle (FR-010)."""
+    ssp = _get_ssp_or_404(ssp_id)
+
+    status_filter = (request.args.get("status") or "").strip()
+    principle_filter = request.args.get("principle_id", type=int)
+    page = request.args.get("page", 1, type=int)
+
+    query = ADRRecord.query.filter_by(ssp_id=ssp.id).order_by(ADRRecord.created_at.desc())
+    if status_filter:
+        query = query.filter(ADRRecord.status == ADRStatus(status_filter))
+    if principle_filter:
+        query = query.filter(
+            sa.or_(
+                ADRRecord.primary_principle_id == principle_filter,
+                ADRRecord.secondary_principles.any(ArchitecturePrinciple.id == principle_filter),
+            )
+        )
+    pagination = query.paginate(page=page, per_page=50, error_out=False)
+
+    principles = ArchitecturePrinciple.query.order_by(ArchitecturePrinciple.name.asc()).all()
+    return render_template(
+        "ssp/adrs.html",
+        ssp=ssp,
+        pagination=pagination,
+        principles=principles,
+        has_principles=len(principles) > 0,
+    )
+
+
+@bp.route("/<int:ssp_id>/adrs/add", methods=["GET", "POST"])
+@login_required
+def add_adr(ssp_id: int):
+    """Create a new ADR. Principle selection gates the rest of the record (FR-004)."""
+    ssp = _get_ssp_or_404(ssp_id)
+
+    if not ArchitecturePrinciple.query.first():
+        flash("No architecture principles are defined yet. Ask an admin to add some.", "warning")
+        return redirect(url_for("ssp.adrs", ssp_id=ssp.id))
+
+    form = ADRCreateForm()
+    configure_adr_form(form, ssp=ssp)
+
+    if form.validate_on_submit():
+        try:
+            status = ADRStatus(form.status.data)
+        except ValueError:
+            abort(400)
+        if status not in _CREATABLE_ADR_STATUSES:
+            flash("A new ADR cannot start out Deprecated.", "danger")
+            return render_template("ssp/add_adr.html", ssp=ssp, form=form)
+
+        supersedes_id = form.supersedes_id.data or None
+        supersedes_adr = None
+        if supersedes_id:
+            supersedes_adr = ADRRecord.query.filter_by(id=supersedes_id, ssp_id=ssp.id).first()
+            if supersedes_adr is None or supersedes_adr.superseded_by is not None:
+                flash("The ADR you selected to supersede is not a valid target.", "danger")
+                return render_template("ssp/add_adr.html", ssp=ssp, form=form)
+
+        adr = ADRRecord(
+            ssp_id=ssp.id,
+            title=form.title.data.strip(),
+            status=status,
+            context=form.context.data.strip(),
+            decision=form.decision.data.strip(),
+            consequences=(form.consequences.data or "").strip() or None,
+            primary_principle_id=form.primary_principle_id.data,
+            author_id=current_user.id,
+            decided_on=date.today() if status in (ADRStatus.ACCEPTED, ADRStatus.REJECTED) else None,
+        )
+        adr.secondary_principles = ArchitecturePrinciple.query.filter(
+            ArchitecturePrinciple.id.in_(form.secondary_principle_ids.data or [])
+        ).all()
+        db.session.add(adr)
+        db.session.flush()
+
+        if supersedes_adr is not None:
+            adr.supersedes_id = supersedes_adr.id
+            supersedes_adr.status = ADRStatus.SUPERSEDED
+            log_event(
+                "adr_superseded",
+                entity_type="ADRRecord",
+                entity_id=supersedes_adr.id,
+                details={"superseded_by_id": adr.id},
+            )
+
+        db.session.commit()
+        log_event(
+            "adr_created",
+            entity_type="ADRRecord",
+            entity_id=adr.id,
+            details={"title": adr.title, "ssp_id": ssp.id},
+        )
+        flash(f"ADR '{adr.title}' created.", "success")
+        return redirect(url_for("ssp.adr_detail", ssp_id=ssp.id, adr_id=adr.id))
+
+    return render_template("ssp/add_adr.html", ssp=ssp, form=form)
+
+
+@bp.route("/<int:ssp_id>/adrs/<int:adr_id>", methods=["GET"])
+@login_required
+def adr_detail(ssp_id: int, adr_id: int):
+    """View a single ADR, including its supersession links in both directions."""
+    ssp = _get_ssp_or_404(ssp_id)
+    adr = ADRRecord.query.filter_by(id=adr_id, ssp_id=ssp.id).first_or_404()
+    return render_template("ssp/adr_detail.html", ssp=ssp, adr=adr)
+
+
+@bp.route("/<int:ssp_id>/adrs/<int:adr_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_adr(ssp_id: int, adr_id: int):
+    """Edit an ADR's content and status (FR-007's transition table applies)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    adr = ADRRecord.query.filter_by(id=adr_id, ssp_id=ssp.id).first_or_404()
+
+    form = ADRUpdateForm(obj=adr)
+    configure_adr_form(form, ssp=ssp, editing_adr=adr)
+
+    if request.method == "GET":
+        form.adr_id.data = str(adr.id)
+        form.secondary_principle_ids.data = [p.id for p in adr.secondary_principles]
+        form.status.data = adr.status.value
+
+    if form.validate_on_submit():
+        if form.adr_id.data != str(adr.id):
+            abort(400)
+
+        try:
+            new_status = ADRStatus(form.status.data)
+        except ValueError:
+            abort(400)
+
+        if new_status != adr.status:
+            allowed = _ALLOWED_ADR_TRANSITIONS.get(adr.status, set())
+            if new_status not in allowed:
+                flash(
+                    f"Cannot move an ADR from {adr.status.value} to {new_status.value}.",
+                    "danger",
+                )
+                return render_template("ssp/edit_adr.html", ssp=ssp, adr=adr, form=form)
+
+            adr.status = new_status
+            if new_status in (ADRStatus.ACCEPTED, ADRStatus.REJECTED) and adr.decided_on is None:
+                adr.decided_on = date.today()
+            log_event(
+                "adr_status_changed",
+                entity_type="ADRRecord",
+                entity_id=adr.id,
+                details={"status": new_status.value},
+            )
+
+        adr.title = form.title.data.strip()
+        adr.context = form.context.data.strip()
+        adr.decision = form.decision.data.strip()
+        adr.consequences = (form.consequences.data or "").strip() or None
+        adr.secondary_principles = ArchitecturePrinciple.query.filter(
+            ArchitecturePrinciple.id.in_(form.secondary_principle_ids.data or [])
+        ).all()
+        db.session.commit()
+        flash(f"ADR '{adr.title}' updated.", "success")
+        return redirect(url_for("ssp.adr_detail", ssp_id=ssp.id, adr_id=adr.id))
+
+    return render_template("ssp/edit_adr.html", ssp=ssp, adr=adr, form=form)
