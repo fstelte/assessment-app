@@ -135,8 +135,8 @@ records on System Security Plans, per `design.md` and decision records
 - [x] Task 3: Principle admin forms
 - [x] Task 4: principle_importer.py service
 - [x] Task 5: Principle admin routes
-- [ ] Task 6: Principle admin templates
-- [ ] Task 7: ADR forms
+- [x] Task 6: Principle admin templates
+- [x] Task 7: ADR forms
 - [ ] Task 8: ADR routes + supersession/delete-guard logic
 - [ ] Task 9: ADR templates
 - [ ] Task 10: Pytest — principle admin CRUD + import
