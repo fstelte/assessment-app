@@ -7,7 +7,7 @@ import unicodedata
 from datetime import date
 
 import sqlalchemy as sa
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from ...core.audit import log_event
@@ -19,6 +19,7 @@ from .forms import (
     ADRUpdateForm,
     POAMItemForm,
     POAMMilestoneForm,
+    SSPArchitectureOverviewUploadForm,
     SSPControlEntryForm,
     SSPEditForm,
     SSPInterconnectionForm,
@@ -31,6 +32,7 @@ from .models import (
     POAMItem,
     POAMMilestone,
     POAMStatus,
+    SSPArchitectureOverview,
     SSPControlEntry,
     SSPInterconnection,
     SSPlan,
@@ -871,3 +873,98 @@ def edit_adr(ssp_id: int, adr_id: int):
         return redirect(url_for("ssp.adr_detail", ssp_id=ssp.id, adr_id=adr.id))
 
     return render_template("ssp/edit_adr.html", ssp=ssp, adr=adr, form=form)
+
+
+# ---------------------------------------------------------------------------
+# Architecture Overview
+# ---------------------------------------------------------------------------
+
+
+def _next_architecture_overview_version(ssp_id: int) -> int:
+    current_max = (
+        db.session.query(sa.func.coalesce(sa.func.max(SSPArchitectureOverview.version_number), 0))
+        .filter(SSPArchitectureOverview.ssp_id == ssp_id)
+        .scalar()
+    )
+    return current_max + 1
+
+
+@bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
+@login_required
+def upload_architecture_overview(ssp_id: int):
+    """Upload a new architecture overview image version (FR-002/FR-004)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    form = SSPArchitectureOverviewUploadForm()
+
+    if not form.validate_on_submit():
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                flash(error, "danger")
+        return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+    file_storage = form.image.data
+    image_bytes = file_storage.stream.read()
+    version = SSPArchitectureOverview(
+        ssp_id=ssp.id,
+        version_number=_next_architecture_overview_version(ssp.id),
+        image_data=image_bytes,
+        mime_type=file_storage.mimetype,
+        original_filename=_safe_filename(file_storage.filename or "architecture_overview"),
+        file_size_bytes=len(image_bytes),
+        uploaded_by_id=current_user.id,
+    )
+    db.session.add(version)
+    db.session.flush()
+
+    log_event(
+        "ssp_architecture_overview_uploaded",
+        entity_type="ssp_architecture_overview",
+        entity_id=version.id,
+        details={"ssp_id": ssp.id, "version_number": version.version_number},
+    )
+    db.session.commit()
+    flash("Architecture overview uploaded.", "success")
+    return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+
+@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/image", methods=["GET"])
+@login_required
+def architecture_overview_image(ssp_id: int, version_id: int):
+    """Stream a stored architecture overview image (current or historical)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
+
+    response = current_app.response_class(version.image_data, mimetype=version.mime_type)
+    response.headers["Content-Disposition"] = "inline"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/restore", methods=["POST"])
+@login_required
+def restore_architecture_overview(ssp_id: int, version_id: int):
+    """Restore a past version by copying its bytes into a new version (FR-006)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    source = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
+
+    restored = SSPArchitectureOverview(
+        ssp_id=ssp.id,
+        version_number=_next_architecture_overview_version(ssp.id),
+        image_data=source.image_data,
+        mime_type=source.mime_type,
+        original_filename=source.original_filename,
+        file_size_bytes=source.file_size_bytes,
+        uploaded_by_id=current_user.id,
+    )
+    db.session.add(restored)
+    db.session.flush()
+
+    log_event(
+        "ssp_architecture_overview_restored",
+        entity_type="ssp_architecture_overview",
+        entity_id=restored.id,
+        details={"ssp_id": ssp.id, "restored_from_version": source.version_number},
+    )
+    db.session.commit()
+    flash("Architecture overview restored.", "success")
+    return redirect(url_for("ssp.view", ssp_id=ssp.id))
