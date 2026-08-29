@@ -3,10 +3,41 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
+from PIL import Image, UnidentifiedImageError
 from wtforms import DateField, HiddenField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 from scaffold.core.i18n import lazy_gettext as _l
+
+MAX_ARCHITECTURE_OVERVIEW_BYTES = 5 * 1024 * 1024
+MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX = 8000
+
+
+def _validate_architecture_overview_image(form, field):
+    """Decode the upload to confirm it's a genuine PNG/JPEG within size limits.
+
+    FileAllowed only checks the filename extension; this reopens the actual
+    bytes with Pillow so a renamed non-image file is rejected too.
+    """
+    file_storage = field.data
+    if not file_storage:
+        return
+
+    file_storage.stream.seek(0)
+    try:
+        image = Image.open(file_storage.stream)
+        image.verify()
+        file_storage.stream.seek(0)
+        image = Image.open(file_storage.stream)
+        if image.format not in {"PNG", "JPEG"}:
+            raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
+        if image.width > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX or image.height > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX:
+            raise ValidationError(_l("ssp.architecture_overview.upload.errors.dimensions_too_large"))
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
+    finally:
+        file_storage.stream.seek(0)
 
 
 class SSPEditForm(FlaskForm):
@@ -309,3 +340,21 @@ class POAMMilestoneForm(FlaskForm):
         format="%Y-%m-%d",
     )
     submit = SubmitField(_l("ssp.forms.add_milestone_btn"))
+
+
+class SSPArchitectureOverviewUploadForm(FlaskForm):
+    """Upload a new architecture overview image version for an SSP."""
+
+    image = FileField(
+        _l("ssp.architecture_overview.upload.field.label"),
+        validators=[
+            FileRequired(message=_l("ssp.architecture_overview.upload.errors.required")),
+            FileAllowed(["png", "jpg", "jpeg"], message=_l("ssp.architecture_overview.upload.errors.invalid_image")),
+            FileSize(
+                max_size=MAX_ARCHITECTURE_OVERVIEW_BYTES,
+                message=_l("ssp.architecture_overview.upload.errors.too_large"),
+            ),
+            _validate_architecture_overview_image,
+        ],
+    )
+    submit = SubmitField(_l("ssp.architecture_overview.upload.submit"))

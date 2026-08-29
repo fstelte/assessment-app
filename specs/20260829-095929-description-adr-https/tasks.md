@@ -198,7 +198,7 @@ depends on the previous one, no parallel track this time.
 
 ## Progress (Architecture Overview Image)
 - [x] Task 13: SSPArchitectureOverview model + migration *(evidence not locally verified — no working Python env in this session; see Notes)*
-- [ ] Task 14: Upload form + image validation
+- [x] Task 14: Upload form + image validation *(evidence not locally verified — see Notes)*
 - [ ] Task 15: Upload / serve-image / restore routes
 - [ ] Task 16: SSP overview template — image display + history + restore
 - [ ] Task 17: Pytest — upload, versioning, restore, cascade delete, audit log
