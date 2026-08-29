@@ -164,3 +164,97 @@ This section records where the implementation should sit, based on the existing 
 - Should Architecture Principles support soft-delete/archive instead of hard delete-when-unused? Out of scope for this feature. Hard delete is used, but — unlike `Control`, which has no use-guard at all (see FR-003's note) — Architecture Principle adds a use-guard because an unreferenced deletion is safe while a referenced one would orphan a compliance record.
 - **Out of scope**: exporting or printing ADRs as part of an SSP export. The rest of the SSP already supports export elsewhere in the app; extending that to ADRs is a natural follow-up but is not required for this feature to deliver value, and is deferred rather than assumed.
 - **Out of scope / accepted assumption**: concurrent bulk-imports of the Architecture Principle catalogue by two admins at once are not specially handled — last commit wins, same as any other admin catalogue edit in this app today. This is a reasonable assumption for a small internal admin tool with infrequent catalogue edits; revisit only if concurrent-admin usage becomes common.
+
+---
+
+# Feature Specification: Architecture Overview Image on the System Security Plan
+
+**Feature Branch**: `20260829-095929-description-adr-https` (same branch as the ADR feature above)
+**Created**: 2026-08-29
+**Status**: Planned
+**Input**: User description: "a way to create or upload an architecture overview to the SSP, make it visible in the SSP /ssp/."
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - Author uploads an architecture overview image (Priority: P1)
+
+Any authenticated user working on an SSP wants to upload a PNG or JPEG diagram (e.g. exported from a drawing tool) showing the system's architecture, so reviewers can see the system's shape at a glance without leaving the SSP.
+
+**Why this priority**: This is the entire feature — nothing else has value without it.
+
+**Independent Test**: Open an SSP's overview page, upload a PNG, see it displayed on the page immediately after.
+
+**Acceptance Scenarios**:
+
+1. **Given** an SSP with no architecture overview yet, **When** a logged-in user uploads a valid PNG or JPEG, **Then** it becomes the current architecture overview and is displayed on the SSP overview page.
+2. **Given** an SSP that already has an architecture overview, **When** a user uploads a new PNG/JPEG, **Then** the new image becomes current and the previous one is kept in history (not deleted).
+3. **Given** a non-image file (e.g. `.pdf`, `.exe`) or an oversized file, **When** a user attempts to upload it, **Then** the upload is rejected with a clear validation error and nothing is stored.
+
+---
+
+### User Story 2 - Reviewer views architecture overview history and restores an older version (Priority: P2)
+
+A user reviewing the SSP wants to see previously uploaded architecture overview images (e.g. to compare how the diagram evolved) and, if the current one was uploaded by mistake, bring an older one back as current.
+
+**Why this priority**: Builds on Story 1; the app is fully usable (single current image) without it, but was explicitly requested as versioned history with restore.
+
+**Independent Test**: Upload two different images to the same SSP, open the history list, restore the first one, confirm it is now shown as current and a third history entry now exists recording the restore.
+
+**Acceptance Scenarios**:
+
+1. **Given** an SSP with multiple architecture overview versions, **When** a user opens the overview page, **Then** they see the current image plus a list of prior versions with uploader and timestamp, newest first.
+2. **Given** a past (non-current) version, **When** a user clicks "restore" on it, **Then** a **new** version is created with the same image bytes, becomes current, and is audit-logged as a restore (no existing row is edited or deleted — history stays append-only).
+
+---
+
+### Edge Cases
+
+- What happens when the uploaded file's extension says `.png` but the content isn't actually a valid image? — Rejected: the file is decoded/verified as an image server-side (not just checked by extension/MIME header) before it is stored.
+- What happens when the SSP is deleted? — All architecture overview versions for that SSP are cascade-deleted, matching `SSPInterconnection`/`SSPControlEntry`/`ADRRecord` behavior (FR-009 in the ADR spec above).
+- What happens on restoring the version that is already current? — No-op from the user's perspective is avoided by not offering a "restore" action on the current version in the UI; if it were ever requested (e.g. race), the system MAY still create a new identical version rather than erroring, since that's harmless and simpler than special-casing it.
+- What happens with a very large image? — Rejected above a fixed size cap (5 MB) with a clear error, to keep the database blob small and predictable (Constitution Principle V).
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: System MUST allow any authenticated user with access to an SSP (i.e. anyone who can reach `ssp.view`/`ssp.edit` today — no new role) to upload a PNG or JPEG image as that SSP's architecture overview, matching the permission model of the existing `ssp.edit` route (`@login_required` only, no role check). This same permission model (authenticated, no new role) MUST also gate the restore action and the image-serving route — all three architecture-overview routes require `@login_required` and nothing more, identical to `ssp.edit`.
+- **FR-002**: System MUST verify the upload is a decodable PNG or JPEG image (not just trust the filename/MIME header) and MUST reject anything else, and MUST reject files larger than 5 MB, with a clear validation error in both cases.
+- **FR-003**: System MUST store the image bytes in the database (not on the container filesystem), since no user-upload volume is mounted in the deployment today (Constitution Principle V — no hidden local-disk production dependency).
+- **FR-004**: System MUST keep every uploaded architecture overview as an immutable, append-only version (never edited or deleted individually), ordered by an incrementing version number per SSP. The current version is the one with the highest version number for that SSP — no separate "is current" flag is needed.
+- **FR-005**: System MUST display the current architecture overview image directly on the SSP overview page (`ssp/view.html`), near the other overview fields (authorization boundary, FIPS ratings).
+- **FR-006**: System MUST let a user view the version history (uploader, timestamp) for an SSP's architecture overview and restore any past version; restoring MUST create a new version with the same image bytes (copy-forward) rather than mutating or reordering existing rows.
+- **FR-007**: System MUST record an audit-log entry (via the existing `log_event()` helper, `entity_type="ssp_architecture_overview"`) for every upload and every restore, including which version number was restored from for restores, per Constitution Principle II.
+- **FR-008**: System MUST cascade-delete all architecture overview versions when their parent SSP is deleted, matching existing SSP child-entity behavior.
+- **FR-009**: All user-facing strings (upload form, validation errors, history labels, restore confirmation) MUST be routed through the project's localization helpers, per Constitution Principle IV.
+
+### Key Entities
+
+- **SSP Architecture Overview Version**: Belongs to exactly one SSP. Holds the raw image bytes, MIME type (`image/png` or `image/jpeg`), original filename, file size, uploader, and upload timestamp, plus an SSP-scoped incrementing version number. Immutable once created; a "restore" creates a new row rather than changing an old one.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: A user can go from "no architecture overview" to "image visible on the SSP page" in a single upload action.
+- **SC-002**: 100% of non-image or oversized upload attempts are rejected before anything is written to the database — verified by a pytest test, not manual inspection.
+- **SC-003**: After a restore action, the SSP overview page immediately shows the restored image as current, and the version history shows one additional entry (the restore) rather than a mutated old entry.
+
+## Design Notes (implementation grounding)
+
+- **Model** (`scaffold/apps/ssp/models.py`, alongside `SSPlan` and its other children):
+  - `SSPArchitectureOverview` — `id`, `ssp_id` (FK → `ssp_plans.id`, cascade delete), `version_number` (int, per-SSP incrementing, e.g. via `func.max(version_number)+1` at insert time within the same transaction), `image_data` (`db.LargeBinary`), `mime_type` (`image/png` / `image/jpeg`), `original_filename`, `file_size_bytes`, `uploaded_by_id` (FK → users, nullable `SET NULL`), `uploaded_at`.
+  - Relationship on `SSPlan`: `architecture_overview_versions` (`cascade="all, delete-orphan"`, `order_by="SSPArchitectureOverview.version_number.desc()"`), mirroring `adr_records`.
+- **Validation**: reuse Pillow (check if already a dependency; if not, verify with `imghdr`-equivalent or Pillow's `Image.open(...).verify()`) to confirm the upload is a genuine PNG/JPEG before storing, plus a `FileSize`/content-length check for the 5 MB cap — form-level via `flask_wtf.file.FileField` + `FileAllowed(["png", "jpg", "jpeg"])`, matching the `PrincipleImportForm`/`ControlImportForm` pattern from the ADR feature above.
+- **Routes** (`scaffold/apps/ssp/routes.py`):
+  - `POST /ssp/<ssp_id>/architecture-overview` — upload a new version (computes next `version_number`, stores, logs, redirects to `ssp.view`).
+  - `GET /ssp/<ssp_id>/architecture-overview/<version_id>/image` — streams the stored bytes with `current_app.response_class(data, mimetype=...)` (or `send_file(BytesIO(...), mimetype=...)`), used both for the current image `<img src>` and history thumbnails.
+  - `POST /ssp/<ssp_id>/architecture-overview/<version_id>/restore` — loads that version's bytes/mime/filename, inserts a new version row with them, logs the restore (including `restored_from_version=<n>` in the audit details), redirects to `ssp.view`.
+- **Template** (`scaffold/apps/ssp/templates/ssp/view.html`): current image block near the overview fields, plus a collapsible "Version history" list (thumbnail or filename + uploader + date + "Restore" button per past version, no button on the current one).
+- **Migration**: new Alembic revision for `ssp_architecture_overview_versions`, following the naming convention of the ADR feature's migrations above.
+
+## Open Questions
+
+- **Resolved**: whether restore rewrites history vs. appends — appends (copy-forward), per the scope-challenge discussion; keeps the table append-only and avoids a fragile "current" flag.
+- **Out of scope**: multi-image overviews (e.g. separate network diagram + data-flow diagram) — this feature is exactly one image stream per SSP. Extending to multiple named diagram slots is a natural follow-up if requested, not assumed here.
+- **Out of scope**: including the architecture overview image in the SSP PDF export (`ssp.export_pdf`) — a reasonable follow-up, but not required for this feature to deliver value on the web view, and deferred rather than assumed.

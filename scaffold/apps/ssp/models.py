@@ -148,6 +148,12 @@ class SSPlan(db.Model):
         back_populates="ssp",
         cascade="all, delete-orphan",
     )
+    architecture_overview_versions = db.relationship(
+        "SSPArchitectureOverview",
+        back_populates="ssp",
+        cascade="all, delete-orphan",
+        order_by="SSPArchitectureOverview.version_number.desc()",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<SSPlan context_scope_id={self.context_scope_id}>"
@@ -382,3 +388,36 @@ class ADRRecord(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<ADRRecord ssp_id={self.ssp_id} title={self.title!r} status={self.status.value!r}>"
+
+
+class SSPArchitectureOverview(db.Model):
+    """An uploaded architecture overview image version for an SSP (append-only)."""
+
+    __tablename__ = "ssp_architecture_overview_versions"
+    __table_args__ = (
+        sa.UniqueConstraint("ssp_id", "version_number", name="uq_ssp_architecture_overview_version"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    ssp_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ssp_plans.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version_number = db.Column(db.Integer, nullable=False)
+    image_data = db.Column(db.LargeBinary, nullable=False)
+    mime_type = db.Column(db.String(20), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size_bytes = db.Column(db.Integer, nullable=False)
+    uploaded_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    uploaded_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+
+    ssp = db.relationship("SSPlan", back_populates="architecture_overview_versions")
+    uploaded_by = db.relationship("User", foreign_keys=[uploaded_by_id])
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<SSPArchitectureOverview ssp_id={self.ssp_id} version_number={self.version_number}>"

@@ -1,10 +1,10 @@
 ---
 feature: 20260829-095929-description-adr-https
-status: complete
+status: planned
 created: 2026-08-29
 chunk_size: medium
-total_tasks: 12
-estimated_lines: 735
+total_tasks: 18
+estimated_lines: 1065
 ---
 
 # Architecture Decision Records on the SSP — Tasks
@@ -123,6 +123,86 @@ records on System Security Plans, per `design.md` and decision records
 - **Depends on:** Task 6, Task 9 (describes finished UI)
 - **Acceptance:** Docs describe the feature and link/reproduce the example import file.
 - **Evidence:** Doc renders correctly; reviewer can follow it to perform an import without reading code.
+
+---
+
+# Architecture Overview Image on the SSP — Tasks
+
+## Overview
+Implements the SSP Architecture Overview image (upload, append-only version history,
+restore-as-copy-forward, display on the SSP overview page), per the second feature
+spec appended to `design.md` and decision record
+`20260829-1230-architecture-overview-image-design`. Sequential feature — each task
+depends on the previous one, no parallel track this time.
+
+## Task List
+
+### Foundation
+
+#### Task 13: SSPArchitectureOverview model + migration
+- **Estimate:** ~60 lines
+- **Files:** `scaffold/apps/ssp/models.py`, `migrations/versions/`
+- **Description:** Add `SSPArchitectureOverview` (`id`, `ssp_id` FK cascade delete, `version_number` int, `image_data` `db.LargeBinary`, `mime_type`, `original_filename`, `file_size_bytes`, `uploaded_by_id` FK `SET NULL`, `uploaded_at`), a `UniqueConstraint("ssp_id", "version_number")` (prevents two concurrent uploads from ever landing on the same version number instead of silently racing), `architecture_overview_versions` relationship on `SSPlan` (`cascade="all, delete-orphan"`, ordered by `version_number.desc()`), and the Alembic migration for `ssp_architecture_overview_versions` including that constraint.
+- **Depends on:** None
+- **Acceptance:** Model importable, table created by `flask db upgrade`, cascade-delete on parent SSP verified, unique constraint enforced.
+- **Evidence:** Migration applies/downgrades cleanly; deleting an `SSPlan` in a test session cascades to its `SSPArchitectureOverview` rows; inserting two rows with the same `(ssp_id, version_number)` raises an integrity error.
+
+### Core Implementation
+
+#### Task 14: Upload form + image validation
+- **Estimate:** ~55 lines
+- **Files:** `pyproject.toml`, `scaffold/apps/ssp/forms.py`
+- **Description:** Add Pillow as a dependency (not currently used in the project). Add `SSPArchitectureOverviewUploadForm` (`flask_wtf.file.FileField` + `FileAllowed(["png", "jpg", "jpeg"])`) and a small validation helper that decodes the upload with Pillow (`Image.open(...).verify()`) to confirm it's a genuine PNG/JPEG (not just extension/MIME-trusted), rejects anything over 5 MB (5 × 1024 × 1024 bytes exactly), and rejects images whose pixel dimensions exceed a fixed cap (e.g. via `Image.open(...).size`, in addition to relying on Pillow's built-in `Image.MAX_IMAGE_PIXELS` decompression-bomb guard) so a small-file/huge-dimension upload can't be used as a resource-exhaustion vector.
+- **Depends on:** Task 13
+- **Acceptance:** A renamed non-image file (e.g. `.exe` renamed to `.png`) is rejected by the Pillow check, not just the extension check; a 6 MB valid PNG is rejected for size; a tiny-file/huge-dimension crafted PNG is rejected for dimensions.
+- **Evidence:** Unit test on the validation helper covering: valid PNG, valid JPEG, fake-extension rejection, oversize rejection.
+
+#### Task 15: Upload / serve-image / restore routes
+- **Estimate:** ~80 lines
+- **Files:** `scaffold/apps/ssp/routes.py`
+- **Description:** `POST /ssp/<ssp_id>/architecture-overview` (compute next `version_number` per SSP, store, `log_event()`, redirect to `ssp.view`); `GET /ssp/<ssp_id>/architecture-overview/<version_id>/image` (stream stored bytes with correct `mimetype`, `Content-Disposition: inline`, and `X-Content-Type-Options: nosniff` so the browser can't reinterpret a malicious upload as something other than its declared image type); `POST /ssp/<ssp_id>/architecture-overview/<version_id>/restore` (copy-forward: read old version's bytes/mime/filename into a new version row, `log_event()` with `restored_from_version=<n>`, redirect to `ssp.view`). All three require `@login_required` only, matching `ssp.edit` (per design.md FR-001).
+- **Depends on:** Task 14
+- **Acceptance:** Upload creates version 1, then version 2 on a second upload; restoring version 1 creates version 3 with version 1's bytes, not a mutation of version 1; the image route returns the correct `Content-Type`, `Content-Disposition: inline`, and `X-Content-Type-Options: nosniff` headers.
+- **Evidence:** Route-level pytest covering upload → second upload → restore, asserting version numbers, byte content, and response headers at each step.
+
+#### Task 16: SSP overview template — image display + history + restore
+- **Estimate:** ~55 lines
+- **Files:** `scaffold/apps/ssp/templates/ssp/view.html`
+- **Description:** Current architecture overview image block near the existing overview fields (authorization boundary, FIPS ratings); upload form/button; collapsible version history list (uploader, timestamp, "Restore" button per past version — no restore button on the current one). Tailwind, routed through localization helpers per Constitution Principle IV.
+- **Depends on:** Task 15
+- **Acceptance:** SSP with no overview yet shows an upload prompt; SSP with 2+ versions shows the current image plus history with working restore buttons.
+- **Evidence:** Manual render check against an SSP with zero, one, and multiple architecture overview versions.
+
+### Integration & Polish
+
+#### Task 17: Pytest — upload, versioning, restore, cascade delete, audit log
+- **Estimate:** ~65 lines
+- **Files:** `tests/` (path matching existing ssp test layout)
+- **Description:** Covers: valid upload becomes current; second upload keeps first in history; non-image/oversized upload rejected and nothing persisted (backs SC-002); restore creates a new version rather than mutating the old one and the SSP page then shows the restored image as current (backs SC-003); SSP delete cascades to all versions; `log_event()` rows written for upload and restore.
+- **Depends on:** Task 16
+- **Acceptance:** All listed scenarios pass.
+- **Evidence:** `pytest` run green for the new test module.
+
+#### Task 18: Docs update
+- **Estimate:** ~15 lines
+- **Files:** `README.md` or `docs/`
+- **Description:** Document the architecture overview image feature (upload, 5 MB PNG/JPEG-only constraint, version history, restore semantics, DB-blob storage rationale) per Constitution Principle V.
+- **Depends on:** Task 16
+- **Acceptance:** Doc describes the feature accurately.
+- **Evidence:** Doc renders correctly; reviewer can follow it without reading code.
+
+## Notes (Architecture Overview Image)
+- Sequential feature: Tasks 13-18 have no parallel track, each depends on the one before it.
+- Deferred/out of scope (see `design.md` Open Questions for this feature): multi-image slots, inclusion in the SSP PDF export.
+- **Verification debt**: this session has no working Python environment (`.venv` has no packages installed, no `poetry`/`flask` on PATH), so `flask db upgrade`/`downgrade` and `pytest` could not be run locally for Tasks 13+. Code was reviewed by pattern-matching against the proven `20260829_0002_add_adr_records.py` migration and `ADRRecord` model, but actual evidence (migration apply/downgrade, cascade-delete test, full Task 17 pytest run) is still outstanding — run `poetry install && poetry run flask db upgrade && poetry run pytest` before treating this feature as done.
+
+## Progress (Architecture Overview Image)
+- [x] Task 13: SSPArchitectureOverview model + migration *(evidence not locally verified — no working Python env in this session; see Notes)*
+- [ ] Task 14: Upload form + image validation
+- [ ] Task 15: Upload / serve-image / restore routes
+- [ ] Task 16: SSP overview template — image display + history + restore
+- [ ] Task 17: Pytest — upload, versioning, restore, cascade delete, audit log
+- [ ] Task 18: Docs update
 
 ## Notes
 - Tasks 3, 4, and 7 touch disjoint files and can be worked in parallel once Tasks 1–2 land.
