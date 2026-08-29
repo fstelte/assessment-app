@@ -2,7 +2,7 @@
 
 **Feature Branch**: `20260829-095929-description-adr-https`
 **Created**: 2026-08-29
-**Status**: Planned
+**Status**: Complete
 **Input**: User description: "add ADR (https://adr.github.io/) to the System Security Plan, where the record starts with selecting one of the architecture principles which an admin can create in the same manner as the control catalogue administration, also make it so that the principles can be bulk imported, give an example of a file that can be used to import."
 
 ## User Scenarios & Testing *(mandatory)*

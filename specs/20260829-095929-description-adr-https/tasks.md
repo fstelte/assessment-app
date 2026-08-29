@@ -1,6 +1,6 @@
 ---
 feature: 20260829-095929-description-adr-https
-status: planned
+status: complete
 created: 2026-08-29
 chunk_size: medium
 total_tasks: 12
@@ -141,4 +141,4 @@ records on System Security Plans, per `design.md` and decision records
 - [x] Task 9: ADR templates
 - [x] Task 10: Pytest — principle admin CRUD + import
 - [x] Task 11: Pytest — ADR creation + supersession + principle-delete guard
-- [ ] Task 12: Docs update
+- [x] Task 12: Docs update
