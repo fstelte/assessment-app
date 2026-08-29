@@ -38,6 +38,8 @@ from ..csa.services import (
     parse_nist_text,
     upsert_control,
 )
+from ..ssp.models import ADRRecord, ArchitecturePrinciple
+from ..ssp.principle_importer import import_principles_from_mapping
 from ...models import AuditLog
 from ..identity.models import MFASetting, PasskeyCredential, Role, User, UserStatus, ROLE_CONTROL_OWNER
 from ..bia.localization import translate_authentication_label
@@ -81,6 +83,10 @@ from .forms import (
     PartialRestoreInspectForm,
     PartialRestoreSelectForm,
     PartialRestoreExecuteForm,
+    PrincipleCreateForm,
+    PrincipleDeleteForm,
+    PrincipleImportForm,
+    PrincipleUpdateForm,
 )
 from .backup_crypto import try_decrypt
 from .backup_utils import (
@@ -453,6 +459,288 @@ def delete_control(control_id: int):
     db.session.commit()
     flash(_("admin.controls.flash.deleted", domain=domain_label), "info")
     return redirect(url_for("admin.controls"))
+
+
+def _referencing_adrs(principle: ArchitecturePrinciple) -> list[ADRRecord]:
+    """ADRs (primary or secondary) that reference this principle — blocks delete (FR-003)."""
+
+    return (
+        ADRRecord.query.filter(
+            sa.or_(
+                ADRRecord.primary_principle_id == principle.id,
+                ADRRecord.secondary_principles.any(ArchitecturePrinciple.id == principle.id),
+            )
+        ).all()
+    )
+
+
+@bp.route("/principles", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def principles():
+    _require_control_admin()
+
+    import_form = PrincipleImportForm()
+    create_form = PrincipleCreateForm()
+
+    page = request.args.get("page", 1, type=int)
+    query = ArchitecturePrinciple.query.order_by(ArchitecturePrinciple.name.asc())
+    pagination = query.paginate(page=page, per_page=50, error_out=False)
+
+    delete_forms: dict[int, PrincipleDeleteForm] = {}
+    for principle in pagination.items:
+        delete_form = PrincipleDeleteForm(prefix=f"delete-{principle.id}")
+        delete_form.principle_id.data = str(principle.id)
+        delete_forms[principle.id] = delete_form
+
+    if import_form.validate_on_submit():
+        file_storage = import_form.data_file.data
+        raw_bytes = file_storage.read()
+        file_storage.close()
+
+        try:
+            payload = json.loads(raw_bytes)
+        except json.JSONDecodeError as exc:
+            flash(_("csa.flash.json_error", error=exc), "danger")
+            return redirect(url_for("admin.principles"))
+
+        try:
+            stats = import_principles_from_mapping(payload)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin.principles"))
+
+        log_event(
+            action="import",
+            entity_type="architecture_principle",
+            user=current_user,
+            details={"created": stats.created, "updated": stats.updated, "errors": len(stats.errors)},
+        )
+        flash(
+            _(
+                "admin.principles.flash.import_result",
+                created=stats.created,
+                updated=stats.updated,
+            ),
+            "success" if not stats.errors else "warning",
+        )
+        for error in stats.errors:
+            flash(error, "warning")
+        return redirect(url_for("admin.principles"))
+
+    return render_template(
+        "admin/principles.html",
+        import_form=import_form,
+        create_form=create_form,
+        delete_forms=delete_forms,
+        pagination=pagination,
+        has_principles=pagination.total > 0,
+    )
+
+
+@bp.post("/principles/create")
+@login_required
+@require_fresh_login()
+def create_principle():
+    _require_control_admin()
+    form = PrincipleCreateForm()
+
+    if form.validate_on_submit():
+        name = (form.name.data or "").strip()
+        description = (form.description.data or "").strip()
+
+        duplicate = ArchitecturePrinciple.query.filter(
+            sa.func.lower(ArchitecturePrinciple.name) == name.lower()
+        ).first()
+        if duplicate:
+            flash(_("admin.principles.flash.duplicate", name=name), "warning")
+            return redirect(url_for("admin.principles"))
+
+        principle = ArchitecturePrinciple(name=name, description=description)
+        db.session.add(principle)
+        db.session.commit()
+        log_event(
+            action="create",
+            entity_type="architecture_principle",
+            entity_id=principle.id,
+            user=current_user,
+            details={"name": principle.name},
+        )
+        flash(_("admin.principles.flash.created", name=principle.name), "success")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    return redirect(url_for("admin.principles"))
+
+
+@bp.get("/principles/<int:principle_id>/edit")
+@login_required
+@require_fresh_login()
+def edit_principle(principle_id: int):
+    _require_control_admin()
+    principle = db.session.get(ArchitecturePrinciple, principle_id)
+    if principle is None:
+        abort(404)
+
+    form = PrincipleUpdateForm(
+        formdata=None,
+        name=principle.name,
+        description=principle.description,
+    )
+    form.principle_id.data = str(principle.id)
+
+    return render_template(
+        "admin/principle_edit.html",
+        title=_("admin.principles.edit.heading"),
+        principle=principle,
+        form=form,
+    )
+
+
+@bp.post("/principles/<int:principle_id>/update")
+@login_required
+@require_fresh_login()
+def update_principle(principle_id: int):
+    _require_control_admin()
+    principle = db.session.get(ArchitecturePrinciple, principle_id)
+    if principle is None:
+        abort(404)
+
+    form = PrincipleUpdateForm()
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(url_for("admin.principles"))
+
+    try:
+        submitted_id = int(form.principle_id.data)
+    except (TypeError, ValueError):
+        flash(_("admin.principles.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.principles"))
+
+    if submitted_id != principle_id:
+        flash(_("admin.principles.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.principles"))
+
+    name = (form.name.data or "").strip()
+    description = (form.description.data or "").strip()
+
+    duplicate = ArchitecturePrinciple.query.filter(
+        sa.func.lower(ArchitecturePrinciple.name) == name.lower(),
+        ArchitecturePrinciple.id != principle.id,
+    ).first()
+    if duplicate:
+        flash(_("admin.principles.flash.duplicate", name=name), "warning")
+        return redirect(url_for("admin.principles"))
+
+    principle.name = name
+    principle.description = description
+    db.session.commit()
+    log_event(
+        action="update",
+        entity_type="architecture_principle",
+        entity_id=principle.id,
+        user=current_user,
+        details={"name": principle.name},
+    )
+    flash(_("admin.principles.flash.updated", name=principle.name), "success")
+    return redirect(url_for("admin.principles"))
+
+
+@bp.post("/principles/<int:principle_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_principle(principle_id: int):
+    _require_control_admin()
+    principle = db.session.get(ArchitecturePrinciple, principle_id)
+    if principle is None:
+        abort(404)
+
+    form = PrincipleDeleteForm(prefix=f"delete-{principle.id}")
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(url_for("admin.principles"))
+
+    try:
+        submitted_id = int(form.principle_id.data)
+    except (TypeError, ValueError):
+        flash(_("admin.principles.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.principles"))
+
+    if submitted_id != principle_id:
+        flash(_("admin.principles.flash.invalid_form"), "danger")
+        return redirect(url_for("admin.principles"))
+
+    blocking = _referencing_adrs(principle)
+    if blocking:
+        titles = ", ".join(adr.title for adr in blocking)
+        flash(_("admin.principles.flash.in_use", name=principle.name, adrs=titles), "danger")
+        return redirect(url_for("admin.principles"))
+
+    name = principle.name
+    db.session.delete(principle)
+    db.session.commit()
+    log_event(
+        action="delete",
+        entity_type="architecture_principle",
+        user=current_user,
+        details={"name": name},
+    )
+    flash(_("admin.principles.flash.deleted", name=name), "info")
+    return redirect(url_for("admin.principles"))
+
+
+@bp.route("/principles/delete-bulk", methods=["POST"])
+@login_required
+@require_fresh_login()
+def delete_bulk_principles():
+    _require_control_admin()
+    principle_ids = request.form.getlist("principle_ids")
+    if not principle_ids:
+        flash(_("admin.principles.delete_bulk.none_selected"), "warning")
+        return redirect(url_for("admin.principles"))
+
+    try:
+        principle_ids = [int(pid) for pid in principle_ids]
+    except (ValueError, TypeError):
+        flash(_("admin.principles.delete_bulk.invalid_ids"), "danger")
+        return redirect(url_for("admin.principles"))
+
+    candidates = (
+        db.session.query(ArchitecturePrinciple).filter(ArchitecturePrinciple.id.in_(principle_ids)).all()
+    )
+
+    blocked_names = []
+    deletable = []
+    for principle in candidates:
+        if _referencing_adrs(principle):
+            blocked_names.append(principle.name)
+        else:
+            deletable.append(principle)
+
+    count = len(deletable)
+    if count:
+        for principle in deletable:
+            db.session.delete(principle)
+        db.session.commit()
+        log_event(
+            action="delete_bulk",
+            entity_type="architecture_principle",
+            user=current_user,
+            details={"count": count, "description": f"Bulk deleted {count} architecture principles"},
+        )
+        flash(_("admin.principles.delete_bulk.success", count=count), "success")
+    if blocked_names:
+        flash(_("admin.principles.flash.in_use_bulk", names=", ".join(blocked_names)), "warning")
+    if not count and not blocked_names:
+        flash(_("admin.principles.delete_bulk.none_found"), "info")
+
+    return redirect(url_for("admin.principles"))
 
 
 @bp.get("/audit-trail")
