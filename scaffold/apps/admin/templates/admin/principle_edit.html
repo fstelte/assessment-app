@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-2xl font-bold mb-1">{{ title }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">
+    {{ _('admin.principle_edit.subtitle_edit', name=principle.name) }}
+  </p>
+</div>
+
+<div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-5 max-w-2xl">
+    <form method="post" action="{{ url_for('admin.update_principle', principle_id=principle.id) }}" class="flex flex-col gap-4">
+        {{ form.hidden_tag() }}
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.name.label.text }}</label>
+            {{ form.name(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+            {% for error in form.name.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.description.label.text }}</label>
+            {{ form.description(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", rows="4") }}
+            {% for error in form.description.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="pt-2 flex gap-2">
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+            <a href="{{ url_for('admin.principles') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.principle_edit.cancel') }}
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
