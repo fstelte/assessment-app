@@ -1,6 +1,6 @@
 ---
 feature: 20260829-095929-description-adr-https
-status: planned
+status: implemented-pending-verification
 created: 2026-08-29
 chunk_size: medium
 total_tasks: 18
@@ -202,7 +202,7 @@ depends on the previous one, no parallel track this time.
 - [x] Task 15: Upload / serve-image / restore routes *(evidence not locally verified — see Notes)*
 - [x] Task 16: SSP overview template — image display + history + restore *(evidence not locally verified — see Notes)*
 - [x] Task 17: Pytest — upload, versioning, restore, cascade delete, audit log *(written but not run — see Notes)*
-- [ ] Task 18: Docs update
+- [x] Task 18: Docs update
 
 ## Notes
 - Tasks 3, 4, and 7 touch disjoint files and can be worked in parallel once Tasks 1–2 land.

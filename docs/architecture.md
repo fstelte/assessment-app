@@ -70,6 +70,16 @@ Each module exposes a `register(app)` function or a `blueprints` collection so t
 - ADR status follows a fixed lifecycle (`Proposed → Accepted/Rejected`, `Accepted → Deprecated`) plus a **supersede** action: creating a new ADR can declare it supersedes an existing one in the same SSP, which immediately flips the older ADR's status to `Superseded` and links both records. Supersession is one-directional and can only happen once per ADR — an already-superseded ADR cannot be selected as a supersede target again.
 - Every principle/ADR mutation (create, update, delete, import, status change, supersession) writes an `AuditLog` row via `log_event()`, per this project's Security & Auditability principle.
 
+## Architecture Overview Image
+
+- Every System Security Plan can carry an **architecture overview image** — a PNG or JPEG diagram uploaded from the SSP's main overview page, displayed inline near the authorization boundary/FIPS fields. Any authenticated user who can reach `ssp.edit` can upload one; no new role was introduced.
+- Uploads must be PNG or JPEG, decoded and verified with Pillow (not just checked by filename/MIME header), 5 MB or smaller, and within an 8000×8000 pixel cap (on top of Pillow's own decompression-bomb guard) to keep a small, malicious file from being decoded into an oversized image.
+- Image bytes are stored **in the database** (`ssp_architecture_overview_versions`, a `LargeBinary` column), not on the container filesystem — the deployment has no user-upload volume mounted (only `./backups`/`./restore`, see `docs/deployment.md`), so filesystem storage would silently lose uploads on container recreation. See decision record `20260829-1230-architecture-overview-image-design` for the full rationale.
+- Every upload creates a new, **immutable, append-only version**, numbered per SSP (`UniqueConstraint(ssp_id, version_number)` prevents two concurrent uploads from landing on the same number). The current image is simply the version with the highest number — there is no separate "is current" flag to keep in sync.
+- Past versions are listed in a collapsible history (uploader, timestamp) with a **Restore** action. Restoring never rewrites history: it reads the old version's bytes and inserts them as a brand-new version (copy-forward), the same pattern this codebase already uses for ADR supersession.
+- The image-serving route (`GET /ssp/<id>/architecture-overview/<version_id>/image`) sets `Content-Disposition: inline` and `X-Content-Type-Options: nosniff` so a browser can't reinterpret an upload as something other than its declared image type.
+- Every upload and restore writes an `AuditLog` row via `log_event()` (`entity_type="ssp_architecture_overview"`); a restore's payload records which version number it restored from.
+
 ## Database Strategy
 
 - Unified SQLAlchemy metadata backed by Flask-Migrate.

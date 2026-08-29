@@ -171,7 +171,7 @@ This section records where the implementation should sit, based on the existing 
 
 **Feature Branch**: `20260829-095929-description-adr-https` (same branch as the ADR feature above)
 **Created**: 2026-08-29
-**Status**: Planned
+**Status**: Implemented (pending real-environment verification — see tasks.md Notes)
 **Input**: User description: "a way to create or upload an architecture overview to the SSP, make it visible in the SSP /ssp/."
 
 ## User Scenarios & Testing *(mandatory)*
