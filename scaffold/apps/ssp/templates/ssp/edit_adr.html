@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ _('ssp.adrs.edit') }} — {{ adr.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-3xl px-4 sm:px-6 py-6">
+  <div class="mb-4">
+    <a href="{{ url_for('ssp.adr_detail', ssp_id=ssp.id, adr_id=adr.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.adrs.back') }}</a>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.adrs.edit') }}</h1>
+    <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
+  </div>
+
+  <p class="text-xs text-[var(--color-muted)] mb-4">
+    {{ _('ssp.adrs.edit.principle_fixed') }} <span class="font-medium text-[var(--color-text)]">{{ adr.primary_principle.name }}</span>
+  </p>
+
+  <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-5">
+    <form method="post" class="flex flex-col gap-4">
+        {{ form.hidden_tag() }}
+        {{ form.adr_id() }}
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.title.label.text }}</label>
+            {{ form.title(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+            {% for error in form.title.errors %}<span class="text-red-400 text-xs">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.status.label.text }}</label>
+            {{ form.status(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.secondary_principle_ids.label.text }}</label>
+            {{ form.secondary_principle_ids(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.context.label.text }}</label>
+            {{ form.context(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+            {% for error in form.context.errors %}<span class="text-red-400 text-xs">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.decision.label.text }}</label>
+            {{ form.decision(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+            {% for error in form.decision.errors %}<span class="text-red-400 text-xs">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.consequences.label.text }}</label>
+            {{ form.consequences(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+        </div>
+
+        <div class="pt-2 flex gap-2">
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+            <a href="{{ url_for('ssp.adr_detail', ssp_id=ssp.id, adr_id=adr.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('ssp.adrs.cancel') }}
+            </a>
+        </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

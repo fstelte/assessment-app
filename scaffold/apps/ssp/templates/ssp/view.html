@@ -18,6 +18,7 @@
       <a href="{{ url_for('ssp.interconnections', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.interconnections') }}</a>
       <a href="{{ url_for('ssp.controls', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.controls') }}</a>
       <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">POA&amp;M</a>
+      <a href="{{ url_for('ssp.adrs', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors">{{ _('ssp.view.adrs') }}</a>
       <div class="relative" data-export-dropdown>
         <button type="button"
           class="export-toggle inline-flex items-center gap-1.5 font-medium rounded-lg px-3.5 py-2 text-sm transition-colors bg-white/10 text-white hover:bg-white/20 border border-white/15"
