@@ -516,6 +516,7 @@ def principles():
             user=current_user,
             details={"created": stats.created, "updated": stats.updated, "errors": len(stats.errors)},
         )
+        db.session.commit()
         flash(
             _(
                 "admin.principles.flash.import_result",
@@ -558,7 +559,7 @@ def create_principle():
 
         principle = ArchitecturePrinciple(name=name, description=description)
         db.session.add(principle)
-        db.session.commit()
+        db.session.flush()
         log_event(
             action="create",
             entity_type="architecture_principle",
@@ -566,6 +567,7 @@ def create_principle():
             user=current_user,
             details={"name": principle.name},
         )
+        db.session.commit()
         flash(_("admin.principles.flash.created", name=principle.name), "success")
     else:
         for errors in form.errors.values():
@@ -638,7 +640,6 @@ def update_principle(principle_id: int):
 
     principle.name = name
     principle.description = description
-    db.session.commit()
     log_event(
         action="update",
         entity_type="architecture_principle",
@@ -646,6 +647,7 @@ def update_principle(principle_id: int):
         user=current_user,
         details={"name": principle.name},
     )
+    db.session.commit()
     flash(_("admin.principles.flash.updated", name=principle.name), "success")
     return redirect(url_for("admin.principles"))
 
@@ -684,13 +686,13 @@ def delete_principle(principle_id: int):
 
     name = principle.name
     db.session.delete(principle)
-    db.session.commit()
     log_event(
         action="delete",
         entity_type="architecture_principle",
         user=current_user,
         details={"name": name},
     )
+    db.session.commit()
     flash(_("admin.principles.flash.deleted", name=name), "info")
     return redirect(url_for("admin.principles"))
 
@@ -727,13 +729,13 @@ def delete_bulk_principles():
     if count:
         for principle in deletable:
             db.session.delete(principle)
-        db.session.commit()
         log_event(
             action="delete_bulk",
             entity_type="architecture_principle",
             user=current_user,
             details={"count": count, "description": f"Bulk deleted {count} architecture principles"},
         )
+        db.session.commit()
         flash(_("admin.principles.delete_bulk.success", count=count), "success")
     if blocked_names:
         flash(_("admin.principles.flash.in_use_bulk", names=", ".join(blocked_names)), "warning")

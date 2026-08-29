@@ -794,13 +794,13 @@ def add_adr(ssp_id: int):
                 details={"superseded_by_id": adr.id},
             )
 
-        db.session.commit()
         log_event(
             "adr_created",
             entity_type="ADRRecord",
             entity_id=adr.id,
             details={"title": adr.title, "ssp_id": ssp.id},
         )
+        db.session.commit()
         flash(f"ADR '{adr.title}' created.", "success")
         return redirect(url_for("ssp.adr_detail", ssp_id=ssp.id, adr_id=adr.id))
 
