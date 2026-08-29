@@ -2157,6 +2157,72 @@
         "uri": "Uri"
       },
       "title": "MFA Beheer"
+    },
+    "principles": {
+      "page": {
+        "title": "Beheer architectuurprincipes",
+        "heading": "Beheer van de architectuurprincipes-catalogus",
+        "subtitle": "Maak of importeer architectuurprincipes zodat ADR's kunnen worden gekoppeld aan een afgesproken set uitgangspunten."
+      },
+      "import": {
+        "heading": "Bulk import",
+        "help": "Upload een JSON-bestand met de vorm {\"principles\": [{\"name\": ..., \"description\": ...}]}. Bij een naam die al bestaat (niet hoofdlettergevoelig) wordt het bestaande item bijgewerkt; nieuwe namen worden aangemaakt.",
+        "submit": "Principes importeren",
+        "fields": {
+          "data_file": {
+            "label": "Principesbestand (JSON)",
+            "required": "Selecteer een JSON-bestand om te importeren.",
+            "allowed": "Alleen JSON-bestanden worden ondersteund."
+          }
+        }
+      },
+      "manual": {
+        "heading": "Principe toevoegen",
+        "name_label": "Naam",
+        "name_placeholder": "Least Privilege by Default",
+        "help": {
+          "name": "Een korte, herkenbare naam voor dit principe."
+        },
+        "description_label": "Omschrijving",
+        "description_placeholder": "Ken alleen de minimaal benodigde toegang toe voor een rol of dienst.",
+        "submit": "Principe aanmaken",
+        "update_submit": "Wijzigingen opslaan",
+        "delete_submit": "Principe verwijderen"
+      },
+      "edit": {
+        "heading": "Principe bewerken",
+        "button": "Bewerken"
+      },
+      "list": {
+        "name": "Naam",
+        "description": "Omschrijving",
+        "actions": "Acties",
+        "delete": "Verwijderen",
+        "empty": "Nog geen architectuurprincipes."
+      },
+      "delete": {
+        "confirm": "Dit architectuurprincipe verwijderen? Dit kan niet ongedaan worden gemaakt."
+      },
+      "delete_bulk": {
+        "none_selected": "Er zijn geen principes geselecteerd.",
+        "invalid_ids": "De geselecteerde principes konden niet worden geïdentificeerd.",
+        "success": "{count} principe(s) verwijderd.",
+        "none_found": "Geen overeenkomende principes gevonden."
+      },
+      "flash": {
+        "import_result": "Import voltooid: {created} aangemaakt, {updated} bijgewerkt.",
+        "duplicate": "Er bestaat al een principe met de naam {name}.",
+        "created": "Principe {name} aangemaakt.",
+        "updated": "Principe {name} bijgewerkt.",
+        "deleted": "Principe {name} verwijderd.",
+        "invalid_form": "Het ingediende principeformulier kon niet worden verwerkt.",
+        "in_use": "{name} wordt nog gebruikt door een ADR ({adrs}) en kan niet worden verwijderd.",
+        "in_use_bulk": "De volgende principes worden nog gebruikt door een ADR en zijn niet verwijderd: {names}."
+      }
+    },
+    "principle_edit": {
+      "subtitle_edit": "Werk de naam of omschrijving van {name} bij.",
+      "cancel": "Annuleren"
     }
   },
   "roles": {
@@ -3326,7 +3392,8 @@
       "controls": "Maatregelen",
       "export": "Exporteren",
       "delete": "SSP verwijderen",
-      "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt."
+      "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "adrs": "ADR's"
     },
     "sections": {
       "system_identification": "Systeemidentificatie",
@@ -3341,7 +3408,8 @@
       "controls": "Minimale Beveiligingsmaatregelen",
       "monitoring": "Continue Monitoring",
       "poam": "Plan van Aanpak & Mijlpalen",
-      "dates": "Plandatums"
+      "dates": "Plandatums",
+      "adrs": "Architectuurbeslissingen"
     },
     "labels": {
       "system_name": "Systeemnaam",
@@ -3390,7 +3458,9 @@
       "last_updated": "Laatste wijziging",
       "severity": "ernst",
       "resources_prefix": "Middelen:",
-      "outcome_prefix": "Resultaat:"
+      "outcome_prefix": "Resultaat:",
+      "no_adrs": "Geen architectuurbeslissingen vastgelegd.",
+      "manage_adrs": "ADR's beheren →"
     },
     "table": {
       "system": "Systeem",
@@ -3574,6 +3644,62 @@
         "scheduled_completion": "Beoogde datum voor het afronden van de herstelactie.",
         "estimated_cost": "Geschatte kosten of inspanning (bijv. 3 persoonsdagen, €5.000).",
         "status": "Huidige herstelstatus van dit POA&M-item."
+      }
+    },
+    "adr": {
+      "forms": {
+        "title": "Titel",
+        "primary_principle": "Primair architectuurprincipe",
+        "secondary_principles": "Secundaire architectuurprincipes",
+        "status": "Status",
+        "context": "Context",
+        "decision": "Beslissing",
+        "consequences": "Gevolgen",
+        "supersedes": "Vervangt",
+        "submit": "ADR opslaan",
+        "update_submit": "Wijzigingen opslaan",
+        "help": {
+          "primary_principle": "Verplicht — het architectuurprincipe waarop deze beslissing is gebaseerd. Kan na aanmaken niet meer worden gewijzigd.",
+          "secondary_principles": "Optioneel — andere principes waar deze beslissing ook betrekking op heeft.",
+          "status": "Voorgesteld, Geaccepteerd, Afgewezen of Verouderd. \"Vervangen\" wordt alleen automatisch ingesteld wanneer een andere ADR deze vervangt.",
+          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\"."
+        }
+      }
+    },
+    "adrs": {
+      "page_title": "Architectuurbeslissingen (ADR's)",
+      "back": "← Terug naar SSP",
+      "new": "Nieuwe ADR",
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "edit_principle_fixed": "Primair principe (vastgelegd bij aanmaken):",
+      "no_principles": "Er zijn nog geen architectuurprincipes gedefinieerd.",
+      "no_principles_hint": "Vraag een beheerder om er een aantal toe te voegen voordat je een ADR aanmaakt.",
+      "no_principles_admin_hint": "Als beheerder kun je ze hier toevoegen:",
+      "no_principles_admin_link": "Architectuurprincipes beheren",
+      "filter": {
+        "status": "Status",
+        "principle": "Principe",
+        "all": "Alle",
+        "apply": "Filters toepassen"
+      },
+      "list": {
+        "title": "Titel",
+        "status": "Status",
+        "principle": "Principe",
+        "date": "Datum",
+        "empty": "Nog geen ADR's vastgelegd."
+      },
+      "detail": {
+        "created": "Aangemaakt",
+        "decided": "Besloten",
+        "supersedes": "Vervangt:",
+        "superseded_by": "Vervangen door:",
+        "principle": "Architectuurprincipe",
+        "secondary_principles": "Ook van toepassing op:",
+        "context": "Context",
+        "decision": "Beslissing",
+        "consequences": "Gevolgen"
       }
     }
   }

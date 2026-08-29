@@ -434,6 +434,41 @@
       {% endif %}
     </div>
 
+    <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
+      <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
+        <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§ADR</span>
+        <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.adrs') }}</h2>
+      </div>
+      {% if ssp.adr_records %}
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-700 bg-slate-800/40">
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">#</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.adrs.list.title') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.adrs.list.principle') }}</th>
+            <th class="text-left px-4 py-2 text-xs font-bold uppercase text-slate-400">{{ _('ssp.adrs.list.status') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+          {% for adr in ssp.adr_records | sort(attribute='created_at', reverse=True) %}
+          <tr>
+            <td class="px-4 py-2 text-slate-500 align-top">{{ loop.index }}</td>
+            <td class="px-4 py-2 text-white align-top">
+              <p>{{ adr.title }}</p>
+              {% if adr.supersedes %}<p class="text-xs text-slate-400 mt-1">{{ _('ssp.adrs.detail.supersedes') }} {{ adr.supersedes.title }}</p>{% endif %}
+              {% if adr.superseded_by %}<p class="text-xs text-slate-400 mt-1">{{ _('ssp.adrs.detail.superseded_by') }} {{ adr.superseded_by.title }}</p>{% endif %}
+            </td>
+            <td class="px-4 py-2 text-slate-400 align-top">{{ adr.primary_principle.name }}</td>
+            <td class="px-4 py-2 align-top whitespace-nowrap capitalize text-slate-300">{{ adr.status.value }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="p-6 text-slate-500 italic text-sm">{{ _('ssp.labels.no_adrs') }}</p>
+      {% endif %}
+    </div>
+
     {# §15–16 Plan Dates #}
     <div class="border border-slate-700 rounded-xl bg-slate-900 overflow-hidden break-inside-avoid">
       <div class="flex items-center gap-3 px-6 py-3 bg-slate-800/60 border-b border-slate-700">
