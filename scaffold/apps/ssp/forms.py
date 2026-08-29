@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import DateField, HiddenField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
 from scaffold.core.i18n import lazy_gettext as _l
@@ -213,6 +213,81 @@ class POAMItemForm(FlaskForm):
         description=_l("ssp.forms.help.status"),
     )
     submit = SubmitField(_l("ssp.forms.save"))
+
+
+# Status choices intentionally exclude "superseded": that state is reachable
+# only via the supersede action on another ADR (FR-008), never a direct edit.
+_ADR_STATUS_CHOICES = [
+    ("proposed", "Proposed"),
+    ("accepted", "Accepted"),
+    ("rejected", "Rejected"),
+    ("deprecated", "Deprecated"),
+]
+
+
+class ADRCreateForm(FlaskForm):
+    """Create an Architecture Decision Record (adr.github.io) on an SSP."""
+
+    title = StringField(_l("ssp.adr.forms.title"), validators=[DataRequired(), Length(max=255)])
+    primary_principle_id = SelectField(
+        _l("ssp.adr.forms.primary_principle"),
+        validators=[DataRequired()],
+        choices=[],
+        coerce=int,
+        description=_l("ssp.adr.forms.help.primary_principle"),
+    )
+    secondary_principle_ids = SelectMultipleField(
+        _l("ssp.adr.forms.secondary_principles"),
+        validators=[Optional()],
+        choices=[],
+        coerce=int,
+        render_kw={"size": 6},
+        description=_l("ssp.adr.forms.help.secondary_principles"),
+    )
+    status = SelectField(
+        _l("ssp.adr.forms.status"),
+        choices=_ADR_STATUS_CHOICES,
+        description=_l("ssp.adr.forms.help.status"),
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
+    supersedes_id = SelectField(
+        _l("ssp.adr.forms.supersedes"),
+        validators=[Optional()],
+        choices=[],
+        coerce=int,
+        description=_l("ssp.adr.forms.help.supersedes"),
+    )
+    submit = SubmitField(_l("ssp.adr.forms.submit"))
+
+
+class ADRUpdateForm(FlaskForm):
+    """Update an existing ADR. No primary_principle_id or supersedes_id field:
+
+    the primary principle is immutable after creation (FR-004), and supersession
+    is a create-time declaration (FR-008), not a generic update.
+    """
+
+    adr_id = HiddenField(validators=[DataRequired()])
+    title = StringField(_l("ssp.adr.forms.title"), validators=[DataRequired(), Length(max=255)])
+    secondary_principle_ids = SelectMultipleField(
+        _l("ssp.adr.forms.secondary_principles"),
+        validators=[Optional()],
+        choices=[],
+        coerce=int,
+        render_kw={"size": 6},
+        description=_l("ssp.adr.forms.help.secondary_principles"),
+    )
+    status = SelectField(
+        _l("ssp.adr.forms.status"),
+        choices=_ADR_STATUS_CHOICES,
+        description=_l("ssp.adr.forms.help.status"),
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
+    submit = SubmitField(_l("ssp.adr.forms.update_submit"))
 
 
 class POAMMilestoneForm(FlaskForm):
