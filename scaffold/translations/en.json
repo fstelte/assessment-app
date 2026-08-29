@@ -3339,7 +3339,8 @@
       "monitoring": "Continuous Monitoring",
       "poam": "Plan of Action & Milestones",
       "dates": "Plan Dates",
-      "adrs": "Architecture Decisions"
+      "adrs": "Architecture Decisions",
+      "architecture_overview": "Architecture Overview"
     },
     "labels": {
       "system_name": "System Name",
@@ -3630,6 +3631,27 @@
         "context": "Context",
         "decision": "Decision",
         "consequences": "Consequences"
+      }
+    },
+    "architecture_overview": {
+      "current_alt": "Current architecture overview diagram",
+      "none_uploaded": "No architecture overview image has been uploaded yet.",
+      "upload": {
+        "field": {
+          "label": "Upload image (PNG or JPEG)"
+        },
+        "submit": "Upload",
+        "errors": {
+          "required": "Please choose an image to upload.",
+          "invalid_image": "File must be a genuine PNG or JPEG image.",
+          "too_large": "Image must be 5 MB or smaller.",
+          "dimensions_too_large": "Image dimensions are too large."
+        }
+      },
+      "history": {
+        "heading": "Version history",
+        "entry": "Version {version} — uploaded by {uploader} on {date}",
+        "restore": "Restore"
       }
     }
   }

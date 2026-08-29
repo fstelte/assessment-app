@@ -169,6 +169,51 @@
   {% endif %}
   {{ end_card() }}
 
+  {# ── Architecture Overview ── #}
+  {{ section_card("—", _('ssp.sections.architecture_overview')) }}
+  {% set overview_versions = ssp.architecture_overview_versions %}
+  {% set current_overview = overview_versions[0] if overview_versions else none %}
+  {% if current_overview %}
+  <img
+    src="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}"
+    alt="{{ _('ssp.architecture_overview.current_alt') }}"
+    class="max-w-full rounded-lg border border-[var(--color-border)] mb-4"
+  >
+  {% else %}
+  <p class="text-[var(--color-muted)] italic text-sm mb-4">{{ _('ssp.architecture_overview.none_uploaded') }}</p>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+    {{ architecture_overview_form.hidden_tag() }}
+    <div>
+      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]") }}
+      {% for error in architecture_overview_form.image.errors %}
+      <span class="block text-red-400 text-xs mt-1">{{ error }}</span>
+      {% endfor %}
+    </div>
+    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap self-start">{{ _('ssp.architecture_overview.upload.submit') }}</button>
+  </form>
+
+  {% if overview_versions|length > 1 %}
+  <details class="text-sm">
+    <summary class="cursor-pointer text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.architecture_overview.history.heading') }}</summary>
+    <ul class="mt-3 divide-y divide-[var(--color-border)]">
+      {% for version in overview_versions[1:] %}
+      <li class="py-2 flex items-center justify-between gap-3">
+        <span class="text-[var(--color-muted)]">
+          {{ _('ssp.architecture_overview.history.entry', version=version.version_number, uploader=(version.uploaded_by.email if version.uploaded_by else "—"), date=version.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}
+        </span>
+        <form method="POST" action="{{ url_for('ssp.restore_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('ssp.architecture_overview.history.restore') }}</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+  {{ end_card() }}
+
   {# ── §11 Interconnections ── #}
   {{ section_card("11", _('ssp.sections.interconnections')) }}
   {% if ssp.interconnections %}

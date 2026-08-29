@@ -3409,7 +3409,8 @@
       "monitoring": "Continue Monitoring",
       "poam": "Plan van Aanpak & Mijlpalen",
       "dates": "Plandatums",
-      "adrs": "Architectuurbeslissingen"
+      "adrs": "Architectuurbeslissingen",
+      "architecture_overview": "Architectuuroverzicht"
     },
     "labels": {
       "system_name": "Systeemnaam",
@@ -3700,6 +3701,27 @@
         "context": "Context",
         "decision": "Beslissing",
         "consequences": "Gevolgen"
+      }
+    },
+    "architecture_overview": {
+      "current_alt": "Huidig architectuuroverzicht diagram",
+      "none_uploaded": "Er is nog geen architectuuroverzicht geupload.",
+      "upload": {
+        "field": {
+          "label": "Afbeelding uploaden (PNG of JPEG)"
+        },
+        "submit": "Uploaden",
+        "errors": {
+          "required": "Kies een afbeelding om te uploaden.",
+          "invalid_image": "Bestand moet een geldige PNG- of JPEG-afbeelding zijn.",
+          "too_large": "Afbeelding mag maximaal 5 MB zijn.",
+          "dimensions_too_large": "Afbeeldingsafmetingen zijn te groot."
+        }
+      },
+      "history": {
+        "heading": "Versiegeschiedenis",
+        "entry": "Versie {version} — geupload door {uploader} op {date}",
+        "restore": "Herstellen"
       }
     }
   }

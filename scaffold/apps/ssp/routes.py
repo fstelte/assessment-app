@@ -250,6 +250,7 @@ def view(ssp_id: int):
         risk_summary=risk_summary,
         has_dpia=has_dpia,
         threat_models=threat_models,
+        architecture_overview_form=SSPArchitectureOverviewUploadForm(),
     )
 
 
