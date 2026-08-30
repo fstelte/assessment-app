@@ -42,6 +42,14 @@
       }
     }
   },
+  "pagination": {
+    "previous": "Vorige",
+    "next": "Volgende",
+    "showing": "Resultaat",
+    "to": "tot",
+    "of": "van",
+    "results": "resultaten"
+  },
   "auth": {
     "login": {
       "title": "Aanmelden",
@@ -1427,28 +1435,68 @@
       }
     },
     "bia_tiers": {
-      "list": {
-        "title": "BIA Niveau Beheer",
-        "subtitle": "Bewerk de toewijzing van kritikaliteitsniveaus. (Namen worden beheerd in vertaalbestanden)",
-        "columns": {
-          "level": "Niveau",
-          "name": "Vertaalde Naam"
-        },
-        "empty": "Nog geen niveaus gedefinieerd."
+      "title": "BIA Niveau Beheer",
+      "heading": "BIA Niveau Beheer",
+      "subtitle": "Beheer beschikbaarheidsniveaus en hun hersteldoelen.",
+      "new_tier": "Nieuw niveau",
+      "back_to_admin": "Terug naar beheer",
+      "table": {
+        "level": "Niveau",
+        "name": "Naam",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "actions": "Acties"
       },
-      "edit": {
-        "title": "Bewerk BIA Niveau",
-        "heading": "Bewerk Niveau {level}"
-      },
-      "fields": {
-        "level": "Niveau"
-      },
-      "form": {
-        "name_in_translation": "De naam van dit niveau wordt beheerd via de lokalisatiebestanden (en.json, nl.json)."
-      },
+      "edit": "Bewerken",
+      "no_tiers": "Nog geen niveaus gedefinieerd.",
       "flash": {
-        "updated": "Niveau succesvol bijgewerkt."
+        "updated": "Niveau succesvol opgeslagen."
       }
+    },
+    "bia_tier_form": {
+      "subtitle_edit": "Werk de gegevens van dit niveau bij.",
+      "subtitle_new": "Maak een nieuw BIA-niveau aan.",
+      "cancel": "Annuleren",
+      "fields": {
+        "name_en": "Naam (Engels)",
+        "name_nl": "Naam (Nederlands)",
+        "rto_goal_seconds": "RTO-doel (seconden)",
+        "rpo_goal_seconds": "RPO-doel (seconden)"
+      },
+      "errors": {
+        "duplicate_level": "Er bestaat al een niveau met dit level."
+      }
+    },
+    "auth_methods": {
+      "title": "Authenticatiemethoden",
+      "heading": "Authenticatiemethoden",
+      "subtitle": "Configureer hoe gebruikers inloggen op deze applicatie.",
+      "note": "Wijzigingen hier hebben direct invloed op het inloggen voor alle gebruikers.",
+      "status": {
+        "enabled": "Ingeschakeld",
+        "disabled": "Uitgeschakeld"
+      },
+      "local": {
+        "heading": "Lokaal inloggen",
+        "description": "Sta gebruikers toe om in te loggen met een e-mailadres en wachtwoord dat in deze applicatie is opgeslagen."
+      },
+      "saml": {
+        "heading": "SAML SSO",
+        "description": "Sta gebruikers toe om in te loggen via een SAML identity provider.",
+        "not_configured": "SAML is nog niet geconfigureerd."
+      },
+      "registration": "Registratie",
+      "enabled": "Ingeschakeld",
+      "disabled": "Uitgeschakeld",
+      "configure": "Configureren",
+      "configure_local": "Lokaal inloggen configureren",
+      "configure_saml": "SAML SSO configureren",
+      "enable_login": "Lokaal inloggen inschakelen",
+      "enable_reg": "Zelfregistratie toestaan",
+      "enable_saml": "SAML SSO inschakelen",
+      "provider": "Provider",
+      "metadata_url": "Metadata-URL",
+      "save": "Wijzigingen opslaan"
     },
     "controls": {
       "manage_availability_tiers": "Beschikbaarheidsniveaus beheren",
@@ -1549,10 +1597,12 @@
         "discovered_on_label": "Ontdekt op",
         "due": "Vervalt op {date}",
         "impact_chance": "Impact / Waarschijnlijkheid",
-        "owner": "Eigenaar: {owner}",
+        "owner": "Eigenaar",
         "risk": "Risico",
         "score": "Score",
-        "treatment": "Behandeling"
+        "treatment": "Behandeling",
+        "title": "Risico",
+        "status": "Status"
       },
       "errors": {
         "invalid_controls": "Selecteer geldige CSA-controls voordat je opslaat.",
@@ -1563,16 +1613,7 @@
         "delete": "Verwijderen",
         "edit": "Bewerken"
       },
-      "edit": {
-        "form_title": "Details bijwerken",
-        "heading": "Bewerk {title}",
-        "subtitle": "Update velden en ernst voor dit risico.",
-        "summary": {
-          "severity": "Ernst",
-          "title": "Huidige score"
-        },
-        "title": "Bewerk risico Â· {title}"
-      },
+      "edit": "Bewerken",
       "empty": "Nog geen risico's geregistreerd.",
       "flash": {
         "created": "Risico '{title}' aangemaakt.",
@@ -1613,7 +1654,18 @@
         "subtitle": "Pas de score-bereiken aan die worden gebruikt om risico's te labelen als laag, gemiddeld, hoog of kritiek.",
         "title": "Ernst matrix"
       },
-      "title": "Risico register"
+      "title": "Risico register",
+      "manage_thresholds": "Ernstdrempels",
+      "new_risk": "Nieuw risico",
+      "no_risks": "Nog geen risico's geregistreerd.",
+      "filter": {
+        "status": "Status",
+        "status_all": "Alle statussen",
+        "apply": "Filters toepassen"
+      },
+      "stats": {
+        "total": "Totaal aantal risico's"
+      }
     },
     "users": {
       "title": "Gebruikersbeheer",
@@ -1647,6 +1699,7 @@
         "disabled": "Uitgeschakeld"
       },
       "actions": {
+        "approve": "Goedkeuren",
         "manage_mfa": "MFA beheren",
         "deactivate": "Deactiveren",
         "activate": "Activeren",
@@ -2157,6 +2210,72 @@
         "uri": "Uri"
       },
       "title": "MFA Beheer"
+    },
+    "principles": {
+      "page": {
+        "title": "Beheer architectuurprincipes",
+        "heading": "Beheer van de architectuurprincipes-catalogus",
+        "subtitle": "Maak of importeer architectuurprincipes zodat ADR's kunnen worden gekoppeld aan een afgesproken set uitgangspunten."
+      },
+      "import": {
+        "heading": "Bulk import",
+        "help": "Upload een JSON-bestand met de vorm {\"principles\": [{\"name\": ..., \"description\": ...}]}. Bij een naam die al bestaat (niet hoofdlettergevoelig) wordt het bestaande item bijgewerkt; nieuwe namen worden aangemaakt.",
+        "submit": "Principes importeren",
+        "fields": {
+          "data_file": {
+            "label": "Principesbestand (JSON)",
+            "required": "Selecteer een JSON-bestand om te importeren.",
+            "allowed": "Alleen JSON-bestanden worden ondersteund."
+          }
+        }
+      },
+      "manual": {
+        "heading": "Principe toevoegen",
+        "name_label": "Naam",
+        "name_placeholder": "Least Privilege by Default",
+        "help": {
+          "name": "Een korte, herkenbare naam voor dit principe."
+        },
+        "description_label": "Omschrijving",
+        "description_placeholder": "Ken alleen de minimaal benodigde toegang toe voor een rol of dienst.",
+        "submit": "Principe aanmaken",
+        "update_submit": "Wijzigingen opslaan",
+        "delete_submit": "Principe verwijderen"
+      },
+      "edit": {
+        "heading": "Principe bewerken",
+        "button": "Bewerken"
+      },
+      "list": {
+        "name": "Naam",
+        "description": "Omschrijving",
+        "actions": "Acties",
+        "delete": "Verwijderen",
+        "empty": "Nog geen architectuurprincipes."
+      },
+      "delete": {
+        "confirm": "Dit architectuurprincipe verwijderen? Dit kan niet ongedaan worden gemaakt."
+      },
+      "delete_bulk": {
+        "none_selected": "Er zijn geen principes geselecteerd.",
+        "invalid_ids": "De geselecteerde principes konden niet worden geïdentificeerd.",
+        "success": "{count} principe(s) verwijderd.",
+        "none_found": "Geen overeenkomende principes gevonden."
+      },
+      "flash": {
+        "import_result": "Import voltooid: {created} aangemaakt, {updated} bijgewerkt.",
+        "duplicate": "Er bestaat al een principe met de naam {name}.",
+        "created": "Principe {name} aangemaakt.",
+        "updated": "Principe {name} bijgewerkt.",
+        "deleted": "Principe {name} verwijderd.",
+        "invalid_form": "Het ingediende principeformulier kon niet worden verwerkt.",
+        "in_use": "{name} wordt nog gebruikt door een ADR ({adrs}) en kan niet worden verwijderd.",
+        "in_use_bulk": "De volgende principes worden nog gebruikt door een ADR en zijn niet verwijderd: {names}."
+      }
+    },
+    "principle_edit": {
+      "subtitle_edit": "Werk de naam of omschrijving van {name} bij.",
+      "cancel": "Annuleren"
     }
   },
   "roles": {
@@ -3326,7 +3445,8 @@
       "controls": "Maatregelen",
       "export": "Exporteren",
       "delete": "SSP verwijderen",
-      "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt."
+      "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "adrs": "ADR's"
     },
     "sections": {
       "system_identification": "Systeemidentificatie",
@@ -3341,7 +3461,9 @@
       "controls": "Minimale Beveiligingsmaatregelen",
       "monitoring": "Continue Monitoring",
       "poam": "Plan van Aanpak & Mijlpalen",
-      "dates": "Plandatums"
+      "dates": "Plandatums",
+      "adrs": "Architectuurbeslissingen",
+      "architecture_overview": "Architectuuroverzicht"
     },
     "labels": {
       "system_name": "Systeemnaam",
@@ -3390,7 +3512,9 @@
       "last_updated": "Laatste wijziging",
       "severity": "ernst",
       "resources_prefix": "Middelen:",
-      "outcome_prefix": "Resultaat:"
+      "outcome_prefix": "Resultaat:",
+      "no_adrs": "Geen architectuurbeslissingen vastgelegd.",
+      "manage_adrs": "ADR's beheren →"
     },
     "table": {
       "system": "Systeem",
@@ -3574,6 +3698,83 @@
         "scheduled_completion": "Beoogde datum voor het afronden van de herstelactie.",
         "estimated_cost": "Geschatte kosten of inspanning (bijv. 3 persoonsdagen, €5.000).",
         "status": "Huidige herstelstatus van dit POA&M-item."
+      }
+    },
+    "adr": {
+      "forms": {
+        "title": "Titel",
+        "primary_principle": "Primair architectuurprincipe",
+        "secondary_principles": "Secundaire architectuurprincipes",
+        "status": "Status",
+        "context": "Context",
+        "decision": "Beslissing",
+        "consequences": "Gevolgen",
+        "supersedes": "Vervangt",
+        "submit": "ADR opslaan",
+        "update_submit": "Wijzigingen opslaan",
+        "help": {
+          "primary_principle": "Verplicht — het architectuurprincipe waarop deze beslissing is gebaseerd. Kan na aanmaken niet meer worden gewijzigd.",
+          "secondary_principles": "Optioneel — andere principes waar deze beslissing ook betrekking op heeft.",
+          "status": "Voorgesteld, Geaccepteerd, Afgewezen of Verouderd. \"Vervangen\" wordt alleen automatisch ingesteld wanneer een andere ADR deze vervangt.",
+          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\"."
+        }
+      }
+    },
+    "adrs": {
+      "page_title": "Architectuurbeslissingen (ADR's)",
+      "back": "← Terug naar SSP",
+      "new": "Nieuwe ADR",
+      "edit": "Bewerken",
+      "cancel": "Annuleren",
+      "edit_principle_fixed": "Primair principe (vastgelegd bij aanmaken):",
+      "no_principles": "Er zijn nog geen architectuurprincipes gedefinieerd.",
+      "no_principles_hint": "Vraag een beheerder om er een aantal toe te voegen voordat je een ADR aanmaakt.",
+      "no_principles_admin_hint": "Als beheerder kun je ze hier toevoegen:",
+      "no_principles_admin_link": "Architectuurprincipes beheren",
+      "filter": {
+        "status": "Status",
+        "principle": "Principe",
+        "all": "Alle",
+        "apply": "Filters toepassen"
+      },
+      "list": {
+        "title": "Titel",
+        "status": "Status",
+        "principle": "Principe",
+        "date": "Datum",
+        "empty": "Nog geen ADR's vastgelegd."
+      },
+      "detail": {
+        "created": "Aangemaakt",
+        "decided": "Besloten",
+        "supersedes": "Vervangt:",
+        "superseded_by": "Vervangen door:",
+        "principle": "Architectuurprincipe",
+        "secondary_principles": "Ook van toepassing op:",
+        "context": "Context",
+        "decision": "Beslissing",
+        "consequences": "Gevolgen"
+      }
+    },
+    "architecture_overview": {
+      "current_alt": "Huidig architectuuroverzicht diagram",
+      "none_uploaded": "Er is nog geen architectuuroverzicht geupload.",
+      "upload": {
+        "field": {
+          "label": "Afbeelding uploaden (PNG of JPEG)"
+        },
+        "submit": "Uploaden",
+        "errors": {
+          "required": "Kies een afbeelding om te uploaden.",
+          "invalid_image": "Bestand moet een geldige PNG- of JPEG-afbeelding zijn.",
+          "too_large": "Afbeelding mag maximaal 5 MB zijn.",
+          "dimensions_too_large": "Afbeeldingsafmetingen zijn te groot."
+        }
+      },
+      "history": {
+        "heading": "Versiegeschiedenis",
+        "entry": "Versie {version} — geupload door {uploader} op {date}",
+        "restore": "Herstellen"
       }
     }
   }

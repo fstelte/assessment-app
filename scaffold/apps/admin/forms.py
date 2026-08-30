@@ -71,6 +71,53 @@ class ControlDeleteForm(FlaskForm):
     submit = SubmitField(_label("admin.controls.manual.delete_submit"))
 
 
+class PrincipleImportForm(FlaskForm):
+    """Upload a JSON payload containing architecture principles."""
+
+    data_file = FileField(
+        _label("admin.principles.import.fields.data_file.label"),
+        validators=[
+            FileRequired(message=_message("admin.principles.import.fields.data_file.required")),
+            FileAllowed(["json"], message=_message("admin.principles.import.fields.data_file.allowed")),
+        ],
+    )
+    submit = SubmitField(_label("admin.principles.import.submit"))
+
+
+class PrincipleCreateForm(FlaskForm):
+    """Manually create an architecture principle from the admin UI."""
+
+    name = StringField(
+        _label("admin.principles.manual.name_label"),
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={"placeholder": _l("admin.principles.manual.name_placeholder")},
+        description=_l("admin.principles.manual.help.name"),
+    )
+    description = TextAreaField(
+        _label("admin.principles.manual.description_label"),
+        validators=[DataRequired(), Length(max=5000)],
+        render_kw={
+            "placeholder": _l("admin.principles.manual.description_placeholder"),
+            "rows": 4,
+        },
+    )
+    submit = SubmitField(_label("admin.principles.manual.submit"))
+
+
+class PrincipleUpdateForm(PrincipleCreateForm):
+    """Update an existing architecture principle's metadata."""
+
+    principle_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_label("admin.principles.manual.update_submit"))
+
+
+class PrincipleDeleteForm(FlaskForm):
+    """Delete an existing architecture principle."""
+
+    principle_id = HiddenField(validators=[DataRequired()])
+    submit = SubmitField(_label("admin.principles.manual.delete_submit"))
+
+
 class AuthenticationMethodForm(FlaskForm):
     """Create or update an authentication method option."""
 
@@ -96,8 +143,28 @@ class AuthenticationMethodDeleteForm(FlaskForm):
 
 
 class BiaTierForm(FlaskForm):
-    """Update a BIA tier's name."""
+    """Create or update a BIA tier."""
 
+    level = IntegerField(
+        _label("admin.bia_tiers.table.level"),
+        validators=[DataRequired(), NumberRange(min=0)],
+    )
+    name_en = StringField(
+        _label("admin.bia_tier_form.fields.name_en"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    name_nl = StringField(
+        _label("admin.bia_tier_form.fields.name_nl"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    rto_goal_seconds = IntegerField(
+        _label("admin.bia_tier_form.fields.rto_goal_seconds"),
+        validators=[Optional(), NumberRange(min=0)],
+    )
+    rpo_goal_seconds = IntegerField(
+        _label("admin.bia_tier_form.fields.rpo_goal_seconds"),
+        validators=[Optional(), NumberRange(min=0)],
+    )
     submit = SubmitField(_label("actions.save"))
 
 

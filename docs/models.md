@@ -36,6 +36,13 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 - `RiskSeverityThreshold`: administrator-managed ranges that map numeric scores to severities (`low`, `moderate`, `high`, `critical`). Defaults seed values that cover the 1-25 score space but can be adjusted without code changes.
 - Admin panel routes under `/admin/risks` provide CRUD management for risks, while `/admin/risk-thresholds` lets privileged users update the severity ranges without touching migrations.
 
+## SSP Domain
+
+*(This section currently documents only the models added alongside Architecture Decision Records; the pre-existing `SSPlan`/`SSPInterconnection`/`SSPControlEntry`/`POAMItem` models are not yet backfilled here — see `docs/history.md`'s 2026-04-03 entry for their original description.)*
+
+- `ArchitecturePrinciple`: admin-governed catalogue entry (`name`, `description`) that ADRs are anchored to. Global, not scoped to a single SSP — administered the same way as `Control` (`/admin/principles`), including bulk JSON import.
+- `ADRRecord`: an Architecture Decision Record belonging to exactly one `SSPlan`. Required primary `ArchitecturePrinciple`, optional secondary principles (`adr_secondary_principles` M2M table), adr.github.io fields (`title`, `status`, `context`, `decision`, `consequences`), authorship, and an optional self-referential `supersedes_id` (unique — an ADR can be superseded at most once).
+
 ## Maturity Domain
 
 - `MaturityAssessment`: links a standard CSA `Control` to a CMMI maturity level (1-5) assessed by a `User`. Stores the calculated current level and target level.

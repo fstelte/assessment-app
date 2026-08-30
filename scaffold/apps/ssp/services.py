@@ -6,6 +6,7 @@ import re
 from typing import TYPE_CHECKING
 
 from ...extensions import db
+from .models import ADRRecord, ArchitecturePrinciple
 
 if TYPE_CHECKING:
     from ..bia.models import ContextScope
@@ -324,3 +325,28 @@ def sync_mitigation_to_poam(action: object) -> None:
             status=poam_status,
         )
         db.session.add(item)
+
+
+def configure_adr_form(form, *, ssp: "SSPlan", editing_adr: ADRRecord | None = None) -> None:
+    """Populate the dynamic choices=[] fields on an ADRCreateForm/ADRUpdateForm."""
+
+    principle_choices = [
+        (p.id, p.name) for p in ArchitecturePrinciple.query.order_by(ArchitecturePrinciple.name.asc()).all()
+    ]
+
+    if hasattr(form, "primary_principle_id"):
+        form.primary_principle_id.choices = principle_choices
+    form.secondary_principle_ids.choices = principle_choices
+
+    if hasattr(form, "supersedes_id"):
+        # Only ADRs in this SSP that aren't already superseded (FR-008: at most
+        # one supersession per ADR) are valid supersede targets.
+        candidates = ADRRecord.query.filter(
+            ADRRecord.ssp_id == ssp.id,
+            ~ADRRecord.superseded_by.has(),
+        )
+        if editing_adr is not None:
+            candidates = candidates.filter(ADRRecord.id != editing_adr.id)
+        form.supersedes_id.choices = [(0, "—")] + [
+            (adr.id, adr.title) for adr in candidates.order_by(ADRRecord.title.asc()).all()
+        ]

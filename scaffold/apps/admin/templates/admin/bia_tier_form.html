@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title|default(_('admin.bia_tiers.title')) }}{% endblock %}
 
 {% block content %}
 <div class="mb-5">
-  <h1 class="text-2xl font-bold mb-1">{{ title }}</h1>
+  <h1 class="text-2xl font-bold mb-1">{{ title|default(_('admin.bia_tiers.title')) }}</h1>
   <p class="text-[var(--color-muted)] mb-0">
     {% if tier %}
         {{ _('admin.bia_tier_form.subtitle_edit') }}
@@ -27,17 +27,17 @@
             </div>
             
              <div>
-                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.name.label.text }}</label>
-                {{ form.name(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
-                {% for error in form.name.errors %}
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.name_en.label.text }}</label>
+                {{ form.name_en(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+                {% for error in form.name_en.errors %}
                     <span class="text-red-400 text-xs">{{ error }}</span>
                 {% endfor %}
             </div>
 
              <div>
-                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.description.label.text }}</label>
-                {{ form.description(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", rows="3") }}
-                {% for error in form.description.errors %}
+                <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.name_nl.label.text }}</label>
+                {{ form.name_nl(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+                {% for error in form.name_nl.errors %}
                     <span class="text-red-400 text-xs">{{ error }}</span>
                 {% endfor %}
             </div>
@@ -61,7 +61,7 @@
         
         <div class="pt-4 flex gap-2 border-t border-[var(--color-border)] mt-2">
             {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-6 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
-            <a href="{{ url_for('admin.bia_tiers_list') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+            <a href="{{ url_for('admin.list_bia_tiers') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
                 {{ _('admin.bia_tier_form.cancel') }}
             </a>
         </div>

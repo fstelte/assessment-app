@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+{% block title %}{{ _('ssp.adrs.page_title') }} — {{ ssp.context_scope.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+  <div class="flex justify-between items-start mb-6 gap-4">
+    <div>
+      <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.adrs.back') }}</a>
+      <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.adrs.page_title') }}</h1>
+      <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
+    </div>
+    {% if has_principles %}
+    <a href="{{ url_for('ssp.add_adr', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors shrink-0">{{ _('ssp.adrs.new') }}</a>
+    {% endif %}
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="mb-4 px-4 py-3 rounded-lg border {% if category == 'success' %}bg-green-500/10 border-green-500/30 text-green-400{% else %}bg-red-500/10 border-red-500/30 text-red-400{% endif %} text-sm">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if not has_principles %}
+  <div class="text-center py-16 text-[var(--color-muted)]">
+    <p class="text-lg">{{ _('ssp.adrs.no_principles') }}</p>
+    {% if current_user.has_role('admin') or current_user.has_role('control_owner') %}
+    <p class="text-sm mt-1">
+      {{ _('ssp.adrs.no_principles_admin_hint') }}
+      <a href="{{ url_for('admin.principles') }}" class="text-primary-500 hover:underline">{{ _('ssp.adrs.no_principles_admin_link') }}</a>
+    </p>
+    {% else %}
+    <p class="text-sm mt-1">{{ _('ssp.adrs.no_principles_hint') }}</p>
+    {% endif %}
+  </div>
+  {% else %}
+
+  <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] mb-4 p-4">
+    <form method="get" class="flex flex-wrap lg:flex-nowrap gap-4 items-end">
+        <div class="w-full lg:w-1/3">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('ssp.adrs.filter.status') }}</label>
+            <select name="status" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm">
+                <option value="">{{ _('ssp.adrs.filter.all') }}</option>
+                {% for value, label in [("proposed","Proposed"),("accepted","Accepted"),("rejected","Rejected"),("deprecated","Deprecated"),("superseded","Superseded")] %}
+                <option value="{{ value }}" {% if request.args.get('status') == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="w-full lg:w-1/3">
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ _('ssp.adrs.filter.principle') }}</label>
+            <select name="principle_id" class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm">
+                <option value="">{{ _('ssp.adrs.filter.all') }}</option>
+                {% for principle in principles %}
+                <option value="{{ principle.id }}" {% if request.args.get('principle_id', type=int) == principle.id %}selected{% endif %}>{{ principle.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="w-full lg:w-auto">
+            <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 w-full lg:w-auto">
+                {{ _('ssp.adrs.filter.apply') }}
+            </button>
+        </div>
+    </form>
+  </div>
+
+  <div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)] mb-4">
+    <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+      <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+        <tr>
+          <th scope="col" class="px-4 py-3 font-semibold">{{ _('ssp.adrs.list.title') }}</th>
+          <th scope="col" class="px-4 py-3 font-semibold">{{ _('ssp.adrs.list.status') }}</th>
+          <th scope="col" class="px-4 py-3 font-semibold">{{ _('ssp.adrs.list.principle') }}</th>
+          <th scope="col" class="px-4 py-3 font-semibold">{{ _('ssp.adrs.list.date') }}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for adr in pagination.items %}
+        <tr class="hover:bg-slate-500/5 transition-colors">
+          <td class="px-4 py-3 align-top font-medium">
+            <a href="{{ url_for('ssp.adr_detail', ssp_id=ssp.id, adr_id=adr.id) }}" class="hover:underline">{{ adr.title }}</a>
+          </td>
+          <td class="px-4 py-3 align-top capitalize text-[var(--color-muted)]">{{ adr.status.value }}</td>
+          <td class="px-4 py-3 align-top text-[var(--color-muted)]">{{ adr.primary_principle.name }}</td>
+          <td class="px-4 py-3 align-top text-[var(--color-muted)] whitespace-nowrap">{{ adr.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-[var(--color-muted)]">{{ _('ssp.adrs.list.empty') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-center mt-4">
+      {{ macros.render_pagination(pagination, 'ssp.adrs') }}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

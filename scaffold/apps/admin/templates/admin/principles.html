@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
+
+{% block title %}{{ _('admin.principles.page.title') }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.principles.page.heading') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.principles.page.subtitle') }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+  <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-5">
+    <h2 class="text-lg font-semibold mb-3">{{ _('admin.principles.manual.heading') }}</h2>
+    <form method="post" action="{{ url_for('admin.create_principle') }}" class="flex flex-col gap-4">
+      {{ create_form.hidden_tag() }}
+      <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ create_form.name.label.text }}</label>
+        {{ create_form.name(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+        {% for error in create_form.name.errors %}
+        <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ create_form.description.label.text }}</label>
+        {{ create_form.description(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50", rows="3") }}
+        {% for error in create_form.description.errors %}
+        <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
+      </div>
+      {{ create_form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer self-start") }}
+    </form>
+  </div>
+
+  <div class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-5">
+    <h2 class="text-lg font-semibold mb-1">{{ _('admin.principles.import.heading') }}</h2>
+    <p class="text-[var(--color-muted)] text-sm mb-3">{{ _('admin.principles.import.help') }}</p>
+    <form method="post" action="{{ url_for('admin.principles') }}" enctype="multipart/form-data" class="flex flex-col gap-4">
+      {{ import_form.hidden_tag() }}
+      <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ import_form.data_file.label.text }}</label>
+        {{ import_form.data_file(class="w-full text-sm text-[var(--color-text)]") }}
+        {% for error in import_form.data_file.errors %}
+        <span class="text-red-400 text-xs">{{ error }}</span>
+        {% endfor %}
+      </div>
+      {{ import_form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 cursor-pointer self-start") }}
+    </form>
+  </div>
+</div>
+
+<div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)] mb-4">
+  <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
+    <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold w-1/4">{{ _('admin.principles.list.name') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.principles.list.description') }}</th>
+        <th scope="col" class="px-4 py-3 font-semibold w-40 text-right">{{ _('admin.principles.list.actions') }}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--color-border)]">
+      {% for principle in pagination.items %}
+      <tr class="hover:bg-slate-500/5 transition-colors">
+        <td class="px-4 py-3 align-top font-medium">
+            {{ principle.name }}
+        </td>
+        <td class="px-4 py-3 align-top text-[var(--color-muted)]">
+            <div class="line-clamp-2" title="{{ principle.description }}">
+                {{ principle.description }}
+            </div>
+        </td>
+        <td class="px-4 py-3 align-top text-right whitespace-nowrap">
+            <a href="{{ url_for('admin.edit_principle', principle_id=principle.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                {{ _('admin.principles.edit.button') }}
+            </a>
+            {% set delete_form = delete_forms[principle.id] %}
+            <form method="post" action="{{ url_for('admin.delete_principle', principle_id=principle.id) }}" class="inline">
+                {{ delete_form.hidden_tag() }}
+                {{ delete_form.principle_id() }}
+                <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1.5 text-xs transition-colors border border-red-400/40 text-red-400 hover:bg-red-500/10" onclick="return confirm('{{ _('admin.principles.delete.confirm') }}');">
+                    {{ _('admin.principles.list.delete') }}
+                </button>
+            </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+          <td colspan="3" class="px-4 py-8 text-center text-[var(--color-muted)]">
+              {{ _('admin.principles.list.empty') }}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="flex justify-center mt-4">
+    {{ macros.render_pagination(pagination, 'admin.principles') }}
+</div>
+{% endblock %}

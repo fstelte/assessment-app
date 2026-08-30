@@ -41,6 +41,14 @@
       }
     }
   },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results"
+  },
   "bia": {
     "flash": {
       "created": "BIA created successfully.",
@@ -1247,28 +1255,68 @@
       }
     },
     "bia_tiers": {
-      "list": {
-        "title": "BIA Tier Management",
-        "subtitle": "Edit the mapping of criticality levels. (Names are managed in translation files)",
-        "columns": {
-          "level": "Level",
-          "name": "Translated Name"
-        },
-        "empty": "No tiers defined yet."
+      "title": "BIA Tier Management",
+      "heading": "BIA Tier Management",
+      "subtitle": "Manage availability tiers and their recovery objectives.",
+      "new_tier": "New tier",
+      "back_to_admin": "Back to admin",
+      "table": {
+        "level": "Level",
+        "name": "Name",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "actions": "Actions"
       },
-      "edit": {
-        "title": "Edit BIA Tier",
-        "heading": "Edit Tier {level}"
-      },
-      "fields": {
-        "level": "Level"
-      },
-      "form": {
-        "name_in_translation": "The name of this tier is managed via the localization files (en.json, nl.json)."
-      },
+      "edit": "Edit",
+      "no_tiers": "No tiers defined yet.",
       "flash": {
-        "updated": "Tier updated successfully."
+        "updated": "Tier saved successfully."
       }
+    },
+    "bia_tier_form": {
+      "subtitle_edit": "Update this tier's details.",
+      "subtitle_new": "Create a new BIA tier.",
+      "cancel": "Cancel",
+      "fields": {
+        "name_en": "Name (English)",
+        "name_nl": "Name (Dutch)",
+        "rto_goal_seconds": "RTO goal (seconds)",
+        "rpo_goal_seconds": "RPO goal (seconds)"
+      },
+      "errors": {
+        "duplicate_level": "A tier with this level already exists."
+      }
+    },
+    "auth_methods": {
+      "title": "Authentication Methods",
+      "heading": "Authentication Methods",
+      "subtitle": "Configure how users sign in to this application.",
+      "note": "Changes here affect sign-in for all users immediately.",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "local": {
+        "heading": "Local login",
+        "description": "Allow users to sign in with an email address and password stored in this application."
+      },
+      "saml": {
+        "heading": "SAML SSO",
+        "description": "Allow users to sign in via a SAML identity provider.",
+        "not_configured": "SAML has not been configured yet."
+      },
+      "registration": "Registration",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "configure": "Configure",
+      "configure_local": "Configure local login",
+      "configure_saml": "Configure SAML SSO",
+      "enable_login": "Enable local login",
+      "enable_reg": "Allow self-registration",
+      "enable_saml": "Enable SAML SSO",
+      "provider": "Provider",
+      "metadata_url": "Metadata URL",
+      "save": "Save changes"
     },
     "controls": {
       "manage_availability_tiers": "Manage availability tiers",
@@ -1382,6 +1430,7 @@
         "disabled": "Disabled"
       },
       "actions": {
+        "approve": "Approve",
         "manage_mfa": "Manage MFA",
         "deactivate": "Deactivate",
         "activate": "Activate",
@@ -1728,7 +1777,9 @@
         "discovered_on_label": "Discovered on",
         "csa_controls": "CSA controls",
         "due": "Due by {date}",
-        "owner": "Owner: {owner}"
+        "owner": "Owner",
+        "title": "Risk",
+        "status": "Status"
       },
       "actions": {
         "edit": "Edit",
@@ -1769,17 +1820,19 @@
         },
         "page_title": "Risk severity thresholds"
       },
-      "edit": {
-        "title": "Edit risk Â· {title}",
-        "heading": "Edit {title}",
-        "subtitle": "Update fields and severity for this risk entry.",
-        "summary": {
-          "title": "Current score",
-          "severity": "Severity"
-        },
-        "form_title": "Update details"
+      "edit": "Edit",
+      "empty": "No risks recorded yet.",
+      "manage_thresholds": "Severity thresholds",
+      "new_risk": "New risk",
+      "no_risks": "No risks recorded yet.",
+      "filter": {
+        "status": "Status",
+        "status_all": "All statuses",
+        "apply": "Apply filters"
       },
-      "empty": "No risks recorded yet."
+      "stats": {
+        "total": "Total risks"
+      }
     },
     "actions": {
       "view": "View",
@@ -1899,6 +1952,72 @@
         "uri": "Uri"
       },
       "title": "Title"
+    },
+    "principles": {
+      "page": {
+        "title": "Architecture Principle administration",
+        "heading": "Architecture Principle catalogue administration",
+        "subtitle": "Create or import architecture principles so ADRs can be anchored to an agreed set of statements."
+      },
+      "import": {
+        "heading": "Bulk import",
+        "help": "Upload a JSON file shaped {\"principles\": [{\"name\": ..., \"description\": ...}]}. Matching by name (case-insensitive) updates the existing entry; anything new is created.",
+        "submit": "Import principles",
+        "fields": {
+          "data_file": {
+            "label": "Principles file (JSON)",
+            "required": "Select a JSON file to import.",
+            "allowed": "Only JSON files are supported."
+          }
+        }
+      },
+      "manual": {
+        "heading": "Add a principle",
+        "name_label": "Name",
+        "name_placeholder": "Least Privilege by Default",
+        "help": {
+          "name": "A short, distinctive name for this principle."
+        },
+        "description_label": "Description",
+        "description_placeholder": "Grant the minimum access required for a role or service to perform its function.",
+        "submit": "Create principle",
+        "update_submit": "Save changes",
+        "delete_submit": "Delete principle"
+      },
+      "edit": {
+        "heading": "Edit principle",
+        "button": "Edit"
+      },
+      "list": {
+        "name": "Name",
+        "description": "Description",
+        "actions": "Actions",
+        "delete": "Delete",
+        "empty": "No architecture principles yet."
+      },
+      "delete": {
+        "confirm": "Delete this architecture principle? This cannot be undone."
+      },
+      "delete_bulk": {
+        "none_selected": "No principles were selected.",
+        "invalid_ids": "The selected principles could not be identified.",
+        "success": "{count} principle(s) deleted.",
+        "none_found": "No matching principles were found."
+      },
+      "flash": {
+        "import_result": "Import complete: {created} created, {updated} updated.",
+        "duplicate": "A principle named {name} already exists.",
+        "created": "Principle {name} created.",
+        "updated": "Principle {name} updated.",
+        "deleted": "Principle {name} deleted.",
+        "invalid_form": "Unable to process the submitted principle form.",
+        "in_use": "{name} is still referenced by an ADR ({adrs}) and cannot be deleted.",
+        "in_use_bulk": "The following principles are still referenced by an ADR and were not deleted: {names}."
+      }
+    },
+    "principle_edit": {
+      "subtitle_edit": "Update the name or description for {name}.",
+      "cancel": "Cancel"
     }
   },
   "actions": {
@@ -3256,7 +3375,8 @@
       "controls": "Controls",
       "export": "Export",
       "delete": "Delete SSP",
-      "delete_confirm": "Delete the SSP for {name}? This cannot be undone."
+      "delete_confirm": "Delete the SSP for {name}? This cannot be undone.",
+      "adrs": "ADRs"
     },
     "sections": {
       "system_identification": "System Identification",
@@ -3271,7 +3391,9 @@
       "controls": "Minimum Security Controls",
       "monitoring": "Continuous Monitoring",
       "poam": "Plan of Action & Milestones",
-      "dates": "Plan Dates"
+      "dates": "Plan Dates",
+      "adrs": "Architecture Decisions",
+      "architecture_overview": "Architecture Overview"
     },
     "labels": {
       "system_name": "System Name",
@@ -3320,7 +3442,9 @@
       "last_updated": "Last Updated",
       "severity": "severity",
       "resources_prefix": "Resources:",
-      "outcome_prefix": "Outcome:"
+      "outcome_prefix": "Outcome:",
+      "no_adrs": "No architecture decisions recorded.",
+      "manage_adrs": "Manage ADRs →"
     },
     "table": {
       "system": "System",
@@ -3504,6 +3628,83 @@
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
         "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
         "status": "Current remediation status of this POA&M item."
+      }
+    },
+    "adr": {
+      "forms": {
+        "title": "Title",
+        "primary_principle": "Primary architecture principle",
+        "secondary_principles": "Secondary architecture principles",
+        "status": "Status",
+        "context": "Context",
+        "decision": "Decision",
+        "consequences": "Consequences",
+        "supersedes": "Supersedes",
+        "submit": "Save ADR",
+        "update_submit": "Save changes",
+        "help": {
+          "primary_principle": "Required — the architecture principle this decision is anchored to. Cannot be changed after the ADR is created.",
+          "secondary_principles": "Optional — other principles this decision also touches.",
+          "status": "Proposed, Accepted, Rejected, or Deprecated. \"Superseded\" is only set automatically when another ADR supersedes this one.",
+          "supersedes": "Optional — if this decision replaces an earlier one in this SSP, select it here. The prior ADR's status will automatically become Superseded."
+        }
+      }
+    },
+    "adrs": {
+      "page_title": "Architecture Decision Records",
+      "back": "← Back to SSP",
+      "new": "New ADR",
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "edit_principle_fixed": "Primary principle (fixed at creation):",
+      "no_principles": "No architecture principles are defined yet.",
+      "no_principles_hint": "Ask an administrator to add some before creating an ADR.",
+      "no_principles_admin_hint": "As an admin, you can add some here:",
+      "no_principles_admin_link": "Manage architecture principles",
+      "filter": {
+        "status": "Status",
+        "principle": "Principle",
+        "all": "All",
+        "apply": "Apply filters"
+      },
+      "list": {
+        "title": "Title",
+        "status": "Status",
+        "principle": "Principle",
+        "date": "Date",
+        "empty": "No ADRs recorded yet."
+      },
+      "detail": {
+        "created": "Created",
+        "decided": "Decided",
+        "supersedes": "Supersedes:",
+        "superseded_by": "Superseded by:",
+        "principle": "Architecture principle",
+        "secondary_principles": "Also touches:",
+        "context": "Context",
+        "decision": "Decision",
+        "consequences": "Consequences"
+      }
+    },
+    "architecture_overview": {
+      "current_alt": "Current architecture overview diagram",
+      "none_uploaded": "No architecture overview image has been uploaded yet.",
+      "upload": {
+        "field": {
+          "label": "Upload image (PNG or JPEG)"
+        },
+        "submit": "Upload",
+        "errors": {
+          "required": "Please choose an image to upload.",
+          "invalid_image": "File must be a genuine PNG or JPEG image.",
+          "too_large": "Image must be 5 MB or smaller.",
+          "dimensions_too_large": "Image dimensions are too large."
+        }
+      },
+      "history": {
+        "heading": "Version history",
+        "entry": "Version {version} — uploaded by {uploader} on {date}",
+        "restore": "Restore"
       }
     }
   }

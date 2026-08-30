@@ -26,6 +26,20 @@
   {% endfor %}
 {% endwith %}
 
+<div class="mb-6 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] p-5">
+  <h2 class="text-lg font-semibold mb-3">SCIM Configuration</h2>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+    <div>
+      <dt class="text-[var(--color-muted)] mb-1">SCIM Base URL</dt>
+      <dd class="font-mono text-[var(--color-text)] break-all">{{ scim_base_url }}</dd>
+    </div>
+    <div>
+      <dt class="text-[var(--color-muted)] mb-1">Authentication</dt>
+      <dd class="font-mono text-[var(--color-text)] break-all">Authorization: Bearer ••••••••••••••••</dd>
+    </div>
+  </dl>
+</div>
+
 {% if new_token %}
 <div class="mb-6 rounded-md px-4 py-4 bg-yellow-500/10 border border-yellow-500/30">
   <p class="text-sm font-semibold text-yellow-300 mb-2">New token — copy it now. It will not be shown again.</p>
@@ -58,6 +72,7 @@
     <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
       <tr>
         <th class="px-4 py-3 font-semibold">Description</th>
+        <th class="px-4 py-3 font-semibold">Reference</th>
         <th class="px-4 py-3 font-semibold">Status</th>
         <th class="px-4 py-3 font-semibold">Created</th>
         <th class="px-4 py-3 font-semibold">Last Used</th>
@@ -68,6 +83,7 @@
       {% for token in tokens %}
       <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]">
         <td class="px-4 py-3 text-[var(--color-text)]">{{ token.description or '—' }}</td>
+        <td class="px-4 py-3 font-mono text-xs text-[var(--color-muted)]">{{ token.token_hash[:6] }}••••{{ token.token_hash[-4:] }}</td>
         <td class="px-4 py-3">
           {% if token.is_active %}
             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-500/15 text-green-400">Active</span>
@@ -102,7 +118,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="5" class="px-4 py-6 text-center text-[var(--color-muted)]">No tokens generated yet.</td>
+        <td colspan="6" class="px-4 py-6 text-center text-[var(--color-muted)]">No tokens generated yet.</td>
       </tr>
       {% endfor %}
     </tbody>

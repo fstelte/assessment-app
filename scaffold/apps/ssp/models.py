@@ -66,6 +66,14 @@ class POAMStatus(enum.Enum):
     DELAYED = "delayed"
 
 
+class ADRStatus(enum.Enum):
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    DEPRECATED = "deprecated"
+    SUPERSEDED = "superseded"
+
+
 class SSPlan(db.Model):
     """System Security Plan — one per ContextScope."""
 
@@ -134,6 +142,17 @@ class SSPlan(db.Model):
         back_populates="ssp",
         cascade="all, delete-orphan",
         order_by="POAMItem.scheduled_completion",
+    )
+    adr_records = db.relationship(
+        "ADRRecord",
+        back_populates="ssp",
+        cascade="all, delete-orphan",
+    )
+    architecture_overview_versions = db.relationship(
+        "SSPArchitectureOverview",
+        back_populates="ssp",
+        cascade="all, delete-orphan",
+        order_by="SSPArchitectureOverview.version_number.desc()",
     )
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -276,3 +295,129 @@ class POAMMilestone(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<POAMMilestone item_id={self.item_id}>"
+
+
+class ArchitecturePrinciple(db.Model):
+    """Admin-governed architecture principle that ADRs are anchored to."""
+
+    __tablename__ = "architecture_principles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<ArchitecturePrinciple {self.name!r}>"
+
+
+# M2M: ADRRecord <-> ArchitecturePrinciple (secondary principles)
+adr_secondary_principles = db.Table(
+    "adr_secondary_principles",
+    db.metadata,
+    db.Column(
+        "adr_id",
+        db.Integer,
+        db.ForeignKey("adr_records.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "principle_id",
+        db.Integer,
+        db.ForeignKey("architecture_principles.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
+class ADRRecord(db.Model):
+    """Architecture Decision Record (adr.github.io) attached to an SSP."""
+
+    __tablename__ = "adr_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ssp_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ssp_plans.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    title = db.Column(db.String(255), nullable=False)
+    status = db.Column(
+        _enum_col(ADRStatus, name="adr_status"),
+        nullable=False,
+        default=ADRStatus.PROPOSED,
+        server_default="proposed",
+    )
+    context = db.Column(db.Text, nullable=False)
+    decision = db.Column(db.Text, nullable=False)
+    consequences = db.Column(db.Text, nullable=True)
+    primary_principle_id = db.Column(
+        db.Integer,
+        db.ForeignKey("architecture_principles.id"),
+        nullable=False,
+    )
+    supersedes_id = db.Column(
+        db.Integer,
+        db.ForeignKey("adr_records.id"),
+        nullable=True,
+        unique=True,
+    )
+    author_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    decided_on = db.Column(db.Date, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
+
+    ssp = db.relationship("SSPlan", back_populates="adr_records")
+    primary_principle = db.relationship("ArchitecturePrinciple", foreign_keys=[primary_principle_id])
+    secondary_principles = db.relationship(
+        "ArchitecturePrinciple",
+        secondary=adr_secondary_principles,
+        backref="secondary_adrs",
+    )
+    author = db.relationship("User", foreign_keys=[author_id])
+    supersedes = db.relationship(
+        "ADRRecord",
+        remote_side=[id],
+        backref=db.backref("superseded_by", uselist=False),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<ADRRecord ssp_id={self.ssp_id} title={self.title!r} status={self.status.value!r}>"
+
+
+class SSPArchitectureOverview(db.Model):
+    """An uploaded architecture overview image version for an SSP (append-only)."""
+
+    __tablename__ = "ssp_architecture_overview_versions"
+    __table_args__ = (
+        sa.UniqueConstraint("ssp_id", "version_number", name="uq_ssp_architecture_overview_version"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    ssp_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ssp_plans.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version_number = db.Column(db.Integer, nullable=False)
+    image_data = db.Column(db.LargeBinary, nullable=False)
+    mime_type = db.Column(db.String(20), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size_bytes = db.Column(db.Integer, nullable=False)
+    uploaded_by_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    uploaded_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+
+    ssp = db.relationship("SSPlan", back_populates="architecture_overview_versions")
+    uploaded_by = db.relationship("User", foreign_keys=[uploaded_by_id])
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<SSPArchitectureOverview ssp_id={self.ssp_id} version_number={self.version_number}>"
