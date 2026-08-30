@@ -33,6 +33,10 @@ class RoleSyncService:
         self._config = config
         self._use_db_mappings = use_db_mappings
 
+    @property
+    def config(self) -> RoleSyncConfig:
+        return self._config
+
     @classmethod
     def from_app(cls, app) -> "RoleSyncService":
         raw = (

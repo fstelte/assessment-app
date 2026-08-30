@@ -143,8 +143,28 @@ class AuthenticationMethodDeleteForm(FlaskForm):
 
 
 class BiaTierForm(FlaskForm):
-    """Update a BIA tier's name."""
+    """Create or update a BIA tier."""
 
+    level = IntegerField(
+        _label("admin.bia_tiers.table.level"),
+        validators=[DataRequired(), NumberRange(min=0)],
+    )
+    name_en = StringField(
+        _label("admin.bia_tier_form.fields.name_en"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    name_nl = StringField(
+        _label("admin.bia_tier_form.fields.name_nl"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    rto_goal_seconds = IntegerField(
+        _label("admin.bia_tier_form.fields.rto_goal_seconds"),
+        validators=[Optional(), NumberRange(min=0)],
+    )
+    rpo_goal_seconds = IntegerField(
+        _label("admin.bia_tier_form.fields.rpo_goal_seconds"),
+        validators=[Optional(), NumberRange(min=0)],
+    )
     submit = SubmitField(_label("actions.save"))
 
 

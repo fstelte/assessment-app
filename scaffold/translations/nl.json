@@ -42,6 +42,14 @@
       }
     }
   },
+  "pagination": {
+    "previous": "Vorige",
+    "next": "Volgende",
+    "showing": "Resultaat",
+    "to": "tot",
+    "of": "van",
+    "results": "resultaten"
+  },
   "auth": {
     "login": {
       "title": "Aanmelden",
@@ -1427,28 +1435,68 @@
       }
     },
     "bia_tiers": {
-      "list": {
-        "title": "BIA Niveau Beheer",
-        "subtitle": "Bewerk de toewijzing van kritikaliteitsniveaus. (Namen worden beheerd in vertaalbestanden)",
-        "columns": {
-          "level": "Niveau",
-          "name": "Vertaalde Naam"
-        },
-        "empty": "Nog geen niveaus gedefinieerd."
+      "title": "BIA Niveau Beheer",
+      "heading": "BIA Niveau Beheer",
+      "subtitle": "Beheer beschikbaarheidsniveaus en hun hersteldoelen.",
+      "new_tier": "Nieuw niveau",
+      "back_to_admin": "Terug naar beheer",
+      "table": {
+        "level": "Niveau",
+        "name": "Naam",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "actions": "Acties"
       },
-      "edit": {
-        "title": "Bewerk BIA Niveau",
-        "heading": "Bewerk Niveau {level}"
-      },
-      "fields": {
-        "level": "Niveau"
-      },
-      "form": {
-        "name_in_translation": "De naam van dit niveau wordt beheerd via de lokalisatiebestanden (en.json, nl.json)."
-      },
+      "edit": "Bewerken",
+      "no_tiers": "Nog geen niveaus gedefinieerd.",
       "flash": {
-        "updated": "Niveau succesvol bijgewerkt."
+        "updated": "Niveau succesvol opgeslagen."
       }
+    },
+    "bia_tier_form": {
+      "subtitle_edit": "Werk de gegevens van dit niveau bij.",
+      "subtitle_new": "Maak een nieuw BIA-niveau aan.",
+      "cancel": "Annuleren",
+      "fields": {
+        "name_en": "Naam (Engels)",
+        "name_nl": "Naam (Nederlands)",
+        "rto_goal_seconds": "RTO-doel (seconden)",
+        "rpo_goal_seconds": "RPO-doel (seconden)"
+      },
+      "errors": {
+        "duplicate_level": "Er bestaat al een niveau met dit level."
+      }
+    },
+    "auth_methods": {
+      "title": "Authenticatiemethoden",
+      "heading": "Authenticatiemethoden",
+      "subtitle": "Configureer hoe gebruikers inloggen op deze applicatie.",
+      "note": "Wijzigingen hier hebben direct invloed op het inloggen voor alle gebruikers.",
+      "status": {
+        "enabled": "Ingeschakeld",
+        "disabled": "Uitgeschakeld"
+      },
+      "local": {
+        "heading": "Lokaal inloggen",
+        "description": "Sta gebruikers toe om in te loggen met een e-mailadres en wachtwoord dat in deze applicatie is opgeslagen."
+      },
+      "saml": {
+        "heading": "SAML SSO",
+        "description": "Sta gebruikers toe om in te loggen via een SAML identity provider.",
+        "not_configured": "SAML is nog niet geconfigureerd."
+      },
+      "registration": "Registratie",
+      "enabled": "Ingeschakeld",
+      "disabled": "Uitgeschakeld",
+      "configure": "Configureren",
+      "configure_local": "Lokaal inloggen configureren",
+      "configure_saml": "SAML SSO configureren",
+      "enable_login": "Lokaal inloggen inschakelen",
+      "enable_reg": "Zelfregistratie toestaan",
+      "enable_saml": "SAML SSO inschakelen",
+      "provider": "Provider",
+      "metadata_url": "Metadata-URL",
+      "save": "Wijzigingen opslaan"
     },
     "controls": {
       "manage_availability_tiers": "Beschikbaarheidsniveaus beheren",
@@ -1549,10 +1597,12 @@
         "discovered_on_label": "Ontdekt op",
         "due": "Vervalt op {date}",
         "impact_chance": "Impact / Waarschijnlijkheid",
-        "owner": "Eigenaar: {owner}",
+        "owner": "Eigenaar",
         "risk": "Risico",
         "score": "Score",
-        "treatment": "Behandeling"
+        "treatment": "Behandeling",
+        "title": "Risico",
+        "status": "Status"
       },
       "errors": {
         "invalid_controls": "Selecteer geldige CSA-controls voordat je opslaat.",
@@ -1563,16 +1613,7 @@
         "delete": "Verwijderen",
         "edit": "Bewerken"
       },
-      "edit": {
-        "form_title": "Details bijwerken",
-        "heading": "Bewerk {title}",
-        "subtitle": "Update velden en ernst voor dit risico.",
-        "summary": {
-          "severity": "Ernst",
-          "title": "Huidige score"
-        },
-        "title": "Bewerk risico Â· {title}"
-      },
+      "edit": "Bewerken",
       "empty": "Nog geen risico's geregistreerd.",
       "flash": {
         "created": "Risico '{title}' aangemaakt.",
@@ -1613,7 +1654,18 @@
         "subtitle": "Pas de score-bereiken aan die worden gebruikt om risico's te labelen als laag, gemiddeld, hoog of kritiek.",
         "title": "Ernst matrix"
       },
-      "title": "Risico register"
+      "title": "Risico register",
+      "manage_thresholds": "Ernstdrempels",
+      "new_risk": "Nieuw risico",
+      "no_risks": "Nog geen risico's geregistreerd.",
+      "filter": {
+        "status": "Status",
+        "status_all": "Alle statussen",
+        "apply": "Filters toepassen"
+      },
+      "stats": {
+        "total": "Totaal aantal risico's"
+      }
     },
     "users": {
       "title": "Gebruikersbeheer",
@@ -1647,6 +1699,7 @@
         "disabled": "Uitgeschakeld"
       },
       "actions": {
+        "approve": "Goedkeuren",
         "manage_mfa": "MFA beheren",
         "deactivate": "Deactiveren",
         "activate": "Activeren",

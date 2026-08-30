@@ -1,169 +1,160 @@
 {% extends "base.html" %}
-{% block title %}{{ _('admin.auth_methods.title') }}{% endblock %}
+{% block title %}{{ _('admin.authentication_methods.title') }}{% endblock %}
+
 {% block content %}
-<div class="mb-5">
-  <h1 class="text-2xl font-bold mb-1">{{ _('admin.auth_methods.heading') }}</h1>
-  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.auth_methods.subtitle') }}</p>
+<div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold mb-1">{{ _('admin.authentication_methods.title') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('admin.authentication_methods.list.subtitle') }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{{ url_for('admin.list_users') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+      {{ _('admin.authentication_methods.back_to_admin') }}
+    </a>
+  </div>
 </div>
 
-<div class="bg-blue-500/10 border border-blue-400/30 text-blue-200 rounded-lg p-4 mb-4 text-sm">
-    <div class="flex gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-        <div>
-            <strong>Note:</strong> {{ _('admin.auth_methods.note') }}
-        </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  {# Create form #}
+  <div class="bg-[var(--color-card)] rounded-lg border border-[var(--color-border)] shadow-sm">
+    <div class="px-5 py-4 border-b border-[var(--color-border)]">
+      <h2 class="text-base font-semibold m-0">{{ _('admin.authentication_methods.create.title') }}</h2>
     </div>
-</div>
+    <div class="p-5">
+      <form method="POST" action="{{ url_for('admin.list_authentication_methods') }}" class="space-y-4">
+        {{ create_form.hidden_tag() }}
+        <div>
+          <label class="block text-sm font-medium mb-1 text-[var(--color-text)]">{{ _('admin.authentication_methods.create.fields.slug') }}</label>
+          {{ create_form.slug(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. password") }}
+          {% for error in create_form.slug.errors %}
+            <span class="text-red-400 text-xs">{{ error }}</span>
+          {% endfor %}
+        </div>
+        <p class="text-xs text-[var(--color-muted)]">{{ _('admin.authentication_methods.create.translation_hint') }}</p>
+        <button type="submit" class="w-full inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
+          {{ _('admin.authentication_methods.create.submit') }}
+        </button>
+      </form>
+    </div>
+  </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <!-- Local Auth -->
-  <div class="bg-[var(--color-card)] rounded-lg border border-[var(--color-border)] shadow-sm">
-      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-          <h2 class="text-lg font-semibold m-0 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-muted)]"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            {{ _('admin.auth_methods.local.heading') }}
-          </h2>
-          {% if local_enabled %}
-             <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-green-500/20 text-green-400">{{ _('admin.auth_methods.status.enabled') }}</span>
-          {% else %}
-             <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ _('admin.auth_methods.status.disabled') }}</span>
-          {% endif %}
-      </div>
-      <div class="p-5">
-          <p class="text-[var(--color-text)] mb-4 text-sm">{{ _('admin.auth_methods.local.description') }}</p>
-          <div class="flex flex-col gap-2 p-3 bg-[var(--color-surface)] rounded border border-[var(--color-border)] text-sm mb-4">
-              <div class="flex justify-between">
-                  <span class="text-[var(--color-muted)]">{{ _('admin.auth_methods.registration') }}:</span>
-                  <span class="font-medium">{{ _('admin.auth_methods.enabled') if local_registration else _('admin.auth_methods.disabled') }}</span>
+  {# Methods table #}
+  <div class="lg:col-span-2 bg-[var(--color-card)] rounded-lg border border-[var(--color-border)] shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--color-border)]">
+      <h2 class="text-base font-semibold m-0">{{ _('admin.authentication_methods.list.title') }}</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.authentication_methods.list.columns.slug') }}</th>
+            {% for locale in display_locales %}
+            <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.authentication_methods.list.columns.label_locale', locale_name=locale_names[locale]) }}</th>
+            {% endfor %}
+            <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.authentication_methods.list.columns.status') }}</th>
+            <th scope="col" class="px-4 py-3 font-semibold">{{ _('admin.authentication_methods.list.columns.usage') }}</th>
+            <th scope="col" class="px-4 py-3 font-semibold text-right">{{ _('admin.authentication_methods.list.columns.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+          {% for method in methods %}
+          <tr class="hover:bg-slate-500/5 transition-colors">
+            <td class="px-4 py-3 align-middle font-mono">{{ method.slug }}</td>
+            {% for locale in display_locales %}
+            <td class="px-4 py-3 align-middle text-[var(--color-muted)]">
+              {{ method_labels[method.id][locale] or _('admin.authentication_methods.list.missing_label') }}
+            </td>
+            {% endfor %}
+            <td class="px-4 py-3 align-middle">
+              {% if method.is_active %}
+                <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-green-500/20 text-green-400">{{ _('admin.authentication_methods.state.active') }}</span>
+              {% else %}
+                <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-500/20 text-[var(--color-muted)]">{{ _('admin.authentication_methods.state.inactive') }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-middle text-[var(--color-muted)]">
+              {% if component_usage[method.id] %}
+                {{ _('admin.authentication_methods.list.in_use', count=component_usage[method.id]) }}
+              {% else %}
+                {{ _('admin.authentication_methods.list.not_in_use') }}
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 align-middle text-right">
+              <div class="flex items-center justify-end gap-2">
+                {# Edit modal toggle #}
+                <button
+                  type="button"
+                  data-modal-target="edit-method-{{ method.id }}"
+                  data-modal-toggle="edit-method-{{ method.id }}"
+                  class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                  {{ _('admin.authentication_methods.list.actions.edit') }}
+                </button>
+                {# Toggle active/inactive #}
+                <form method="POST" action="{{ url_for('admin.toggle_authentication_method', method_id=method.id) }}" style="display:contents">
+                  {{ toggle_forms[method.id].hidden_tag() }}
+                  {{ toggle_forms[method.id].method_id() }}
+                  <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+                    {{ toggle_forms[method.id].submit.label.text }}
+                  </button>
+                </form>
+                {# Delete #}
+                <form method="POST" action="{{ url_for('admin.delete_authentication_method', method_id=method.id) }}" style="display:contents"
+                      onsubmit="return confirm('{{ _('admin.authentication_methods.list.actions.delete_confirm') }}');">
+                  {{ delete_forms[method.id].hidden_tag() }}
+                  {{ delete_forms[method.id].method_id() }}
+                  <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1.5 text-xs transition-colors border border-red-500/40 text-red-400 hover:bg-red-500/10">
+                    {{ _('admin.authentication_methods.form.delete') }}
+                  </button>
+                </form>
               </div>
+            </td>
+          </tr>
+
+          {# Edit modal #}
+          <div id="edit-method-{{ method.id }}" tabindex="-1" aria-hidden="true"
+               class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+            <div class="relative w-full max-w-md max-h-full">
+              <div class="relative bg-[var(--color-card)] rounded-lg shadow-xl border border-[var(--color-border)]">
+                <button type="button"
+                  class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                  data-modal-hide="edit-method-{{ method.id }}">
+                  <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                  </svg>
+                  <span class="sr-only">Close modal</span>
+                </button>
+                <div class="px-6 py-6 lg:px-8">
+                  <h3 class="mb-4 text-lg font-semibold text-[var(--color-text)]">{{ _('admin.authentication_methods.edit.title', name=method_display_names[method.id]) }}</h3>
+                  <form method="POST" action="{{ url_for('admin.update_authentication_method', method_id=method.id) }}" class="space-y-4">
+                    {{ edit_forms[method.id].hidden_tag() }}
+                    <div>
+                      <label class="block text-sm font-medium mb-1 text-[var(--color-text)]">{{ _('admin.authentication_methods.create.fields.slug') }}</label>
+                      {{ edit_forms[method.id].slug(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+                      {% for error in edit_forms[method.id].slug.errors %}
+                        <span class="text-red-400 text-xs">{{ error }}</span>
+                      {% endfor %}
+                    </div>
+                    <p class="text-xs text-[var(--color-muted)]">{{ _('admin.authentication_methods.edit.translation_hint') }}</p>
+                    <button type="submit" class="w-full inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
+                      {{ _('admin.authentication_methods.edit.submit') }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
           </div>
-          {% if local_method_id %}
-            <button data-modal-target="edit-method-{{ local_method_id }}" data-modal-toggle="edit-method-{{ local_method_id }}" class="w-full inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
-                {{ _('admin.auth_methods.configure') }}
-            </button>
-            
-            {% set method = local_method %}
-            {% set form = local_form %}
-            <!-- Modal for Local -->
-            <div id="edit-method-{{ method.id }}" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-                <div class="relative w-full max-w-md max-h-full">
-                    <div class="relative bg-[var(--color-card)] rounded-lg shadow-xl border border-[var(--color-border)]">
-                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="edit-method-{{ method.id }}">
-                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                            </svg>
-                            <span class="sr-only">Close modal</span>
-                        </button>
-                        <div class="px-6 py-6 lg:px-8">
-                            <h3 class="mb-4 text-xl font-medium text-[var(--color-text)]">{{ _('admin.auth_methods.configure_local') }}</h3>
-                            <form class="space-y-4" action="{{ url_for('admin.update_auth_method', method_id=method.id) }}" method="POST">
-                                {{ form.hidden_tag() }}
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-[var(--color-text)]">{{ form.is_enabled.label.text }}</label>
-                                    <div class="flex items-center">
-                                        {{ form.is_enabled(class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600") }}
-                                        <span class="ml-2 text-sm text-[var(--color-text)]">{{ _('admin.auth_methods.enable_login') }}</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-[var(--color-text)]">{{ form.allow_registration.label.text }}</label>
-                                    <div class="flex items-center">
-                                        {{ form.allow_registration(class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600") }}
-                                        <span class="ml-2 text-sm text-[var(--color-text)]">{{ _('admin.auth_methods.enable_reg') }}</span>
-                                    </div>
-                                </div>
-                                <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                    {{ _('admin.auth_methods.save') }}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-          {% endif %}
-      </div>
-  </div>
-
-  <!-- SAML Auth -->
-  <div class="bg-[var(--color-card)] rounded-lg border border-[var(--color-border)] shadow-sm">
-      <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center">
-          <h2 class="text-lg font-semibold m-0 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-muted)]"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            {{ _('admin.auth_methods.saml.heading') }}
-          </h2>
-          {% if saml_enabled %}
-             <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-green-500/20 text-green-400">{{ _('admin.auth_methods.status.enabled') }}</span>
-          {% else %}
-             <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ _('admin.auth_methods.status.disabled') }}</span>
-          {% endif %}
-      </div>
-      <div class="p-5">
-          <p class="text-[var(--color-text)] mb-4 text-sm">{{ _('admin.auth_methods.saml.description') }}</p>
-          
-          {% if saml_method %}
-            <div class="flex flex-col gap-2 p-3 bg-[var(--color-surface)] rounded border border-[var(--color-border)] text-sm mb-4">
-                <div class="flex justify-between">
-                    <span class="text-[var(--color-muted)]">{{ _('admin.auth_methods.provider') }}:</span>
-                    <span class="font-medium text-right break-all">{{ saml_method.config.get('idp_entity_id', '-') }}</span>
-                </div>
-                 <div class="flex justify-between">
-                    <span class="text-[var(--color-muted)]">{{ _('admin.auth_methods.metadata_url') }}:</span>
-                    <span class="font-medium text-right break-all">{{ saml_method.config.get('idp_metadata_url', '-') }}</span>
-                </div>
-            </div>
-          
-            <button data-modal-target="edit-method-{{ saml_method.id }}" data-modal-toggle="edit-method-{{ saml_method.id }}" class="w-full inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
-                {{ _('admin.auth_methods.configure') }}
-            </button>
-
-            {% set method = saml_method %}
-            {% set form = saml_form %}
-            <!-- Modal for SAML -->
-            <div id="edit-method-{{ method.id }}" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-                <div class="relative w-full max-w-md max-h-full">
-                    <div class="relative bg-[var(--color-card)] rounded-lg shadow-xl border border-[var(--color-border)]">
-                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="edit-method-{{ method.id }}">
-                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                            </svg>
-                            <span class="sr-only">Close modal</span>
-                        </button>
-                        <div class="px-6 py-6 lg:px-8">
-                            <h3 class="mb-4 text-xl font-medium text-[var(--color-text)]">{{ _('admin.auth_methods.configure_saml') }}</h3>
-                            <form class="space-y-4" action="{{ url_for('admin.update_auth_method', method_id=method.id) }}" method="POST">
-                                {{ form.hidden_tag() }}
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-[var(--color-text)]">{{ form.is_enabled.label.text }}</label>
-                                    <div class="flex items-center">
-                                        {{ form.is_enabled(class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600") }}
-                                        <span class="ml-2 text-sm text-[var(--color-text)]">{{ _('admin.auth_methods.enable_saml') }}</span>
-                                    </div>
-                                </div>
-                                <hr class="border-gray-600 my-4">
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-[var(--color-text)]">{{ form.idp_metadata_url.label.text }}</label>
-                                    {{ form.idp_metadata_url(class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white") }}
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-sm font-medium text-[var(--color-text)]">{{ form.idp_entity_id.label.text }}</label>
-                                    {{ form.idp_entity_id(class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white") }}
-                                </div>
-                                <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                    {{ _('admin.auth_methods.save') }}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
           {% else %}
-             <div class="bg-yellow-500/10 text-yellow-500 rounded p-3 text-sm border border-yellow-500/20">
-                 {{ _('admin.auth_methods.saml.not_configured') }}
-             </div>
-          {% endif %}
-      </div>
+          <tr>
+            <td colspan="{{ 4 + display_locales|length }}" class="px-4 py-8 text-center text-[var(--color-muted)]">
+              {{ _('admin.authentication_methods.list.empty') }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
-
 {% endblock %}

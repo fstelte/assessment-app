@@ -41,6 +41,14 @@
       }
     }
   },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results"
+  },
   "bia": {
     "flash": {
       "created": "BIA created successfully.",
@@ -1247,28 +1255,68 @@
       }
     },
     "bia_tiers": {
-      "list": {
-        "title": "BIA Tier Management",
-        "subtitle": "Edit the mapping of criticality levels. (Names are managed in translation files)",
-        "columns": {
-          "level": "Level",
-          "name": "Translated Name"
-        },
-        "empty": "No tiers defined yet."
+      "title": "BIA Tier Management",
+      "heading": "BIA Tier Management",
+      "subtitle": "Manage availability tiers and their recovery objectives.",
+      "new_tier": "New tier",
+      "back_to_admin": "Back to admin",
+      "table": {
+        "level": "Level",
+        "name": "Name",
+        "rto": "RTO",
+        "rpo": "RPO",
+        "actions": "Actions"
       },
-      "edit": {
-        "title": "Edit BIA Tier",
-        "heading": "Edit Tier {level}"
-      },
-      "fields": {
-        "level": "Level"
-      },
-      "form": {
-        "name_in_translation": "The name of this tier is managed via the localization files (en.json, nl.json)."
-      },
+      "edit": "Edit",
+      "no_tiers": "No tiers defined yet.",
       "flash": {
-        "updated": "Tier updated successfully."
+        "updated": "Tier saved successfully."
       }
+    },
+    "bia_tier_form": {
+      "subtitle_edit": "Update this tier's details.",
+      "subtitle_new": "Create a new BIA tier.",
+      "cancel": "Cancel",
+      "fields": {
+        "name_en": "Name (English)",
+        "name_nl": "Name (Dutch)",
+        "rto_goal_seconds": "RTO goal (seconds)",
+        "rpo_goal_seconds": "RPO goal (seconds)"
+      },
+      "errors": {
+        "duplicate_level": "A tier with this level already exists."
+      }
+    },
+    "auth_methods": {
+      "title": "Authentication Methods",
+      "heading": "Authentication Methods",
+      "subtitle": "Configure how users sign in to this application.",
+      "note": "Changes here affect sign-in for all users immediately.",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "local": {
+        "heading": "Local login",
+        "description": "Allow users to sign in with an email address and password stored in this application."
+      },
+      "saml": {
+        "heading": "SAML SSO",
+        "description": "Allow users to sign in via a SAML identity provider.",
+        "not_configured": "SAML has not been configured yet."
+      },
+      "registration": "Registration",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "configure": "Configure",
+      "configure_local": "Configure local login",
+      "configure_saml": "Configure SAML SSO",
+      "enable_login": "Enable local login",
+      "enable_reg": "Allow self-registration",
+      "enable_saml": "Enable SAML SSO",
+      "provider": "Provider",
+      "metadata_url": "Metadata URL",
+      "save": "Save changes"
     },
     "controls": {
       "manage_availability_tiers": "Manage availability tiers",
@@ -1382,6 +1430,7 @@
         "disabled": "Disabled"
       },
       "actions": {
+        "approve": "Approve",
         "manage_mfa": "Manage MFA",
         "deactivate": "Deactivate",
         "activate": "Activate",
@@ -1728,7 +1777,9 @@
         "discovered_on_label": "Discovered on",
         "csa_controls": "CSA controls",
         "due": "Due by {date}",
-        "owner": "Owner: {owner}"
+        "owner": "Owner",
+        "title": "Risk",
+        "status": "Status"
       },
       "actions": {
         "edit": "Edit",
@@ -1769,17 +1820,19 @@
         },
         "page_title": "Risk severity thresholds"
       },
-      "edit": {
-        "title": "Edit risk Â· {title}",
-        "heading": "Edit {title}",
-        "subtitle": "Update fields and severity for this risk entry.",
-        "summary": {
-          "title": "Current score",
-          "severity": "Severity"
-        },
-        "form_title": "Update details"
+      "edit": "Edit",
+      "empty": "No risks recorded yet.",
+      "manage_thresholds": "Severity thresholds",
+      "new_risk": "New risk",
+      "no_risks": "No risks recorded yet.",
+      "filter": {
+        "status": "Status",
+        "status_all": "All statuses",
+        "apply": "Apply filters"
       },
-      "empty": "No risks recorded yet."
+      "stats": {
+        "total": "Total risks"
+      }
     },
     "actions": {
       "view": "View",

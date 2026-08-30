@@ -26,6 +26,43 @@
   {% endfor %}
 {% endwith %}
 
+<div class="mb-6 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] overflow-hidden">
+  <div class="px-5 py-4 border-b border-[var(--color-border)]">
+    <h2 class="text-lg font-semibold m-0">Role Mapping (from SAML_ROLE_MAP)</h2>
+    <p class="text-[var(--color-muted)] text-sm mb-0 mt-1">Group &rarr; role mappings configured via the SAML_ROLE_MAP environment variable. These apply at SAML login time, independent of the SCIM group registrations below.</p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left border-collapse">
+      <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Group OID</th>
+          <th class="px-4 py-3 font-semibold">Mapped Role(s)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in env_role_map %}
+        <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]">
+          <td class="px-4 py-3 text-[var(--color-muted)] font-mono text-xs">{{ entry.group_id }}</td>
+          <td class="px-4 py-3 text-[var(--color-text)]">
+            {% for role_name in entry.role_names %}
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mr-1
+                {% if role_name in entry.unknown_roles %}bg-red-500/15 text-red-400{% else %}bg-blue-500/15 text-blue-400{% endif %}">
+                {{ role_name }}{% if role_name in entry.unknown_roles %} (unknown role){% endif %}
+              </span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="2" class="px-4 py-6 text-center text-[var(--color-muted)]">SAML_ROLE_MAP is not configured or is empty.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">SCIM-Registered Groups</h2>
 <div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)]">
   <table class="w-full text-sm text-left border-collapse bg-[var(--color-card)]">
     <thead class="bg-[var(--color-surface)] text-[var(--color-text)] border-b border-[var(--color-border)]">

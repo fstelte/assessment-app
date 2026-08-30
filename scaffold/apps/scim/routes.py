@@ -38,6 +38,7 @@ csrf.exempt(bp)
 _SCIM_CONTENT_TYPE = "application/scim+json"
 _SP_CONFIG_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"
 _SCHEMAS_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:Schema"
+_RESOURCE_TYPE_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:ResourceType"
 _USER_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:User"
 _GROUP_SCHEMA = "urn:ietf:params:scim:schemas:core:2.0:Group"
 
@@ -93,6 +94,39 @@ def schemas():
             {"id": _USER_SCHEMA, "name": "User"},
             {"id": _GROUP_SCHEMA, "name": "Group"},
         ],
+    })
+
+
+# ---------------------------------------------------------------------------
+# Resource Types endpoint (discovery)
+# ---------------------------------------------------------------------------
+
+@bp.get("/ResourceTypes")
+@limiter.limit(_RATE_LIMIT)
+@require_scim_token
+def resource_types():
+    resources = [
+        {
+            "schemas": [_RESOURCE_TYPE_SCHEMA],
+            "id": "User",
+            "name": "User",
+            "endpoint": "/Users",
+            "description": "User Account",
+            "schema": _USER_SCHEMA,
+        },
+        {
+            "schemas": [_RESOURCE_TYPE_SCHEMA],
+            "id": "Group",
+            "name": "Group",
+            "endpoint": "/Groups",
+            "description": "Group",
+            "schema": _GROUP_SCHEMA,
+        },
+    ]
+    return _scim_response({
+        "schemas": ["urn:ietf:params:scim:api:messages:2.0:ListResponse"],
+        "totalResults": len(resources),
+        "Resources": resources,
     })
 
 

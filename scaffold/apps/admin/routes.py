@@ -1757,6 +1757,32 @@ def list_bia_tiers():
     return render_template("admin/bia_tiers_list.html", tiers=tiers)
 
 
+@bp.route("/bia/tiers/new", methods=["GET", "POST"])
+@login_required
+def new_bia_tier():
+    _require_admin()
+    form = BiaTierForm()
+    if form.validate_on_submit():
+        existing = db.session.scalar(sa.select(BiaTier).where(BiaTier.level == form.level.data))
+        if existing is not None:
+            form.level.errors.append(_("admin.bia_tier_form.errors.duplicate_level"))
+        else:
+            tier = BiaTier()
+            form.populate_obj(tier)
+            db.session.add(tier)
+            db.session.commit()
+            log_event(
+                action="bia_tier_created",
+                entity_type="bia_tier",
+                entity_id=tier.id,
+                details={"level": tier.level},
+            )
+            flash(_("admin.bia_tiers.flash.updated"), "success")
+            return redirect(url_for("admin.list_bia_tiers"))
+
+    return render_template("admin/bia_tier_form.html", form=form, tier=None)
+
+
 @bp.route("/bia/tiers/<int:tier_id>", methods=["GET", "POST"])
 @login_required
 def edit_bia_tier(tier_id: int):
@@ -1767,16 +1793,22 @@ def edit_bia_tier(tier_id: int):
 
     form = BiaTierForm(obj=tier)
     if form.validate_on_submit():
-        form.populate_obj(tier)
-        db.session.commit()
-        log_event(
-            action="bia_tier_updated",
-            entity_type="bia_tier",
-            entity_id=tier.id,
-            details={"level": tier.level},
+        existing = db.session.scalar(
+            sa.select(BiaTier).where(BiaTier.level == form.level.data, BiaTier.id != tier.id)
         )
-        flash(_("admin.bia_tiers.flash.updated"), "success")
-        return redirect(url_for("admin.list_bia_tiers"))
+        if existing is not None:
+            form.level.errors.append(_("admin.bia_tier_form.errors.duplicate_level"))
+        else:
+            form.populate_obj(tier)
+            db.session.commit()
+            log_event(
+                action="bia_tier_updated",
+                entity_type="bia_tier",
+                entity_id=tier.id,
+                details={"level": tier.level},
+            )
+            flash(_("admin.bia_tiers.flash.updated"), "success")
+            return redirect(url_for("admin.list_bia_tiers"))
 
     return render_template("admin/bia_tier_form.html", form=form, tier=tier)
 
@@ -2391,6 +2423,10 @@ def _cleanup_backup_bytes(key: str) -> None:
 # SCIM Token & Group management admin
 # ---------------------------------------------------------------------------
 
+def _scim_base_url() -> str:
+    return url_for("scim.list_users", _external=True).rsplit("/Users", 1)[0]
+
+
 @bp.get("/scim/tokens")
 @login_required
 @require_fresh_login()
@@ -2398,7 +2434,12 @@ def scim_tokens():
     _require_admin()
     from ..scim.models import SCIMToken
     tokens = SCIMToken.query.order_by(SCIMToken.created_at.desc()).all()
-    return render_template("admin/scim_tokens.html", tokens=tokens, new_token=None)
+    return render_template(
+        "admin/scim_tokens.html",
+        tokens=tokens,
+        new_token=None,
+        scim_base_url=_scim_base_url(),
+    )
 
 
 @bp.post("/scim/tokens/create")
@@ -2425,7 +2466,12 @@ def scim_token_create():
 
     tokens = SCIMToken.query.order_by(SCIMToken.created_at.desc()).all()
     flash(_("admin.scim.tokens.flash.created"), "success")
-    return render_template("admin/scim_tokens.html", tokens=tokens, new_token=raw_token)
+    return render_template(
+        "admin/scim_tokens.html",
+        tokens=tokens,
+        new_token=raw_token,
+        scim_base_url=_scim_base_url(),
+    )
 
 
 @bp.post("/scim/tokens/<int:token_id>/revoke")
@@ -2478,11 +2524,30 @@ def scim_token_delete(token_id: int):
 def scim_groups():
     _require_admin()
     from ..identity.models import AADGroupMapping
+    from ..auth.role_sync import RoleSyncService
+
     mappings = AADGroupMapping.query.options(sa.orm.joinedload(AADGroupMapping.role)).order_by(
         AADGroupMapping.scim_display_name.asc()
     ).all()
     roles = Role.query.order_by(Role.name.asc()).all()
-    return render_template("admin/scim_groups.html", mappings=mappings, roles=roles)
+
+    env_mapping = RoleSyncService.from_app(current_app).config.mapping
+    known_role_names = {role.name for role in roles}
+    env_role_map = [
+        {
+            "group_id": group_id,
+            "role_names": sorted(role_names),
+            "unknown_roles": sorted(role_names - known_role_names),
+        }
+        for group_id, role_names in sorted(env_mapping.items())
+    ]
+
+    return render_template(
+        "admin/scim_groups.html",
+        mappings=mappings,
+        roles=roles,
+        env_role_map=env_role_map,
+    )
 
 
 @bp.post("/scim/groups/<int:mapping_id>/assign-role")

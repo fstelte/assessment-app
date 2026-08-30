@@ -11,8 +11,8 @@
       <a href="{{ url_for('admin.new_bia_tier') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700">
          {{ _('admin.bia_tiers.new_tier') }}
       </a>
-      <a href="{{ url_for('admin.controls') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
-         {{ _('admin.bia_tiers.back_to_controls') }}
+      <a href="{{ url_for('admin.list_users') }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
+         {{ _('admin.bia_tiers.back_to_admin') }}
       </a>
   </div>
 </div>
@@ -32,9 +32,9 @@
       {% for tier in tiers %}
       <tr class="hover:bg-slate-500/5 transition-colors">
         <td class="px-4 py-3 align-middle font-mono">{{ tier.level }}</td>
-        <td class="px-4 py-3 align-middle font-medium">{{ tier.name }}</td>
-        <td class="px-4 py-3 align-middle">{{ tier.rto_goal_seconds | default('-', true) }}s</td>
-        <td class="px-4 py-3 align-middle">{{ tier.rpo_goal_seconds | default('-', true) }}s</td>
+        <td class="px-4 py-3 align-middle font-medium">{{ tier.name_en }} / {{ tier.name_nl }}</td>
+        <td class="px-4 py-3 align-middle">{% if tier.rto_goal_seconds is not none %}{{ tier.rto_goal_seconds }}s{% else %}-{% endif %}</td>
+        <td class="px-4 py-3 align-middle">{% if tier.rpo_goal_seconds is not none %}{{ tier.rpo_goal_seconds }}s{% else %}-{% endif %}</td>
         <td class="px-4 py-3 align-middle text-right">
             <a href="{{ url_for('admin.edit_bia_tier', tier_id=tier.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2.5 py-1.5 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5">
                 {{ _('admin.bia_tiers.edit') }}

@@ -27,6 +27,8 @@ class BiaTier(db.Model):
     level = db.Column(db.Integer, unique=True, nullable=False)
     name_en = db.Column(db.String(255), nullable=False)
     name_nl = db.Column(db.String(255), nullable=False)
+    rto_goal_seconds = db.Column(db.Integer, nullable=True)
+    rpo_goal_seconds = db.Column(db.Integer, nullable=True)
 
     def __repr__(self) -> str:
         return f"<BiaTier {self.level}>"
