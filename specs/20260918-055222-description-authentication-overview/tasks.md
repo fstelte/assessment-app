@@ -137,21 +137,37 @@ locale rather than trying to force a locale via an argument.
   20260918-0552-authentication-overview-gap-resolutions.md).
 - `BiaTier.get_label()`'s `locale` argument is inert (see locale note
   above) — flagged during `/minispec.analyze` on 2026-09-18.
-- **Pre-existing test harness issue (unrelated to this feature):**
-  `tests/test_bia_routes.py` currently fails broadly with
-  `DetachedInstanceError` on the `active_user`/`login` fixtures and a
-  `no such table: audit_logs` teardown error. Confirmed via `git stash`
-  that this reproduces identically on unmodified main -- not caused by
-  Task 1's changes. Verified Task 1 via `ast.parse` (syntax) and code
-  review instead of a passing pytest run. This should be fixed before
-  Task 5 can produce genuinely passing evidence.
+- **Pre-existing test harness issue (unrelated to this feature) -- ROOT CAUSE FOUND:**
+  `tests/test_bia_routes.py` fails broadly with `DetachedInstanceError` on
+  the `active_user`/`login` fixtures and `no such table: audit_logs` /
+  `SystemError` from a background thread. Root cause: `scaffold/__init__.py`
+  line ~619 guards the audit-prune background thread with
+  `if app.testing: return`, but `tests/conftest.py`'s `app` fixture calls
+  `app.config.update(TESTING=True, ...)` *after* `create_app(settings)`
+  already returned, and `_schedule_background_tasks` (which starts that
+  thread) runs inside `create_app()`. So the guard checks `app.testing`
+  before it is ever set, the thread starts in every test run, and it hits
+  the in-memory SQLite DB from a separate thread/connection, corrupting or
+  missing the schema. This is a pre-existing bug unrelated to this
+  feature -- confirmed via `git stash` that it reproduces identically on
+  unmodified `main`. Recommended fix (out of scope here): pass
+  `testing=True` through `Settings`/`create_app` itself, or otherwise set
+  `TESTING` before `_schedule_background_tasks` runs, rather than after
+  `create_app()` returns.
+- Task 5's tests (added) fail at fixture *setup* (the `login` fixture)
+  due to the above, before the test body ever runs. Their correctness was
+  instead verified via a direct `render_template`/`_build_tier_summary`
+  script (same approach used to verify Task 4), using equivalent seed
+  data. They are expected to pass once the harness bug above is fixed.
 
 ## Progress
 - [x] Task 1: Route - eager-load Tier and build the nested summary structure
 - [x] Task 2: Template - add Info type & Tier columns to detail tables
 - [x] Task 3: Translations - new column and summary keys
 - [x] Task 4: Template - new nested Tier/Info type summary table
-- [ ] Task 5: Tests - cover new columns and summary table
+- [x] Task 5: Tests - cover new columns and summary table (blocked from
+      running by the pre-existing harness bug above; logic verified via
+      direct render instead of pytest)
 
 
 
