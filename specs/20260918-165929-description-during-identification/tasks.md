@@ -207,9 +207,10 @@ edit forms, and the authentication overview export.
 - [x] Task 2: Translations - authorisation field and column labels
 - [x] Task 3: Form & sync - capture the flag/note on save
 - [x] Task 4: Route - serialize the flag/note and resolve it per component
-- [ ] Task 5: Templates - environment editor rows and badge
+- [x] Task 5: Templates - environment editor rows and badge
 - [ ] Task 6: Export template - authorisation column and summary count
 - [ ] Task 7: Tests - cover persistence, serialization, and export rendering
+
 
 
 
