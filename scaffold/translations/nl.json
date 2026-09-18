@@ -862,9 +862,19 @@
           "unassigned": "Niet toegewezen",
           "unassigned_slug": "â€”"
         },
+        "tier_summary": {
+          "title": "Componenten per tier en informatietype",
+          "columns": {
+            "tier": "Tier",
+            "info_type": "Informatietype",
+            "components": "Componenten"
+          }
+        },
         "columns": {
           "bia": "BIA",
           "component": "Component",
+          "tier": "Tier",
+          "info_type": "Informatietype",
           "owner": "Informatie-eigenaar",
           "users": "Gebruikerstypes",
           "unknown_bia": "Onbekende BIA",
