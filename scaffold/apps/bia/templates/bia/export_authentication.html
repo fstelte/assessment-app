@@ -72,6 +72,8 @@
                 <tr>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.component') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.tier') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.info_type') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
                 </tr>
@@ -81,6 +83,8 @@
                 <tr class="even:bg-slate-900/40">
                   <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
                   <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
+                  <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
                 </tr>
@@ -103,6 +107,8 @@
                 <tr>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.bia') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.component') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.tier') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.info_type') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
                 </tr>
@@ -112,6 +118,8 @@
                 <tr class="even:bg-slate-900/40">
                   <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
                   <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
+                  <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
                 </tr>
