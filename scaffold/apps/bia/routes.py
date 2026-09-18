@@ -180,9 +180,13 @@ def _configure_environment_subforms(
             if matched is not None:
                 subform.is_enabled.data = bool(matched.is_enabled)
                 subform.authentication_method.data = matched.authentication_method_id
+                subform.used_for_authorization.data = bool(matched.used_for_authorization)
+                subform.authorization_note.data = matched.authorization_note
             else:
                 subform.is_enabled.data = False
                 subform.authentication_method.data = None
+                subform.used_for_authorization.data = False
+                subform.authorization_note.data = None
 
 
 def _select_primary_environment_assignment(component: Component) -> ComponentEnvironment | None:
@@ -278,6 +282,8 @@ def _sync_component_environments(component: Component, form: ComponentForm) -> N
         seen.add(environment_type)
         is_enabled = bool(subform.is_enabled.data)
         authentication_method_id = subform.authentication_method.data
+        used_for_authorization = bool(subform.used_for_authorization.data)
+        authorization_note = subform.authorization_note.data or None
         environment = existing.get(environment_type)
         if is_enabled:
             if environment is None:
@@ -286,6 +292,8 @@ def _sync_component_environments(component: Component, form: ComponentForm) -> N
                 existing[environment_type] = environment
             environment.is_enabled = is_enabled
             environment.authentication_method_id = authentication_method_id
+            environment.used_for_authorization = used_for_authorization
+            environment.authorization_note = authorization_note
         elif environment is not None:
             db.session.delete(environment)
             existing.pop(environment_type, None)
