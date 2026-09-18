@@ -189,13 +189,15 @@ def _configure_environment_subforms(
                 subform.authorization_note.data = None
 
 
-def _select_primary_environment_assignment(component: Component) -> ComponentEnvironment | None:
+def _select_primary_environment_assignment(
+    component: Component, require_authentication_method: bool = True
+) -> ComponentEnvironment | None:
     best_assignment: ComponentEnvironment | None = None
     best_rank: int | None = None
     for environment in component.environments:
         if not getattr(environment, "is_enabled", True):
             continue
-        if environment.authentication_method_id is None:
+        if require_authentication_method and environment.authentication_method_id is None:
             continue
         rank = _ENVIRONMENT_SELECTION_RANK.get(environment.environment_type, len(_ENVIRONMENT_SELECTION_RANK))
         if best_assignment is None or rank < best_rank:
@@ -219,6 +221,22 @@ def _resolve_component_authentication_method_id(component: Component) -> int | N
     if assignment is not None:
         return assignment.authentication_method_id
     return None
+
+
+def _resolve_component_authorization_usage(component: Component) -> tuple[bool, str | None]:
+    """Resolve whether a component's authentication mechanism also covers authorisation.
+
+    Reuses the same environment priority order (production > acceptance >
+    test > development) as _resolve_component_authentication_method_id, but
+    does not require an authentication method to be set on the environment
+    -- the authorisation flag can be checked independently of the method
+    dropdown. Does not consult the legacy Component-level override, since
+    these fields only exist on ComponentEnvironment.
+    """
+    assignment = _select_primary_environment_assignment(component, require_authentication_method=False)
+    if assignment is None:
+        return False, None
+    return bool(assignment.used_for_authorization), assignment.authorization_note
 
 
 def _describe_authentication(component: Component) -> str | None:
@@ -265,6 +283,8 @@ def _serialize_environments(component: Component) -> list[dict[str, object]]:
                 "is_enabled": environment.is_enabled,
                 "authentication_method_id": environment.authentication_method_id,
                 "authentication_method_label": _describe_environment_authentication(environment),
+                "used_for_authorization": environment.used_for_authorization,
+                "authorization_note": environment.authorization_note,
             }
         )
     return serialized
@@ -1770,10 +1790,23 @@ def export_authentication_overview():
     unassigned.sort(key=_sort_key)
     tier_summary = _build_tier_summary(components)
 
+    authorization_usage = {
+        component.id: _resolve_component_authorization_usage(component) for component in components
+    }
+    for group in groups:
+        group["authorization_count"] = sum(
+            1 for component in group["components"] if authorization_usage[component.id][0]
+        )
+    unassigned_authorization_count = sum(
+        1 for component in unassigned if authorization_usage[component.id][0]
+    )
+
     html_content = render_template(
         "bia/export_authentication.html",
         groups=groups,
         unassigned=unassigned,
+        authorization_usage=authorization_usage,
+        unassigned_authorization_count=unassigned_authorization_count,
         tier_summary=tier_summary,
         generated_at=datetime.now(),
         export_mode=True,

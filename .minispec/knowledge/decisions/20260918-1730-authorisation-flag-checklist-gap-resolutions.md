@@ -31,12 +31,21 @@ a change touching an existing export.
 - **CHK003 (note length)**: `authorization_note` is an unbounded `Text`
   column with no application-level max-length validator, consistent with
   other free-text descriptive fields in this module (e.g.
-  `Component.description`) that also have no length cap.
-- **CHK004 (conflicting flags across environments)**: The per-component
-  resolved value (used by the export) reuses the exact same
-  `_select_primary_environment_assignment` priority-rank fallback
-  (production > acceptance > test > development) already used for
-  `authentication_method_id` resolution — not a separate/new priority
+- **CHK004 (conflicting flags across environments)** [Amended during
+  implementation]: The per-component resolved value (used by the export)
+  reuses the same environment priority order
+  (production > acceptance > test > development) as
+  `authentication_method_id` resolution, via
+  `_select_primary_environment_assignment`. During implementation of Task
+  4, testing surfaced that the shared helper additionally filtered out any
+  environment with no `authentication_method_id` set — correct for
+  authentication-method resolution, but wrong here, since an assessor can
+  check "used for authorisation" independently of picking a method. Fixed
+  by adding a `require_authentication_method: bool = True` parameter to
+  `_select_primary_environment_assignment`, defaulting to the original
+  behavior for existing callers, with
+  `_resolve_component_authorization_usage` passing `False`. The priority
+  order and the `is_enabled` filter remain shared and unchanged.
   scheme. This is now stated explicitly in design.md rather than implied.
 - **CHK005 (note visibility when flag is false)**: The note is only
   rendered in the badge title, export column, and AJAX payload label
