@@ -545,7 +545,10 @@
         "title": "Environments",
         "type": "Type",
         "enabled": "Enabled",
-        "auth_method": "Authentication method"
+        "auth_method": "Authentication method",
+        "used_for_authorization": "Also used for authorisation",
+        "authorization_note_label": "Authorisation note",
+        "authorization_note_placeholder": "Optional note about how this mechanism handles authorisation"
       },
       "filter": {
         "scope": "Scope",
@@ -726,7 +729,8 @@
           "slug": "Slug",
           "components": "Components",
           "unassigned": "Not assigned",
-          "unassigned_slug": "â€”"
+          "unassigned_slug": "â€”",
+          "used_for_authorization_count": "Also used for authorisation"
         },
         "tier_summary": {
           "title": "Components by tier and info type",
@@ -743,6 +747,7 @@
           "info_type": "Info type",
           "owner": "Information owner",
           "users": "User types",
+          "used_for_authorization": "Also used for authorisation",
           "unknown_bia": "Unknown BIA",
           "not_set": "Not set"
         },

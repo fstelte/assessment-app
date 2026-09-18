@@ -204,12 +204,13 @@ edit forms, and the authentication overview export.
 
 ## Progress
 - [x] Task 1: Model & migration - add authorisation fields to ComponentEnvironment
-- [ ] Task 2: Translations - authorisation field and column labels
+- [x] Task 2: Translations - authorisation field and column labels
 - [ ] Task 3: Form & sync - capture the flag/note on save
 - [ ] Task 4: Route - serialize the flag/note and resolve it per component
 - [ ] Task 5: Templates - environment editor rows and badge
 - [ ] Task 6: Export template - authorisation column and summary count
 - [ ] Task 7: Tests - cover persistence, serialization, and export rendering
+
 
 
 
