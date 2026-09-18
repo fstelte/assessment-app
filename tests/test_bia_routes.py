@@ -11,6 +11,7 @@ from scaffold.apps.bia.models import (
     Consequences,
     ContextScope,
 )
+from scaffold.apps.bia.services.authentication import clear_authentication_cache
 from scaffold.apps.identity.models import ROLE_ADMIN, User, UserStatus, ensure_default_roles
 from scaffold.extensions import db
 from scaffold.models import AuditLog
@@ -589,3 +590,150 @@ def test_archive_requires_ownership(app, client, login):
     with app.app_context():
         c = ContextScope.query.get(context_id)
         assert c.is_archived is False
+
+
+def test_edit_component_view_persists_authorization_flag_and_note(app, client, login):
+    with app.app_context():
+        ensure_default_roles()
+        admin = User.find_by_email("user@example.com")
+        admin.ensure_role(ROLE_ADMIN)
+        context = ContextScope(name="Continuity Plan Twelve")
+        component = Component(name="Access Gateway", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        component_id = component.id
+        context_id = context.id
+
+    data = {
+        "bia_id": str(context_id),
+        "name": "Access Gateway",
+        "info_type": "",
+        "info_owner": "Security",
+        "user_type": "Internal",
+        "dependencies_others": "",
+        "description": "",
+    }
+    environment_order = ("development", "test", "acceptance", "production")
+    for idx, env in enumerate(environment_order):
+        data[f"environments-{idx}-environment_type"] = env
+        data[f"environments-{idx}-authentication_method"] = ""
+        if env == "production":
+            data[f"environments-{idx}-is_enabled"] = "y"
+            data[f"environments-{idx}-used_for_authorization"] = "y"
+            data[f"environments-{idx}-authorization_note"] = "Shared SSO handles both concerns"
+
+    response = client.post(
+        f"/bia/component/{component_id}/edit",
+        data=data,
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        environment = ComponentEnvironment.query.filter_by(
+            component_id=component_id, environment_type="production"
+        ).first()
+        assert environment is not None
+        assert environment.used_for_authorization is True
+        assert environment.authorization_note == "Shared SSO handles both concerns"
+
+    # Re-opening the edit form reflects the persisted values.
+    edit_response = client.get(f"/bia/component/{component_id}/edit")
+    assert edit_response.status_code == 200
+    assert "Shared SSO handles both concerns" in edit_response.data.decode()
+
+
+def test_get_component_json_includes_authorization_fields(app, client, login):
+    with app.app_context():
+        context = ContextScope(name="Continuity Plan Thirteen")
+        component = Component(name="Billing Service", context_scope=context)
+        environment = ComponentEnvironment(
+            environment_type="production",
+            is_enabled=True,
+            used_for_authorization=True,
+            authorization_note="Handles both auth and authz",
+        )
+        component.environments.append(environment)
+        db.session.add_all([context, component])
+        db.session.commit()
+        component_id = component.id
+
+    response = client.get(f"/bia/get_component/{component_id}")
+    assert response.status_code == 200
+    payload = response.get_json()
+    env_payload = next(e for e in payload["environments"] if e["environment_type"] == "production")
+    assert env_payload["used_for_authorization"] is True
+    assert env_payload["authorization_note"] == "Handles both auth and authz"
+
+
+def test_export_authentication_overview_shows_authorization_column_and_counts(app, client, login):
+    with app.app_context():
+        method = AuthenticationMethod(slug="idp-shared", label_en="Shared IdP", label_nl="Gedeelde IdP")
+        context = ContextScope(name="Continuity Plan Fourteen")
+
+        flagged_with_method = Component(name="Flagged With Method", context_scope=context)
+        flagged_with_method.environments.append(
+            ComponentEnvironment(
+                environment_type="production",
+                is_enabled=True,
+                authentication_method=method,
+                used_for_authorization=True,
+                authorization_note="Same IdP for both",
+            )
+        )
+        unflagged = Component(name="Unflagged Component", context_scope=context)
+        unflagged.environments.append(
+            ComponentEnvironment(
+                environment_type="production",
+                is_enabled=True,
+                authentication_method=method,
+                used_for_authorization=False,
+            )
+        )
+        flagged_no_method = Component(name="Flagged No Method", context_scope=context)
+        flagged_no_method.environments.append(
+            ComponentEnvironment(
+                environment_type="production",
+                is_enabled=True,
+                used_for_authorization=True,
+                authorization_note="Flagged before method chosen",
+            )
+        )
+        db.session.add_all([method, context, flagged_with_method, unflagged, flagged_no_method])
+        db.session.commit()
+        clear_authentication_cache()
+
+    response = client.get("/bia/export_authentication_overview")
+    assert response.status_code == 200
+    body = response.data.decode()
+
+    assert "Also used for authorisation" in body
+
+    # The flagged-with-method component shows "Yes" with its note as a tooltip.
+    idx = body.index("Flagged With Method")
+    row = body[idx : idx + 600]
+    assert 'title="Same IdP for both"' in row
+    assert ">Yes<" in row
+
+    # The unflagged component (same method group) shows "No".
+    idx = body.index("Unflagged Component")
+    row = body[idx : idx + 600]
+    assert ">No<" in row
+
+    # A component flagged without a method still resolves to "Yes" in the
+    # unassigned table (regression check for the require_authentication_method fix).
+    idx = body.index("Flagged No Method")
+    row = body[idx : idx + 600]
+    assert 'title="Flagged before method chosen"' in row
+    assert ">Yes<" in row
+
+    # Summary table shows 2 total (flagged_with_method + unflagged share the
+    # method) / 1 flagged for the "idp-shared" method group.
+    match = re.search(
+        r"Shared IdP.*?<td[^>]*>(\d+)</td>\s*<td[^>]*>(\d+)</td>\s*</tr>",
+        body,
+        re.S,
+    )
+    assert match is not None
+    assert match.group(1) == "2"
+    assert match.group(2) == "1"

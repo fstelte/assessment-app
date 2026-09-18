@@ -1,6 +1,6 @@
 ---
 feature: authentication-mechanism-also-used-for-authorisation
-status: planned
+status: completed
 created: 2026-09-18
 decisions:
   - 20260918-1700-authorisation-flag-scope-and-shape
@@ -167,3 +167,4 @@ prior Tier/Info-type column addition to this same export.
 None outstanding - scope, field shape, placement, and all checklist gaps
 were resolved during the design conversation and the follow-up checklist
 review (see decision records).
+

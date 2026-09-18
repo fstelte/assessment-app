@@ -1,6 +1,6 @@
 ---
 feature: authentication-mechanism-also-used-for-authorisation
-status: planned
+status: completed
 created: 2026-09-18
 chunk_size: medium
 total_tasks: 7
@@ -201,6 +201,26 @@ edit forms, and the authentication overview export.
   resolve this correctly (verify the true current head in an environment
   where `alembic heads` runs, or merge if genuinely diverged) rather than
   guessing.
+- **Pre-existing MFA-enrollment gate:** a freshly created test user is
+  redirected to `/auth/mfa/enroll` after password login, separate from the
+  `_can_edit_context` permission check below. Confirmed it does not block
+  `@login_required`-only routes (`get_component`,
+  `export_authentication_overview`) when the session is authenticated
+  directly, but the exact mechanism by which the existing `login` fixture
+  in `tests/conftest.py` works around this for POST routes requiring
+  `_can_edit_context` was not fully traced. Unrelated to this feature;
+  flagged here for whoever next touches BIA test coverage.
+- **Pre-existing `AuthenticationMethod` cache staleness in tests:**
+  `list_authentication_options()` (scaffold/apps/bia/services/authentication.py:33)
+  uses a process-level `lru_cache` only invalidated via the admin CRUD
+  routes. A test that creates an `AuthenticationMethod` directly via the
+  ORM (as `test_export_authentication_overview_uses_environment_method`
+  already does, and as Task 7's new export test does) must call
+  `clear_authentication_cache()` afterward, or a stale cached options list
+  from an earlier call in the same process can silently drop the new
+  method from grouping. Task 7's test does this; the pre-existing sibling
+  test does not, which is latent but works today only because nothing
+  earlier in a typical run primes the cache first.
 
 ## Progress
 - [x] Task 1: Model & migration - add authorisation fields to ComponentEnvironment
@@ -209,7 +229,9 @@ edit forms, and the authentication overview export.
 - [x] Task 4: Route - serialize the flag/note and resolve it per component
 - [x] Task 5: Templates - environment editor rows and badge
 - [x] Task 6: Export template - authorisation column and summary count
-- [ ] Task 7: Tests - cover persistence, serialization, and export rendering
+- [x] Task 7: Tests - cover persistence, serialization, and export rendering
+
+
 
 
 
