@@ -1685,12 +1685,44 @@ def export_data_inventory():
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 
+def _build_tier_summary(components: list[Component]) -> list[dict]:
+    """Group components by Tier, then by normalized Info type, with counts.
+
+    Grouping uses a trimmed, case-folded Info type key so near-duplicate
+    free-text values (e.g. "Customer Data" vs "customer data") merge into
+    one row; the displayed label keeps one of the original casings. Tier
+    grouping/ordering uses `BiaTier.level` (untiered components form a
+    final `None` group), independent of the localized display label.
+    """
+    tier_buckets: dict[int | None, dict] = {}
+    for component in components:
+        tier = component.context_scope.tier if component.context_scope else None
+        tier_bucket = tier_buckets.setdefault(
+            tier.level if tier else None, {"tier": tier, "info_types": {}}
+        )
+        info_type_label = (component.info_type or "").strip()
+        info_bucket = tier_bucket["info_types"].setdefault(
+            info_type_label.lower(), {"label": info_type_label, "count": 0}
+        )
+        info_bucket["count"] += 1
+
+    summary = []
+    for tier_level in sorted(tier_buckets, key=lambda level: (level is None, level)):
+        bucket = tier_buckets[tier_level]
+        info_types = sorted(
+            bucket["info_types"].values(),
+            key=lambda entry: (entry["label"] == "", entry["label"].lower()),
+        )
+        summary.append({"tier": bucket["tier"], "info_types": info_types})
+    return summary
+
+
 @bp.route("/export_authentication_overview")
 @login_required
 def export_authentication_overview():
     components = (
         Component.query.options(
-            joinedload(Component.context_scope),
+            joinedload(Component.context_scope).joinedload(ContextScope.tier),
             joinedload(Component.authentication_method),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
@@ -1728,11 +1760,13 @@ def export_authentication_overview():
 
     groups.sort(key=lambda entry: entry["option"].label(get_locale()).lower())
     unassigned.sort(key=_sort_key)
+    tier_summary = _build_tier_summary(components)
 
     html_content = render_template(
         "bia/export_authentication.html",
         groups=groups,
         unassigned=unassigned,
+        tier_summary=tier_summary,
         generated_at=datetime.now(),
         export_mode=True,
         export_css=_load_export_css(),

@@ -728,9 +728,19 @@
           "unassigned": "Not assigned",
           "unassigned_slug": "â€”"
         },
+        "tier_summary": {
+          "title": "Components by tier and info type",
+          "columns": {
+            "tier": "Tier",
+            "info_type": "Info type",
+            "components": "Components"
+          }
+        },
         "columns": {
           "bia": "BIA",
           "component": "Component",
+          "tier": "Tier",
+          "info_type": "Info type",
           "owner": "Information owner",
           "users": "User types",
           "unknown_bia": "Unknown BIA",
