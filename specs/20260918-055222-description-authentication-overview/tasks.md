@@ -150,8 +150,9 @@ locale rather than trying to force a locale via an argument.
 - [x] Task 1: Route - eager-load Tier and build the nested summary structure
 - [x] Task 2: Template - add Info type & Tier columns to detail tables
 - [x] Task 3: Translations - new column and summary keys
-- [ ] Task 4: Template - new nested Tier/Info type summary table
+- [x] Task 4: Template - new nested Tier/Info type summary table
 - [ ] Task 5: Tests - cover new columns and summary table
+
 
 
 
