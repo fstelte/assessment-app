@@ -729,7 +729,7 @@
           "slug": "Slug",
           "components": "Components",
           "unassigned": "Not assigned",
-          "unassigned_slug": "â€”",
+          "unassigned_slug": "—",
           "used_for_authorization_count": "Also used for authorisation"
         },
         "columns": {

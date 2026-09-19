@@ -863,7 +863,7 @@
           "slug": "Slug",
           "components": "Componenten",
           "unassigned": "Niet toegewezen",
-          "unassigned_slug": "â€”",
+          "unassigned_slug": "—",
           "used_for_authorization_count": "Ook gebruikt voor autorisatie"
         },
         "columns": {
