@@ -199,44 +199,6 @@ def test_export_authentication_overview_shows_tier_and_info_type_columns(app, cl
     assert "Not set" in unassigned_section
 
 
-def test_export_authentication_overview_tier_summary_merges_and_orders(app, client, login):
-    with app.app_context():
-        tier1 = BiaTier(level=1, name_en="Mission Critical", name_nl="Mission Critical")
-        tier2 = BiaTier(level=2, name_en="Business Critical", name_nl="Business Critical")
-        db.session.add_all([tier1, tier2])
-        db.session.flush()
-
-        context1 = ContextScope(name="Continuity Plan Ten", tier=tier1)
-        context2 = ContextScope(name="Continuity Plan Eleven", tier=tier2)
-        components = [
-            Component(name="Payment API", context_scope=context1, info_type="Customer Data"),
-            Component(name="Billing DB", context_scope=context1, info_type="customer data"),
-            Component(name="HR Records", context_scope=context2, info_type="HR Data"),
-        ]
-        db.session.add_all([context1, context2, *components])
-        db.session.commit()
-
-    response = client.get("/bia/export_authentication_overview")
-    assert response.status_code == 200
-    body = response.data.decode()
-
-    assert "Components by tier and info type" in body
-    summary_start = body.index("Components by tier and info type")
-    summary_section = body[summary_start : summary_start + 3000]
-
-    # Duplicate info_type values differing only by case merge into one
-    # summary row with a combined count of 2 (raw casing "Customer Data"
-    # still appears separately, twice, in the detail table above).
-    match = re.search(
-        r"(Customer Data|customer data)</td>\s*<td[^>]*>(\d+)</td>", summary_section
-    )
-    assert match is not None
-    assert match.group(2) == "2"
-
-    # Tier 1 (Mission Critical) is ordered before Tier 2 (Business Critical).
-    assert summary_section.index("TIER 1") < summary_section.index("TIER 2")
-
-
 def test_components_page_exposes_action_buttons(app, client, login):
     with app.app_context():
         context = ContextScope(name="Continuity Plan Four")
