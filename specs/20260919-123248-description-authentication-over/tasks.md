@@ -57,5 +57,5 @@ Environments column (enabled environments + their authentication method).
 
 ## Progress
 - [x] Task 1: Route - drop tier summary, build environment usage (commit cf4c161; pytest evidence blocked by the existing test-login issue, verified by compile check and a direct run of the new comprehension)
-- [ ] Task 2: Template and translations
+- [x] Task 2: Template and translations (JSON valid, no leftover references, manual render verified)
 - [ ] Task 3: Tests

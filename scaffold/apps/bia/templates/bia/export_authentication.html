@@ -59,37 +59,6 @@
           </div>
         </div>
       </section>
-      <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/60 shadow-2xl shadow-slate-950/20">
-        <header class="border-b border-slate-800 px-6 py-5">
-          <h2 class="text-lg font-semibold text-slate-100">{{ _('bia.export.authentication_overview.tier_summary.title') }}</h2>
-        </header>
-        <div class="space-y-4 px-6 py-5 text-sm text-slate-200">
-          <div class="overflow-hidden rounded-xl border border-[var(--color-border)] border-slate-800">
-            <table class="min-w-full divide-y divide-slate-800 text-left text-sm">
-              <thead class="bg-slate-900/70 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <tr>
-                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.tier_summary.columns.tier') }}</th>
-                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.tier_summary.columns.info_type') }}</th>
-                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.tier_summary.columns.components') }}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800 bg-slate-950/30">
-                {% for tier_group in tier_summary %}
-                {% for info_type in tier_group.info_types %}
-                <tr class="even:bg-slate-900/40">
-                  {% if loop.first %}
-                  <td class="px-4 py-3 font-medium text-slate-100" rowspan="{{ tier_group.info_types | length }}">{{ tier_group.tier.get_label() if tier_group.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  {% endif %}
-                  <td class="px-4 py-3">{{ info_type.label or _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  <td class="px-4 py-3 font-semibold text-slate-100">{{ info_type.count }}</td>
-                </tr>
-                {% endfor %}
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
       {% for group in groups %}
       <section class="rounded-2xl border border-[var(--color-border)] border-slate-800 bg-slate-900/50 shadow-xl backdrop-blur">
         <header class="flex flex-col gap-2 border-b border-slate-800 px-6 py-5 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
@@ -109,7 +78,7 @@
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.tier') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.info_type') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
-                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.environments') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.used_for_authorization') }}</th>
                 </tr>
               </thead>
@@ -121,7 +90,7 @@
                   <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{% for env_label, method_label in environment_usage[component.id] %}{{ env_label }}: {{ method_label or _('bia.export.authentication_overview.columns.not_set') }}{% if not loop.last %}<br>{% endif %}{% else %}{{ _('bia.export.authentication_overview.columns.not_set') }}{% endfor %}</td>
                   {% set component_authorization = authorization_usage[component.id] %}
                   <td class="px-4 py-3"{% if component_authorization[1] %} title="{{ component_authorization[1] }}"{% endif %}>{{ _('bia.common.yes') if component_authorization[0] else _('bia.common.no') }}</td>
                 </tr>
@@ -147,7 +116,7 @@
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.tier') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.info_type') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.owner') }}</th>
-                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.users') }}</th>
+                  <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.environments') }}</th>
                   <th scope="col" class="px-4 py-3">{{ _('bia.export.authentication_overview.columns.used_for_authorization') }}</th>
                 </tr>
               </thead>
@@ -159,7 +128,7 @@
                   <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
-                  <td class="px-4 py-3">{{ component.user_type or _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{% for env_label, method_label in environment_usage[component.id] %}{{ env_label }}: {{ method_label or _('bia.export.authentication_overview.columns.not_set') }}{% if not loop.last %}<br>{% endif %}{% else %}{{ _('bia.export.authentication_overview.columns.not_set') }}{% endfor %}</td>
                   {% set component_authorization = authorization_usage[component.id] %}
                   <td class="px-4 py-3"{% if component_authorization[1] %} title="{{ component_authorization[1] }}"{% endif %}>{{ _('bia.common.yes') if component_authorization[0] else _('bia.common.no') }}</td>
                 </tr>

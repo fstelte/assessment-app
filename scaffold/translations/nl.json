@@ -866,21 +866,13 @@
           "unassigned_slug": "â€”",
           "used_for_authorization_count": "Ook gebruikt voor autorisatie"
         },
-        "tier_summary": {
-          "title": "Componenten per tier en informatietype",
-          "columns": {
-            "tier": "Tier",
-            "info_type": "Informatietype",
-            "components": "Componenten"
-          }
-        },
         "columns": {
           "bia": "BIA",
           "component": "Component",
           "tier": "Tier",
           "info_type": "Informatietype",
           "owner": "Informatie-eigenaar",
-          "users": "Gebruikerstypes",
+          "environments": "Omgevingen",
           "used_for_authorization": "Ook gebruikt voor autorisatie",
           "unknown_bia": "Onbekende BIA",
           "not_set": "Niet ingesteld"

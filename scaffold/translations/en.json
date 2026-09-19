@@ -732,21 +732,13 @@
           "unassigned_slug": "â€”",
           "used_for_authorization_count": "Also used for authorisation"
         },
-        "tier_summary": {
-          "title": "Components by tier and info type",
-          "columns": {
-            "tier": "Tier",
-            "info_type": "Info type",
-            "components": "Components"
-          }
-        },
         "columns": {
           "bia": "BIA",
           "component": "Component",
           "tier": "Tier",
           "info_type": "Info type",
           "owner": "Information owner",
-          "users": "User types",
+          "environments": "Environments",
           "used_for_authorization": "Also used for authorisation",
           "unknown_bia": "Unknown BIA",
           "not_set": "Not set"
