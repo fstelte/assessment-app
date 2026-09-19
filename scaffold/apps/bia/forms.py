@@ -196,6 +196,14 @@ class ComponentEnvironmentForm(Form):
         choices=[],
         coerce=_optional_int,
     )
+    used_for_authorization = BooleanField(
+        _l("bia.components.environments.used_for_authorization"),
+        validators=[Optional()],
+    )
+    authorization_note = StringField(
+        _l("bia.components.environments.authorization_note_label"),
+        validators=[Optional()],
+    )
 
     class Meta:
         csrf = False

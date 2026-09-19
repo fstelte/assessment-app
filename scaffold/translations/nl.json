@@ -740,7 +740,10 @@
         "title": "Omgevingen",
         "type": "Type",
         "enabled": "Ingeschakeld",
-        "auth_method": "Authenticatiemethode"
+        "auth_method": "Authenticatiemethode",
+        "used_for_authorization": "Ook gebruikt voor autorisatie",
+        "authorization_note_label": "Notitie autorisatie",
+        "authorization_note_placeholder": "Optionele notitie over hoe dit mechanisme autorisatie afhandelt"
       },
       "filter": {
         "scope": "Scope",
@@ -860,7 +863,8 @@
           "slug": "Slug",
           "components": "Componenten",
           "unassigned": "Niet toegewezen",
-          "unassigned_slug": "â€”"
+          "unassigned_slug": "â€”",
+          "used_for_authorization_count": "Ook gebruikt voor autorisatie"
         },
         "tier_summary": {
           "title": "Componenten per tier en informatietype",
@@ -877,6 +881,7 @@
           "info_type": "Informatietype",
           "owner": "Informatie-eigenaar",
           "users": "Gebruikerstypes",
+          "used_for_authorization": "Ook gebruikt voor autorisatie",
           "unknown_bia": "Onbekende BIA",
           "not_set": "Niet ingesteld"
         },

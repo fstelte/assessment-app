@@ -224,6 +224,8 @@ class ComponentEnvironment(db.Model):
         db.ForeignKey("bia_authentication_methods.id", ondelete="SET NULL"),
         nullable=True,
     )
+    used_for_authorization = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    authorization_note = db.Column(db.Text, nullable=True)
 
     component = db.relationship("Component", back_populates="environments")
     authentication_method = db.relationship("AuthenticationMethod", back_populates="environment_assignments")
