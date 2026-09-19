@@ -1,7 +1,8 @@
 ---
 title: Add nested Tier/Info type summary table to Authentication Overview export
 date: 2026-09-18
-status: accepted
+status: superseded
+superseded_by: 20260919-1235-authentication-overview-environments-column
 ---
 
 ## Context

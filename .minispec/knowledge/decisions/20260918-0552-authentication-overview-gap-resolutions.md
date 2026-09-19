@@ -16,7 +16,9 @@ resolves each.
 
 ## Decisions
 
-- **Column order**: in the detail tables, new columns are inserted as
+- **Column order** (amended by [[20260919-1235-authentication-overview-environments-column]]:
+  `Users` is replaced by `Environments`; the summary-table decisions below
+  no longer apply): in the detail tables, new columns are inserted as
   `BIA, Component, Tier, Info type, Owner, Users` — Tier and Info type
   (classification/context) come right after identifying the component and
   before ownership/usage details.
