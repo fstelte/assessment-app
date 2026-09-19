@@ -199,6 +199,80 @@ def test_export_authentication_overview_shows_tier_and_info_type_columns(app, cl
     assert "Not set" in unassigned_section
 
 
+def test_export_authentication_overview_lists_enabled_environments(app, client, login):
+    with app.app_context():
+        idp = AuthenticationMethod(slug="env-idp", label_en="Central IdP", label_nl="Centraal IdP")
+        in_app = AuthenticationMethod(slug="env-in-app", label_en="In-app login", label_nl="Login in app")
+        context = ContextScope(name="Continuity Plan Fifteen")
+        component = Component(name="Multi Env Portal", context_scope=context)
+        component.environments.extend(
+            [
+                ComponentEnvironment(environment_type="production", is_enabled=True, authentication_method=idp),
+                ComponentEnvironment(environment_type="test", is_enabled=True, authentication_method=in_app),
+                ComponentEnvironment(environment_type="development", is_enabled=False, authentication_method=idp),
+            ]
+        )
+        db.session.add_all([idp, in_app, context, component])
+        db.session.commit()
+        clear_authentication_cache()
+
+    response = client.get("/bia/export_authentication_overview")
+    assert response.status_code == 200
+    body = response.data.decode()
+
+    # Enabled environments are listed in lifecycle order (test before production),
+    # one per line; the disabled development environment is not listed.
+    assert "Test: In-app login<br>Production: Central IdP" in body
+    assert "Development:" not in body
+
+    # The component still sits under the method of its highest-priority environment.
+    assert body.index("Central IdP</h2>") < body.index("Multi Env Portal")
+
+    # The Environments column replaces Users, and the tier summary is gone.
+    assert "Environments</th>" in body
+    assert "User types" not in body
+    assert "Components by tier and info type" not in body
+
+
+def test_export_authentication_overview_environments_not_set_without_enabled_environment(app, client, login):
+    with app.app_context():
+        legacy_method = AuthenticationMethod(slug="legacy-idp", label_en="Legacy IdP", label_nl="Legacy IdP")
+        tier = BiaTier(level=2, name_en="Business Critical", name_nl="Business Critical")
+        db.session.add_all([legacy_method, tier])
+        db.session.flush()
+
+        context = ContextScope(name="Continuity Plan Sixteen", tier=tier)
+        # Grouped under a method through the legacy component-level override, no environments.
+        legacy_override = Component(
+            name="Legacy Override",
+            context_scope=context,
+            info_type="Records",
+            info_owner="Owner Y",
+            authentication_method=legacy_method,
+        )
+        # No method and no environments: listed under "without authentication type".
+        no_environment = Component(
+            name="No Environment",
+            context_scope=context,
+            info_type="Records",
+            info_owner="Owner Y",
+        )
+        db.session.add_all([context, legacy_override, no_environment])
+        db.session.commit()
+        clear_authentication_cache()
+
+    response = client.get("/bia/export_authentication_overview")
+    assert response.status_code == 200
+    body = response.data.decode()
+
+    # The legacy-override component stays under its method, not under "unassigned".
+    assert body.index("Legacy IdP</h2>") < body.index("Legacy Override")
+    assert body.index("Legacy Override") < body.index("Components without authentication type")
+
+    # In both cases the Environments cell (right after the owner cell) reads "Not set".
+    for name in ("Legacy Override", "No Environment"):
+        assert re.search(rf"{name}</td>.*?>Owner Y</td>\s*<td[^>]*>Not set</td>", body, re.S), name
+
 def test_components_page_exposes_action_buttons(app, client, login):
     with app.app_context():
         context = ContextScope(name="Continuity Plan Four")
