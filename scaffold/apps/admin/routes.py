@@ -1615,6 +1615,42 @@ def set_user_password(user_id: int):
     return redirect(manage_url)
 
 
+@bp.post("/users/<int:user_id>/mfa/reset")
+@login_required
+@require_fresh_login()
+def reset_user_mfa(user_id: int):
+    """Clear every MFA method so the user must enrol again at the next password sign-in."""
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    manage_url = url_for("admin.user_manage", user_id=user.id)
+
+    if user.id == current_user.id:
+        flash(_("admin.users.flash.mfa_reset_self"), "danger")
+        return redirect(manage_url)
+    if user.azure_oid or user.aad_upn or user.is_service_account:
+        flash(_("admin.users.flash.mfa_reset_not_local"), "danger")
+        return redirect(manage_url)
+
+    passkeys_removed = len(user.passkey_credentials)
+    user.mfa_setting = None
+    user.passkey_credentials.clear()
+    log_event(
+        action="user_mfa_reset",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email, "passkeys_removed": passkeys_removed},
+    )
+    db.session.commit()
+    invalidate_user_sessions(user.id)
+    if current_app.config.get("SESSION_TYPE") != "redis":
+        flash(_("admin.users.flash.sessions_not_revoked"), "warning")
+    flash(_("admin.users.flash.mfa_reset"), "success")
+    return redirect(manage_url)
+
+
 @bp.post("/users/<int:user_id>/roles")
 @login_required
 @require_fresh_login()

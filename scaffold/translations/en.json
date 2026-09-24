@@ -1461,6 +1461,9 @@
         "user_deleted": "User deleted.",
         "user_in_use": "This user still owns records and cannot be deleted. Deactivate the user instead.",
         "password_set": "Password updated.",
+        "mfa_reset": "MFA reset. The user must enrol again at the next sign-in.",
+        "mfa_reset_self": "You cannot reset your own MFA.",
+        "mfa_reset_not_local": "MFA of federated or service accounts cannot be reset here.",
         "password_not_local": "The password of federated or service accounts cannot be set here.",
         "password_current_invalid": "The current password is incorrect.",
         "sessions_not_revoked": "Existing sessions of this user stay active until they expire because server-side sessions are not enabled.",
@@ -1965,6 +1968,12 @@
         "required": "This field is required.",
         "too_short": "Password must be at least 12 characters.",
         "mismatch": "Passwords must match."
+      },
+      "mfa_reset": {
+        "heading": "Reset MFA",
+        "help": "Removes the authenticator app and all passkeys of this user. After the next sign-in the user must enrol MFA again.",
+        "submit": "Reset MFA",
+        "confirm": "Reset all MFA methods for this user? They must enrol again at the next sign-in."
       },
       "danger_zone": {
         "heading": "Danger zone",

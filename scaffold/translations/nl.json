@@ -1730,6 +1730,9 @@
         "user_deleted": "Gebruiker verwijderd.",
         "user_in_use": "Deze gebruiker heeft nog gekoppelde gegevens en kan niet worden verwijderd. Deactiveer de gebruiker in plaats daarvan.",
         "password_set": "Wachtwoord bijgewerkt.",
+        "mfa_reset": "MFA gereset. De gebruiker moet bij de volgende aanmelding MFA opnieuw instellen.",
+        "mfa_reset_self": "Je kunt je eigen MFA niet resetten.",
+        "mfa_reset_not_local": "MFA van gefedereerde accounts of serviceaccounts kan hier niet worden gereset.",
         "password_not_local": "Het wachtwoord van gefedereerde accounts of serviceaccounts kan hier niet worden ingesteld.",
         "password_current_invalid": "Het huidige wachtwoord is onjuist.",
         "sessions_not_revoked": "Bestaande sessies van deze gebruiker blijven actief tot ze verlopen, omdat sessies aan serverzijde niet zijn ingeschakeld.",
@@ -2223,6 +2226,12 @@
         "required": "Dit veld is verplicht.",
         "too_short": "Het wachtwoord moet minimaal 12 tekens bevatten.",
         "mismatch": "De wachtwoorden moeten overeenkomen."
+      },
+      "mfa_reset": {
+        "heading": "MFA resetten",
+        "help": "Verwijdert de authenticator-app en alle passkeys van deze gebruiker. Na de volgende aanmelding moet de gebruiker MFA opnieuw instellen.",
+        "submit": "MFA resetten",
+        "confirm": "Alle MFA-methoden van deze gebruiker resetten? De gebruiker moet MFA bij de volgende aanmelding opnieuw instellen."
       },
       "danger_zone": {
         "heading": "Gevarenzone",
