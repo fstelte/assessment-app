@@ -351,3 +351,90 @@ def test_delete_user_rejected_by_database_keeps_user(app, client, monkeypatch):
     with app.app_context():
         assert db.session.get(User, target_id) is not None
         assert AuditLog.query.filter_by(event_type="user_deleted").count() == 0
+
+NEW_PASSWORD = "CorrectHorse-Battery9"
+
+
+def _set_password(client, user_id: int, **data):
+    payload = {"new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD, **data}
+    return client.post(f"/admin/users/{user_id}/password", data=payload, follow_redirects=True)
+
+
+def test_admin_sets_password_and_logs_event_without_password(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = _set_password(client, target_id)
+
+    assert resp.status_code == 200
+    page = resp.get_data(as_text=True)
+    assert "Password updated." in page
+    assert "stay active until they expire" in page
+    with app.app_context():
+        assert db.session.get(User, target_id).check_password(NEW_PASSWORD)
+        events = AuditLog.query.filter_by(event_type="user_password_set").all()
+        assert any(event.target_id == str(target_id) for event in events)
+        assert all(NEW_PASSWORD not in str(event.payload) for event in events)
+
+
+def test_set_password_rejects_short_and_mismatched_values(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    short = _set_password(client, target_id, new_password="short", confirm_password="short")
+    mismatch = _set_password(client, target_id, confirm_password="Different-Password99")
+
+    assert "at least 12 characters" in short.get_data(as_text=True)
+    assert "Passwords must match." in mismatch.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, target_id).check_password("Password123!")
+
+
+def test_admin_changing_own_password_needs_current_password(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    wrong = _set_password(client, admin_id, current_password="not-my-password")
+    missing = _set_password(client, admin_id)
+    with app.app_context():
+        assert db.session.get(User, admin_id).check_password("Password123!")
+
+    right = _set_password(client, admin_id, current_password="Password123!")
+
+    assert "current password is incorrect" in wrong.get_data(as_text=True)
+    assert "current password is incorrect" in missing.get_data(as_text=True)
+    assert "Password updated." in right.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, admin_id).check_password(NEW_PASSWORD)
+
+
+def test_set_password_blocked_for_federated_and_service_accounts(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        federated_id = _make_target("federated@example.com")
+        service_id = _make_target("service@example.com")
+        db.session.get(User, federated_id).azure_oid = "oid-123"
+        db.session.get(User, service_id).is_service_account = True
+        db.session.commit()
+        local_id = _make_target("local@example.com")
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+
+    for blocked_id in (federated_id, service_id):
+        resp = _set_password(client, blocked_id)
+        assert "cannot be set here" in resp.get_data(as_text=True)
+        page = client.get(f"/admin/users/{blocked_id}/manage").get_data(as_text=True)
+        assert 'name="new_password"' not in page
+        with app.app_context():
+            assert db.session.get(User, blocked_id).check_password("Password123!")
+
+    assert 'name="new_password"' in client.get(f"/admin/users/{local_id}/manage").get_data(as_text=True)

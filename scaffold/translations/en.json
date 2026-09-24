@@ -1460,6 +1460,10 @@
         "final_admin_cannot_be_deleted": "The final administrator cannot be deleted.",
         "user_deleted": "User deleted.",
         "user_in_use": "This user still owns records and cannot be deleted. Deactivate the user instead.",
+        "password_set": "Password updated.",
+        "password_not_local": "The password of federated or service accounts cannot be set here.",
+        "password_current_invalid": "The current password is incorrect.",
+        "sessions_not_revoked": "Existing sessions of this user stay active until they expire because server-side sessions are not enabled.",
         "no_roles_configured": "No roles are configured at this time.",
         "unknown_role_selected": "Unknown role selected.",
         "user_has_role": "User already has this role.",
@@ -1951,6 +1955,17 @@
       "heading": "Manage {name}",
       "email": "Email",
       "back_to_users": "Back to users",
+      "password": {
+        "heading": "Set password",
+        "help": "Sets a new password for this local account. Share it with the user through a secure channel; the user should change it after signing in.",
+        "current_password": "Current password",
+        "new_password": "New password",
+        "confirm_password": "Confirm new password",
+        "submit": "Set password",
+        "required": "This field is required.",
+        "too_short": "Password must be at least 12 characters.",
+        "mismatch": "Passwords must match."
+      },
       "danger_zone": {
         "heading": "Danger zone",
         "delete_help": "Deleting removes the account permanently. If the user still owns records the delete is rejected; deactivate the user instead."

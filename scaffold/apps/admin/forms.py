@@ -5,9 +5,9 @@ from __future__ import annotations
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import HiddenField, IntegerField, PasswordField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp, ValidationError
 
-from scaffold.core.i18n import lazy_gettext as _l
+from scaffold.core.i18n import gettext as _, lazy_gettext as _l
 
 
 def _label(key: str) -> str:
@@ -16,6 +16,34 @@ def _label(key: str) -> str:
 
 def _message(key: str) -> str:
     return _l(key)
+
+
+class SetPasswordForm(FlaskForm):
+    """Let an administrator set a local user's password."""
+
+    current_password = PasswordField(
+        _label("admin.user_manage.password.current_password"),
+        validators=[Optional()],
+        render_kw={"autocomplete": "current-password"},
+    )
+    new_password = PasswordField(
+        _label("admin.user_manage.password.new_password"),
+        validators=[DataRequired(message=_message("admin.user_manage.password.required"))],
+        render_kw={"autocomplete": "new-password"},
+    )
+    confirm_password = PasswordField(
+        _label("admin.user_manage.password.confirm_password"),
+        validators=[DataRequired(message=_message("admin.user_manage.password.required"))],
+        render_kw={"autocomplete": "new-password"},
+    )
+    submit = SubmitField(_label("admin.user_manage.password.submit"))
+
+    # Checked here rather than with Length/EqualTo: those %-format lazy messages, which the project's lazy type can't do.
+    def validate_new_password(self, field: PasswordField) -> None:
+        if len(field.data or "") < 12:
+            raise ValidationError(_("admin.user_manage.password.too_short"))
+        if field.data != self.confirm_password.data:
+            raise ValidationError(_("admin.user_manage.password.mismatch"))
 
 
 class ControlImportForm(FlaskForm):

@@ -11,6 +11,27 @@
   <a class="inline-flex items-center justify-center font-medium rounded-md transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.list_users') }}">{{ _('admin.user_manage.back_to_users') }}</a>
 </div>
 
+{% if not (target_user.azure_oid or target_user.aad_upn or target_user.is_service_account) %}
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm mb-4">
+  <div class="px-5 py-4">
+    <h2 class="text-lg font-semibold mb-2">{{ _('admin.user_manage.password.heading') }}</h2>
+    <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('admin.user_manage.password.help') }}</p>
+    <form method="post" action="{{ url_for('admin.set_user_password', user_id=target_user.id) }}" class="flex flex-col gap-4 max-w-lg">
+      {{ password_form.hidden_tag() }}
+      {% for field in password_form if field.name not in ('csrf_token', 'submit') and (field.name != 'current_password' or target_user.id == current_user.id) %}
+      <div class="flex flex-col gap-1">
+        <label for="{{ field.id }}" class="text-sm font-medium text-[var(--color-text)]">{{ field.label.text }}</label>
+        {{ field(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+      </div>
+      {% endfor %}
+      <div>
+        {{ password_form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <div class="bg-[var(--color-card)] border border-red-500/40 rounded-xl shadow-sm mb-4">
   <div class="px-5 py-4">
     <h2 class="text-lg font-semibold mb-2 text-red-400">{{ _('admin.user_manage.danger_zone.heading') }}</h2>

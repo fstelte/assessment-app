@@ -88,6 +88,7 @@ from .forms import (
     PrincipleDeleteForm,
     PrincipleImportForm,
     PrincipleUpdateForm,
+    SetPasswordForm,
 )
 from .backup_crypto import try_decrypt
 from .backup_utils import (
@@ -1568,7 +1569,50 @@ def user_manage(user_id: int):
     if user is None:
         abort(404)
 
-    return render_template("admin/user_manage.html", target_user=user)
+    return render_template("admin/user_manage.html", target_user=user, password_form=SetPasswordForm())
+
+
+@bp.post("/users/<int:user_id>/password")
+@login_required
+@require_fresh_login()
+def set_user_password(user_id: int):
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    manage_url = url_for("admin.user_manage", user_id=user.id)
+
+    if user.azure_oid or user.aad_upn or user.is_service_account:
+        flash(_("admin.users.flash.password_not_local"), "danger")
+        return redirect(manage_url)
+
+    form = SetPasswordForm()
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(manage_url)
+
+    is_self = user.id == current_user.id
+    if is_self and not user.check_password(form.current_password.data or ""):
+        flash(_("admin.users.flash.password_current_invalid"), "danger")
+        return redirect(manage_url)
+
+    user.set_password(form.new_password.data)
+    log_event(
+        action="user_password_set",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email},
+    )
+    db.session.commit()
+    if not is_self:
+        invalidate_user_sessions(user.id)
+        if current_app.config.get("SESSION_TYPE") != "redis":
+            flash(_("admin.users.flash.sessions_not_revoked"), "warning")
+    flash(_("admin.users.flash.password_set"), "success")
+    return redirect(manage_url)
 
 
 @bp.post("/users/<int:user_id>/roles")

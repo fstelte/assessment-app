@@ -1729,6 +1729,10 @@
         "final_admin_cannot_be_deleted": "De laatst overgebleven beheerder kan niet worden verwijderd.",
         "user_deleted": "Gebruiker verwijderd.",
         "user_in_use": "Deze gebruiker heeft nog gekoppelde gegevens en kan niet worden verwijderd. Deactiveer de gebruiker in plaats daarvan.",
+        "password_set": "Wachtwoord bijgewerkt.",
+        "password_not_local": "Het wachtwoord van gefedereerde accounts of serviceaccounts kan hier niet worden ingesteld.",
+        "password_current_invalid": "Het huidige wachtwoord is onjuist.",
+        "sessions_not_revoked": "Bestaande sessies van deze gebruiker blijven actief tot ze verlopen, omdat sessies aan serverzijde niet zijn ingeschakeld.",
         "no_roles_configured": "Er zijn momenteel geen rollen geconfigureerd.",
         "unknown_role_selected": "Onbekende rol geselecteerd.",
         "user_has_role": "Gebruiker heeft deze rol al.",
@@ -2209,6 +2213,17 @@
       "heading": "{name} beheren",
       "email": "E-mail",
       "back_to_users": "Terug naar gebruikers",
+      "password": {
+        "heading": "Wachtwoord instellen",
+        "help": "Stelt een nieuw wachtwoord in voor dit lokale account. Deel het via een veilig kanaal met de gebruiker; de gebruiker moet het na het inloggen wijzigen.",
+        "current_password": "Huidig wachtwoord",
+        "new_password": "Nieuw wachtwoord",
+        "confirm_password": "Bevestig nieuw wachtwoord",
+        "submit": "Wachtwoord instellen",
+        "required": "Dit veld is verplicht.",
+        "too_short": "Het wachtwoord moet minimaal 12 tekens bevatten.",
+        "mismatch": "De wachtwoorden moeten overeenkomen."
+      },
       "danger_zone": {
         "heading": "Gevarenzone",
         "delete_help": "Verwijderen haalt het account definitief weg. Als de gebruiker nog gekoppelde gegevens heeft, wordt het verwijderen geweigerd; deactiveer de gebruiker dan."
