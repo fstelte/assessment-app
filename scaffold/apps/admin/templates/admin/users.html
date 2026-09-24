@@ -101,6 +101,7 @@
           </td>
           <td class="px-4 py-3 align-middle text-right">
             <div class="flex flex-wrap justify-end gap-2">
+              <a class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.user_manage', user_id=user.id) }}">{{ _('admin.users.actions.manage') }}</a>
               <a class="inline-flex items-center justify-center font-medium rounded-md text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.user_mfa', user_id=user.id) }}">{{ _('admin.users.actions.manage_mfa') }}</a>
               {% if user.status == UserStatus.ACTIVE %}
                 <form method="post" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" class="inline">

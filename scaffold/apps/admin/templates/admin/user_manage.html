@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ _('admin.user_manage.title') }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-xl font-bold mb-1">{{ _('admin.user_manage.heading', name=target_user.full_name) }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.user_manage.email') }}: {{ target_user.email }}</p>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-6">
+  <a class="inline-flex items-center justify-center font-medium rounded-md transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.user_mfa', user_id=target_user.id) }}">{{ _('admin.users.actions.manage_mfa') }}</a>
+  <a class="inline-flex items-center justify-center font-medium rounded-md transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/5 px-2.5 py-1 text-xs" href="{{ url_for('admin.list_users') }}">{{ _('admin.user_manage.back_to_users') }}</a>
+</div>
+
+{% if not (target_user.azure_oid or target_user.aad_upn or target_user.is_service_account) %}
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm mb-4">
+  <div class="px-5 py-4">
+    <h2 class="text-lg font-semibold mb-2">{{ _('admin.user_manage.password.heading') }}</h2>
+    <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('admin.user_manage.password.help') }}</p>
+    <form method="post" action="{{ url_for('admin.set_user_password', user_id=target_user.id) }}" class="flex flex-col gap-4 max-w-lg">
+      {{ password_form.hidden_tag() }}
+      {% for field in password_form if field.name not in ('csrf_token', 'submit') and (field.name != 'current_password' or target_user.id == current_user.id) %}
+      <div class="flex flex-col gap-1">
+        <label for="{{ field.id }}" class="text-sm font-medium text-[var(--color-text)]">{{ field.label.text }}</label>
+        {{ field(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+      </div>
+      {% endfor %}
+      <div>
+        {{ password_form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if target_user.id != current_user.id and not (target_user.azure_oid or target_user.aad_upn or target_user.is_service_account) %}
+<div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-sm mb-4">
+  <div class="px-5 py-4">
+    <h2 class="text-lg font-semibold mb-2">{{ _('admin.user_manage.mfa_reset.heading') }}</h2>
+    <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('admin.user_manage.mfa_reset.help') }}</p>
+    <form method="post"
+          action="{{ url_for('admin.reset_user_mfa', user_id=target_user.id) }}"
+          onsubmit='return confirm({{ _("admin.user_manage.mfa_reset.confirm")|tojson }})'>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md transition-colors border border-yellow-400 text-yellow-400 hover:bg-yellow-400/10 px-2.5 py-1 text-xs cursor-pointer">{{ _('admin.user_manage.mfa_reset.submit') }}</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="bg-[var(--color-card)] border border-red-500/40 rounded-xl shadow-sm mb-4">
+  <div class="px-5 py-4">
+    <h2 class="text-lg font-semibold mb-2 text-red-400">{{ _('admin.user_manage.danger_zone.heading') }}</h2>
+    <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('admin.user_manage.danger_zone.delete_help') }}</p>
+    <form method="post"
+          action="{{ url_for('admin.delete_user', user_id=target_user.id) }}"
+          onsubmit='return confirm({{ _("admin.users.actions.confirm_delete")|tojson }})'>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md transition-colors border border-red-500/50 text-red-500 hover:bg-red-500/10 px-2.5 py-1 text-xs cursor-pointer">{{ _('admin.users.actions.delete') }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -118,6 +118,33 @@ users, manage MFA, or apply the same security posture outside the web routes.
 - Cookies stay locked down (`Secure`, `HttpOnly`, `SameSite=Lax`). Override them
   through `Settings` only when absolutely necessary.
 
+## Administrator Account Actions
+
+Administrators manage a local account from the **Manage** page
+(`/admin/users/<id>/manage`), linked from each row of `/admin/users`. Every
+action requires the `admin` role and a fresh login, and is audit-logged.
+
+- **Set password** (`user_password_set`) – the new password needs at least 12
+  characters and a matching confirmation. When you change your own password the
+  current password is required as well. The password itself is never written to
+  the audit log. The route is limited to 10 requests per minute. Not available
+  for federated (Entra) users or service accounts.
+- **Reset MFA** (`user_mfa_reset`) – removes the authenticator secret, backup
+  codes, and every passkey of the user. At the next password sign-in the user is
+  sent to `/auth/mfa/enroll` and must enrol again. SAML sign-ins are unchanged
+  and keep relying on Entra for MFA. Not available for your own account,
+  federated users, or service accounts.
+- **Delete** (`user_deleted`) – the existing guards still apply: you cannot
+  delete your own account or the final administrator. If the user still owns
+  records (control owner, threat model owner, and so on) the database rejects
+  the delete and the page suggests deactivating the user instead.
+
+Session limits: signing a user out after a password change or MFA reset only
+works with server-side sessions (`SESSION_TYPE=redis`, which needs the
+server-side sessions setting and `REDIS_URL`). Without them, existing sessions
+stay active until they expire and the admin sees a warning. "Remember me"
+cookies are never revoked. Changing your own password keeps your own session.
+
 ## Secret Management
 
 - Generate `SECRET_KEY` with `openssl rand -hex 32` (or a managed secret store)

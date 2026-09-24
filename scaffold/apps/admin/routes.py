@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from flask import (
@@ -26,7 +27,7 @@ from ...core.i18n import gettext as _, get_locale
 from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
-from ...extensions import db
+from ...extensions import db, limiter
 from ..auth.flow import ensure_mfa_provisioning
 from ..auth.mfa import build_provisioning
 from ..csa.forms import UserRoleAssignForm, UserRoleRemoveForm
@@ -87,6 +88,7 @@ from .forms import (
     PrincipleDeleteForm,
     PrincipleImportForm,
     PrincipleUpdateForm,
+    SetPasswordForm,
 )
 from .backup_crypto import try_decrypt
 from .backup_utils import (
@@ -1539,16 +1541,115 @@ def delete_user(user_id: int):
 
     target_id = user.id
     target_email = user.email
-    db.session.delete(user)
-    log_event(
-        action="user_deleted",
-        entity_type="user",
-        entity_id=target_id,
-        details={"email": target_email},
-    )
-    db.session.commit()
+    try:
+        db.session.delete(user)
+        log_event(
+            action="user_deleted",
+            entity_type="user",
+            entity_id=target_id,
+            details={"email": target_email},
+        )
+        db.session.commit()
+    except IntegrityError:
+        # Other tables reference users.id without ON DELETE; keep the user and point at deactivation.
+        db.session.rollback()
+        flash(_("admin.users.flash.user_in_use"), "danger")
+        return redirect(url_for("admin.user_manage", user_id=target_id))
     flash(_("admin.users.flash.user_deleted"), "success")
     return redirect(url_for("admin.list_users"))
+
+
+@bp.get("/users/<int:user_id>/manage")
+@login_required
+@require_fresh_login()
+def user_manage(user_id: int):
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+
+    return render_template("admin/user_manage.html", target_user=user, password_form=SetPasswordForm())
+
+
+@bp.post("/users/<int:user_id>/password")
+@limiter.limit("10 per minute")
+@login_required
+@require_fresh_login()
+def set_user_password(user_id: int):
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    manage_url = url_for("admin.user_manage", user_id=user.id)
+
+    if user.azure_oid or user.aad_upn or user.is_service_account:
+        flash(_("admin.users.flash.password_not_local"), "danger")
+        return redirect(manage_url)
+
+    form = SetPasswordForm()
+    if not form.validate_on_submit():
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+        return redirect(manage_url)
+
+    is_self = user.id == current_user.id
+    if is_self and not user.check_password(form.current_password.data or ""):
+        flash(_("admin.users.flash.password_current_invalid"), "danger")
+        return redirect(manage_url)
+
+    user.set_password(form.new_password.data)
+    log_event(
+        action="user_password_set",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email},
+    )
+    db.session.commit()
+    if not is_self:
+        invalidate_user_sessions(user.id)
+        if current_app.config.get("SESSION_TYPE") != "redis":
+            flash(_("admin.users.flash.sessions_not_revoked"), "warning")
+    flash(_("admin.users.flash.password_set"), "success")
+    return redirect(manage_url)
+
+
+@bp.post("/users/<int:user_id>/mfa/reset")
+@login_required
+@require_fresh_login()
+def reset_user_mfa(user_id: int):
+    """Clear every MFA method so the user must enrol again at the next password sign-in."""
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    manage_url = url_for("admin.user_manage", user_id=user.id)
+
+    if user.id == current_user.id:
+        flash(_("admin.users.flash.mfa_reset_self"), "danger")
+        return redirect(manage_url)
+    if user.azure_oid or user.aad_upn or user.is_service_account:
+        flash(_("admin.users.flash.mfa_reset_not_local"), "danger")
+        return redirect(manage_url)
+
+    passkeys_removed = len(user.passkey_credentials)
+    user.mfa_setting = None
+    user.passkey_credentials.clear()
+    log_event(
+        action="user_mfa_reset",
+        entity_type="user",
+        entity_id=user.id,
+        details={"email": user.email, "passkeys_removed": passkeys_removed},
+    )
+    db.session.commit()
+    invalidate_user_sessions(user.id)
+    if current_app.config.get("SESSION_TYPE") != "redis":
+        flash(_("admin.users.flash.sessions_not_revoked"), "warning")
+    flash(_("admin.users.flash.mfa_reset"), "success")
+    return redirect(manage_url)
 
 
 @bp.post("/users/<int:user_id>/roles")

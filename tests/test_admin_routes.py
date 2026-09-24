@@ -2,56 +2,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from flask import g
+
+from sqlalchemy.exc import IntegrityError
+
 from scaffold.models import AuditLog
-from scaffold.apps.identity.models import Role, User, UserStatus
+from scaffold.apps.identity.models import MFASetting, PasskeyCredential, Role, User, UserStatus
 from scaffold.core.audit import log_change_event, log_login_event
 from scaffold.extensions import db
-
-
-def test_admin_mfa_routes_use_shared_helpers(app, client):
-    with app.app_context():
-        admin_role = Role()
-        admin_role.name = "admin"
-        db.session.add(admin_role)
-        db.session.commit()
-
-        admin = User()
-        admin.email = "admin@example.com"
-        admin.status = UserStatus.ACTIVE
-        admin.set_password("Password123!")
-        admin.roles.append(admin_role)
-        db.session.add(admin)
-        db.session.commit()
-
-    response = client.post(
-        "/auth/login",
-        data={"email": "admin@example.com", "password": "Password123!"},
-        follow_redirects=True,
-    )
-    assert response.status_code == 200
-
-    with app.app_context():
-        target_user = User()
-        target_user.email = "target@example.com"
-        target_user.status = UserStatus.ACTIVE
-        target_user.set_password("Password123!")
-        db.session.add(target_user)
-        db.session.commit()
-        target_id = target_user.id
-
-    manage_resp = client.get(f"/admin/users/{target_id}/mfa")
-    assert manage_resp.status_code == 200
-    assert "Manage MFA" in manage_resp.get_data(as_text=True)
-
-    reset_resp = client.post(f"/admin/users/{target_id}/mfa/reset", follow_redirects=True)
-    assert reset_resp.status_code == 200
-    page = reset_resp.get_data(as_text=True)
-    assert "MFA secret regenerated" in page
-
-    with app.app_context():
-        refreshed_user = db.session.get(User, target_id)
-        assert refreshed_user.mfa_setting is not None
-        assert refreshed_user.mfa_setting.enabled is True
 
 
 def _provision_admin() -> tuple[Role, User]:
@@ -257,3 +215,308 @@ def test_role_assignment_records_audit_event(app, client):
         events = AuditLog.query.filter_by(event_type="user_role_assigned").all()
         assert events
         assert any(event.details.get("role") == "auditor" and event.entity_id == str(target_id) for event in events)
+
+def _sign_in(client, user_id: int) -> None:
+    """Authenticate the test client directly; the password login now forces MFA enrolment."""
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_id)
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
+
+
+def _make_target(email: str = "target@example.com") -> int:
+    target = User()
+    target.email = email
+    target.status = UserStatus.ACTIVE
+    target.set_password("Password123!")
+    db.session.add(target)
+    db.session.commit()
+    return target.id
+
+
+def test_user_manage_page_shows_delete_form(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = client.get(f"/admin/users/{target_id}/manage")
+
+    assert resp.status_code == 200
+    page = resp.get_data(as_text=True)
+    assert "target@example.com" in page
+    assert f"/admin/users/{target_id}/delete" in page
+
+
+def test_user_manage_page_requires_admin(app, client):
+    with app.app_context():
+        member_id = _make_target("member@example.com")
+        target_id = _make_target()
+
+    _sign_in(client, member_id)
+
+    assert client.get(f"/admin/users/{target_id}/manage").status_code == 403
+
+
+def test_users_list_links_to_manage_page(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    page = client.get("/admin/users").get_data(as_text=True)
+
+    assert f"/admin/users/{target_id}/manage" in page
+
+
+def test_delete_user_removes_user_and_records_audit_event(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = client.post(f"/admin/users/{target_id}/delete", follow_redirects=True)
+
+    assert resp.status_code == 200
+    with app.app_context():
+        assert db.session.get(User, target_id) is None
+        events = AuditLog.query.filter_by(event_type="user_deleted").all()
+        assert any(event.target_id == str(target_id) for event in events)
+
+
+def test_delete_user_rejected_by_database_keeps_user(app, client, monkeypatch):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+
+    def failing_commit():
+        raise IntegrityError("DELETE FROM users", {}, Exception("FOREIGN KEY constraint failed"))
+
+    monkeypatch.setattr(db.session, "commit", failing_commit)
+    resp = client.post(f"/admin/users/{target_id}/delete", follow_redirects=True)
+    monkeypatch.undo()
+
+    assert resp.status_code == 200
+    assert "still owns records" in resp.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, target_id) is not None
+        assert AuditLog.query.filter_by(event_type="user_deleted").count() == 0
+
+NEW_PASSWORD = "CorrectHorse-Battery9"
+
+
+def _set_password(client, user_id: int, **data):
+    payload = {"new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD, **data}
+    return client.post(f"/admin/users/{user_id}/password", data=payload, follow_redirects=True)
+
+
+def test_admin_sets_password_and_logs_event_without_password(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = _set_password(client, target_id)
+
+    assert resp.status_code == 200
+    page = resp.get_data(as_text=True)
+    assert "Password updated." in page
+    assert "stay active until they expire" in page
+    with app.app_context():
+        assert db.session.get(User, target_id).check_password(NEW_PASSWORD)
+        events = AuditLog.query.filter_by(event_type="user_password_set").all()
+        assert any(event.target_id == str(target_id) for event in events)
+        assert all(NEW_PASSWORD not in str(event.payload) for event in events)
+
+
+def test_set_password_rejects_short_and_mismatched_values(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    short = _set_password(client, target_id, new_password="short", confirm_password="short")
+    mismatch = _set_password(client, target_id, confirm_password="Different-Password99")
+
+    assert "at least 12 characters" in short.get_data(as_text=True)
+    assert "Passwords must match." in mismatch.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, target_id).check_password("Password123!")
+
+
+def test_admin_changing_own_password_needs_current_password(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    wrong = _set_password(client, admin_id, current_password="not-my-password")
+    missing = _set_password(client, admin_id)
+    with app.app_context():
+        assert db.session.get(User, admin_id).check_password("Password123!")
+
+    right = _set_password(client, admin_id, current_password="Password123!")
+
+    assert "current password is incorrect" in wrong.get_data(as_text=True)
+    assert "current password is incorrect" in missing.get_data(as_text=True)
+    assert "Password updated." in right.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, admin_id).check_password(NEW_PASSWORD)
+
+
+def test_set_password_blocked_for_federated_and_service_accounts(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        federated_id = _make_target("federated@example.com")
+        service_id = _make_target("service@example.com")
+        db.session.get(User, federated_id).azure_oid = "oid-123"
+        db.session.get(User, service_id).is_service_account = True
+        db.session.commit()
+        local_id = _make_target("local@example.com")
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+
+    for blocked_id in (federated_id, service_id):
+        resp = _set_password(client, blocked_id)
+        assert "cannot be set here" in resp.get_data(as_text=True)
+        page = client.get(f"/admin/users/{blocked_id}/manage").get_data(as_text=True)
+        assert 'name="new_password"' not in page
+        with app.app_context():
+            assert db.session.get(User, blocked_id).check_password("Password123!")
+
+    assert 'name="new_password"' in client.get(f"/admin/users/{local_id}/manage").get_data(as_text=True)
+
+def _enrol_mfa(user_id: int) -> None:
+    user = db.session.get(User, user_id)
+    setting = MFASetting()
+    setting.secret = "JBSWY3DPEHPK3PXP"
+    setting.mark_enrolled()
+    user.mfa_setting = setting
+    passkey = PasskeyCredential()
+    passkey.credential_id = f"credential-{user_id}".encode()
+    passkey.public_key = b"public-key"
+    passkey.name = "Laptop"
+    user.passkey_credentials.append(passkey)
+    db.session.commit()
+
+
+def _login_location(app, email: str) -> str:
+    # The app fixture keeps one app context open, so Flask-Login's cached user leaks between requests.
+    g.pop("_login_user", None)
+    resp = app.test_client().post("/auth/login", data={"email": email, "password": "Password123!"})
+    assert resp.status_code == 302
+    return resp.headers["Location"]
+
+
+def test_admin_resets_mfa_and_user_must_reenrol(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        _enrol_mfa(target_id)
+        admin_id = admin.id
+
+    with app.app_context():
+        assert db.session.get(User, target_id).mfa_is_enrolled
+
+    _sign_in(client, admin_id)
+    resp = client.post(f"/admin/users/{target_id}/mfa/reset", follow_redirects=True)
+
+    assert "MFA reset." in resp.get_data(as_text=True)
+    with app.app_context():
+        target = db.session.get(User, target_id)
+        assert target.mfa_setting is None
+        assert target.passkey_credentials == []
+        assert not target.mfa_is_enabled
+        events = AuditLog.query.filter_by(event_type="user_mfa_reset").all()
+        assert any(e.target_id == str(target_id) and e.payload["passkeys_removed"] == 1 for e in events)
+    assert _login_location(app, "target@example.com").endswith("/auth/mfa/enroll")
+
+
+def test_admin_cannot_reset_own_mfa(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        _enrol_mfa(admin.id)
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = client.post(f"/admin/users/{admin_id}/mfa/reset", follow_redirects=True)
+    page = client.get(f"/admin/users/{admin_id}/manage").get_data(as_text=True)
+
+    assert "cannot reset your own MFA" in resp.get_data(as_text=True)
+    assert f"/admin/users/{admin_id}/mfa/reset" not in page
+    with app.app_context():
+        assert db.session.get(User, admin_id).mfa_setting is not None
+
+
+def test_mfa_reset_blocked_for_federated_and_service_accounts(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        federated_id = _make_target("federated@example.com")
+        service_id = _make_target("service@example.com")
+        db.session.get(User, federated_id).azure_oid = "oid-123"
+        db.session.get(User, service_id).is_service_account = True
+        db.session.commit()
+        _enrol_mfa(federated_id)
+        _enrol_mfa(service_id)
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+
+    for blocked_id in (federated_id, service_id):
+        resp = client.post(f"/admin/users/{blocked_id}/mfa/reset", follow_redirects=True)
+        assert "cannot be reset here" in resp.get_data(as_text=True)
+        page = client.get(f"/admin/users/{blocked_id}/manage").get_data(as_text=True)
+        assert f"/admin/users/{blocked_id}/mfa/reset" not in page
+        with app.app_context():
+            assert db.session.get(User, blocked_id).mfa_setting is not None
+
+def test_manage_routes_require_fresh_login(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        _enrol_mfa(target_id)
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    with client.session_transaction() as sess:
+        sess["login_time"] = (datetime.now(UTC) - timedelta(minutes=45)).isoformat()
+
+    base = f"/admin/users/{target_id}"
+    requests = [
+        client.get(f"{base}/manage"),
+        client.post(f"{base}/password", data={"new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD}),
+        client.post(f"{base}/mfa/reset"),
+        client.post(f"{base}/delete"),
+    ]
+
+    for resp in requests:
+        assert resp.status_code == 302
+        assert "/auth/reauth" in resp.headers["Location"]
+    with app.app_context():
+        target = db.session.get(User, target_id)
+        assert target is not None
+        assert target.check_password("Password123!")
+        assert target.mfa_setting is not None
+
+
+def test_set_password_route_is_rate_limited(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    url = f"/admin/users/{target_id}/password"
+    data = {"new_password": "short", "confirm_password": "short"}
+
+    assert [client.post(url, data=data).status_code for _ in range(10)] == [302] * 10
+    assert client.post(url, data=data).status_code == 429

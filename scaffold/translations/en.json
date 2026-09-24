@@ -1438,6 +1438,7 @@
       },
       "actions": {
         "approve": "Approve",
+        "manage": "Manage",
         "manage_mfa": "Manage MFA",
         "deactivate": "Deactivate",
         "activate": "Activate",
@@ -1458,6 +1459,14 @@
         "cannot_delete_current_account": "You cannot delete the account currently in use.",
         "final_admin_cannot_be_deleted": "The final administrator cannot be deleted.",
         "user_deleted": "User deleted.",
+        "user_in_use": "This user still owns records and cannot be deleted. Deactivate the user instead.",
+        "password_set": "Password updated.",
+        "mfa_reset": "MFA reset. The user must enrol again at the next sign-in.",
+        "mfa_reset_self": "You cannot reset your own MFA.",
+        "mfa_reset_not_local": "MFA of federated or service accounts cannot be reset here.",
+        "password_not_local": "The password of federated or service accounts cannot be set here.",
+        "password_current_invalid": "The current password is incorrect.",
+        "sessions_not_revoked": "Existing sessions of this user stay active until they expire because server-side sessions are not enabled.",
         "no_roles_configured": "No roles are configured at this time.",
         "unknown_role_selected": "Unknown role selected.",
         "user_has_role": "User already has this role.",
@@ -1942,6 +1951,33 @@
       },
       "fields": {
         "role": "Role"
+      }
+    },
+    "user_manage": {
+      "title": "Manage user",
+      "heading": "Manage {name}",
+      "email": "Email",
+      "back_to_users": "Back to users",
+      "password": {
+        "heading": "Set password",
+        "help": "Sets a new password for this local account. Share it with the user through a secure channel; the user should change it after signing in.",
+        "current_password": "Current password",
+        "new_password": "New password",
+        "confirm_password": "Confirm new password",
+        "submit": "Set password",
+        "required": "This field is required.",
+        "too_short": "Password must be at least 12 characters.",
+        "mismatch": "Passwords must match."
+      },
+      "mfa_reset": {
+        "heading": "Reset MFA",
+        "help": "Removes the authenticator app and all passkeys of this user. After the next sign-in the user must enrol MFA again.",
+        "submit": "Reset MFA",
+        "confirm": "Reset all MFA methods for this user? They must enrol again at the next sign-in."
+      },
+      "danger_zone": {
+        "heading": "Danger zone",
+        "delete_help": "Deleting removes the account permanently. If the user still owns records the delete is rejected; deactivate the user instead."
       }
     },
     "user_mfa": {
