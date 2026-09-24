@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from flask import (
@@ -1539,16 +1540,35 @@ def delete_user(user_id: int):
 
     target_id = user.id
     target_email = user.email
-    db.session.delete(user)
-    log_event(
-        action="user_deleted",
-        entity_type="user",
-        entity_id=target_id,
-        details={"email": target_email},
-    )
-    db.session.commit()
+    try:
+        db.session.delete(user)
+        log_event(
+            action="user_deleted",
+            entity_type="user",
+            entity_id=target_id,
+            details={"email": target_email},
+        )
+        db.session.commit()
+    except IntegrityError:
+        # Other tables reference users.id without ON DELETE; keep the user and point at deactivation.
+        db.session.rollback()
+        flash(_("admin.users.flash.user_in_use"), "danger")
+        return redirect(url_for("admin.user_manage", user_id=target_id))
     flash(_("admin.users.flash.user_deleted"), "success")
     return redirect(url_for("admin.list_users"))
+
+
+@bp.get("/users/<int:user_id>/manage")
+@login_required
+@require_fresh_login()
+def user_manage(user_id: int):
+    _require_admin()
+
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+
+    return render_template("admin/user_manage.html", target_user=user)
 
 
 @bp.post("/users/<int:user_id>/roles")

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
+
 from scaffold.models import AuditLog
 from scaffold.apps.identity.models import Role, User, UserStatus
 from scaffold.core.audit import log_change_event, log_login_event
@@ -257,3 +259,95 @@ def test_role_assignment_records_audit_event(app, client):
         events = AuditLog.query.filter_by(event_type="user_role_assigned").all()
         assert events
         assert any(event.details.get("role") == "auditor" and event.entity_id == str(target_id) for event in events)
+
+def _sign_in(client, user_id: int) -> None:
+    """Authenticate the test client directly; the password login now forces MFA enrolment."""
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user_id)
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
+
+
+def _make_target(email: str = "target@example.com") -> int:
+    target = User()
+    target.email = email
+    target.status = UserStatus.ACTIVE
+    target.set_password("Password123!")
+    db.session.add(target)
+    db.session.commit()
+    return target.id
+
+
+def test_user_manage_page_shows_delete_form(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = client.get(f"/admin/users/{target_id}/manage")
+
+    assert resp.status_code == 200
+    page = resp.get_data(as_text=True)
+    assert "target@example.com" in page
+    assert f"/admin/users/{target_id}/delete" in page
+
+
+def test_user_manage_page_requires_admin(app, client):
+    with app.app_context():
+        member_id = _make_target("member@example.com")
+        target_id = _make_target()
+
+    _sign_in(client, member_id)
+
+    assert client.get(f"/admin/users/{target_id}/manage").status_code == 403
+
+
+def test_users_list_links_to_manage_page(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    page = client.get("/admin/users").get_data(as_text=True)
+
+    assert f"/admin/users/{target_id}/manage" in page
+
+
+def test_delete_user_removes_user_and_records_audit_event(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    resp = client.post(f"/admin/users/{target_id}/delete", follow_redirects=True)
+
+    assert resp.status_code == 200
+    with app.app_context():
+        assert db.session.get(User, target_id) is None
+        events = AuditLog.query.filter_by(event_type="user_deleted").all()
+        assert any(event.target_id == str(target_id) for event in events)
+
+
+def test_delete_user_rejected_by_database_keeps_user(app, client, monkeypatch):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+
+    def failing_commit():
+        raise IntegrityError("DELETE FROM users", {}, Exception("FOREIGN KEY constraint failed"))
+
+    monkeypatch.setattr(db.session, "commit", failing_commit)
+    resp = client.post(f"/admin/users/{target_id}/delete", follow_redirects=True)
+    monkeypatch.undo()
+
+    assert resp.status_code == 200
+    assert "still owns records" in resp.get_data(as_text=True)
+    with app.app_context():
+        assert db.session.get(User, target_id) is not None
+        assert AuditLog.query.filter_by(event_type="user_deleted").count() == 0

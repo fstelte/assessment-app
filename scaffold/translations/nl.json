@@ -1707,6 +1707,7 @@
       },
       "actions": {
         "approve": "Goedkeuren",
+        "manage": "Beheren",
         "manage_mfa": "MFA beheren",
         "deactivate": "Deactiveren",
         "activate": "Activeren",
@@ -1727,6 +1728,7 @@
         "cannot_delete_current_account": "Je kunt het account dat je momenteel gebruikt niet verwijderen.",
         "final_admin_cannot_be_deleted": "De laatst overgebleven beheerder kan niet worden verwijderd.",
         "user_deleted": "Gebruiker verwijderd.",
+        "user_in_use": "Deze gebruiker heeft nog gekoppelde gegevens en kan niet worden verwijderd. Deactiveer de gebruiker in plaats daarvan.",
         "no_roles_configured": "Er zijn momenteel geen rollen geconfigureerd.",
         "unknown_role_selected": "Onbekende rol geselecteerd.",
         "user_has_role": "Gebruiker heeft deze rol al.",
@@ -2200,6 +2202,16 @@
       },
       "fields": {
         "role": "Rol"
+      }
+    },
+    "user_manage": {
+      "title": "Gebruiker beheren",
+      "heading": "{name} beheren",
+      "email": "E-mail",
+      "back_to_users": "Terug naar gebruikers",
+      "danger_zone": {
+        "heading": "Gevarenzone",
+        "delete_help": "Verwijderen haalt het account definitief weg. Als de gebruiker nog gekoppelde gegevens heeft, wordt het verwijderen geweigerd; deactiveer de gebruiker dan."
       }
     },
     "user_mfa": {
