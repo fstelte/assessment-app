@@ -1,6 +1,6 @@
 ---
 feature: 20260924-061710-description-allow-update
-status: planned
+status: implemented
 created: 2026-09-24
 decisions: [20260924-0620-admin-set-user-password, 20260924-0625-admin-mfa-full-reset, 20260924-0630-admin-user-manage-page]
 ---
@@ -61,6 +61,7 @@ All routes use `@login_required`, `@require_fresh_login()`, `_require_admin()` a
 
 ## Out of Scope
 Temporary passwords with forced change, emailed reset links, bulk actions.
+
 
 
 

@@ -1,6 +1,6 @@
 ---
 feature: 20260924-061710-description-allow-update
-status: planned
+status: completed
 created: 2026-09-24
 chunk_size: adaptive
 total_tasks: 4
@@ -64,7 +64,8 @@ Adds a per-user Manage page at `/admin/users/<id>/manage` with set password, ful
 - [x] Task 1: Manage page shell, Manage link and delete button
 - [x] Task 2: Set password
 - [x] Task 3: Reset MFA
-- [ ] Task 4: Docs and translation check
+- [x] Task 4: Docs and translation check
+
 
 
 
