@@ -50,6 +50,20 @@ No changes and no migration.
 
 All routes use `@login_required`, `@require_fresh_login()`, `_require_admin()` and CSRF, like the neighbouring routes. Copy goes through `_()` with en and nl keys.
 
+## Security Behaviour
+- **Audit events:** `user_password_set`, `user_mfa_reset` and `user_deleted` use `target_type` `user` and `target_id` set to the target's id. `log_event` records the acting admin (id, email, name), IP and user agent. Payloads: `{email}`, `{email, passkeys_removed}` and `{email}`. The password is never included.
+- **Rejected requests:** a blocked target (own MFA, federated user, service account) or a failed validation gets a `danger` flash and a redirect (302) to the Manage page. The UI hides the controls, but the server enforces every rule; the confirm prompts are a UI convenience only.
+- **Validation errors:** flashed, then redirect to the Manage page. Fields are not repopulated.
+- **Password rules:** minimum 12 characters, no maximum, confirmation must match.
+- **Throttling:** the set-password route is limited to 10 requests per minute (Flask-Limiter), which also slows guessing of the current password on your own account.
+- **Notification:** the affected user is not notified. The app has no mail infrastructure, so the audit log is the record.
+- **User status:** password set and MFA reset are allowed for any status (pending, active, disabled). Sign-in stays refused for pending and disabled users.
+- **Last-admin guard:** applies to delete only (existing behaviour). Setting a password or resetting MFA never removes an admin.
+- **Existing MFA actions:** enable, regenerate and disable on `/admin/users/<id>/mfa` are unchanged. Reset is the only action that removes the secret, backup codes and passkeys together and forces re-enrolment. Disable leaves passkeys in place.
+- **Password login disabled:** if `PASSWORD_LOGIN_ENABLED` is off, a set password is stored but cannot be used until password login is enabled again.
+- **Concurrent admins:** no locking. Each action is one transaction and the last write wins.
+- **Fresh login:** every new route (and the existing delete) redirects to `/auth/reauth` when the login is older than 30 minutes; a test covers this.
+
 ## Constitution Check
 - Security and audit: admin-only, fresh-login required, audit events for password set and MFA reset, sessions invalidated.
 - Tests: pytest cases in `tests/test_admin_routes.py` for each route, the self-reset block, the federated and service-account blocks, the current-password check on self password change, and the login redirect to `mfa_enroll` after a reset.

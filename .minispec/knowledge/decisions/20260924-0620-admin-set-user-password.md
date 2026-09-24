@@ -16,6 +16,8 @@ The admin types a new password (minimum 12 characters, with a confirm field). It
 - Changing your own password also requires the current password.
 - Sessions of the target are invalidated with `invalidate_user_sessions`, except when the target is the current admin. This only works with Redis sessions, so a warning is flashed otherwise. Remember-me cookies are not revoked.
 
+Security checklist decisions (2026-09-24): the route is limited to 10 requests per minute; there is no maximum length; the user is not notified (no mail infrastructure); any user status is allowed.
+
 ## Alternatives considered
 
 - Temporary password with forced change at next login: needs a new column, a migration and a login-flow change.

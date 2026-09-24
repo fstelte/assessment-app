@@ -27,7 +27,7 @@ from ...core.i18n import gettext as _, get_locale
 from flask_login import current_user, login_required
 
 from ...core.security import require_fresh_login
-from ...extensions import db
+from ...extensions import db, limiter
 from ..auth.flow import ensure_mfa_provisioning
 from ..auth.mfa import build_provisioning
 from ..csa.forms import UserRoleAssignForm, UserRoleRemoveForm
@@ -1573,6 +1573,7 @@ def user_manage(user_id: int):
 
 
 @bp.post("/users/<int:user_id>/password")
+@limiter.limit("10 per minute")
 @login_required
 @require_fresh_login()
 def set_user_password(user_id: int):

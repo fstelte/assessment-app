@@ -478,3 +478,45 @@ def test_mfa_reset_blocked_for_federated_and_service_accounts(app, client):
         assert f"/admin/users/{blocked_id}/mfa/reset" not in page
         with app.app_context():
             assert db.session.get(User, blocked_id).mfa_setting is not None
+
+def test_manage_routes_require_fresh_login(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        _enrol_mfa(target_id)
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    with client.session_transaction() as sess:
+        sess["login_time"] = (datetime.now(UTC) - timedelta(minutes=45)).isoformat()
+
+    base = f"/admin/users/{target_id}"
+    requests = [
+        client.get(f"{base}/manage"),
+        client.post(f"{base}/password", data={"new_password": NEW_PASSWORD, "confirm_password": NEW_PASSWORD}),
+        client.post(f"{base}/mfa/reset"),
+        client.post(f"{base}/delete"),
+    ]
+
+    for resp in requests:
+        assert resp.status_code == 302
+        assert "/auth/reauth" in resp.headers["Location"]
+    with app.app_context():
+        target = db.session.get(User, target_id)
+        assert target is not None
+        assert target.check_password("Password123!")
+        assert target.mfa_setting is not None
+
+
+def test_set_password_route_is_rate_limited(app, client):
+    with app.app_context():
+        _, admin = _provision_admin()
+        target_id = _make_target()
+        admin_id = admin.id
+
+    _sign_in(client, admin_id)
+    url = f"/admin/users/{target_id}/password"
+    data = {"new_password": "short", "confirm_password": "short"}
+
+    assert [client.post(url, data=data).status_code for _ in range(10)] == [302] * 10
+    assert client.post(url, data=data).status_code == 429

@@ -127,7 +127,8 @@ action requires the `admin` role and a fresh login, and is audit-logged.
 - **Set password** (`user_password_set`) – the new password needs at least 12
   characters and a matching confirmation. When you change your own password the
   current password is required as well. The password itself is never written to
-  the audit log. Not available for federated (Entra) users or service accounts.
+  the audit log. The route is limited to 10 requests per minute. Not available
+  for federated (Entra) users or service accounts.
 - **Reset MFA** (`user_mfa_reset`) – removes the authenticator secret, backup
   codes, and every passkey of the user. At the next password sign-in the user is
   sent to `/auth/mfa/enroll` and must enrol again. SAML sign-ins are unchanged
