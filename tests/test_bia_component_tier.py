@@ -293,3 +293,21 @@ def test_requirements_page_shows_tier_goal_instead_of_stored_text(app, client, l
 
     assert "4 h" in body and "stale text" not in body
     assert "kept text" in body
+
+
+# --- Task 5: incident prefill ------------------------------------------------------
+
+
+def test_incident_prefill_uses_tier_goal_then_stored_text(app):
+    from scaffold.apps.incident.services import get_bia_requirements
+
+    with app.test_request_context():
+        goal = _component(context_tier=_tier(1, rto=14400), rto="stale", rpo="1 hour")
+        assert get_bia_requirements(goal.id) == {"rto": "4 h", "rpo": "1 hour"}
+
+
+def test_incident_prefill_is_empty_without_tier_or_text(app):
+    from scaffold.apps.incident.services import get_bia_requirements
+
+    assert get_bia_requirements(_component().id) == {"rto": "", "rpo": ""}
+    assert get_bia_requirements(9999) == {"rto": "", "rpo": ""}
