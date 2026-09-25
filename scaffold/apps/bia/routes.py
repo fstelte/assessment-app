@@ -1754,6 +1754,7 @@ def export_authentication_overview():
     components = (
         Component.query.options(
             joinedload(Component.context_scope).joinedload(ContextScope.tier),
+            joinedload(Component.tier),
             joinedload(Component.authentication_method),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )

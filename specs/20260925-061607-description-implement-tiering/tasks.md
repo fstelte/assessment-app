@@ -109,7 +109,7 @@ Implements per-component tiering (nullable `Component.tier_id`, inheriting the B
 - [x] Task 3: Effective RTO/RPO in availability form
 - [x] Task 4: Effective values in views, exports and summary aggregation
 - [x] Task 5: Incident prefill
-- [ ] Task 6: Authentication Overview effective tier
+- [x] Task 6: Authentication Overview effective tier
 - [ ] Task 7: Export, import, audit, duplicate BIA
 - [ ] Task 8: Fix context tier import (CSV and SQL)
 - [ ] Task 9: Route tests, translation parity and docs

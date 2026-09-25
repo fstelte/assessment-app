@@ -311,3 +311,48 @@ def test_incident_prefill_is_empty_without_tier_or_text(app):
 
     assert get_bia_requirements(_component().id) == {"rto": "", "rpo": ""}
     assert get_bia_requirements(9999) == {"rto": "", "rpo": ""}
+
+
+# --- Task 6: Authentication Overview effective tier -------------------------------
+
+
+def _overview_row(body, component_name):
+    start = body.index(f">{component_name}<")
+    return body[start : body.index("</tr>", start)]
+
+
+def test_authentication_overview_uses_effective_tier(app, client, logged_in, tmp_path, monkeypatch):
+    from scaffold.apps.bia.models import AuthenticationMethod, ComponentEnvironment
+
+    monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
+    bia_tier, own_tier = _tier(2), _tier(1)
+    method = AuthenticationMethod(slug="central-idp", label_en="Central IdP", label_nl="Centraal IdP")
+    tiered_bia = ContextScope(name="Tiered BIA", tier=bia_tier)
+    untiered_bia = ContextScope(name="Untiered BIA")
+
+    def with_method(component):
+        component.environments.append(
+            ComponentEnvironment(environment_type="production", is_enabled=True, authentication_method=method)
+        )
+        return component
+
+    components = [
+        # Listed under the authentication method group.
+        with_method(Component(name="Grouped Own", context_scope=tiered_bia, tier=own_tier)),
+        with_method(Component(name="Grouped Inherit", context_scope=tiered_bia)),
+        # Listed among components without an authentication method.
+        Component(name="Loose Own", context_scope=tiered_bia, tier=own_tier),
+        Component(name="Loose Inherit", context_scope=tiered_bia),
+        Component(name="Loose None", context_scope=untiered_bia),
+    ]
+    db.session.add_all([method, tiered_bia, untiered_bia, *components])
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/export_authentication_overview").data.decode()
+
+    assert "TIER 1" in _overview_row(body, "Grouped Own")
+    assert "TIER 2" in _overview_row(body, "Grouped Inherit")
+    assert "TIER 1" in _overview_row(body, "Loose Own")
+    assert "TIER 2" in _overview_row(body, "Loose Inherit")
+    loose_none = _overview_row(body, "Loose None")
+    assert "TIER" not in loose_none and "Not set" in loose_none
