@@ -87,7 +87,7 @@
                 <tr class="even:bg-slate-900/40">
                   <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
                   <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
-                  <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ component.effective_tier.get_label() if component.effective_tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{% for env_label, method_label in environment_usage[component.id] %}{{ env_label }}: {{ method_label or _('bia.export.authentication_overview.columns.not_set') }}{% if not loop.last %}<br>{% endif %}{% else %}{{ _('bia.export.authentication_overview.columns.not_set') }}{% endfor %}</td>
@@ -125,7 +125,7 @@
                 <tr class="even:bg-slate-900/40">
                   <td class="px-4 py-3 text-slate-100">{{ component.context_scope.name if component.context_scope else _('bia.export.authentication_overview.columns.unknown_bia') }}</td>
                   <td class="px-4 py-3 font-medium text-white">{{ component.name }}</td>
-                  <td class="px-4 py-3">{{ component.context_scope.tier.get_label() if component.context_scope and component.context_scope.tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
+                  <td class="px-4 py-3">{{ component.effective_tier.get_label() if component.effective_tier else _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ (component.info_type or '').strip() or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{{ component.info_owner or _('bia.export.authentication_overview.columns.not_set') }}</td>
                   <td class="px-4 py-3">{% for env_label, method_label in environment_usage[component.id] %}{{ env_label }}: {{ method_label or _('bia.export.authentication_overview.columns.not_set') }}{% if not loop.last %}<br>{% endif %}{% else %}{{ _('bia.export.authentication_overview.columns.not_set') }}{% endfor %}</td>

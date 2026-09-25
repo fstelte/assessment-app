@@ -17,6 +17,21 @@ from ...dpia import models as dpia_models  # noqa: F401  pylint: disable=unused-
 
 ENVIRONMENT_TYPES = ("development", "test", "acceptance", "production")
 
+_DURATION_UNITS = ((86400, "d"), (3600, "h"), (60, "min"), (1, "s"))
+
+
+def format_duration_seconds(seconds: int | None) -> str | None:
+    """Format seconds using the largest unit that divides the value evenly."""
+
+    if seconds is None:
+        return None
+    if seconds <= 0:
+        return f"{seconds} {_('bia.duration.units.s')}"
+    for size, unit in _DURATION_UNITS:
+        if seconds % size == 0:
+            return f"{seconds // size} {_(f'bia.duration.units.{unit}')}"
+    return f"{seconds} {_('bia.duration.units.s')}"  # pragma: no cover
+
 
 class BiaTier(db.Model):
     """Classification tier for a BIA context."""
@@ -147,8 +162,10 @@ class Component(db.Model):
         nullable=True,
     )
     context_scope_id = db.Column(db.Integer, db.ForeignKey("bia_context_scope.id"), nullable=False)
+    tier_id = db.Column(db.Integer, db.ForeignKey("bia_tiers.id", ondelete="SET NULL"), nullable=True)
 
     context_scope = db.relationship("ContextScope", back_populates="components")
+    tier = db.relationship("BiaTier")
     authentication_method = db.relationship("AuthenticationMethod", back_populates="components")
     info_label = db.relationship("InformationLabel", back_populates="components")
     consequences = db.relationship(
@@ -186,6 +203,34 @@ class Component(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Component {self.name}>"
+
+    @property
+    def effective_tier(self) -> BiaTier | None:
+        """Return the component's own tier, falling back to the BIA's tier."""
+
+        if self.tier is not None:
+            return self.tier
+        return self.context_scope.tier if self.context_scope is not None else None
+
+    def _effective_recovery(self, goal_attr: str, stored_attr: str) -> str | None:
+        tier = self.effective_tier
+        goal = getattr(tier, goal_attr) if tier is not None else None
+        if goal is not None:
+            return format_duration_seconds(goal)
+        availability = self.availability_requirement
+        return (getattr(availability, stored_attr) or None) if availability is not None else None
+
+    @property
+    def effective_rto(self) -> str | None:
+        """Tier RTO goal if set, else the stored free-text RTO."""
+
+        return self._effective_recovery("rto_goal_seconds", "rto")
+
+    @property
+    def effective_rpo(self) -> str | None:
+        """Tier RPO goal if set, else the stored free-text RPO."""
+
+        return self._effective_recovery("rpo_goal_seconds", "rpo")
 
     @property
     def is_risk_eligible(self) -> bool:

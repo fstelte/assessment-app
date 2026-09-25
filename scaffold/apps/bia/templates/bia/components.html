@@ -151,6 +151,11 @@
                {{ render_field_with_help(component_form.info_owner, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
             </div>
 
+             <!-- Tier -->
+            <div>
+               {{ render_field_with_help(component_form.tier, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+
             <!-- Dependencies (IT Systems / Applications) -->
             <div>
               {{ render_it_dep_picker(component_form.dependencies_it_systems_applications, all_components, 'add-it-dep') }}
@@ -291,12 +296,12 @@
               </td>
               <td class="px-3 py-3">
                 <div class="flex flex-col gap-1">
-                  {% if component.availability_requirement %}
+                  {% if component.availability_requirement or component.effective_rto or component.effective_rpo %}
                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">
-                      {{ _('bia.components.mtd_prefix') }}: {{ component.availability_requirement.mtd or '-' }}
+                      {{ _('bia.components.mtd_prefix') }}: {{ (component.availability_requirement.mtd if component.availability_requirement else None) or '-' }}
                     </span>
                      <span class="text-xs text-[var(--color-muted)]">
-                      {{ _('bia.components.rto_prefix') }}: {{ component.availability_requirement.rto or '-' }} / {{ _('bia.components.rpo_prefix') }}: {{ component.availability_requirement.rpo or '-' }}
+                      {{ _('bia.components.rto_prefix') }}: {{ component.effective_rto or '-' }} / {{ _('bia.components.rpo_prefix') }}: {{ component.effective_rpo or '-' }}
                     </span>
                   {% else %}
                     <span class="text-[var(--color-muted)] italic text-xs">{{ _('bia.components.not_set') }}</span>

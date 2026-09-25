@@ -21,6 +21,7 @@ from ...extensions import db
 from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
+    BiaTier,
     Component,
     ComponentEnvironment,
     Consequences,
@@ -289,6 +290,7 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
             "Authentication Label (NL)",
             "Description of the Component",
             "Gerelateerd aan BIA",
+            "Component Tier",
         ]
     )
     for component in context.components:
@@ -313,6 +315,7 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
                 stringify(auth_label_nl),
                 stringify(component.description),
                 stringify(context.name),
+                stringify(component.tier.get_label() if component.tier else ""),
             ]
         )
     exports[f"{prefix}_components.csv"] = components_buffer.getvalue()
@@ -438,8 +441,30 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
     return exports
 
 
-def import_from_csv(csv_files: dict[str, str]) -> None:
-    """Import a BIA context from exported CSV artefacts."""
+_TIER_LEVEL_RE = re.compile(r"TIER\s*(\d+)", re.IGNORECASE)
+
+
+def _csv_tier_id(
+    raw: str | None,
+    tier_ids_by_level: dict[int, int],
+    name: str,
+    warnings: list[str],
+    message_key: str = "bia.flash.import_tier_unknown",
+) -> int | None:
+    """Resolve a "TIER n > name" label to a BiaTier id; unknown labels warn and yield no tier."""
+
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    match = _TIER_LEVEL_RE.search(raw)
+    tier_id = tier_ids_by_level.get(int(match.group(1))) if match else None
+    if tier_id is None:
+        warnings.append(_(message_key, name=name, tier=raw))
+    return tier_id
+
+
+def import_from_csv(csv_files: dict[str, str]) -> list[str]:
+    """Import a BIA context from exported CSV artefacts and return any warnings."""
 
     if not current_user.is_authenticated:
         raise PermissionError("Authentication is required for CSV import.")
@@ -466,6 +491,8 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
     availability_csv = csv_files.get("availability_requirements")
     ai_csv = csv_files.get("ai_identification")
     summary_csv = csv_files.get("summary")
+    warnings: list[str] = []
+    tier_ids_by_level = {tier.level: tier.id for tier in BiaTier.query.all()}
 
     def _normalise(name: str | None) -> str:
         return (name or "").strip().lower()
@@ -518,6 +545,9 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                 "technical_administrator": row.get("Technical Administrator") or None,
                 "security_manager": row.get("Security Manager") or None,
                 "incident_contact": row.get("Incident Contact") or None,
+                "tier_id": _csv_tier_id(
+                    row.get("BIA Tier"), tier_ids_by_level, name, warnings, "bia.flash.import_context_tier_unknown"
+                ),
                 "author_id": getattr(current_user, "id", None),
             }
             context = ContextScope(**payload)
@@ -540,6 +570,7 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                     raw_label = (row.get("Authentication Label (EN)") or row.get("Authentication Label (NL)") or "").strip().lower()
                     if raw_label:
                         auth_option = option_by_label.get(raw_label)
+                tier_id = _csv_tier_id(row.get("Component Tier"), tier_ids_by_level, component_name, warnings)
                 component = Component(
                     name=component_name,
                     info_type=row.get("Type of Information") or None,
@@ -553,6 +584,7 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
                     user_type=row.get("Types of Users") or None,
                     description=row.get("Description of the Component") or None,
                     authentication_method_id=auth_option.id if auth_option else None,
+                    tier_id=tier_id,
                     context_scope_id=context.id,
                 )
                 db.session.add(component)
@@ -653,6 +685,7 @@ def import_from_csv(csv_files: dict[str, str]) -> None:
 
     _sync_identity_sequences()
     db.session.commit()
+    return warnings
 
 
 def export_to_sql(context: ContextScope) -> str:
@@ -734,6 +767,7 @@ def export_to_sql(context: ContextScope) -> str:
                     "description": component.description,
                     "authentication_method_id": component.authentication_method_id,
                     "context_scope_id": component.context_scope_id,
+                    "tier_id": component.tier_id,
                 },
             )
         )
@@ -827,8 +861,8 @@ def export_to_sql(context: ContextScope) -> str:
     return "\n".join(statements)
 
 
-def import_from_sql(sql_content: str) -> None:
-    """Import SQL export statements from the BIA module."""
+def import_from_sql(sql_content: str) -> list[str]:
+    """Import SQL export statements from the BIA module and return any warnings."""
 
     if not current_user.is_authenticated:
         raise PermissionError("Authentication is required for SQL import.")
@@ -860,6 +894,8 @@ def import_from_sql(sql_content: str) -> None:
 
     context_id_map: dict[int, int] = {}
     component_id_map: dict[int, int] = {}
+    warnings: list[str] = []
+    valid_tier_ids = {tier.id for tier in BiaTier.query.all()}
     user_id = getattr(current_user, "id", None)
 
     with db.session.begin_nested():
@@ -877,6 +913,12 @@ def import_from_sql(sql_content: str) -> None:
         for row in parsed[context_table]:
             original_id = row.pop("id", None)
             row.pop("author_id", None)
+            context_tier_fk = row.get("tier_id")
+            if context_tier_fk is not None and context_tier_fk not in valid_tier_ids:
+                warnings.append(
+                    _("bia.flash.import_context_tier_unknown", name=row.get("name"), tier=f"id {context_tier_fk}")
+                )
+                row["tier_id"] = None
             context = ContextScope(
                 **{
                     **row,
@@ -898,6 +940,10 @@ def import_from_sql(sql_content: str) -> None:
 
         for row in parsed[component_table]:
             original_id = row.pop("id", None)
+            tier_fk = row.get("tier_id")
+            if tier_fk is not None and tier_fk not in valid_tier_ids:
+                warnings.append(_("bia.flash.import_tier_unknown", name=row.get("name"), tier=f"id {tier_fk}"))
+                row["tier_id"] = None
             context_fk = row.get("context_scope_id")
             if isinstance(context_fk, int) and context_fk in context_id_map:
                 row["context_scope_id"] = context_id_map[context_fk]
@@ -939,10 +985,11 @@ def import_from_sql(sql_content: str) -> None:
 
     _sync_identity_sequences()
     db.session.commit()
+    return warnings
 
 
-def import_sql_file(file_storage) -> None:
-    """Read, validate and import a SQL export file."""
+def import_sql_file(file_storage) -> list[str]:
+    """Read, validate and import a SQL export file, returning any warnings."""
 
     if not file_storage or not file_storage.filename:
         raise ValueError("No SQL file provided.")
@@ -964,7 +1011,7 @@ def import_sql_file(file_storage) -> None:
     except UnicodeDecodeError as exc:  # pragma: no cover - defensive
         raise ValueError("SQL file must be UTF-8 encoded.") from exc
 
-    import_from_sql(sql_text)
+    return import_from_sql(sql_text)
 
 
 def ensure_export_folder() -> Path:

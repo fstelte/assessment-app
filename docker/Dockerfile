@@ -6,6 +6,10 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_VERSION=2.2.1 \
     POETRY_INSTALLER_NO_BINARY=lxml
 
+# Changing this value (CI passes the run id) invalidates the cached apt layer so
+# every build picks up the latest Debian security updates.
+ARG APT_CACHE_BUST=0
+
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends build-essential libpq5 libpq-dev ca-certificates curl gnupg lsb-release wget postgresql-client libxml2-dev libxslt1-dev libxmlsec1-dev libxmlsec1-openssl libffi-dev zlib1g-dev pkg-config \

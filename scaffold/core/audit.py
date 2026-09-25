@@ -412,6 +412,7 @@ _DEFAULT_AUTO_AUDIT_CONFIG: Mapping[str, Mapping[str, Any]] = MappingProxyType(
                 "context_scope_id",
                 "info_label_id",
                 "authentication_method_id",
+                "tier_id",
             ),
             "identity_field": "id",
             "fallback_identity": ("name",),

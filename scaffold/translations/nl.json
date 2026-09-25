@@ -239,6 +239,8 @@
       "current_password_invalid": "Huidig wachtwoord ongeldig.",
       "sql_export_failed": "SQL-export mislukt: {details}",
       "sql_import_success": "SQL-bestand succesvol geïmporteerd.",
+      "import_tier_unknown": "Component {name}: tier {tier} is niet gevonden, dus het component neemt de tier van de BIA over.",
+      "import_context_tier_unknown": "BIA {name}: tier {tier} is niet gevonden, dus de BIA heeft geen tier.",
       "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL.",
       "archived": "BIA is gearchiveerd.",
       "unarchived": "BIA is gedearchiveerd.",
@@ -313,6 +315,17 @@
       "empty": {
         "title": "Nog geen BIA's vastgelegd.",
         "body": "Maak een nieuwe analyse aan of importeer een bestaande dataset om te starten."
+      }
+    },
+    "availability": {
+      "tier_goal": "Van {tier}: {value}"
+    },
+    "duration": {
+      "units": {
+        "s": "s",
+        "min": "min",
+        "h": "u",
+        "d": "d"
       }
     },
     "tiers": {
@@ -672,11 +685,17 @@
         "start_button": "Start DPIA",
         "unavailable": "DPIA-module niet ingeschakeld"
       },
+      "tier": {
+        "inherit": "Overnemen van BIA",
+        "inherit_with": "Overnemen van BIA ({tier})",
+        "inherited_suffix": "overgenomen van BIA"
+      },
       "labels": {
         "name": "Naam",
         "owner": "Eigenaar",
         "information_type": "Informatietype",
         "user_type": "Gebruikerstype",
+        "tier": "Tier",
         "authentication": "Authenticatie",
         "dependencies_it_systems_applications": "Afhankelijkheden: IT-systemen en applicaties",
         "dependencies_equipment": "Afhankelijkheden: Apparatuur",
@@ -788,6 +807,7 @@
         "info_type": "Het type informatie dat wordt verwerkt (bijv. PII, financieel, technisch).",
         "info_owner": "De persoon die verantwoordelijk is voor de informatieclassificatie.",
         "user_type": "De primaire gebruikersgroep (bijv. medewerkers, klanten, systeem).",
+        "tier": "Overschrijft de tier van de BIA voor dit component. Laat op overnemen staan om de tier van de BIA te gebruiken.",
         "dependencies_it_systems_applications": "IT-systemen of applicaties waar dit component van afhankelijk is.",
         "dependencies_equipment": "Fysieke apparatuur vereist (bijv. servers, laptops).",
         "dependencies_suppliers": "Externe leveranciers of verkopers die betrokken zijn.",

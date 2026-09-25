@@ -50,6 +50,7 @@ from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
     BiaTier,
+    format_duration_seconds,
     Component,
     ComponentEnvironment,
     Consequences,
@@ -91,6 +92,8 @@ bp = Blueprint(
     template_folder="templates",
     static_folder="static",
 )
+
+bp.app_template_filter("duration")(format_duration_seconds)
 
 
 # Environment selection order and ranking for fallback authentication resolution.
@@ -154,6 +157,9 @@ def _configure_component_form(
         choices.append((str(option.id), option.label(locale)))
     form.environment_authentication_choices = choices
     _configure_environment_subforms(form, choices, component)
+    if component is not None and component.context_scope is not None and component.context_scope.tier is not None:
+        inherit_label = _("bia.components.tier.inherit_with", tier=component.context_scope.tier.get_label())
+        form.tier.choices[0] = (None, inherit_label)
 
 
 def _configure_environment_subforms(
@@ -332,6 +338,36 @@ def _can_edit_context(context: ContextScope) -> bool:
     if context.author:
         return context.author == current_user
     return current_user.has_role(ROLE_ADMIN)
+
+
+def _tier_goal_notes(component: Component) -> dict[str, str | None]:
+    """Describe the tier goal that fixes each of RTO/RPO, or None when free text applies."""
+
+    notes: dict[str, str | None] = {"rto": None, "rpo": None}
+    tier = component.effective_tier
+    if tier is None:
+        return notes
+    for field in notes:
+        value = format_duration_seconds(getattr(tier, f"{field}_goal_seconds"))
+        if value is None:
+            continue
+        note = _("bia.availability.tier_goal", tier=tier.get_label(), value=value)
+        if component.tier_id is None:
+            note = f"{note} ({_('bia.components.tier.inherited_suffix')})"
+        notes[field] = note
+    return notes
+
+
+def _apply_availability(requirement: AvailabilityRequirements, form: AvailabilityForm, component: Component) -> None:
+    """Save the form, leaving stored RTO/RPO untouched while a tier goal applies."""
+
+    notes = _tier_goal_notes(component)
+    requirement.mtd = form.mtd.data
+    requirement.masl = form.masl.data
+    if notes["rto"] is None:
+        requirement.rto = form.rto.data
+    if notes["rpo"] is None:
+        requirement.rpo = form.rpo.data
 
 
 def _safe_return_target(target: str | None) -> str | None:
@@ -639,6 +675,7 @@ def add_component():
             dependencies_facilities=form.dependencies_facilities.data,
             dependencies_others=form.dependencies_others.data,
             description=form.description.data,
+            tier_id=form.tier.data,
             context_scope=context,
         )
         component.authentication_method_id = None
@@ -682,6 +719,7 @@ def update_component(component_id: int):
         component.dependencies_facilities = form.dependencies_facilities.data
         component.dependencies_others = form.dependencies_others.data
         component.description = form.description.data
+        component.tier_id = form.tier.data
         component.authentication_method_id = None
         _sync_component_environments(component, form)
         db.session.commit()
@@ -727,6 +765,7 @@ def edit_component_form(component_id: int):
             form.ai_category.data = existing_ai.category
             form.ai_motivatie.data = existing_ai.motivatie
         form.info_type.data = component.info_label_id
+        form.tier.data = component.tier_id
 
     if form.validate_on_submit():
         context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
@@ -749,6 +788,7 @@ def edit_component_form(component_id: int):
             component.dependencies_facilities = form.dependencies_facilities.data
             component.dependencies_others = form.dependencies_others.data
             component.description = form.description.data
+            component.tier_id = form.tier.data
             component.authentication_method_id = None
             _sync_component_environments(component, form)
             # Save AI identification
@@ -985,10 +1025,7 @@ def manage_component_availability(component_id: int):
         if requirement is None:
             requirement = AvailabilityRequirements(component=component)
             db.session.add(requirement)
-        requirement.mtd = form.mtd.data
-        requirement.rto = form.rto.data
-        requirement.rpo = form.rpo.data
-        requirement.masl = form.masl.data
+        _apply_availability(requirement, form, component)
         db.session.commit()
         flash(_("Availability requirements updated."), "success")
         return redirect(return_to or url_for("bia.view_components"))
@@ -996,6 +1033,7 @@ def manage_component_availability(component_id: int):
         "bia/manage_component_availability.html",
         component=component,
         form=form,
+        goal_notes=_tier_goal_notes(component),
         return_to=return_to,
     )
 
@@ -1057,6 +1095,8 @@ def get_component(component_id: int):
             "dependencies_facilities": component.dependencies_facilities,
             "dependencies_others": component.dependencies_others,
             "bia_name": component.context_scope.name if component.context_scope else None,
+            "tier": component.effective_tier.get_label() if component.effective_tier else None,
+            "tier_inherited": component.tier_id is None,
             "consequences_count": len(component.consequences),
             "authentication_method_id": component.authentication_method_id,
             "authentication_method_label": _describe_authentication(component),
@@ -1219,10 +1259,7 @@ def update_availability(component_id: int):
         db.session.add(availability)
     else:
         availability.component = component
-    availability.mtd = form.mtd.data
-    availability.rto = form.rto.data
-    availability.rpo = form.rpo.data
-    availability.masl = form.masl.data
+    _apply_availability(availability, form, component)
     db.session.commit()
     return jsonify({"success": True})
 
@@ -1356,10 +1393,7 @@ def manage_item_availability(item_id: int):
         if requirement is None:
             requirement = AvailabilityRequirements(component=selected_component)
             db.session.add(requirement)
-        requirement.mtd = form.mtd.data
-        requirement.rto = form.rto.data
-        requirement.rpo = form.rpo.data
-        requirement.masl = form.masl.data
+        _apply_availability(requirement, form, selected_component)
         db.session.commit()
         flash(_("bia.flash.availability_updated"), "success")
         return redirect(url_for("bia.manage_item_availability", item_id=item.id, component_id=selected_component.id))
@@ -1375,6 +1409,7 @@ def manage_item_availability(item_id: int):
         item=item,
         form=form,
         selected_component=selected_component,
+        goal_notes=_tier_goal_notes(selected_component),
         availability_rows=availability_rows,
     )
 
@@ -1641,8 +1676,10 @@ def import_csv_view():
             if "bia" not in csv_files:
                 flash(_("bia.flash.csv_required"), "danger")
                 return redirect(request.url)
-            import_from_csv(csv_files)
+            warnings = import_from_csv(csv_files)
             flash(_("bia.flash.csv_import_success"), "success")
+            for warning in warnings:
+                flash(warning, "warning")
             return redirect(url_for("bia.dashboard"))
         except Exception as exc:  # pragma: no cover - surface errors to UI
             logging.exception("CSV import failed")
@@ -1719,6 +1756,7 @@ def export_authentication_overview():
     components = (
         Component.query.options(
             joinedload(Component.context_scope).joinedload(ContextScope.tier),
+            joinedload(Component.tier),
             joinedload(Component.authentication_method),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
         )
@@ -1912,13 +1950,20 @@ def export_availability_requirements():
             }
             unique_masl = set()
 
-            for req in req_list:
+            for component in components:
+                req = component.availability_requirement
+                tier = component.effective_tier
                 for field in ["mtd", "rto", "rpo", "masl"]:
-                    val_str = getattr(req, field)
-                    if field == "masl" and val_str:
-                        unique_masl.add(val_str)
-                    
-                    dur = _parse_duration(val_str)
+                    # Only RTO and RPO have tier goals; mtd/masl always use stored text.
+                    goal = getattr(tier, f"{field}_goal_seconds", None) if tier else None
+                    if goal is not None:
+                        # A tier goal replaces the stored RTO/RPO text.
+                        dur, val_str = goal / 60, format_duration_seconds(goal)
+                    else:
+                        val_str = getattr(req, field) if req else None
+                        if field == "masl" and val_str:
+                            unique_masl.add(val_str)
+                        dur = _parse_duration(val_str)
                     if dur < aggr[field][0]:
                         aggr[field] = (dur, val_str)
 
@@ -2098,8 +2143,10 @@ def import_sql_form():
     form = ImportSQLForm()
     if form.validate_on_submit():
         try:
-            import_sql_file(form.sql_file.data)
+            warnings = import_sql_file(form.sql_file.data)
             flash(_("bia.flash.sql_import_success"), "success")
+            for warning in warnings:
+                flash(warning, "warning")
             return redirect(url_for("bia.dashboard"))
         except (ValueError, PermissionError) as exc:
             flash(str(exc), "danger")
@@ -2309,6 +2356,7 @@ def copy_item(item_id: int):
             dependencies_facilities=comp.dependencies_facilities,
             dependencies_others=comp.dependencies_others,
             authentication_method_id=comp.authentication_method_id,
+            tier_id=comp.tier_id,
             context_scope=new_context
         )
         db.session.add(new_comp)

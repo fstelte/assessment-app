@@ -41,14 +41,14 @@
           </div>
           <div>
             {{ form.rto.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.rto(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 8 hours") }}
+            {% if goal_notes.rto %}<div class="w-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)]">{{ goal_notes.rto }}</div>{% else %}{{ form.rto(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 8 hours") }}{% endif %}
             {% if form.rto.errors %}
               <div class="text-xs mt-1 text-red-500">{{ form.rto.errors | join(', ') }}</div>
             {% endif %}
           </div>
           <div>
             {{ form.rpo.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
-            {{ form.rpo(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 30 minutes") }}
+            {% if goal_notes.rpo %}<div class="w-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)]">{{ goal_notes.rpo }}</div>{% else %}{{ form.rpo(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", placeholder="e.g. 30 minutes") }}{% endif %}
             {% if form.rpo.errors %}
               <div class="text-xs mt-1 text-red-500">{{ form.rpo.errors | join(', ') }}</div>
             {% endif %}
@@ -96,8 +96,8 @@
                   {% endif %}
                 </td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.mtd if row.requirement and row.requirement.mtd else _('bia.manage_availability.empty.not_set') }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rto if row.requirement and row.requirement.rto else _('bia.manage_availability.empty.not_set') }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.requirement.rpo if row.requirement and row.requirement.rpo else _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.component.effective_rto or _('bia.manage_availability.empty.not_set') }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ row.component.effective_rpo or _('bia.manage_availability.empty.not_set') }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)] truncate max-w-xs" title="{{ row.requirement.masl if row.requirement else '' }}">{{ row.requirement.masl if row.requirement and row.requirement.masl else _('bia.manage_availability.empty.not_set') }}</td>
               </tr>
               {% endfor %}

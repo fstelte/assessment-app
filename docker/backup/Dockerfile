@@ -3,6 +3,10 @@ FROM python:3.14-slim-trixie
 
 ENV PYTHONUNBUFFERED=1
 
+# Changing this value (CI passes the run id) invalidates the cached apt layer so
+# every build picks up the latest Debian security updates.
+ARG APT_CACHE_BUST=0
+
 RUN apt-get update \
   && apt-get upgrade -y --no-install-recommends \
   && apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release wget build-essential libffi-dev pkg-config \
