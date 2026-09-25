@@ -241,6 +241,9 @@
               
               <dt class="text-sm font-medium text-[var(--color-muted)]">{{ _('bia.context_form.modals.view.user_type') }}</dt>
               <dd class="sm:col-span-2 text-sm" id="bia-view-component-user-type"></dd>
+
+              <dt class="text-sm font-medium text-[var(--color-muted)]">{{ _('bia.components.labels.tier') }}</dt>
+              <dd class="sm:col-span-2 text-sm" id="bia-view-component-tier"></dd>
               
               <dt class="text-sm font-medium text-[var(--color-muted)]">{{ _('bia.context_form.modals.view.environments') }}</dt>
               <dd class="sm:col-span-2 text-sm" id="bia-view-component-environments"></dd>
@@ -398,6 +401,8 @@
           document.getElementById('bia-view-component-info-type').textContent = data.info_type || '-';
           document.getElementById('bia-view-component-info-owner').textContent = data.info_owner || '-';
           document.getElementById('bia-view-component-user-type').textContent = data.user_type || '-';
+          document.getElementById('bia-view-component-tier').textContent =
+            data.tier ? data.tier + (data.tier_inherited ? ' ({{ _('bia.components.tier.inherited_suffix') }})' : '') : '-';
           document.getElementById('bia-view-component-environments').textContent =
             (data.environments && data.environments.length)
               ? data.environments.map(function (e) { return e.name || e; }).join(', ')

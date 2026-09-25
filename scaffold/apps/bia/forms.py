@@ -10,7 +10,7 @@ from wtforms.validators import DataRequired, EqualTo, Length, Optional, NumberRa
 import sqlalchemy as sa
 from ...extensions import db
 from .models import BiaTier, InformationLabel, InformationLabel
-from scaffold.core.i18n import lazy_gettext as _l, get_locale
+from scaffold.core.i18n import gettext as _, lazy_gettext as _l, get_locale
 
 
 # Keep in sync with ENVIRONMENT_TYPES in .models.__init__
@@ -233,6 +233,12 @@ class ComponentForm(FlaskForm):
         validators=[Optional(), Length(max=255)],
         description=_l("bia.components.tooltips.user_type"),
     )
+    tier = SelectField(
+        _l("bia.components.labels.tier"),
+        validators=[Optional()],
+        coerce=_optional_int,
+        description=_l("bia.components.tooltips.tier"),
+    )
     dependencies_it_systems_applications = TextAreaField(
         _l("bia.components.labels.dependencies_it_systems_applications"),
         validators=[Optional(), Length(max=5000)],
@@ -294,6 +300,8 @@ class ComponentForm(FlaskForm):
             .order_by(InformationLabel.id)
         ).all()
         self.info_type.choices = [(None, "-")] + [(lbl.id, lbl.get_label(locale)) for lbl in labels]
+        tiers = db.session.scalars(sa.select(BiaTier).order_by(BiaTier.level)).all()
+        self.tier.choices = [(None, _("bia.components.tier.inherit"))] + [(t.id, t.get_label(locale)) for t in tiers]
 
 
 class ConsequenceForm(FlaskForm):

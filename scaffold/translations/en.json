@@ -472,11 +472,17 @@
         "start_button": "Start DPIA",
         "unavailable": "DPIA module not enabled"
       },
+      "tier": {
+        "inherit": "Inherit from BIA",
+        "inherit_with": "Inherit from BIA ({tier})",
+        "inherited_suffix": "inherited from BIA"
+      },
       "labels": {
         "name": "Name",
         "owner": "Owner",
         "information_type": "Information type",
         "user_type": "User type",
+        "tier": "Tier",
         "authentication": "Authentication",
         "dependencies_it_systems_applications": "Dependencies: IT systems and applications",
         "dependencies_equipment": "Dependencies: Equipment",
@@ -492,6 +498,7 @@
         "info_type": "The type of information processed (e.g. PII, financial, technical).",
         "info_owner": "The person accountable for the information classification.",
         "user_type": "The primary user group (e.g. employees, customers, system).",
+        "tier": "Overrides the BIA's tier for this component. Leave on inherit to use the BIA's tier.",
         "dependencies_it_systems_applications": "IT systems or applications this component depends on.",
         "dependencies_equipment": "Physical equipment required (e.g. servers, laptops).",
         "dependencies_suppliers": "External suppliers or vendors involved.",

@@ -157,6 +157,9 @@ def _configure_component_form(
         choices.append((str(option.id), option.label(locale)))
     form.environment_authentication_choices = choices
     _configure_environment_subforms(form, choices, component)
+    if component is not None and component.context_scope is not None and component.context_scope.tier is not None:
+        inherit_label = _("bia.components.tier.inherit_with", tier=component.context_scope.tier.get_label())
+        form.tier.choices[0] = (None, inherit_label)
 
 
 def _configure_environment_subforms(
@@ -642,6 +645,7 @@ def add_component():
             dependencies_facilities=form.dependencies_facilities.data,
             dependencies_others=form.dependencies_others.data,
             description=form.description.data,
+            tier_id=form.tier.data,
             context_scope=context,
         )
         component.authentication_method_id = None
@@ -685,6 +689,7 @@ def update_component(component_id: int):
         component.dependencies_facilities = form.dependencies_facilities.data
         component.dependencies_others = form.dependencies_others.data
         component.description = form.description.data
+        component.tier_id = form.tier.data
         component.authentication_method_id = None
         _sync_component_environments(component, form)
         db.session.commit()
@@ -730,6 +735,7 @@ def edit_component_form(component_id: int):
             form.ai_category.data = existing_ai.category
             form.ai_motivatie.data = existing_ai.motivatie
         form.info_type.data = component.info_label_id
+        form.tier.data = component.tier_id
 
     if form.validate_on_submit():
         context_id = request.form.get("bia_id") or (component.context_scope.id if component.context_scope else None)
@@ -752,6 +758,7 @@ def edit_component_form(component_id: int):
             component.dependencies_facilities = form.dependencies_facilities.data
             component.dependencies_others = form.dependencies_others.data
             component.description = form.description.data
+            component.tier_id = form.tier.data
             component.authentication_method_id = None
             _sync_component_environments(component, form)
             # Save AI identification
@@ -1060,6 +1067,8 @@ def get_component(component_id: int):
             "dependencies_facilities": component.dependencies_facilities,
             "dependencies_others": component.dependencies_others,
             "bia_name": component.context_scope.name if component.context_scope else None,
+            "tier": component.effective_tier.get_label() if component.effective_tier else None,
+            "tier_inherited": component.tier_id is None,
             "consequences_count": len(component.consequences),
             "authentication_method_id": component.authentication_method_id,
             "authentication_method_label": _describe_authentication(component),

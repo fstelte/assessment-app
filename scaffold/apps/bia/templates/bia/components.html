@@ -151,6 +151,11 @@
                {{ render_field_with_help(component_form.info_owner, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
             </div>
 
+             <!-- Tier -->
+            <div>
+               {{ render_field_with_help(component_form.tier, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+            </div>
+
             <!-- Dependencies (IT Systems / Applications) -->
             <div>
               {{ render_it_dep_picker(component_form.dependencies_it_systems_applications, all_components, 'add-it-dep') }}
