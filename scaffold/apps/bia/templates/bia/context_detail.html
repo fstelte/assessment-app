@@ -428,8 +428,8 @@
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.mtd if availability else '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.rto if availability else '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.rpo if availability else '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rto or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rpo or '–' }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.masl if availability else '–' }}</td>
               </tr>
               {% endfor %}

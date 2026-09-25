@@ -232,3 +232,64 @@ def test_update_availability_json_respects_tier_goal(app, client, logged_in):
     assert response.get_json() == {"success": True}
     stored = _stored(component_id)
     assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
+
+
+# --- Task 4: effective values in views, exports and summary aggregation -----------
+
+
+def _bia_with_component(bia_name, tier=None, **availability):
+    context = ContextScope(name=bia_name, author=User.find_by_email("user@example.com"), tier=tier)
+    component = Component(name=f"{bia_name} component", context_scope=context)
+    if availability:
+        component.availability_requirement = AvailabilityRequirements(**availability)
+    db.session.add_all([context, component])
+    db.session.commit()
+    return context.id
+
+
+def test_summary_export_uses_tier_goals_and_stored_text(app, client, logged_in, tmp_path, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
+    # Tier goal, and no availability row at all.
+    _bia_with_component("Tiered", tier=_tier(1, rto=3600, rpo=900))
+    # No tier: stored text is used.
+    _bia_with_component("Untiered", rto="2 hours", rpo="45 minutes")
+
+    response = _request(client, "get", "/bia/export_availability_requirements?type=summary")
+    body = response.data.decode()
+
+    assert response.status_code == 200
+    assert "1 h" in body and "15 min" in body
+    assert "2 hours" in body and "45 minutes" in body
+
+
+def test_summary_export_takes_lowest_of_tier_goal_and_stored_text(app, client, logged_in, tmp_path, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
+    context = ContextScope(name="Mixed", author=User.find_by_email("user@example.com"))
+    with_goal = Component(name="A", context_scope=context, tier=_tier(1, rto=600))
+    stored_only = Component(name="B", context_scope=context, tier=_tier(2))
+    stored_only.availability_requirement = AvailabilityRequirements(rto="30 minutes")
+    db.session.add_all([context, with_goal, stored_only])
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/export_availability_requirements?type=summary").data.decode()
+
+    assert "10 min" in body and "30 minutes" not in body
+
+
+def test_component_pages_show_tier_goal_without_availability_row(app, client, logged_in):
+    context_id = _bia_with_component("Tiered", tier=_tier(1, rto=14400, rpo=1800))
+
+    components_page = _request(client, "get", "/bia/components").data.decode()
+    detail_page = _request(client, "get", f"/bia/item/{context_id}").data.decode()
+
+    assert "RTO: 4 h" in components_page and "RPO: 30 min" in components_page
+    assert "4 h" in detail_page and "30 min" in detail_page
+
+
+def test_requirements_page_shows_tier_goal_instead_of_stored_text(app, client, logged_in):
+    _bia_with_component("Tiered", tier=_tier(1, rto=14400), rto="stale text", rpo="kept text")
+
+    body = _request(client, "get", "/bia/requirements").data.decode()
+
+    assert "4 h" in body and "stale text" not in body
+    assert "kept text" in body

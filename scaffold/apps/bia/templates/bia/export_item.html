@@ -322,8 +322,8 @@
                   <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ component.name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.mtd if availability else 'N/A' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.rto if availability else 'N/A' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.rpo if availability else 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.effective_rto or 'N/A' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ component.effective_rpo or 'N/A' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{{ availability.masl if availability else 'N/A' }}</td>
                   </tr>
                   {% else %}

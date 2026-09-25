@@ -1947,13 +1947,20 @@ def export_availability_requirements():
             }
             unique_masl = set()
 
-            for req in req_list:
+            for component in components:
+                req = component.availability_requirement
+                tier = component.effective_tier
                 for field in ["mtd", "rto", "rpo", "masl"]:
-                    val_str = getattr(req, field)
-                    if field == "masl" and val_str:
-                        unique_masl.add(val_str)
-                    
-                    dur = _parse_duration(val_str)
+                    # Only RTO and RPO have tier goals; mtd/masl always use stored text.
+                    goal = getattr(tier, f"{field}_goal_seconds", None) if tier else None
+                    if goal is not None:
+                        # A tier goal replaces the stored RTO/RPO text.
+                        dur, val_str = goal / 60, format_duration_seconds(goal)
+                    else:
+                        val_str = getattr(req, field) if req else None
+                        if field == "masl" and val_str:
+                            unique_masl.add(val_str)
+                        dur = _parse_duration(val_str)
                     if dur < aggr[field][0]:
                         aggr[field] = (dur, val_str)
 
