@@ -444,8 +444,14 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
 _TIER_LEVEL_RE = re.compile(r"TIER\s*(\d+)", re.IGNORECASE)
 
 
-def _csv_tier_id(raw: str | None, tier_ids_by_level: dict[int, int], component_name: str, warnings: list[str]) -> int | None:
-    """Resolve a "TIER n > name" label to a BiaTier id; unknown labels warn and inherit."""
+def _csv_tier_id(
+    raw: str | None,
+    tier_ids_by_level: dict[int, int],
+    name: str,
+    warnings: list[str],
+    message_key: str = "bia.flash.import_tier_unknown",
+) -> int | None:
+    """Resolve a "TIER n > name" label to a BiaTier id; unknown labels warn and yield no tier."""
 
     raw = (raw or "").strip()
     if not raw:
@@ -453,7 +459,7 @@ def _csv_tier_id(raw: str | None, tier_ids_by_level: dict[int, int], component_n
     match = _TIER_LEVEL_RE.search(raw)
     tier_id = tier_ids_by_level.get(int(match.group(1))) if match else None
     if tier_id is None:
-        warnings.append(_("bia.flash.import_tier_unknown", component=component_name, tier=raw))
+        warnings.append(_(message_key, name=name, tier=raw))
     return tier_id
 
 
@@ -539,6 +545,9 @@ def import_from_csv(csv_files: dict[str, str]) -> list[str]:
                 "technical_administrator": row.get("Technical Administrator") or None,
                 "security_manager": row.get("Security Manager") or None,
                 "incident_contact": row.get("Incident Contact") or None,
+                "tier_id": _csv_tier_id(
+                    row.get("BIA Tier"), tier_ids_by_level, name, warnings, "bia.flash.import_context_tier_unknown"
+                ),
                 "author_id": getattr(current_user, "id", None),
             }
             context = ContextScope(**payload)
@@ -904,6 +913,12 @@ def import_from_sql(sql_content: str) -> list[str]:
         for row in parsed[context_table]:
             original_id = row.pop("id", None)
             row.pop("author_id", None)
+            context_tier_fk = row.get("tier_id")
+            if context_tier_fk is not None and context_tier_fk not in valid_tier_ids:
+                warnings.append(
+                    _("bia.flash.import_context_tier_unknown", name=row.get("name"), tier=f"id {context_tier_fk}")
+                )
+                row["tier_id"] = None
             context = ContextScope(
                 **{
                     **row,
@@ -927,7 +942,7 @@ def import_from_sql(sql_content: str) -> list[str]:
             original_id = row.pop("id", None)
             tier_fk = row.get("tier_id")
             if tier_fk is not None and tier_fk not in valid_tier_ids:
-                warnings.append(_("bia.flash.import_tier_unknown", component=row.get("name"), tier=f"id {tier_fk}"))
+                warnings.append(_("bia.flash.import_tier_unknown", name=row.get("name"), tier=f"id {tier_fk}"))
                 row["tier_id"] = None
             context_fk = row.get("context_scope_id")
             if isinstance(context_fk, int) and context_fk in context_id_map:

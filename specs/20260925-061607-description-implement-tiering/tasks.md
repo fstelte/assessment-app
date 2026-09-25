@@ -111,5 +111,5 @@ Implements per-component tiering (nullable `Component.tier_id`, inheriting the B
 - [x] Task 5: Incident prefill
 - [x] Task 6: Authentication Overview effective tier
 - [x] Task 7: Export, import, audit, duplicate BIA
-- [ ] Task 8: Fix context tier import (CSV and SQL)
+- [x] Task 8: Fix context tier import (CSV and SQL)
 - [ ] Task 9: Route tests, translation parity and docs

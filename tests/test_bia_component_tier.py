@@ -474,3 +474,57 @@ def test_component_tier_change_is_audited(app):
     event = AuditLog.query.filter(AuditLog.event_type.like("bia_component.%")).order_by(AuditLog.id.desc()).first()
     assert event is not None
     assert "tier_id" in (event.payload or {}).get("changes", {})
+
+
+# --- Task 8: context (BIA) tier on import ------------------------------------------
+
+
+def _context_tier_ids():
+    db.session.expire_all()
+    return {c.name: c.tier_id for c in ContextScope.query.all()}
+
+
+def _tiered_and_untiered_bias():
+    owner = User.find_by_email("user@example.com")
+    tiered = ContextScope(name="Tiered BIA", author=owner, tier=_tier(1))
+    untiered = ContextScope(name="Untiered BIA", author=owner)
+    db.session.add_all([tiered, untiered])
+    db.session.commit()
+    return tiered, untiered
+
+
+def test_csv_import_restores_context_tier_by_level(app, signed_in):
+    tiered, untiered = _tiered_and_untiered_bias()
+    files = [_csv_files(tiered), _csv_files(untiered)]
+
+    # The target environment has the same tier under a different id.
+    db.session.execute(text("UPDATE bia_tiers SET id = 7 WHERE level = 1"))
+    db.session.commit()
+    db.session.expire_all()
+
+    warnings = [w for f in files for w in import_from_csv(f)]
+
+    assert warnings == []
+    assert _context_tier_ids() == {"Tiered BIA": 7, "Untiered BIA": None}
+
+
+def test_csv_import_warns_on_unknown_context_tier(app, signed_in):
+    tiered, _ = _tiered_and_untiered_bias()
+    files = _csv_files(tiered)
+
+    warnings = import_from_csv(dict(files, bia=files["bia"].replace("TIER 1", "TIER 8")))
+
+    assert len(warnings) == 1 and "BIA Tiered BIA" in warnings[0]
+    assert _context_tier_ids()["Tiered BIA"] is None
+
+
+def test_sql_import_warns_on_unknown_context_tier_id(app, signed_in):
+    tiered, _ = _tiered_and_untiered_bias()
+    sql = export_to_sql(tiered)
+    db.session.execute(text("DELETE FROM bia_tiers"))
+    db.session.commit()
+
+    warnings = import_from_sql(sql)
+
+    assert len(warnings) == 1 and "BIA Tiered BIA" in warnings[0]
+    assert _context_tier_ids()["Tiered BIA"] is None
