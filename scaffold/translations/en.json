@@ -77,6 +77,7 @@
       "current_password_invalid": "Current password was invalid.",
       "sql_export_failed": "Failed to export SQL: {details}",
       "sql_import_success": "SQL file imported successfully.",
+      "import_tier_unknown": "Component {component}: tier {tier} was not found, so it inherits the BIA tier.",
       "sql_import_unexpected": "Unexpected error while importing SQL.",
       "archived": "BIA has been archived.",
       "unarchived": "BIA has been unarchived.",

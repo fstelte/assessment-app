@@ -239,6 +239,7 @@
       "current_password_invalid": "Huidig wachtwoord ongeldig.",
       "sql_export_failed": "SQL-export mislukt: {details}",
       "sql_import_success": "SQL-bestand succesvol geïmporteerd.",
+      "import_tier_unknown": "Component {component}: tier {tier} is niet gevonden, dus het component neemt de tier van de BIA over.",
       "sql_import_unexpected": "Onverwachte fout bij het importeren van SQL.",
       "archived": "BIA is gearchiveerd.",
       "unarchived": "BIA is gedearchiveerd.",

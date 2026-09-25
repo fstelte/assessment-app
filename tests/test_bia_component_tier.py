@@ -1,5 +1,10 @@
+import csv
+import io
+
 import pytest
 from flask import g
+from flask_login import login_user
+from sqlalchemy import text
 
 from scaffold.apps.bia.models import (
     AvailabilityRequirements,
@@ -9,7 +14,9 @@ from scaffold.apps.bia.models import (
     format_duration_seconds,
 )
 from scaffold.core.i18n import set_locale
+from scaffold.apps.bia.utils import export_to_csv, export_to_sql, import_from_csv, import_from_sql
 from scaffold.apps.identity.models import User
+from scaffold.models import AuditLog
 from scaffold.extensions import db, login_manager
 
 
@@ -356,3 +363,114 @@ def test_authentication_overview_uses_effective_tier(app, client, logged_in, tmp
     assert "TIER 2" in _overview_row(body, "Loose Inherit")
     loose_none = _overview_row(body, "Loose None")
     assert "TIER" not in loose_none and "Not set" in loose_none
+
+
+# --- Task 7: export, import, audit and duplicate ----------------------------------
+
+
+@pytest.fixture
+def signed_in(app, active_user, monkeypatch):
+    # The identity-sequence sync issues PostgreSQL-only `setval` calls.
+    monkeypatch.setattr("scaffold.apps.bia.utils._sync_identity_sequences", lambda: None)
+    with app.test_request_context():
+        login_user(User.find_by_email("user@example.com"))
+        yield
+
+
+def _tiered_bia():
+    """A BIA with component A on its own tier 1 and component B inheriting."""
+
+    tier = _tier(1)
+    context = ContextScope(name="Round Trip", author=User.find_by_email("user@example.com"))
+    a = Component(name="A", context_scope=context, tier=tier)
+    b = Component(name="B", context_scope=context)
+    db.session.add_all([context, a, b])
+    db.session.commit()
+    return context, tier
+
+
+def _csv_files(context):
+    exports = export_to_csv(context)
+    return {
+        "bia": next(v for k, v in exports.items() if k.endswith("_bia.csv")),
+        "components": next(v for k, v in exports.items() if k.endswith("_components.csv")),
+    }
+
+
+def _component_tiers():
+    db.session.expire_all()
+    return {c.name: c.tier_id for c in Component.query.all()}
+
+
+def test_csv_round_trip_resolves_component_tier_by_level(app, signed_in):
+    context, tier = _tiered_bia()
+    files = _csv_files(context)
+    assert files["components"].splitlines()[0].endswith("Component Tier")
+
+    # The target environment has the same tier under a different id.
+    db.session.execute(text("UPDATE bia_tiers SET id = 7 WHERE level = 1"))
+    db.session.commit()
+    db.session.expire_all()
+
+    assert import_from_csv(files) == []
+    assert _component_tiers() == {"A": 7, "B": None}
+
+
+def test_csv_import_warns_on_unknown_tier_and_accepts_legacy_files(app, signed_in):
+    context, _ = _tiered_bia()
+    files = _csv_files(context)
+
+    unknown = dict(files, components=files["components"].replace("TIER 1", "TIER 8"))
+    warnings = import_from_csv(unknown)
+    assert len(warnings) == 1 and "A" in warnings[0] and "TIER 8" in warnings[0]
+    assert _component_tiers() == {"A": None, "B": None}
+
+    rows = [row[:-1] for row in csv.reader(io.StringIO(files["components"]))]
+    buffer = io.StringIO()
+    csv.writer(buffer).writerows(rows)
+    assert import_from_csv(dict(files, components=buffer.getvalue())) == []
+    assert _component_tiers() == {"A": None, "B": None}
+
+
+def test_sql_round_trip_keeps_component_tier(app, signed_in):
+    context, tier = _tiered_bia()
+    tier_id = tier.id
+
+    assert import_from_sql(export_to_sql(context)) == []
+    assert _component_tiers() == {"A": tier_id, "B": None}
+
+
+def test_sql_import_warns_on_unknown_tier_id(app, signed_in):
+    context, _ = _tiered_bia()
+    sql = export_to_sql(context)
+    db.session.execute(text("DELETE FROM bia_tiers"))
+    db.session.commit()
+
+    warnings = import_from_sql(sql)
+
+    assert len(warnings) == 1 and "A" in warnings[0]
+    assert _component_tiers() == {"A": None, "B": None}
+
+
+def test_copy_bia_keeps_component_tiers(app, client, logged_in):
+    context, tier = _tiered_bia()
+    context_id, tier_id = context.id, tier.id
+
+    assert _request(client, "post", f"/bia/item/{context_id}/copy").status_code in (200, 302)
+
+    copy = ContextScope.query.filter_by(name="Copy of Round Trip").one()
+    assert {c.name: c.tier_id for c in copy.components} == {"Copy of A": tier_id, "Copy of B": None}
+
+
+def test_component_tier_change_is_audited(app):
+    context = ContextScope(name="Audited")
+    component = Component(name="C", context_scope=context)
+    db.session.add_all([context, component])
+    db.session.commit()
+
+    component.tier = _tier(1)
+    db.session.commit()
+
+    event = AuditLog.query.filter(AuditLog.event_type.like("bia_component.%")).order_by(AuditLog.id.desc()).first()
+    assert event is not None
+    assert "tier_id" in (event.payload or {}).get("changes", {})

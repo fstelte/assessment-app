@@ -1676,8 +1676,10 @@ def import_csv_view():
             if "bia" not in csv_files:
                 flash(_("bia.flash.csv_required"), "danger")
                 return redirect(request.url)
-            import_from_csv(csv_files)
+            warnings = import_from_csv(csv_files)
             flash(_("bia.flash.csv_import_success"), "success")
+            for warning in warnings:
+                flash(warning, "warning")
             return redirect(url_for("bia.dashboard"))
         except Exception as exc:  # pragma: no cover - surface errors to UI
             logging.exception("CSV import failed")
@@ -2141,8 +2143,10 @@ def import_sql_form():
     form = ImportSQLForm()
     if form.validate_on_submit():
         try:
-            import_sql_file(form.sql_file.data)
+            warnings = import_sql_file(form.sql_file.data)
             flash(_("bia.flash.sql_import_success"), "success")
+            for warning in warnings:
+                flash(warning, "warning")
             return redirect(url_for("bia.dashboard"))
         except (ValueError, PermissionError) as exc:
             flash(str(exc), "danger")
@@ -2352,6 +2356,7 @@ def copy_item(item_id: int):
             dependencies_facilities=comp.dependencies_facilities,
             dependencies_others=comp.dependencies_others,
             authentication_method_id=comp.authentication_method_id,
+            tier_id=comp.tier_id,
             context_scope=new_context
         )
         db.session.add(new_comp)
