@@ -1,5 +1,8 @@
 import csv
 import io
+import json
+import re
+from pathlib import Path
 
 import pytest
 from flask import g
@@ -528,3 +531,106 @@ def test_sql_import_warns_on_unknown_context_tier_id(app, signed_in):
 
     assert len(warnings) == 1 and "BIA Tiered BIA" in warnings[0]
     assert _context_tier_ids()["Tiered BIA"] is None
+
+
+# --- Task 9: access rules, import route warnings and translation parity -----------
+
+
+def test_user_who_cannot_edit_the_bia_cannot_set_a_component_tier(app, client, logged_in):
+    other = User(email="other@example.com")
+    other.set_password("Password123!")
+    context = ContextScope(name="Not mine", author=other)
+    component = Component(name="C", context_scope=context)
+    tier = _tier(1)
+    db.session.add_all([other, context, component])
+    db.session.commit()
+    component_id, tier_id = component.id, tier.id
+
+    response = _request(
+        client,
+        "post",
+        f"/bia/update_component/{component_id}",
+        data=_component_form_data(tier=str(tier_id)),
+    )
+
+    assert response.status_code == 403
+    db.session.expire_all()
+    assert db.session.get(Component, component_id).tier_id is None
+
+
+def _flashed(client):
+    with client.session_transaction() as session:
+        return [message for _category, message in session.get("_flashes", [])]
+
+
+def test_csv_import_route_flashes_tier_warnings(app, client, logged_in, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.utils._sync_identity_sequences", lambda: None)
+    files = {
+        "bia": ("bia.csv", "BIA Name,BIA Tier\nRoute BIA,TIER 8 > Missing\n"),
+        "components": ("components.csv", "Component Name,Gerelateerd aan BIA,Component Tier\nRoute C,Route BIA,TIER 9\n"),
+    }
+    data = {field: (io.BytesIO(content.encode("utf-8")), name) for field, (name, content) in files.items()}
+
+    response = _request(client, "post", "/bia/import_csv", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 302
+    flashed = _flashed(client)
+    assert any("BIA Route BIA" in message and "TIER 8" in message for message in flashed)
+    assert any("Component Route C" in message and "TIER 9" in message for message in flashed)
+
+
+def test_sql_import_route_flashes_tier_warnings(app, client, logged_in, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.utils._sync_identity_sequences", lambda: None)
+    context = ContextScope(name="SQL Route", author=User.find_by_email("user@example.com"), tier=_tier(1))
+    db.session.add_all([context, Component(name="C", context_scope=context)])
+    db.session.commit()
+    with app.test_request_context():
+        sql = export_to_sql(context)
+    db.session.execute(text("DELETE FROM bia_tiers"))
+    db.session.commit()
+
+    response = _request(
+        client,
+        "post",
+        "/bia/import-sql",
+        data={"sql_file": (io.BytesIO(sql.encode("utf-8")), "export.sql")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 302
+    flashed = _flashed(client)
+    assert any("BIA SQL Route" in message for message in flashed)
+
+
+TIERING_TRANSLATION_KEYS = (
+    "bia.duration.units.s",
+    "bia.duration.units.min",
+    "bia.duration.units.h",
+    "bia.duration.units.d",
+    "bia.availability.tier_goal",
+    "bia.components.labels.tier",
+    "bia.components.tooltips.tier",
+    "bia.components.tier.inherit",
+    "bia.components.tier.inherit_with",
+    "bia.components.tier.inherited_suffix",
+    "bia.flash.import_tier_unknown",
+    "bia.flash.import_context_tier_unknown",
+)
+
+
+def _catalog_value(catalog, dotted_key):
+    node = catalog
+    for part in dotted_key.split("."):
+        node = node[part]
+    return node
+
+
+def test_tiering_translation_keys_exist_in_both_locales_with_matching_placeholders():
+    root = Path(__file__).resolve().parents[1] / "scaffold" / "translations"
+    catalogs = {lang: json.loads((root / f"{lang}.json").read_text(encoding="utf-8")) for lang in ("en", "nl")}
+
+    for key in TIERING_TRANSLATION_KEYS:
+        values = {lang: _catalog_value(catalog, key) for lang, catalog in catalogs.items()}
+        assert all(isinstance(v, str) and v.strip() for v in values.values()), key
+        placeholders = {lang: set(re.findall(r"{(\w+)}", value)) for lang, value in values.items()}
+        assert placeholders["en"] == placeholders["nl"], key

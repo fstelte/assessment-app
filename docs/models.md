@@ -11,8 +11,8 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 ## BIA Domain
 
 - `ContextScope`: top-level BIA context with ownership metadata and change tracking.
-- `BiaTier`: classification levels (0-4) for context criticality (e.g. Critical Infrastructure -> Deferrable) with localized labels.
-- `Component`: assets linked to a context; connects to consequences and availability targets.
+- `BiaTier`: classification levels (0-4) for context criticality (e.g. Critical Infrastructure -> Deferrable) with localized labels. Optional `rto_goal_seconds` and `rpo_goal_seconds` are the recovery goals every context and component on the tier is held to.
+- `Component`: assets linked to a context; connects to consequences and availability targets. `tier_id` (nullable FK to `bia_tiers`, `ON DELETE SET NULL`) lets a component override its BIA's tier. `effective_tier` returns the component's own tier, else the BIA's tier. `effective_rto` / `effective_rpo` return the effective tier's goal formatted by `format_duration_seconds` (the largest unit that divides evenly, e.g. `14400` -> `4 h`, `5400` -> `90 min`), else the stored free-text value from `AvailabilityRequirements`. The goals are derived at read time and never copied into the stored `rto`/`rpo` columns; each of RTO and RPO is decided independently.
 - `Consequences`: CIA impact definitions with helper methods for category parsing.
 - `AvailabilityRequirements`: RTO/RPO/MTD/MASL metrics per component.
 - `AIIdentificatie`: AI risk classification enumerations.
