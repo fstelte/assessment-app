@@ -5,6 +5,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+  # Weekly rebuild so published images pick up Debian security updates even
+  # when no code has changed.
+  schedule:
+    - cron: "0 4 * * 1"
 
 env:
   REGISTRY: ghcr.io
@@ -75,10 +79,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          # Always fetch the newest python:3.14-slim-trixie instead of a stale local copy.
+          pull: true
+          # Invalidate the cached apt layer so apt-get upgrade applies current security fixes.
+          build-args: |
+            APT_CACHE_BUST=${{ github.run_id }}
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.name }}
+          cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.name }}-new,mode=max
 
       - name: Move cache
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          rm -rf /tmp/.buildx-cache-${{ matrix.name }}
+          mv /tmp/.buildx-cache-${{ matrix.name }}-new /tmp/.buildx-cache-${{ matrix.name }}
