@@ -315,6 +315,9 @@
         "body": "Maak een nieuwe analyse aan of importeer een bestaande dataset om te starten."
       }
     },
+    "availability": {
+      "tier_goal": "Van {tier}: {value}"
+    },
     "duration": {
       "units": {
         "s": "s",

@@ -161,6 +161,9 @@
       "very_high": "Very high",
       "unknown": "Unknown"
     },
+    "availability": {
+      "tier_goal": "From {tier}: {value}"
+    },
     "duration": {
       "units": {
         "s": "s",

@@ -163,3 +163,72 @@ def test_get_component_json_reports_effective_tier(app, client, logged_in):
 
     assert a["tier"].startswith("TIER 2") and a["tier_inherited"] is True
     assert b["tier"].startswith("TIER 1") and b["tier_inherited"] is False
+
+
+# --- Task 3: tier goals in the availability form ----------------------------------
+
+
+def _availability_component(tier, rto="old rto", rpo="old rpo"):
+    context = _owned_context(tier=tier)
+    component = Component(name="Portal", context_scope=context)
+    component.availability_requirement = AvailabilityRequirements(mtd="old mtd", rto=rto, rpo=rpo, masl="old masl")
+    db.session.add(component)
+    db.session.commit()
+    return component.id
+
+
+AVAILABILITY_POST = {"mtd": "new mtd", "rto": "new rto", "rpo": "new rpo", "masl": "new masl"}
+
+
+def _stored(component_id):
+    db.session.expire_all()
+    return AvailabilityRequirements.query.filter_by(component_id=component_id).one()
+
+
+def test_availability_page_shows_goal_and_keeps_stored_text(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400, rpo=1800))
+    url = f"/bia/component/{component_id}/availability"
+
+    body = _request(client, "get", url).data.decode()
+    assert "From TIER 1" in body and "4 h" in body and "30 min" in body
+    assert "(inherited from BIA)" in body
+    assert 'name="rto"' not in body and 'name="rpo"' not in body
+
+    assert _request(client, "post", url, data=AVAILABILITY_POST).status_code == 302
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("old rto", "old rpo")
+    assert (stored.mtd, stored.masl) == ("new mtd", "new masl")
+
+
+def test_availability_without_goal_saves_free_text(app, client, logged_in):
+    component_id = _availability_component(_tier(1))
+    url = f"/bia/component/{component_id}/availability"
+
+    body = _request(client, "get", url).data.decode()
+    assert 'name="rto"' in body and 'name="rpo"' in body
+
+    assert _request(client, "post", url, data=AVAILABILITY_POST).status_code == 302
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("new rto", "new rpo")
+
+
+def test_availability_decides_rto_and_rpo_independently(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=3600))
+    url = f"/bia/component/{component_id}/availability"
+
+    body = _request(client, "get", url).data.decode()
+    assert 'name="rto"' not in body and 'name="rpo"' in body
+
+    _request(client, "post", url, data=AVAILABILITY_POST)
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
+
+
+def test_update_availability_json_respects_tier_goal(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=3600))
+
+    response = _request(client, "post", f"/bia/update_availability/{component_id}", data=AVAILABILITY_POST)
+
+    assert response.get_json() == {"success": True}
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")

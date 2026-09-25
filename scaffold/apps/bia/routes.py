@@ -340,6 +340,36 @@ def _can_edit_context(context: ContextScope) -> bool:
     return current_user.has_role(ROLE_ADMIN)
 
 
+def _tier_goal_notes(component: Component) -> dict[str, str | None]:
+    """Describe the tier goal that fixes each of RTO/RPO, or None when free text applies."""
+
+    notes: dict[str, str | None] = {"rto": None, "rpo": None}
+    tier = component.effective_tier
+    if tier is None:
+        return notes
+    for field in notes:
+        value = format_duration_seconds(getattr(tier, f"{field}_goal_seconds"))
+        if value is None:
+            continue
+        note = _("bia.availability.tier_goal", tier=tier.get_label(), value=value)
+        if component.tier_id is None:
+            note = f"{note} ({_('bia.components.tier.inherited_suffix')})"
+        notes[field] = note
+    return notes
+
+
+def _apply_availability(requirement: AvailabilityRequirements, form: AvailabilityForm, component: Component) -> None:
+    """Save the form, leaving stored RTO/RPO untouched while a tier goal applies."""
+
+    notes = _tier_goal_notes(component)
+    requirement.mtd = form.mtd.data
+    requirement.masl = form.masl.data
+    if notes["rto"] is None:
+        requirement.rto = form.rto.data
+    if notes["rpo"] is None:
+        requirement.rpo = form.rpo.data
+
+
 def _safe_return_target(target: str | None) -> str | None:
     if not target:
         return None
@@ -995,10 +1025,7 @@ def manage_component_availability(component_id: int):
         if requirement is None:
             requirement = AvailabilityRequirements(component=component)
             db.session.add(requirement)
-        requirement.mtd = form.mtd.data
-        requirement.rto = form.rto.data
-        requirement.rpo = form.rpo.data
-        requirement.masl = form.masl.data
+        _apply_availability(requirement, form, component)
         db.session.commit()
         flash(_("Availability requirements updated."), "success")
         return redirect(return_to or url_for("bia.view_components"))
@@ -1006,6 +1033,7 @@ def manage_component_availability(component_id: int):
         "bia/manage_component_availability.html",
         component=component,
         form=form,
+        goal_notes=_tier_goal_notes(component),
         return_to=return_to,
     )
 
@@ -1231,10 +1259,7 @@ def update_availability(component_id: int):
         db.session.add(availability)
     else:
         availability.component = component
-    availability.mtd = form.mtd.data
-    availability.rto = form.rto.data
-    availability.rpo = form.rpo.data
-    availability.masl = form.masl.data
+    _apply_availability(availability, form, component)
     db.session.commit()
     return jsonify({"success": True})
 
@@ -1368,10 +1393,7 @@ def manage_item_availability(item_id: int):
         if requirement is None:
             requirement = AvailabilityRequirements(component=selected_component)
             db.session.add(requirement)
-        requirement.mtd = form.mtd.data
-        requirement.rto = form.rto.data
-        requirement.rpo = form.rpo.data
-        requirement.masl = form.masl.data
+        _apply_availability(requirement, form, selected_component)
         db.session.commit()
         flash(_("bia.flash.availability_updated"), "success")
         return redirect(url_for("bia.manage_item_availability", item_id=item.id, component_id=selected_component.id))
@@ -1387,6 +1409,7 @@ def manage_item_availability(item_id: int):
         item=item,
         form=form,
         selected_component=selected_component,
+        goal_notes=_tier_goal_notes(selected_component),
         availability_rows=availability_rows,
     )
 
