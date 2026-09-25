@@ -50,6 +50,7 @@ from .models import (
     AIIdentificatie,
     AvailabilityRequirements,
     BiaTier,
+    format_duration_seconds,
     Component,
     ComponentEnvironment,
     Consequences,
@@ -91,6 +92,8 @@ bp = Blueprint(
     template_folder="templates",
     static_folder="static",
 )
+
+bp.app_template_filter("duration")(format_duration_seconds)
 
 
 # Environment selection order and ranking for fallback authentication resolution.

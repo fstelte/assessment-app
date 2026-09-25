@@ -161,6 +161,14 @@
       "very_high": "Very high",
       "unknown": "Unknown"
     },
+    "duration": {
+      "units": {
+        "s": "s",
+        "min": "min",
+        "h": "h",
+        "d": "d"
+      }
+    },
     "tiers": {
       "names": {
         "0": "Critical Infrastructure",

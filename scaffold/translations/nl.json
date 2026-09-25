@@ -315,6 +315,14 @@
         "body": "Maak een nieuwe analyse aan of importeer een bestaande dataset om te starten."
       }
     },
+    "duration": {
+      "units": {
+        "s": "s",
+        "min": "min",
+        "h": "u",
+        "d": "d"
+      }
+    },
     "tiers": {
       "names": {
         "0": "Kritieke Infrastructuur",
