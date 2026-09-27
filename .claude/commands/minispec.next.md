@@ -42,6 +42,9 @@ Before implementing, verify:
 4. **Knowledge base** at `.minispec/knowledge/`
    - Relevant decisions, patterns, conventions
 
+5. **Knowledge graph** at `graphify-out/` (if `graphify-out/graph.json` exists)
+   - Run `graphify explain "<symbol>"` for the classes/functions the task modifies to see callers, tests and templates that may be affected
+
 If no tasks exist:
 > "No tasks found. Run `/minispec.tasks` first to break down the implementation."
 
@@ -213,6 +216,8 @@ Documentation to potentially update:
 - `.minispec/knowledge/modules/` - If module overview changed
 - `.minispec/knowledge/conventions.md` - If new convention established
 - `.minispec/knowledge/decisions/` - If design evolved
+
+**Knowledge graph:** If `graphify-out/graph.json` exists, run `graphify update .` after the code changes (AST-only, no token cost). If knowledge-base or spec docs changed, mention that `/graphify . --update` will refresh the doc nodes.
 
 ### Phase 7: Transition
 

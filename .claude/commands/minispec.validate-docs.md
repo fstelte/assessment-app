@@ -107,6 +107,8 @@ For each reference:
 2. If it references specific code, verify it's still there
 3. Track broken references
 
+If `graphify-out/graph.json` exists, run `graphify update .` first so the graph reflects the current code, then use `graphify explain "<referenced symbol>"` to confirm a referenced function/class still exists and still has the relationships the doc describes (e.g. "X calls Y", "module A depends on B").
+
 ### Phase 3: Detect Staleness
 
 Look for signals of outdated docs:

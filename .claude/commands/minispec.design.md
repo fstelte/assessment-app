@@ -71,6 +71,7 @@ Don't ask all questions at once—have a conversation.
 Before designing, understand what exists:
 
 1. **Check for related code**:
+   - If `graphify-out/graph.json` exists, start with `graphify query "<feature description>"` to find related modules, specs and past decisions, and `graphify path "<new concept>" "<existing concept>"` to see how the feature would connect to existing code
    - Search for similar features or patterns
    - Look at how related functionality is structured
    - Note relevant conventions from `.minispec/knowledge/conventions.md`
