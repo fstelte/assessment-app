@@ -623,6 +623,9 @@ TIERING_TRANSLATION_KEYS = (
     "bia.export.component_inventory.tier_source_component",
     "bia.export.component_inventory.tier_source_bia",
     "bia.export.component_inventory.not_set",
+    "bia.export.component_inventory.title",
+    "bia.export.component_inventory.empty",
+    "bia.dashboard.sidebar.export_component_inventory",
 )
 
 
@@ -712,3 +715,53 @@ def test_data_inventory_keeps_its_original_columns(app, client, logged_in):
     response.close()
 
     assert header == "BIA,Systeem,Informatie,Eigenaar,Authenticatie,Beheer"
+
+
+def test_component_inventory_html_shows_columns_and_values(app, client, logged_in):
+    tier = _tier(1)
+    context = ContextScope(name="Html BIA", tier=tier)
+    db.session.add_all([context, Component(name="=Html Comp", context_scope=context)])
+    db.session.commit()
+
+    for fmt in ("html", "unknown"):
+        response = _request(client, "get", f"/bia/export_component_inventory?format={fmt}")
+        assert response.status_code == 200
+        assert response.mimetype == "text/html"
+        body = response.data.decode()
+        response.close()
+        assert "Tier source</th>" in body
+        assert "Authorisation</th>" in body
+        # No CSV formula prefix in HTML.
+        assert ">=Html Comp<" in body
+        assert "TIER 1 &gt; " in body
+        assert ">BIA<" in body
+
+
+def test_component_inventory_html_without_components_shows_empty_state(app, client, logged_in):
+    response = _request(client, "get", "/bia/export_component_inventory")
+    body = response.data.decode()
+    response.close()
+
+    assert "No components found." in body
+
+
+def test_component_inventory_pdf_is_sent_and_logged(app, client, logged_in, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.routes.html_to_pdf_bytes", lambda html: b"%PDF-fake")
+
+    response = _request(client, "get", "/bia/export_component_inventory?format=pdf")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
+    assert re.search(r'filename="Component_Inventory_\d{8}_\d{6}\.pdf"', response.headers["Content-Disposition"])
+    assert response.data == b"%PDF-fake"
+    event = AuditLog.query.filter_by(event_type="bia.exported").one()
+    assert event.payload["format"] == "pdf"
+
+
+def test_dashboard_offers_component_inventory_csv_html_and_pdf(app, client, logged_in):
+    body = _request(client, "get", "/bia/index").data.decode()
+
+    assert "Export component inventory" in body
+    assert "/bia/export_component_inventory?format=csv" in body
+    assert 'href="/bia/export_component_inventory"' in body
+    assert "/bia/export_component_inventory?format=pdf" in body
