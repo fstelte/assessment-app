@@ -1796,22 +1796,42 @@ def export_component_inventory():
             ]
         )
 
-    # Prefix values a spreadsheet would evaluate as a formula (CSV injection).
-    csv_buffer = io.StringIO()
-    writer = csv.writer(csv_buffer)
-    writer.writerow(headers)
-    for row in rows:
-        writer.writerow([f"'{value}" if value[:1] in ("=", "+", "-", "@") else value for value in row])
-    filename = f"Component_Inventory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    file_path = ensure_export_folder() / filename
-    file_path.write_text(csv_buffer.getvalue(), encoding="utf-8-sig")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    export_format = request.args.get("format", "html").lower()
+    if export_format == "csv":
+        # Prefix values a spreadsheet would evaluate as a formula (CSV injection).
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(headers)
+        for row in rows:
+            writer.writerow([f"'{value}" if value[:1] in ("=", "+", "-", "@") else value for value in row])
+        filename = f"Component_Inventory_{timestamp}.csv"
+        file_path = ensure_export_folder() / filename
+        file_path.write_text(csv_buffer.getvalue(), encoding="utf-8-sig")
+        log_event(
+            action="bia.exported",
+            entity_type="bia_component_inventory",
+            details={"format": "csv", "filename": filename},
+        )
+        db.session.commit()
+        return send_file(file_path, as_attachment=True, download_name=filename)
+
+    html_content = render_template(
+        "bia/export_component_inventory.html",
+        headers=headers,
+        rows=rows,
+        generated_at=datetime.now(),
+        export_mode=True,
+        export_css=_load_export_css(),
+    )
+    filename = f"Component_Inventory_{timestamp}.html"
     log_event(
         action="bia.exported",
         entity_type="bia_component_inventory",
-        details={"format": "csv", "filename": filename},
+        details={"format": "pdf" if export_format == "pdf" else "html", "filename": filename},
     )
     db.session.commit()
-    return send_file(file_path, as_attachment=True, download_name=filename)
+    return _send_export_response(html_content, filename)
 
 
 @bp.route("/export_authentication_overview")

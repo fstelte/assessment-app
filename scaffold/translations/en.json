@@ -126,6 +126,7 @@
         "export_availability_detailed": "Export availability (detailed)",
         "export_availability_summary": "Export availability (summary)",
         "export_authentication": "Export authentication overview",
+        "export_component_inventory": "Export component inventory",
         "requirements": "View requirements",
         "all_consequences": "View consequences"
       },
@@ -740,6 +741,8 @@
         "insignificant": "Insignificant"
       },
       "component_inventory": {
+        "title": "Component inventory",
+        "empty": "No components found.",
         "columns": {
           "bia": "BIA",
           "component": "Component",

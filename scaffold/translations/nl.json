@@ -288,6 +288,7 @@
         "export_availability_detailed": "Beschikbaarheid exporteren (gedetailleerd)",
         "export_availability_summary": "Beschikbaarheid exporteren (samenvatting)",
         "export_authentication": "Authenticatieoverzicht exporteren",
+        "export_component_inventory": "Componenteninventaris exporteren",
         "requirements": "Bekijk eisen",
         "all_consequences": "Bekijk gevolgen"
       },
@@ -874,6 +875,8 @@
         "insignificant": "Verwaarloosbaar"
       },
       "component_inventory": {
+        "title": "Componenteninventaris",
+        "empty": "Geen componenten gevonden.",
         "columns": {
           "bia": "BIA",
           "component": "Component",

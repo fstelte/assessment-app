@@ -104,6 +104,14 @@ decision `20260930-2315-component-inventory-export-scope`.
   `export_data_inventory`, which must stay untouched.
 - Run `graphify update .` after implementation.
 - Deferred: exporting the authorisation note; importing this format.
+- **Deviation (implementation):** the tests live in
+  `tests/test_bia_component_tier.py`, not `tests/test_bia_routes.py`. The shared
+  `login` fixture no longer authenticates, because `/auth/login` redirects local
+  accounts to MFA enrolment, so tests using it already fail on the baseline.
+  The tier test module has a working `logged_in` fixture and a `_request`
+  helper. The new translation keys are also covered by its en/nl parity test.
+- **Follow-up (outside this feature):** fix the `login` fixture in
+  `tests/conftest.py` so the older `test_bia_routes.py` tests run again.
 
 ## Progress
 - [ ] Task 1: Route, row building and CSV export
