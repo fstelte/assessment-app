@@ -1750,6 +1750,70 @@ def export_data_inventory():
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 
+@bp.route("/export_component_inventory")
+@login_required
+def export_component_inventory():
+    """Export the data inventory with component tier and authorisation instead of the administrator."""
+
+    components = (
+        Component.query.options(
+            joinedload(Component.context_scope).joinedload(ContextScope.tier),
+            joinedload(Component.tier),
+            joinedload(Component.authentication_method),
+            joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
+        )
+        .join(ContextScope)
+        .filter(ContextScope.is_archived == False)
+        .all()
+    )
+    components.sort(key=lambda component: (component.context_scope.name.lower(), component.name.lower(), component.id))
+
+    not_set = _("bia.export.component_inventory.not_set")
+    headers = [
+        _(f"bia.export.component_inventory.columns.{column}")
+        for column in ("bia", "component", "information", "owner", "authentication", "tier", "tier_source", "authorization")
+    ]
+    rows = []
+    for component in components:
+        tier = component.effective_tier
+        if component.tier_id is not None:
+            tier_source = _("bia.export.component_inventory.tier_source_component")
+        elif tier is not None:
+            tier_source = _("bia.export.component_inventory.tier_source_bia")
+        else:
+            tier_source = ""
+        information = component.info_label.get_label() if component.info_label else component.info_type
+        rows.append(
+            [
+                component.context_scope.name,
+                component.name,
+                (information or "").strip() or not_set,
+                (component.info_owner or "").strip() or not_set,
+                _describe_authentication(component) or not_set,
+                tier.get_label() if tier else not_set,
+                tier_source,
+                _("bia.common.yes") if _resolve_component_authorization_usage(component)[0] else _("bia.common.no"),
+            ]
+        )
+
+    # Prefix values a spreadsheet would evaluate as a formula (CSV injection).
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow([f"'{value}" if value[:1] in ("=", "+", "-", "@") else value for value in row])
+    filename = f"Component_Inventory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    file_path = ensure_export_folder() / filename
+    file_path.write_text(csv_buffer.getvalue(), encoding="utf-8-sig")
+    log_event(
+        action="bia.exported",
+        entity_type="bia_component_inventory",
+        details={"format": "csv", "filename": filename},
+    )
+    db.session.commit()
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+
 @bp.route("/export_authentication_overview")
 @login_required
 def export_authentication_overview():
