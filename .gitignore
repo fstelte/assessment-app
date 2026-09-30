@@ -178,3 +178,6 @@ bia_app/instance/bia_tool copy.db
 bia_app/instance/bia_tool.db
 .DS_Store
 .github/copilot-instructions.md
+
+# graphify knowledge graph output
+graphify-out/

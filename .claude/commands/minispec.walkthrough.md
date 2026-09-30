@@ -37,7 +37,11 @@ Check what context exists:
 2. **Constitution** at `.minispec.minispec/memory/constitution.md`
    - Check `Walkthrough Depth` preference (quick/standard/deep)
 
-3. **Codebase** - The actual source code
+3. **Knowledge graph** at `graphify-out/` (if `graphify-out/graph.json` exists)
+   - `GRAPH_REPORT.md` - God nodes, communities, cross-community bridges
+   - `graphify query "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"` for scoped lookups
+
+4. **Codebase** - The actual source code
 
 If knowledge base is sparse, that's okay—build understanding from the code itself.
 
@@ -70,6 +74,7 @@ Before starting, quickly explore:
 3. **Package/dependency info**: What frameworks and libraries are used?
 4. **Existing documentation**: README, docs/, inline comments
 5. **Knowledge base**: What's already documented in `.minispec/knowledge/`
+6. **Knowledge graph**: If `graphify-out/GRAPH_REPORT.md` exists, read its God Nodes, Community Hubs and Surprising Connections sections. Use the god nodes as the core abstractions to explain and the communities as the module map. For focused walkthroughs ("just the auth system"), start with `graphify query "<topic>"` instead of browsing directories.
 
 ### Phase 2: Start with the Big Picture
 

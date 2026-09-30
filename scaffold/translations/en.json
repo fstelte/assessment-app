@@ -739,6 +739,21 @@
         "catastrophic": "Catastrophic",
         "insignificant": "Insignificant"
       },
+      "component_inventory": {
+        "columns": {
+          "bia": "BIA",
+          "component": "Component",
+          "information": "Information",
+          "owner": "Owner",
+          "authentication": "Authentication",
+          "tier": "Tier",
+          "tier_source": "Tier source",
+          "authorization": "Authorisation"
+        },
+        "tier_source_component": "Component",
+        "tier_source_bia": "BIA",
+        "not_set": "Not set"
+      },
       "authentication_overview": {
         "title": "Authentication overview",
         "heading": "Authentication overview",

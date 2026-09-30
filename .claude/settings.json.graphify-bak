@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
   "hooks": {
     "PreToolUse": [
       {
@@ -19,24 +20,6 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.minispec/hooks/scripts/claude-secrets-scan.sh",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|Grep",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "C:/Users/fstelte/.local/bin/graphify.EXE hook-guard search"
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "C:/Users/fstelte/.local/bin/graphify.EXE hook-guard read"
           }
         ]
       }

@@ -13,6 +13,7 @@ from scaffold.apps.bia.models import (
     AvailabilityRequirements,
     BiaTier,
     Component,
+    ComponentEnvironment,
     ContextScope,
     format_duration_seconds,
 )
@@ -615,6 +616,13 @@ TIERING_TRANSLATION_KEYS = (
     "bia.components.tier.inherited_suffix",
     "bia.flash.import_tier_unknown",
     "bia.flash.import_context_tier_unknown",
+    *(
+        f"bia.export.component_inventory.columns.{column}"
+        for column in ("bia", "component", "information", "owner", "authentication", "tier", "tier_source", "authorization")
+    ),
+    "bia.export.component_inventory.tier_source_component",
+    "bia.export.component_inventory.tier_source_bia",
+    "bia.export.component_inventory.not_set",
 )
 
 
@@ -634,3 +642,73 @@ def test_tiering_translation_keys_exist_in_both_locales_with_matching_placeholde
         assert all(isinstance(v, str) and v.strip() for v in values.values()), key
         placeholders = {lang: set(re.findall(r"{(\w+)}", value)) for lang, value in values.items()}
         assert placeholders["en"] == placeholders["nl"], key
+
+
+# --- Component inventory export ---------------------------------------------------
+
+
+def _component_inventory_rows(client, fmt="csv"):
+    response = _request(client, "get", f"/bia/export_component_inventory?format={fmt}")
+    assert response.status_code == 200
+    data = response.data
+    response.close()
+    assert data.startswith(b"\xef\xbb\xbf")
+    return list(csv.reader(io.StringIO(data.decode("utf-8-sig"))))
+
+
+def test_component_inventory_csv_has_tier_tier_source_and_authorisation(app, client, logged_in):
+    bia_tier, own_tier = _tier(1), _tier(2)
+    tiered = ContextScope(name="Inventory BIA", tier=bia_tier, technical_administrator="Ops Team")
+    own = Component(name="Own Tier", context_scope=tiered, tier=own_tier, info_owner="Alice")
+    own.environments.append(
+        ComponentEnvironment(environment_type="production", is_enabled=True, used_for_authorization=True)
+    )
+    inherited = Component(name="Inherited Tier", context_scope=tiered, info_type="   ")
+    untiered = ContextScope(name="Another BIA")
+    no_tier = Component(name="=cmd()", context_scope=untiered)
+    archived = ContextScope(name="Archived BIA", is_archived=True)
+    hidden = Component(name="Hidden", context_scope=archived)
+    db.session.add_all([tiered, own, inherited, untiered, no_tier, archived, hidden])
+    db.session.commit()
+
+    rows = _component_inventory_rows(client)
+
+    assert rows[0] == [
+        "BIA", "Component", "Information", "Owner", "Authentication", "Tier", "Tier source", "Authorisation",
+    ]
+    assert "Ops Team" not in {value for row in rows for value in row}
+    # Sorted by BIA, then component; archived BIAs are excluded.
+    assert [row[:2] for row in rows[1:]] == [
+        ["Another BIA", "'=cmd()"],
+        ["Inventory BIA", "Inherited Tier"],
+        ["Inventory BIA", "Own Tier"],
+    ]
+    no_tier_row, inherited_row, own_row = rows[1:]
+    assert no_tier_row[2:] == ["Not set", "Not set", "Not set", "Not set", "", "No"]
+    assert inherited_row[2] == "Not set"
+    assert inherited_row[5].startswith("TIER 1 > ")
+    assert inherited_row[6:] == ["BIA", "No"]
+    assert own_row[3] == "Alice"
+    assert own_row[5].startswith("TIER 2 > ")
+    assert own_row[6:] == ["Component", "Yes"]
+
+
+def test_component_inventory_csv_without_components_has_only_headers(app, client, logged_in):
+    assert len(_component_inventory_rows(client)) == 1
+
+
+def test_component_inventory_export_is_audit_logged(app, client, logged_in):
+    _component_inventory_rows(client)
+
+    event = AuditLog.query.filter_by(event_type="bia.exported").one()
+    assert event.target_type == "bia_component_inventory"
+    assert event.payload["format"] == "csv"
+
+
+def test_data_inventory_keeps_its_original_columns(app, client, logged_in):
+    response = _request(client, "get", "/bia/export_data_inventory")
+    assert response.status_code == 200
+    header = response.data.decode("utf-8").splitlines()[0]
+    response.close()
+
+    assert header == "BIA,Systeem,Informatie,Eigenaar,Authenticatie,Beheer"

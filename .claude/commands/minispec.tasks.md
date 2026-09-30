@@ -72,6 +72,7 @@ Parse the JSON output to locate the design and tasks files. If the script fails 
 2. **Read related decisions** from `.minispec/knowledge/decisions/`
 
 3. **Check existing codebase**:
+   - If `graphify-out/graph.json` exists, run `graphify explain "<component>"` for each design component to find the files it touches and their neighbours (callers, tests, templates) - use this to fill in each task's "Files affected"
    - How are similar features structured?
    - What's the typical test-to-implementation ratio?
    - Are there shared utilities to leverage?

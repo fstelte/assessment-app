@@ -873,6 +873,21 @@
         "catastrophic": "Catastrofaal",
         "insignificant": "Verwaarloosbaar"
       },
+      "component_inventory": {
+        "columns": {
+          "bia": "BIA",
+          "component": "Component",
+          "information": "Informatie",
+          "owner": "Eigenaar",
+          "authentication": "Authenticatie",
+          "tier": "Tier",
+          "tier_source": "Tierbron",
+          "authorization": "Autorisatie"
+        },
+        "tier_source_component": "Component",
+        "tier_source_bia": "BIA",
+        "not_set": "Niet ingesteld"
+      },
       "authentication_overview": {
         "title": "Overzicht authenticatie",
         "heading": "Overzicht authenticatie",

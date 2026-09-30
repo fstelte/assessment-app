@@ -25,6 +25,7 @@ Verify these artifacts exist:
 2. **Design** at `specs/[feature-name]/design.md`
 3. **Tasks** at `specs/[feature-name]/tasks.md`
 4. **Decisions** in `.minispec/knowledge/decisions/`
+5. **Knowledge graph** (optional) - if `graphify-out/graph.json` exists, use `graphify explain "<component>"` to check that every task's "Files affected" covers the code the design touches, and flag callers/tests the graph links to those components that no task mentions
 
 If `$ARGUMENTS` specifies a feature, use that. Otherwise, detect the current feature or ask.
 
