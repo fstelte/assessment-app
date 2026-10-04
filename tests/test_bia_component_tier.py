@@ -758,10 +758,59 @@ def test_component_inventory_pdf_is_sent_and_logged(app, client, logged_in, monk
     assert event.payload["format"] == "pdf"
 
 
-def test_dashboard_offers_component_inventory_csv_html_and_pdf(app, client, logged_in):
-    body = _request(client, "get", "/bia/index").data.decode()
+def test_home_offers_component_inventory_csv_html_and_pdf(app, client, logged_in):
+    body = _request(client, "get", "/").data.decode()
 
-    assert "Export component inventory" in body
+    assert "Component inventory" in body
     assert "/bia/export_component_inventory?format=csv" in body
     assert 'href="/bia/export_component_inventory"' in body
     assert "/bia/export_component_inventory?format=pdf" in body
+
+
+def test_home_lists_every_global_export_when_logged_in(app, client, logged_in):
+    body = _request(client, "get", "/").data.decode()
+
+    for href in (
+        "/bia/export_all_consequences",
+        "/bia/export_all_consequences?format=pdf",
+        "/bia/export_all_consequences?type=summary",
+        "/bia/export_all_consequences?type=summary&amp;format=pdf",
+        "/bia/export_availability_requirements",
+        "/bia/export_availability_requirements?format=pdf",
+        "/bia/export_availability_requirements?type=summary",
+        "/bia/export_availability_requirements?type=summary&amp;format=pdf",
+        "/bia/export_data_inventory",
+        "/bia/export_all_dependencies",
+        "/bia/export_all_dependencies?format=pdf",
+        "/bia/export_all_tiers",
+        "/bia/export_all_tiers?format=pdf",
+        "/bia/export_authentication_overview",
+        "/bia/export_authentication_overview?format=pdf",
+    ):
+        assert f'href="{href}"' in body
+
+
+def test_dashboard_keeps_only_per_context_exports(app, client, logged_in):
+    context = _owned_context()
+
+    body = _request(client, "get", "/bia/index").data.decode()
+
+    for endpoint in (
+        "export_data_inventory",
+        "export_component_inventory",
+        "export_authentication_overview",
+        "export_all_consequences",
+        "export_availability_requirements",
+        "export_all_dependencies",
+        "export_all_tiers",
+    ):
+        assert f"/bia/{endpoint}" not in body
+    assert f"/bia/item/{context.id}/export" in body
+    assert f"/bia/bia/{context.id}/export/sql" in body
+
+
+def test_home_hides_exports_for_anonymous_users(app, client):
+    response = _request(client, "get", "/")
+
+    assert response.status_code == 200
+    assert "/bia/export_" not in response.data.decode()

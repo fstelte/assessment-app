@@ -12,4 +12,56 @@
     {% endfor %}
   </div>
 </div>
+
+{% if current_user.is_authenticated and 'bia' in registered_blueprints() %}
+{% set html = {'label': 'HTML', 'icon': 'fa-file-code', 'args': {}} %}
+{% set pdf = {'label': 'PDF', 'icon': 'fa-file-pdf', 'args': {'format': 'pdf'}} %}
+{% set csv = {'label': 'CSV', 'icon': 'fa-file-csv', 'args': {'format': 'csv'}} %}
+{% set export_groups = [
+  {'title': 'app.home.exports.groups.impact', 'icon': 'fa-shield-halved', 'reports': [
+    {'label': 'app.home.exports.reports.cia_detailed', 'endpoint': 'bia.export_all_consequences', 'args': {}, 'formats': [html, pdf]},
+    {'label': 'app.home.exports.reports.cia_summary', 'endpoint': 'bia.export_all_consequences', 'args': {'type': 'summary'}, 'formats': [html, pdf]},
+    {'label': 'app.home.exports.reports.availability_detailed', 'endpoint': 'bia.export_availability_requirements', 'args': {}, 'formats': [html, pdf]},
+    {'label': 'app.home.exports.reports.availability_summary', 'endpoint': 'bia.export_availability_requirements', 'args': {'type': 'summary'}, 'formats': [html, pdf]},
+  ]},
+  {'title': 'app.home.exports.groups.inventories', 'icon': 'fa-boxes-stacked', 'reports': [
+    {'label': 'app.home.exports.reports.data_inventory', 'endpoint': 'bia.export_data_inventory', 'args': {}, 'formats': [{'label': 'CSV', 'icon': 'fa-file-csv', 'args': {}}]},
+    {'label': 'app.home.exports.reports.component_inventory', 'endpoint': 'bia.export_component_inventory', 'args': {}, 'formats': [csv, html, pdf]},
+  ]},
+  {'title': 'app.home.exports.groups.architecture', 'icon': 'fa-sitemap', 'reports': [
+    {'label': 'app.home.exports.reports.dependencies', 'endpoint': 'bia.export_all_dependencies', 'args': {}, 'formats': [html, pdf]},
+    {'label': 'app.home.exports.reports.tiers', 'endpoint': 'bia.export_all_tiers', 'args': {}, 'formats': [html, pdf]},
+    {'label': 'app.home.exports.reports.authentication', 'endpoint': 'bia.export_authentication_overview', 'args': {}, 'formats': [html, pdf]},
+  ]},
+] %}
+<section class="mt-10" aria-labelledby="home-exports-title">
+  <div class="mb-4">
+    <h2 id="home-exports-title" class="text-2xl font-bold text-[var(--color-text)] mb-1">{{ _('app.home.exports.title') }}</h2>
+    <p class="text-sm text-[var(--color-muted)]">{{ _('app.home.exports.intro') }}</p>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    {% for group in export_groups %}
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-5">
+      <h3 class="flex items-center gap-2 text-base font-semibold text-[var(--color-text)] mb-3">
+        <i class="fas {{ group.icon }} text-primary-400"></i>{{ _(group.title) }}
+      </h3>
+      <ul class="divide-y divide-[var(--color-border)]">
+        {% for report in group.reports %}
+        <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+          <span class="text-sm text-[var(--color-text)]">{{ _(report.label) }}</span>
+          <span class="flex gap-1.5">
+            {% for fmt in report.formats %}
+            <a href="{{ url_for(report.endpoint, **dict(report.args, **fmt.args)) }}" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] transition-colors">
+              <i class="fas {{ fmt.icon }}"></i>{{ fmt.label }}
+            </a>
+            {% endfor %}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

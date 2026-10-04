@@ -100,6 +100,7 @@ Refer to `docs/authentication.md` for the full end-to-end setup guide, troublesh
 
 ### BIA Export Artefacts
 
+- The organisation-wide BIA reports (CIA and availability consequences, data and component inventories, dependencies, tiers, authentication overview) are listed on the home page (`/`) under "Reports & exports" for signed-in users, grouped by theme with a link per format. They no longer appear on `/bia/index`. The export URLs and their login requirement are unchanged.
 - The `/bia/item/<component_id>/export` HTML view reuses the on-screen context detail template with export-only styling so the same artifact works for print and PDF workflows.
 - The HTML export now inlines the compiled `app.css` bundle (`tailwind.css` output) so the downloaded report renders exactly like the live `/bia/item/<id>` view even when opened offline; navigation and action buttons are still gated behind `export_mode`, keeping the focus on the content.
 - CSV exports include a `bia_component_environments.csv` sheet that lists each component environment alongside authentication methods, owners, and AI adoption flags.

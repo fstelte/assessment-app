@@ -32,3 +32,15 @@ def test_admin_translation_keys_present_in_locales():
 
     missing = sorted(en_keys - nl_keys)
     assert not missing, f"Missing translation keys in nl.json: {missing}"
+
+
+def test_home_exports_translation_keys_match_across_locales():
+    root = Path(__file__).resolve().parents[1] / "scaffold" / "translations"
+    en = json.loads((root / "en.json").read_text(encoding="utf-8"))
+    nl = json.loads((root / "nl.json").read_text(encoding="utf-8"))
+
+    en_keys = _flatten_keys(en["app"]["home"]["exports"], "app.home.exports")
+    nl_keys = _flatten_keys(nl["app"]["home"]["exports"], "app.home.exports")
+
+    assert len(en_keys) == 14
+    assert en_keys == nl_keys
