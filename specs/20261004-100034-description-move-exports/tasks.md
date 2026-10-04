@@ -102,5 +102,5 @@ translation and test changes only. **No routes are touched.** See
 
 ## Progress
 - [x] Task 1: Translation keys for the landing-page exports
-- [ ] Task 2: Landing page "Reports & exports" section + tests
+- [x] Task 2: Landing page "Reports & exports" section + tests (visual check pending)
 - [ ] Task 3: Remove global exports from the BIA dashboard + test
