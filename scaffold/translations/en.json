@@ -31,7 +31,27 @@
       "threat": "Threat Modeling"
     },
     "home": {
-      "subtitle": "Unified workspace for assessments."
+      "subtitle": "Unified workspace for assessments.",
+      "exports": {
+        "title": "Reports & exports",
+        "intro": "Download organisation-wide BIA reports in the format you need.",
+        "groups": {
+          "impact": "Impact & requirements",
+          "inventories": "Inventories",
+          "architecture": "Architecture & security"
+        },
+        "reports": {
+          "cia_detailed": "CIA consequences (detailed)",
+          "cia_summary": "CIA consequences (summary)",
+          "availability_detailed": "Availability (detailed)",
+          "availability_summary": "Availability (summary)",
+          "data_inventory": "Data inventory",
+          "component_inventory": "Component inventory",
+          "dependencies": "Dependencies",
+          "tiers": "Tiers",
+          "authentication": "Authentication overview"
+        }
+      }
     },
     "language": {
       "label": "Language",
