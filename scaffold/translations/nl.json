@@ -32,7 +32,27 @@
       "threat": "Dreigingsmodellering"
     },
     "home": {
-      "subtitle": "Eén omgeving voor assessments."
+      "subtitle": "Eén omgeving voor assessments.",
+      "exports": {
+        "title": "Rapportages & exports",
+        "intro": "Download organisatiebrede BIA-rapportages in het formaat dat je nodig hebt.",
+        "groups": {
+          "impact": "Impact & eisen",
+          "inventories": "Inventarissen",
+          "architecture": "Architectuur & beveiliging"
+        },
+        "reports": {
+          "cia_detailed": "CIA-gevolgen (gedetailleerd)",
+          "cia_summary": "CIA-gevolgen (samenvatting)",
+          "availability_detailed": "Beschikbaarheid (gedetailleerd)",
+          "availability_summary": "Beschikbaarheid (samenvatting)",
+          "data_inventory": "Data-inventaris",
+          "component_inventory": "Componenteninventaris",
+          "dependencies": "Afhankelijkheden",
+          "tiers": "Tiers",
+          "authentication": "Authenticatieoverzicht"
+        }
+      }
     },
     "language": {
       "label": "Taal",
