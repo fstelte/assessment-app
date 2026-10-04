@@ -790,6 +790,25 @@ def test_home_lists_every_global_export_when_logged_in(app, client, logged_in):
         assert f'href="{href}"' in body
 
 
+def test_dashboard_keeps_only_per_context_exports(app, client, logged_in):
+    context = _owned_context()
+
+    body = _request(client, "get", "/bia/index").data.decode()
+
+    for endpoint in (
+        "export_data_inventory",
+        "export_component_inventory",
+        "export_authentication_overview",
+        "export_all_consequences",
+        "export_availability_requirements",
+        "export_all_dependencies",
+        "export_all_tiers",
+    ):
+        assert f"/bia/{endpoint}" not in body
+    assert f"/bia/item/{context.id}/export" in body
+    assert f"/bia/bia/{context.id}/export/sql" in body
+
+
 def test_home_hides_exports_for_anonymous_users(app, client):
     response = _request(client, "get", "/")
 
