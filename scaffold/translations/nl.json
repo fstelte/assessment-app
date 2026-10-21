@@ -246,7 +246,7 @@
       "summary_updated": "Samenvatting bijgewerkt.",
       "summary_deleted": "Samenvatting verwijderd.",
       "availability_updated": "Beschikbaarheidseisen bijgewerkt.",
-      "consequence_created": "{count} gevolgen toegevoegd.",
+      "consequence_created": "Gevolg opgeslagen.",
       "consequence_updated": "Gevolg bijgewerkt.",
       "ai_saved": "AI-classificatie opgeslagen.",
       "components_required": "Voeg eerst componenten toe aan deze BIA voordat je deze sectie beheert.",
@@ -647,8 +647,6 @@
     },
     "consequence_form": {
       "validation": {
-        "single_category": "Selecteer precies één categorie bij het bijwerken van een gevolg.",
-        "at_least_one": "Selecteer minimaal één categorie.",
         "target_exists": "Het gekozen component heeft al een gevolg voor deze beveiligingseigenschap."
       }
     },
@@ -858,28 +856,13 @@
       "actions": {
         "save": "Opslaan",
         "save_changes": "Wijzigingen opslaan",
-        "add": "Gevolg toevoegen",
         "manage": "Gevolgen beheren"
       },
       "table": {
         "category": "Categorie",
         "security_property": "Beveiligingseigenschap",
         "worst_case": "Slechtste geval",
-        "realistic_case": "Realistisch geval",
-        "actions": "Acties"
-      }
-    },
-    "manage_component_consequence": {
-      "title": "Gevolg – {component}",
-      "back": "Terug naar componenten",
-      "view_existing": "Bestaande gevolgen bekijken",
-      "no_context": "Geen context",
-      "cia_badge": "CIA-beoordeling",
-      "category_help": "Selecteer een of meer gevolgëncategorieën die van toepassing zijn.",
-      "justification_worst_placeholder": "Leg uit waarom dit het slechtste scenario is...",
-      "justification_realistic_placeholder": "Beschrijf de realistische impact...",
-      "actions": {
-        "submit": "Opslaan"
+        "realistic_case": "Realistisch geval"
       }
     },
     "authentication_methods": {
@@ -947,66 +930,10 @@
       }
     },
     "export_item": {
-      "title": "Business Impact Analyse",
-      "print": "Rapport afdrukken",
-      "generated_note": "Gegenereerd door de BIA-module.",
-      "sections": {
-        "executive_summary": "Managementsamenvatting",
-        "scope": "Scope & context",
-        "service_description": "Servicebeschrijving",
-        "scope_field": "Scope",
-        "risk_assessments": "Risicobeoordelingen",
-        "ai_identification": "AI-identificatie"
-      },
-      "fields": {
-        "owner": "Eindverantwoordelijke",
-        "coordinator": "Coordinator",
-        "project_lead": "Projectleider",
-        "product_owner": "Product owner",
-        "risk_owner": "Risico-eigenaar",
-        "knowledge": "Kennis",
-        "interfaces": "Interfaces",
-        "mission_critical": "Missionkritisch",
-        "support_contracts": "Onderhoudscontracten",
-        "security_supplier": "Beveiligingsleverancier",
-        "users": "Aantal gebruikers",
-        "ai_model_in_scope": "Gebruik van AI-componenten",
-        "last_update": "Laatste update"
-      },
-      "risk": {
-        "people": "Mensen",
-        "process": "Processen",
-        "technology": "Technologie",
-        "required": "Vereist",
-        "not_required": "Niet vereist"
-      },
       "cia": {
         "confidentiality": "Vertrouwelijkheid",
         "integrity": "Integriteit",
         "availability": "Beschikbaarheid"
-      },
-      "table": {
-        "component": "Component",
-        "category": "Categorie",
-        "security_property": "Beveiligingseigenschap",
-        "worst_case": "Worst case",
-        "realistic_case": "Realistisch geval",
-        "cia_impact": "CIA-impact",
-        "information_type": "Informatietype",
-        "authentication": "Authenticatie",
-        "description": "Omschrijving",
-        "mtd": "MTD",
-        "rto": "RTO",
-        "rpo": "RPO",
-        "masl": "MASL"
-      },
-      "empty": {
-        "summary": "Geen samenvatting opgegeven.",
-        "ai_risks": "Geen AI-risico's geïdentificeerd.",
-        "ai_details": "Geen details opgegeven.",
-        "consequences": "Geen gevolgen vastgelegd.",
-        "components": "Geen componenten toegevoegd.",
-        "components_table": "Geen componenten met beschikbaarheidsvereisten."
       }
     },
     "export_all_consequences": {
@@ -1139,7 +1066,8 @@
     },
     "consequences": {
       "group": {
-        "merge_hint": "{count} records, worden samengevoegd bij bewerken"
+        "merge_hint": "{count} records, worden samengevoegd bij bewerken",
+        "confirm_delete": "Dit gevolg verwijderen? Alle {count} records voor deze eigenschap worden verwijderd. Deze actie kan niet ongedaan worden gemaakt."
       }
     }
   },

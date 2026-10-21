@@ -169,3 +169,16 @@ def test_list_shows_one_row_per_cia_group(app, client, login):
     assert "3 records, will be merged on edit" in body
     for label in ("Financial", "Operational", "Privacy", "Regulatory"):
         assert f">{label}</span>" in body
+
+
+def test_delete_confirmation_names_the_consequence_and_group_size(app, client, login):
+    context, ledger, _gateway = _setup(login)
+    _legacy_group(ledger)
+    db.session.add(Consequences(component=ledger, security_property="integrity", consequence_category="regulatory"))
+    db.session.commit()
+
+    body = client.get(f"/bia/item/{context.id}/consequences").data.decode()
+
+    assert 'data-confirm="Delete this consequence? All 3 records for this property are removed.' in body
+    assert 'data-confirm="Delete this consequence? This action cannot be undone."' in body
+    assert "Delete this component?" not in body

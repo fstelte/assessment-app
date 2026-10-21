@@ -1441,7 +1441,7 @@ def manage_item_consequences(item_id: int):
             if editing_group:
                 flash(_("bia.flash.consequence_updated"), "success")
             else:
-                flash(_("bia.flash.consequence_created", count=1), "success")
+                flash(_("bia.flash.consequence_created"), "success")
             return redirect(return_to or url_for("bia.manage_item_consequences", item_id=item.id))
 
     return render_template(
