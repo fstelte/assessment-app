@@ -251,11 +251,17 @@ Critical path: Task 1/2 → Task 4 → Task 11.
   (only Task 6 edits it).
 - Deferred: CSV import label splitting, DB uniqueness constraint, legacy data
   merge migration.
+- Test infra (53793aa): shared `login` fixture fixed. Known pre-existing
+  failures to ignore when judging evidence: 7 stale tests in
+  `test_bia_routes.py` (old `/bia/<id>` URL, author-less BIAs need admin),
+  10 SSP fixture errors (`template.index`), `test_no_eager_translations`
+  (matches itself), 3 in `test_bia_forms.py`. New route tests must log in as
+  the BIA's author (`ContextScope(author=login)`).
 
 ## Progress
-- [ ] Task 1: `group_consequences()` + `category_label()` helpers + tests
+- [x] Task 1: `group_consequences()` + `category_label()` helpers + tests (76a726a)
 - [ ] Task 2: `save_cia_consequence()` helper + tests
-- [ ] Task 3: Translation keys (en/nl)
+- [x] Task 3: Translation keys (en/nl) (3439be7)
 - [ ] Task 6: Remove JSON endpoints, redirect `/consequences/new`
 - [ ] Task 4: Manage page route — group edit, create→edit, preselect
 - [ ] Task 4b: Manage page template — grouped list
