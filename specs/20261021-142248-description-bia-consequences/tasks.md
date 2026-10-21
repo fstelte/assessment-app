@@ -450,5 +450,5 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 14: Manual marker in tables and HTML/PDF exports
 - [x] Task 15: Summary export precedence + CSV source columns
 - [x] Task 16: Docs + full validation (Part 2) (full suite confirmed by engineer 2026-10-21)
-- [ ] Task 17: Tier column in both component overviews
+- [x] Task 17: Tier column in both component overviews (31cefb5)
 - [ ] Task 18: Docs + full validation (Part 3)
