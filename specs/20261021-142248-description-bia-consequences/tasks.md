@@ -1,6 +1,6 @@
 ---
 feature: 20261021-142248-description-bia-consequences
-status: planned
+status: completed
 created: 2026-10-21
 chunk_size: adaptive
 total_tasks: 16
@@ -405,4 +405,4 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 13: Availability forms: pre-fill, save rule, hints
 - [x] Task 14: Manual marker in tables and HTML/PDF exports
 - [x] Task 15: Summary export precedence + CSV source columns
-- [ ] Task 16: Docs + full validation (Part 2)
+- [x] Task 16: Docs + full validation (Part 2) (full suite confirmed by engineer 2026-10-21)

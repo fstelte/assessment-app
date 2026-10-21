@@ -1,6 +1,6 @@
 ---
 feature: 20261021-142248-description-bia-consequences
-status: planned
+status: implemented
 created: 2026-10-21
 decisions:
   - 20261021-1424-consequence-category-labels-storage
@@ -14,7 +14,7 @@ decisions:
 
 > This branch has two parts. **Part 1** (CIA-grouped consequences, below) is
 > implemented. **Part 2** ([Tier RTO/RPO pre-fill](#part-2-tier-rtorpo-pre-fill-with-manual-overrides),
-> at the end) is planned (Tasks 12–16).
+> at the end) is implemented (Tasks 12–16).
 
 # BIA Consequences per CIA with Category Labels
 
