@@ -40,7 +40,6 @@ from .forms import (
     ChangePasswordForm,
     ComponentAIForm,
     ComponentForm,
-    ConsequenceForm,
     ContextScopeForm,
     ImportCSVForm,
     ImportSQLForm,
@@ -1136,13 +1135,11 @@ def delete_availability_requirement(requirement_id: int):
 @login_required
 def view_consequences(component_id: int):
     component = Component.query.get_or_404(component_id)
-    consequences = Consequences.query.filter_by(component_id=component.id).all()
-    consequence_form = ConsequenceForm()
     return render_template(
         "bia/view_consequences.html",
         component=component,
-        consequences=consequences,
-        consequence_form=consequence_form,
+        consequence_groups=group_consequences(component.consequences),
+        can_edit=_can_edit_context(component.context_scope),
     )
 
 

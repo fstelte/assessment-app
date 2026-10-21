@@ -396,18 +396,34 @@ def test_new_consequence_page_redirects_to_manage_page(app, client, login):
     assert "return_to=/bia/components" in location
 
 
-def test_component_consequences_page_links_to_manage_page(app, client, login):
+def test_component_consequences_page_is_grouped_and_read_only(app, client, login):
     context, component = _owned_component(login)
-    consequence = Consequences(component=component, security_property="integrity", consequence_category="privacy")
-    db.session.add(consequence)
+    db.session.add_all(
+        [
+            Consequences(component=component, security_property="integrity", consequence_category="privacy"),
+            Consequences(component=component, security_property="integrity", consequence_category="financial"),
+        ]
+    )
     db.session.commit()
 
-    response = client.get(f"/bia/consequences/{component.id}")
+    body = client.get(f"/bia/consequences/{component.id}").data.decode()
 
-    assert response.status_code == 200
-    body = response.data.decode()
     assert f"/bia/item/{context.id}/consequences?component_id={component.id}" in body
-    assert f"/bia/item/{context.id}/consequences?consequence_id={consequence.id}" in body
+    assert "consequence_id=" not in body
+    assert "addConsequenceModal" not in body
+    assert body.count(">Integrity</span>") == 1
+    assert ">Financial</span>" in body and ">Privacy</span>" in body
+
+
+def test_component_consequences_page_hides_manage_link_without_edit_rights(app, client, login):
+    context = ContextScope(name="Someone else's BIA")
+    component = Component(name="Shared Drive", context_scope=context)
+    db.session.add_all([context, component])
+    db.session.commit()
+
+    body = client.get(f"/bia/consequences/{component.id}").data.decode()
+
+    assert "/consequences?component_id=" not in body
 
 
 def test_consequence_json_endpoints_are_removed(app, client, login):
