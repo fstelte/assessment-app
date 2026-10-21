@@ -15,7 +15,6 @@ from scaffold.apps.bia.services.authentication import clear_authentication_cache
 from scaffold.apps.identity.models import ROLE_ADMIN, User, UserStatus, ensure_default_roles
 from scaffold.extensions import db
 from scaffold.models import AuditLog
-from werkzeug.datastructures import MultiDict
 
 
 def test_bia_detail_shows_component_summary(app, client, login):
@@ -374,44 +373,65 @@ def test_manage_component_availability_updates_requirements(app, client, login):
         assert availability.masl == "Minimal core services"
 
 
-def test_manage_component_consequence_creates_multiple_entries(app, client, login):
-    with app.app_context():
-        context = ContextScope(name="Continuity Plan Seven")
-        component = Component(name="Messaging Fabric", context_scope=context)
-        db.session.add_all([context, component])
-        db.session.commit()
-        component_id = component.id
+def _owned_component(login, name="Messaging Fabric"):
+    context = ContextScope(name="Continuity Plan Seven", author_id=login.id)
+    component = Component(name=name, context_scope=context)
+    db.session.add_all([context, component])
+    db.session.commit()
+    return context, component
 
-    response = client.get(f"/bia/component/{component_id}/consequences/new")
-    assert response.status_code == 200
-    assert "Add consequences" in response.data.decode()
 
-    payload = MultiDict(
-        [
-            ("consequence_category", "financial"),
-            ("consequence_category", "operational"),
-            ("security_property", "confidentiality"),
-            ("consequence_worstcase", "major"),
-            ("justification_worstcase", "Critical vendor exposure"),
-            ("consequence_realisticcase", "moderate"),
-            ("justification_realisticcase", "Impacts day-to-day workflows"),
-        ]
-    )
+def test_new_consequence_page_redirects_to_manage_page(app, client, login):
+    context, component = _owned_component(login)
 
-    post_response = client.post(
-        f"/bia/component/{component_id}/consequences/new",
-        data=payload,
+    response = client.get(
+        f"/bia/component/{component.id}/consequences/new?return_to=%2Fbia%2Fcomponents",
         follow_redirects=False,
     )
-    assert post_response.status_code == 302
-    assert post_response.headers["Location"].endswith(f"/bia/consequences/{component_id}")
 
-    with app.app_context():
-        stored = Consequences.query.filter_by(component_id=component_id).all()
-        assert len(stored) == 2
-        assert {row.consequence_category for row in stored} == {"financial", "operational"}
-        for row in stored:
-            assert row.security_property == "confidentiality"
+    assert response.status_code == 302
+    location = response.headers["Location"]
+    assert f"/bia/item/{context.id}/consequences?" in location
+    assert f"component_id={component.id}" in location
+    assert "return_to=/bia/components" in location
+
+
+def test_component_consequences_page_is_grouped_and_read_only(app, client, login):
+    context, component = _owned_component(login)
+    db.session.add_all(
+        [
+            Consequences(component=component, security_property="integrity", consequence_category="privacy"),
+            Consequences(component=component, security_property="integrity", consequence_category="financial"),
+        ]
+    )
+    db.session.commit()
+
+    body = client.get(f"/bia/consequences/{component.id}").data.decode()
+
+    assert f"/bia/item/{context.id}/consequences?component_id={component.id}" in body
+    assert "consequence_id=" not in body
+    assert "addConsequenceModal" not in body
+    assert body.count(">Integrity</span>") == 1
+    assert ">Financial</span>" in body and ">Privacy</span>" in body
+
+
+def test_component_consequences_page_hides_manage_link_without_edit_rights(app, client, login):
+    context = ContextScope(name="Someone else's BIA")
+    component = Component(name="Shared Drive", context_scope=context)
+    db.session.add_all([context, component])
+    db.session.commit()
+
+    body = client.get(f"/bia/consequences/{component.id}").data.decode()
+
+    assert "/consequences?component_id=" not in body
+
+
+def test_consequence_json_endpoints_are_removed(app, client, login):
+    _context, component = _owned_component(login)
+
+    assert client.post(f"/bia/add_consequence/{component.id}", json={}).status_code == 404
+    assert client.get("/bia/get_consequence/1").status_code == 404
+    assert client.post("/bia/edit_consequence/1", json={}).status_code == 404
 
 
 def test_export_all_dependencies_returns_html(app, client, login):

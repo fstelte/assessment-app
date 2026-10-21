@@ -16,6 +16,7 @@ from scaffold.apps.bia.models import (
     ComponentEnvironment,
     ContextScope,
     format_duration_seconds,
+    parse_duration_seconds,
 )
 from scaffold.core.i18n import set_locale
 from scaffold.apps.bia.utils import export_to_csv, export_to_sql, import_from_csv, import_from_sql
@@ -62,11 +63,61 @@ def test_effective_tier_prefers_own_then_bia_then_none(app):
     assert _component().effective_tier is None
 
 
-def test_effective_recovery_uses_tier_goal_over_stored_text(app):
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("45 s", 45),
+        ("30 sec", 30),
+        ("90 min", 5400),
+        ("15 m", 900),
+        ("4 h", 14400),
+        ("8 hours", 28800),
+        ("4 u", 14400),
+        ("2 uur", 7200),
+        ("1,5 u", 5400),
+        ("1.5 h", 5400),
+        ("2 d", 172800),
+        ("3 dagen", 259200),
+        ("1 week", 604800),
+        ("2 weken", 1209600),
+        ("1 month", 2592000),
+        ("1 maand", 2592000),
+        ("2 mnd", 5184000),
+        ("1 year", 31536000),
+        ("1 jaar", 31536000),
+        ("Immediate", 0),
+        ("0", 0),
+        ("none", 0),
+        ("-", 0),
+        ("60", None),
+        ("next business day", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_parse_duration_seconds(text, expected):
+    assert parse_duration_seconds(text) == expected
+
+
+def test_effective_recovery_prefers_stored_text_over_tier_goal(app):
     with app.test_request_context():
         component = _component(context_tier=_tier(1, rto=14400, rpo=1800), rto="8 hours", rpo="1 hour")
-        assert component.effective_rto == "4 h"
-        assert component.effective_rpo == "30 min"
+        assert component.effective_rto == "8 hours"
+        assert component.effective_rpo == "1 hour"
+        assert component.tier_goal_display("rto") == "4 h"
+
+
+def test_recovery_source_covers_every_branch(app):
+    with app.test_request_context():
+        tier = _tier(1, rto=14400, rpo=0)
+        assert _component(context_tier=tier).rto_source == "tier"  # goal, nothing stored
+        assert _component(context_tier=tier, rto="240 min").rto_source == "tier"  # stored equals goal
+        assert _component(context_tier=tier, rto="2 h").rto_source == "manual"  # stored differs
+        assert _component(context_tier=tier, rto="next business day").rto_source == "manual"  # unparseable
+        assert _component(rto="2 h").rto_source == "free_text"  # no goal
+        assert _component().rto_source is None  # neither
+        assert _component(context_tier=tier, rpo="immediate").rpo_source == "tier"  # 0 s goal
+        assert _component(context_tier=tier, rto="   ").rto_source == "tier"  # blank counts as empty
 
 
 def test_effective_recovery_falls_back_per_field(app):
@@ -196,19 +247,57 @@ def _stored(component_id):
     return AvailabilityRequirements.query.filter_by(component_id=component_id).one()
 
 
-def test_availability_page_shows_goal_and_keeps_stored_text(app, client, logged_in):
-    component_id = _availability_component(_tier(1, rto=14400, rpo=1800))
+def test_availability_page_prefills_tier_goal_with_hint(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400, rpo=1800), rto=None, rpo=None)
+
+    body = _request(client, "get", f"/bia/component/{component_id}/availability").data.decode()
+
+    assert 'name="rto"' in body and 'value="4 h"' in body and 'value="30 min"' in body
+    assert "From TIER 1" in body and ": 4 h (inherited from BIA)" in body
+    assert "Manually configured" not in body
+
+
+def test_item_availability_page_prefills_tier_goal(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rto=None)
+    context_id = db.session.get(Component, component_id).context_scope_id
+
+    body = _request(client, "get", f"/bia/item/{context_id}/availability?component_id={component_id}").data.decode()
+
+    assert 'value="4 h"' in body and 'value="old rpo"' in body
+
+
+def test_saving_unchanged_or_equal_goal_stores_empty(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400, rpo=1800), rto=None, rpo=None)
     url = f"/bia/component/{component_id}/availability"
 
-    body = _request(client, "get", url).data.decode()
-    assert "From TIER 1" in body and "4 h" in body and "30 min" in body
-    assert "(inherited from BIA)" in body
-    assert 'name="rto"' not in body and 'name="rpo"' not in body
-
-    assert _request(client, "post", url, data=AVAILABILITY_POST).status_code == 302
+    data = {**AVAILABILITY_POST, "rto": "4 h", "rpo": "0,5 uur"}
+    assert _request(client, "post", url, data=data).status_code == 302
     stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "old rpo")
+    assert (stored.rto, stored.rpo) == ("", "")
     assert (stored.mtd, stored.masl) == ("new mtd", "new masl")
+    assert db.session.get(Component, component_id).rto_source == "tier"
+
+
+def test_deviating_value_is_stored_and_shown_as_manual(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rpo=None)
+    url = f"/bia/component/{component_id}/availability"
+
+    _request(client, "post", url, data={**AVAILABILITY_POST, "rto": "2 h", "rpo": ""})
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("2 h", "")
+
+    body = _request(client, "get", url).data.decode()
+    assert 'value="2 h"' in body
+    assert body.count("Manually configured; differs from the tier goal") == 1
+
+
+def test_clearing_a_manual_value_reverts_to_the_tier(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rto="2 h")
+
+    _request(client, "post", f"/bia/component/{component_id}/availability", data={**AVAILABILITY_POST, "rto": ""})
+
+    assert _stored(component_id).rto == ""
+    assert db.session.get(Component, component_id).effective_rto == "4 h"
 
 
 def test_availability_without_goal_saves_free_text(app, client, logged_in):
@@ -223,26 +312,15 @@ def test_availability_without_goal_saves_free_text(app, client, logged_in):
     assert (stored.rto, stored.rpo) == ("new rto", "new rpo")
 
 
-def test_availability_decides_rto_and_rpo_independently(app, client, logged_in):
-    component_id = _availability_component(_tier(1, rto=3600))
-    url = f"/bia/component/{component_id}/availability"
-
-    body = _request(client, "get", url).data.decode()
-    assert 'name="rto"' not in body and 'name="rpo"' in body
-
-    _request(client, "post", url, data=AVAILABILITY_POST)
-    stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
-
-
-def test_update_availability_json_respects_tier_goal(app, client, logged_in):
+def test_update_availability_json_applies_the_same_save_rule(app, client, logged_in):
     component_id = _availability_component(_tier(1, rto=3600))
 
-    response = _request(client, "post", f"/bia/update_availability/{component_id}", data=AVAILABILITY_POST)
+    data = {**AVAILABILITY_POST, "rto": "60 min"}
+    response = _request(client, "post", f"/bia/update_availability/{component_id}", data=data)
 
     assert response.get_json() == {"success": True}
     stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
+    assert (stored.rto, stored.rpo) == ("", "new rpo")
 
 
 # --- Task 4: effective values in views, exports and summary aggregation -----------
@@ -273,18 +351,62 @@ def test_summary_export_uses_tier_goals_and_stored_text(app, client, logged_in, 
     assert "2 hours" in body and "45 minutes" in body
 
 
-def test_summary_export_takes_lowest_of_tier_goal_and_stored_text(app, client, logged_in, tmp_path, monkeypatch):
+def test_summary_export_takes_lowest_effective_value(app, client, logged_in, tmp_path, monkeypatch):
     monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
     context = ContextScope(name="Mixed", author=User.find_by_email("user@example.com"))
-    with_goal = Component(name="A", context_scope=context, tier=_tier(1, rto=600))
-    stored_only = Component(name="B", context_scope=context, tier=_tier(2))
-    stored_only.availability_requirement = AvailabilityRequirements(rto="30 minutes")
-    db.session.add_all([context, with_goal, stored_only])
+    goal_only = Component(name="A", context_scope=context, tier=_tier(1, rto=3600))
+    manual = Component(name="B", context_scope=context, tier=_tier(2, rto=600))
+    manual.availability_requirement = AvailabilityRequirements(rto="30 minutes")  # overrides its 10 min goal
+    db.session.add_all([context, goal_only, manual])
     db.session.commit()
 
     body = _request(client, "get", "/bia/export_availability_requirements?type=summary").data.decode()
 
-    assert "10 min" in body and "30 minutes" not in body
+    assert "30 minutes" in body and "10 min" not in body and ">1 h<" not in body
+
+
+def _availability_csv(context):
+    exports = export_to_csv(context)
+    return next(v for k, v in exports.items() if k.endswith("_availability_requirements.csv"))
+
+
+def test_availability_csv_lists_every_component_with_source_and_effective_value(app, signed_in):
+    tier = _tier(1, rto=14400, rpo=1800)
+    context = ContextScope(name="Sources", author=User.find_by_email("user@example.com"))
+    follows = Component(name="Follows", context_scope=context, tier=tier)
+    manual = Component(name="Manual", context_scope=context, tier=tier)
+    manual.availability_requirement = AvailabilityRequirements(rto="2 h", rpo="0,5 uur")
+    free = Component(name="Free", context_scope=context)
+    free.availability_requirement = AvailabilityRequirements(rto="1 day", mtd="2 days")
+    unset = Component(name="Unset", context_scope=context)
+    db.session.add_all([context, follows, manual, free, unset])
+    db.session.commit()
+
+    rows = list(csv.reader(io.StringIO(_availability_csv(context))))
+
+    assert rows[0][-4:] == ["RTO Source", "Effective RTO", "RPO Source", "Effective RPO"]
+    by_name = {row[1]: row for row in rows[1:]}
+    assert by_name["Follows"][3:] == ["", "", "", "tier", "4 h", "tier", "30 min"]
+    assert by_name["Manual"][3:] == ["2 h", "0,5 uur", "", "manual", "2 h", "tier", "0,5 uur"]
+    assert by_name["Free"][2:] == ["2 days", "1 day", "", "", "free text", "1 day", "not set", ""]
+    assert by_name["Unset"][6:] == ["not set", "", "not set", ""]
+
+
+def test_availability_csv_import_skips_rows_without_stored_values(app, signed_in):
+    context = ContextScope(name="Import", author=User.find_by_email("user@example.com"))
+    follows = Component(name="Follows", context_scope=context, tier=_tier(1, rto=14400))
+    manual = Component(name="Manual", context_scope=context)
+    manual.availability_requirement = AvailabilityRequirements(rto="2 h")
+    db.session.add_all([context, follows, manual])
+    db.session.commit()
+    files = {**_csv_files(context), "availability_requirements": _availability_csv(context)}
+
+    assert import_from_csv(files) == []  # replaces the BIA with the same name
+
+    db.session.expire_all()
+    imported = {c.name: c.availability_requirement for c in Component.query.all()}
+    assert imported["Follows"] is None  # tier-only row creates no empty record
+    assert imported["Manual"].rto == "2 h"
 
 
 def test_component_pages_show_tier_goal_without_availability_row(app, client, logged_in):
@@ -295,26 +417,60 @@ def test_component_pages_show_tier_goal_without_availability_row(app, client, lo
 
     assert "RTO: 4 h" in components_page and "RPO: 30 min" in components_page
     assert "4 h" in detail_page and "30 min" in detail_page
+    assert "manual · tier" not in components_page + detail_page
 
 
-def test_requirements_page_shows_tier_goal_instead_of_stored_text(app, client, logged_in):
-    _bia_with_component("Tiered", tier=_tier(1, rto=14400), rto="stale text", rpo="kept text")
+MANUAL_CHIP = 'bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-200">manual · tier 4 h</span>'
+
+
+def test_manual_rto_is_marked_in_app_views(app, client, logged_in):
+    context_id = _bia_with_component("Manual", tier=_tier(1, rto=14400, rpo=1800), rto="2 h", rpo="30 min")
+
+    pages = {
+        "components": "/bia/components",
+        "detail": f"/bia/item/{context_id}",
+        "requirements": "/bia/requirements",
+        "availability": f"/bia/item/{context_id}/availability",
+    }
+    for name, url in pages.items():
+        body = _request(client, "get", url).data.decode()
+        assert body.count(MANUAL_CHIP) == 1, name  # RTO deviates; RPO equals its goal
+        assert "manual · tier 30 min" not in body, name
+
+
+def test_manual_rto_is_marked_as_text_in_exports(app, client, logged_in, tmp_path, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
+    context_id = _bia_with_component("Manual", tier=_tier(1, rto=14400), rto="2 h")
+
+    exports = {
+        "availability": "/bia/export_availability_requirements",
+        "item": f"/bia/item/{context_id}/export",
+    }
+    for name, url in exports.items():
+        body = _request(client, "get", url).data.decode()
+        assert "2 h (manual · tier 4 h)" in body, name
+        assert MANUAL_CHIP not in body, name
+
+
+def test_requirements_page_shows_stored_text_over_tier_goal(app, client, logged_in):
+    _bia_with_component("Tiered", tier=_tier(1, rto=14400, rpo=1800), rto="stale text")
 
     body = _request(client, "get", "/bia/requirements").data.decode()
 
-    assert "4 h" in body and "stale text" not in body
-    assert "kept text" in body
+    assert "stale text" in body  # manual override wins
+    assert "30 min" in body  # nothing stored for RPO: the tier goal applies
 
 
 # --- Task 5: incident prefill ------------------------------------------------------
 
 
-def test_incident_prefill_uses_tier_goal_then_stored_text(app):
+def test_incident_prefill_uses_stored_text_then_tier_goal(app):
     from scaffold.apps.incident.services import get_bia_requirements
 
     with app.test_request_context():
-        goal = _component(context_tier=_tier(1, rto=14400), rto="stale", rpo="1 hour")
-        assert get_bia_requirements(goal.id) == {"rto": "4 h", "rpo": "1 hour"}
+        manual = _component(context_tier=_tier(1, rto=14400, rpo=1800), rto="stale")
+        assert manual.rto_source == "manual"
+        assert get_bia_requirements(manual.id) == {"rto": "stale", "rpo": "30 min"}
 
 
 def test_incident_prefill_is_empty_without_tier_or_text(app):
@@ -609,11 +765,14 @@ TIERING_TRANSLATION_KEYS = (
     "bia.duration.units.h",
     "bia.duration.units.d",
     "bia.availability.tier_goal",
+    "bia.availability.manual_override",
+    "bia.availability.manual_marker",
     "bia.components.labels.tier",
     "bia.components.tooltips.tier",
     "bia.components.tier.inherit",
     "bia.components.tier.inherit_with",
     "bia.components.tier.inherited_suffix",
+    "bia.components.table.tier",
     "bia.flash.import_tier_unknown",
     "bia.flash.import_context_tier_unknown",
     *(
@@ -814,3 +973,46 @@ def test_home_hides_exports_for_anonymous_users(app, client):
 
     assert response.status_code == 200
     assert "/bia/export_" not in response.data.decode()
+
+
+# --- Tier column in component overviews -------------------------------------------
+
+
+def test_components_overview_shows_effective_tier_instead_of_context(app, client, logged_in):
+    context = _owned_context(tier=_tier(2))
+    db.session.add_all([
+        Component(name="Own", context_scope=context, tier=_tier(1)),
+        Component(name="Inherited", context_scope=context),
+    ])
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/components").data.decode()
+
+    assert ">Tier</th>" in body
+    assert ">Context</th>" not in body
+    assert "TIER 1 &gt;" in body and "TIER 2 &gt;" in body
+
+
+def test_components_overview_without_any_tier_shows_dash(app, client, logged_in):
+    db.session.add(Component(name="Untiered", context_scope=_owned_context()))
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/components").data.decode()
+
+    assert "Untiered" in body and "TIER " not in body
+
+
+def test_bia_detail_and_item_export_show_component_tier(app, client, logged_in):
+    context = _owned_context(tier=_tier(2))
+    db.session.add(Component(name="Portal", context_scope=context, tier=_tier(1)))
+    db.session.commit()
+    context_id = context.id
+
+    detail = _request(client, "get", f"/bia/item/{context_id}").data.decode()
+    export = _request(client, "get", f"/bia/item/{context_id}/export")
+    export_body = export.data.decode()
+    export.close()
+
+    for body in (detail, export_body):
+        assert ">Tier</th>" in body
+        assert "TIER 1 &gt;" in body

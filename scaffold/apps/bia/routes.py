@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import io
 import logging
-import re
 from collections import defaultdict
 from datetime import date, datetime, timezone
 
@@ -24,7 +23,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from urllib.parse import urlparse
 
 from ...core.audit import log_change_event, log_event
@@ -40,7 +39,6 @@ from .forms import (
     ChangePasswordForm,
     ComponentAIForm,
     ComponentForm,
-    ConsequenceForm,
     ContextScopeForm,
     ImportCSVForm,
     ImportSQLForm,
@@ -51,11 +49,13 @@ from .models import (
     AvailabilityRequirements,
     BiaTier,
     format_duration_seconds,
+    parse_duration_seconds,
     Component,
     ComponentEnvironment,
     Consequences,
     ContextScope,
     ENVIRONMENT_TYPES,
+    SECURITY_PROPERTIES,
     Summary,
 )
 from .services.authentication import (
@@ -63,6 +63,7 @@ from .services.authentication import (
     lookup_by_id as lookup_authentication_option,
 )
 from .utils import (
+    category_label,
     ensure_export_folder,
     export_to_csv,
     export_to_sql,
@@ -70,8 +71,10 @@ from .utils import (
     get_impact_color,
     get_impact_level,
     get_max_cia_impact,
+    group_consequences,
     import_from_csv,
     import_sql_file,
+    save_cia_consequence,
 )
 
 
@@ -94,6 +97,8 @@ bp = Blueprint(
 )
 
 bp.app_template_filter("duration")(format_duration_seconds)
+bp.app_template_filter("consequence_category")(category_label)
+bp.app_template_filter("consequence_groups")(group_consequences)
 
 
 # Environment selection order and ranking for fallback authentication resolution.
@@ -341,7 +346,7 @@ def _can_edit_context(context: ContextScope) -> bool:
 
 
 def _tier_goal_notes(component: Component) -> dict[str, str | None]:
-    """Describe the tier goal that fixes each of RTO/RPO, or None when free text applies."""
+    """Describe the tier goal shown as a hint under each of RTO/RPO, or None without a goal."""
 
     notes: dict[str, str | None] = {"rto": None, "rpo": None}
     tier = component.effective_tier
@@ -359,15 +364,25 @@ def _tier_goal_notes(component: Component) -> dict[str, str | None]:
 
 
 def _apply_availability(requirement: AvailabilityRequirements, form: AvailabilityForm, component: Component) -> None:
-    """Save the form, leaving stored RTO/RPO untouched while a tier goal applies."""
+    """Save the form. RTO/RPO that are empty or equal the tier goal are stored empty,
+    so the component keeps following its tier."""
 
-    notes = _tier_goal_notes(component)
     requirement.mtd = form.mtd.data
     requirement.masl = form.masl.data
-    if notes["rto"] is None:
-        requirement.rto = form.rto.data
-    if notes["rpo"] is None:
-        requirement.rpo = form.rpo.data
+    for field in ("rto", "rpo"):
+        value = (getattr(form, field).data or "").strip()
+        goal = getattr(component.effective_tier, f"{field}_goal_seconds", None)
+        if goal is not None and parse_duration_seconds(value) == goal:
+            value = ""
+        setattr(requirement, field, value)
+
+
+def _prefill_tier_goals(form, component: Component) -> None:
+    """Pre-fill empty RTO/RPO inputs with the effective tier's goal."""
+
+    for field in ("rto", "rpo"):
+        form_field = getattr(form, field)
+        form_field.data = form_field.data or component.tier_goal_display(field) or ""
 
 
 def _safe_return_target(target: str | None) -> str | None:
@@ -457,6 +472,8 @@ def view_item(item_id: int):
             joinedload(ContextScope.components).joinedload(Component.consequences),
             joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
             joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+            joinedload(ContextScope.components).joinedload(Component.tier),
+            joinedload(ContextScope.tier),
         )
         .filter(ContextScope.id == item_id)
         .one_or_none()
@@ -470,7 +487,7 @@ def view_item(item_id: int):
     return render_template(
         "bia/context_detail.html",
         item=item,
-        consequences=consequences,
+        consequence_groups=group_consequences(consequences),
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
@@ -847,7 +864,8 @@ def view_components():
     per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
     query = (
         Component.query.options(
-            joinedload(Component.context_scope),
+            joinedload(Component.context_scope).joinedload(ContextScope.tier),
+            joinedload(Component.tier),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
             joinedload(Component.availability_requirement),
             joinedload(Component.ai_identificaties),
@@ -917,20 +935,21 @@ def view_all_consequences():
         page = 1
     per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
 
+    # Paginate components (not records) so a component's CIA groups never split across pages.
     query = (
-        Consequences.query.options(
-            joinedload(Consequences.component).joinedload(Component.context_scope)
+        Component.query.options(
+            joinedload(Component.context_scope),
+            selectinload(Component.consequences),
         )
-        .join(Component, Consequences.component_id == Component.id)
         .join(ContextScope, Component.context_scope_id == ContextScope.id)
-        .filter(ContextScope.is_archived == False)
+        .filter(ContextScope.is_archived == False, Component.consequences.any())
     )
     if selected_bia_id:
         query = query.filter(ContextScope.id == selected_bia_id)
     if search_term:
         query = query.filter(Component.name.ilike(f"%{search_term}%"))
 
-    pagination = query.order_by(Component.name.asc(), Consequences.id.asc()).paginate(
+    pagination = query.order_by(Component.name.asc(), Component.id.asc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     if pagination.total and page > pagination.pages:
@@ -949,7 +968,9 @@ def view_all_consequences():
 
     return render_template(
         "bia/all_consequences.html",
-        consequences=pagination.items,
+        consequence_groups=group_consequences(
+            consequence for component in pagination.items for consequence in component.consequences
+        ),
         pagination=pagination,
         page_start=page_start,
         page_end=page_end,
@@ -1019,6 +1040,8 @@ def manage_component_availability(component_id: int):
         flash(_("bia.flash.owner_forbidden"), "danger")
         return redirect(url_for("bia.view_components"))
     form = AvailabilityForm(obj=component.availability_requirement)
+    if not form.is_submitted():
+        _prefill_tier_goals(form, component)
     return_to = _safe_return_target(request.args.get("return_to"))
     if form.validate_on_submit():
         requirement = component.availability_requirement
@@ -1038,41 +1061,21 @@ def manage_component_availability(component_id: int):
     )
 
 
-@bp.route("/component/<int:component_id>/consequences/new", methods=["GET", "POST"])
+@bp.route("/component/<int:component_id>/consequences/new")
 @login_required
 def add_component_consequence_view(component_id: int):
+    """Legacy entry point; consequences are created on the BIA manage page."""
     component = Component.query.options(joinedload(Component.context_scope)).get_or_404(component_id)
     if not _can_edit_context(component.context_scope):
         flash(_("bia.flash.owner_forbidden"), "danger")
         return redirect(url_for("bia.view_components"))
-    form = ConsequenceForm()
-    return_to = _safe_return_target(request.args.get("return_to"))
-    if form.validate_on_submit():
-        categories = form.consequence_category.data or []
-        for category in categories:
-            consequence = Consequences(
-                component=component,
-                consequence_category=category,
-                security_property=form.security_property.data,
-                consequence_worstcase=form.consequence_worstcase.data,
-                justification_worstcase=form.justification_worstcase.data,
-                consequence_realisticcase=form.consequence_realisticcase.data,
-                justification_realisticcase=form.justification_realisticcase.data,
-            )
-            db.session.add(consequence)
-        db.session.commit()
-        flash(
-            _("Added %(count)d consequence entries.", count=len(categories)),
-            "success",
+    return redirect(
+        url_for(
+            "bia.manage_item_consequences",
+            item_id=component.context_scope_id,
+            component_id=component.id,
+            return_to=_safe_return_target(request.args.get("return_to")),
         )
-        if return_to:
-            return redirect(return_to)
-        return redirect(url_for("bia.view_consequences", component_id=component.id))
-    return render_template(
-        "bia/manage_component_consequence.html",
-        component=component,
-        form=form,
-        return_to=return_to,
     )
 
 
@@ -1106,83 +1109,6 @@ def get_component(component_id: int):
     )
 
 
-@bp.route("/add_consequence/<int:component_id>", methods=["POST"])
-@login_required
-def add_consequence(component_id: int):
-    component = Component.query.get_or_404(component_id)
-    if not _can_edit_context(component.context_scope):
-        return (
-            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
-            403,
-        )
-    data = request.get_json() or {}
-    form = ConsequenceForm(data=data)
-    if form.validate():
-        categories = data.get("consequence_category") or []
-        if not isinstance(categories, list):
-            categories = [categories]
-        for category in categories:
-            consequence = Consequences(
-                component=component,
-                consequence_category=category,
-                security_property=form.security_property.data,
-                consequence_worstcase=form.consequence_worstcase.data,
-                justification_worstcase=form.justification_worstcase.data,
-                consequence_realisticcase=form.consequence_realisticcase.data,
-                justification_realisticcase=form.justification_realisticcase.data,
-            )
-            db.session.add(consequence)
-        db.session.commit()
-        return jsonify({"success": True, "message": f"{len(categories)} consequences added."})
-    return jsonify({"success": False, "errors": form.errors}), 400
-
-
-@bp.route("/get_consequence/<int:consequence_id>")
-@login_required
-def get_consequence(consequence_id: int):
-    consequence = Consequences.query.get_or_404(consequence_id)
-    return jsonify(
-        {
-            "id": consequence.id,
-            "consequence_category": consequence.consequence_category,
-            "security_property": consequence.security_property,
-            "consequence_worstcase": consequence.consequence_worstcase,
-            "justification_worstcase": consequence.justification_worstcase,
-            "consequence_realisticcase": consequence.consequence_realisticcase,
-            "justification_realisticcase": consequence.justification_realisticcase,
-        }
-    )
-
-
-@bp.route("/edit_consequence/<int:consequence_id>", methods=["POST"])
-@login_required
-def edit_consequence(consequence_id: int):
-    consequence = Consequences.query.get_or_404(consequence_id)
-    if not _can_edit_context(consequence.component.context_scope):
-        return (
-            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
-            403,
-        )
-    data = request.get_json() or {}
-    required = [
-        "consequence_category",
-        "security_property",
-        "consequence_worstcase",
-        "consequence_realisticcase",
-    ]
-    missing = [field for field in required if not data.get(field)]
-    if missing:
-        return jsonify({"success": False, "errors": {field: ["This field is required."] for field in missing}}), 400
-    consequence.consequence_category = data.get("consequence_category")
-    consequence.security_property = data.get("security_property")
-    consequence.consequence_worstcase = data.get("consequence_worstcase")
-    consequence.justification_worstcase = data.get("justification_worstcase")
-    consequence.consequence_realisticcase = data.get("consequence_realisticcase")
-    consequence.justification_realisticcase = data.get("justification_realisticcase")
-    db.session.commit()
-    return jsonify({"success": True, "message": "Consequence updated."})
-
-
 @bp.route("/delete_consequence/<int:consequence_id>", methods=["POST"])
 @login_required
 def delete_consequence(consequence_id: int):
@@ -1192,9 +1118,22 @@ def delete_consequence(consequence_id: int):
             jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
             403,
         )
-    db.session.delete(consequence)
+    # Delete the whole (component, CIA property) group, normalised as group_consequences() does.
+    def group_key(record):
+        prop = (record.security_property or "").strip().lower()
+        return prop if prop in SECURITY_PROPERTIES else ""
+
+    key = group_key(consequence)
+    for record in list(consequence.component.consequences):
+        if group_key(record) == key:
+            db.session.delete(record)
     db.session.commit()
-    return jsonify({"success": True, "message": "Consequence deleted."})
+    if request.is_json:
+        return jsonify({"success": True, "message": "Consequence deleted."})
+    flash(_("bia.flash.consequence_group_deleted"), "success")
+    referrer = urlparse(request.referrer or "")
+    back = _safe_return_target(referrer._replace(scheme="", netloc="").geturl()) if referrer.netloc == request.host else None
+    return redirect(back or url_for("bia.view_all_consequences"))
 
 
 @bp.route("/delete_availability_requirement/<int:requirement_id>", methods=["POST"])
@@ -1215,13 +1154,11 @@ def delete_availability_requirement(requirement_id: int):
 @login_required
 def view_consequences(component_id: int):
     component = Component.query.get_or_404(component_id)
-    consequences = Consequences.query.filter_by(component_id=component.id).all()
-    consequence_form = ConsequenceForm()
     return render_template(
         "bia/view_consequences.html",
         component=component,
-        consequences=consequences,
-        consequence_form=consequence_form,
+        consequence_groups=group_consequences(component.consequences),
+        can_edit=_can_edit_context(component.context_scope),
     )
 
 
@@ -1388,6 +1325,7 @@ def manage_item_availability(item_id: int):
         form.rto.data = requirement.rto if requirement else ""
         form.rpo.data = requirement.rpo if requirement else ""
         form.masl.data = requirement.masl if requirement else ""
+        _prefill_tier_goals(form, selected_component)
     if form.validate_on_submit():
         requirement = selected_component.availability_requirement
         if requirement is None:
@@ -1435,74 +1373,99 @@ def manage_item_consequences(item_id: int):
     component_map = {component.id: component for component in components}
     form = BIAConsequenceManagerForm()
     form.component_id.choices = [(component.id, component.name) for component in components]
-    editing_id = request.args.get("consequence_id", type=int)
-    editing_consequence: Consequences | None = None
-    if form.is_submitted():
-        raw_id = (form.consequence_id.data or "").strip()
-        editing_id = int(raw_id) if raw_id else None
-    elif editing_id:
-        editing_consequence = Consequences.query.get_or_404(editing_id)
-        if editing_consequence.component.context_scope_id != item.id:
-            abort(404)
-        form.consequence_id.data = str(editing_consequence.id)
-        form.component_id.data = editing_consequence.component_id
-        form.consequence_category.data = [editing_consequence.consequence_category] if editing_consequence.consequence_category else []
-        form.security_property.data = editing_consequence.security_property
-        form.consequence_worstcase.data = editing_consequence.consequence_worstcase
-        form.justification_worstcase.data = editing_consequence.justification_worstcase
-        form.consequence_realisticcase.data = editing_consequence.consequence_realisticcase
-        form.justification_realisticcase.data = editing_consequence.justification_realisticcase
-    if form.is_submitted() and editing_id and editing_consequence is None:
-        editing_consequence = Consequences.query.get_or_404(editing_id)
-        if editing_consequence.component.context_scope_id != item.id:
-            abort(404)
-    if form.validate_on_submit():
+    return_to = _safe_return_target(request.args.get("return_to"))
+    groups = group_consequences(
+        consequence for component in components for consequence in component.consequences
+    )
+
+    def find_group(component_id, security_property):
+        prop = (security_property or "").strip().lower()
+        return next(
+            (g for g in groups if g.component.id == component_id and g.security_property == prop),
+            None,
+        )
+
+    def prefill(group, extra_categories=()):
+        form.consequence_id.data = str(group.representative_id)
+        form.group_ids.data = ",".join(str(record.id) for record in group.records)
+        form.component_id.data = group.component.id
+        form.security_property.data = group.security_property
+        form.consequence_category.data = list(dict.fromkeys([*group.categories, *extra_categories]))
+        form.consequence_worstcase.data = group.worstcase
+        form.justification_worstcase.data = group.justification_worstcase
+        form.consequence_realisticcase.data = group.realisticcase
+        form.justification_realisticcase.data = group.justification_realisticcase
+        return group
+
+    # The group being edited, resolved from the representative consequence id.
+    raw_id = form.consequence_id.data if form.is_submitted() else request.args.get("consequence_id")
+    editing_group = None
+    if raw_id and str(raw_id).strip().isdigit():
+        record = db.session.get(Consequences, int(raw_id))
+        if record is None or record.component.context_scope_id != item.id:
+            if not form.is_submitted():
+                abort(404)
+            flash(_("bia.flash.consequence_group_changed"), "warning")
+            return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+        editing_group = find_group(record.component_id, record.security_property)
+
+    if not form.is_submitted():
+        if editing_group:
+            prefill(editing_group)
+        else:
+            form.component_id.data = request.args.get("component_id", type=int)
+            if request.args.get("security_property") in SECURITY_PROPERTIES:
+                form.security_property.data = request.args["security_property"]
+    elif form.validate_on_submit():
         component = component_map.get(form.component_id.data)
         if component is None:
             abort(404)
-        categories = form.consequence_category.data or []
-        if editing_id:
-            if len(categories) != 1:
-                form.consequence_category.errors.append(_("bia.consequence_form.validation.single_category"))
+        prop = form.security_property.data
+        categories = form.consequence_category.data
+        target = find_group(component.id, prop)
+        blocked = True
+        replace_ids: list[int] = []
+        if editing_group:
+            replace_ids = sorted(record.id for record in editing_group.records)
+            submitted_ids = sorted(int(v) for v in (form.group_ids.data or "").split(",") if v.strip().isdigit())
+            if submitted_ids != replace_ids:
+                # Someone changed the group since the form was loaded: show the latest values.
+                flash(_("bia.flash.consequence_group_changed"), "warning")
+                prefill(editing_group)
+            elif target is not None and target is not editing_group:
+                form.security_property.errors.append(_("bia.consequence_form.validation.target_exists"))
             else:
-                editing_consequence.component = component
-                editing_consequence.consequence_category = categories[0]
-                editing_consequence.security_property = form.security_property.data
-                editing_consequence.consequence_worstcase = form.consequence_worstcase.data
-                editing_consequence.justification_worstcase = form.justification_worstcase.data
-                editing_consequence.consequence_realisticcase = form.consequence_realisticcase.data
-                editing_consequence.justification_realisticcase = form.justification_realisticcase.data
-                db.session.commit()
-                flash(_("bia.flash.consequence_updated"), "success")
-                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+                blocked = False
+        elif target is not None:
+            # One consequence per CIA property: switch to editing the existing group.
+            flash(_("bia.flash.consequence_exists_edit"), "warning")
+            editing_group = prefill(target, extra_categories=categories)
         else:
-            if not categories:
-                form.consequence_category.errors.append(_("bia.consequence_form.validation.at_least_one"))
+            blocked = False
+        if not blocked:
+            save_cia_consequence(
+                component,
+                prop,
+                categories,
+                form.consequence_worstcase.data,
+                form.justification_worstcase.data,
+                form.consequence_realisticcase.data,
+                form.justification_realisticcase.data,
+                replace_ids=replace_ids,
+            )
+            db.session.commit()
+            if editing_group:
+                flash(_("bia.flash.consequence_updated"), "success")
             else:
-                for category in categories:
-                    consequence = Consequences(
-                        component=component,
-                        consequence_category=category,
-                        security_property=form.security_property.data,
-                        consequence_worstcase=form.consequence_worstcase.data,
-                        justification_worstcase=form.justification_worstcase.data,
-                        consequence_realisticcase=form.consequence_realisticcase.data,
-                        justification_realisticcase=form.justification_realisticcase.data,
-                    )
-                    db.session.add(consequence)
-                db.session.commit()
-                flash(_("bia.flash.consequence_created", count=len(categories)), "success")
-                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
-    consequence_rows = []
-    for component in components:
-        for consequence in component.consequences:
-            consequence_rows.append({"component": component, "consequence": consequence})
+                flash(_("bia.flash.consequence_created"), "success")
+            return redirect(return_to or url_for("bia.manage_item_consequences", item_id=item.id))
+
     return render_template(
         "bia/manage_item_consequences.html",
         item=item,
         form=form,
-        consequence_rows=consequence_rows,
-        editing_consequence=editing_consequence,
+        consequence_groups=groups,
+        editing_group=editing_group,
     )
 
 
@@ -1573,6 +1536,8 @@ def export_item(item_id: int):
             joinedload(ContextScope.components).joinedload(Component.consequences),
             joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
             joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+            joinedload(ContextScope.components).joinedload(Component.tier),
+            joinedload(ContextScope.tier),
         )
         .filter(ContextScope.id == item_id)
         .one_or_none()
@@ -1585,7 +1550,7 @@ def export_item(item_id: int):
     html_content = render_template(
         "bia/context_detail.html",
         item=item,
-        consequences=consequences,
+        consequence_groups=group_consequences(consequences),
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
@@ -1939,7 +1904,7 @@ def export_all_consequences():
                 {
                     "bia": bia,
                     "component_count": len(bia.components),
-                    "consequence_count": len(consequences),
+                    "consequence_count": len(group_consequences(consequences)),
                     "max_impacts": _summary_impacts(consequences),
                 }
             )
@@ -1952,21 +1917,17 @@ def export_all_consequences():
         )
         filename = f"CIA_Consequences_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
-        # Detailed export: list every consequence with its parent BIA and component
-        all_consequences = []
-        for bia in bias:
-            for component in bia.components:
-                for consequence in component.consequences:
-                    all_consequences.append(
-                        {
-                            "bia": bia,
-                            "component": component,
-                            "consequence": consequence,
-                        }
-                    )
+        # Detailed export: one row per component and CIA property, with its parent BIA
+        consequence_groups = [
+            {"bia": bia, "component": group.component, "group": group}
+            for bia in bias
+            for group in group_consequences(
+                consequence for component in bia.components for consequence in component.consequences
+            )
+        ]
         html_content = render_template(
             "bia/export_all_consequences.html",
-            consequences=all_consequences,
+            consequence_groups=consequence_groups,
             generated_at=datetime.now(),
             export_mode=True,
             export_css=_load_export_css(),
@@ -1985,28 +1946,6 @@ def export_all_consequences():
 @bp.route("/export_availability_requirements")
 @login_required
 def export_availability_requirements():
-    def _parse_duration(value: str | None) -> float:
-        if not value:
-            return float('inf')
-        val = value.lower().strip()
-        if val in ('immediate', '0', 'none', '-'):
-            return 0.0
-        try:
-            match = re.match(r'^([\d\.]+)\s*([a-z]*)', val)
-            if match:
-                num = float(match.group(1))
-                unit = match.group(2)
-                if not unit:
-                    return float('inf')
-                if unit.startswith('m'): return num
-                if unit.startswith('h'): return num * 60
-                if unit.startswith('d'): return num * 60 * 24
-                if unit.startswith('w'): return num * 60 * 24 * 7
-                if unit.startswith('y'): return num * 60 * 24 * 365
-        except (ValueError, AttributeError):
-            pass
-        return float('inf')
-
     export_type = request.args.get("type", "detailed")
     bias = ContextScope.query.filter(ContextScope.is_archived == False).all()
 
@@ -2036,18 +1975,16 @@ def export_availability_requirements():
 
             for component in components:
                 req = component.availability_requirement
-                tier = component.effective_tier
                 for field in ["mtd", "rto", "rpo", "masl"]:
-                    # Only RTO and RPO have tier goals; mtd/masl always use stored text.
-                    goal = getattr(tier, f"{field}_goal_seconds", None) if tier else None
-                    if goal is not None:
-                        # A tier goal replaces the stored RTO/RPO text.
-                        dur, val_str = goal / 60, format_duration_seconds(goal)
+                    # RTO/RPO use the effective value (stored text, else the tier goal).
+                    if field in ("rto", "rpo"):
+                        val_str = getattr(component, f"effective_{field}")
                     else:
                         val_str = getattr(req, field) if req else None
-                        if field == "masl" and val_str:
-                            unique_masl.add(val_str)
-                        dur = _parse_duration(val_str)
+                    if field == "masl" and val_str:
+                        unique_masl.add(val_str)
+                    seconds = parse_duration_seconds(val_str)
+                    dur = float('inf') if seconds is None else seconds
                     if dur < aggr[field][0]:
                         aggr[field] = (dur, val_str)
 

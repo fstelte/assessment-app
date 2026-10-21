@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "bia/_recovery_marker.html" import recovery_marker %}
 
 {% block title %}{{ _('bia.requirements.heading') }}{% endblock %}
 
@@ -125,10 +126,10 @@
                 {% endif %}
               </td>
               <td class="px-3 py-3">
-                <span class="text-[var(--color-text)] text-xs">{{ req.component.effective_rto or '-' }}</span>
+                <span class="text-[var(--color-text)] text-xs">{{ req.component.effective_rto or '-' }}{{ recovery_marker(req.component, 'rto') }}</span>
               </td>
               <td class="px-3 py-3">
-                <span class="text-[var(--color-text)] text-xs">{{ req.component.effective_rpo or '-' }}</span>
+                <span class="text-[var(--color-text)] text-xs">{{ req.component.effective_rpo or '-' }}{{ recovery_marker(req.component, 'rpo') }}</span>
               </td>
               <td class="px-3 py-3">
                 <span class="text-[var(--color-text)] text-xs">{{ req.masl or '-' }}</span>

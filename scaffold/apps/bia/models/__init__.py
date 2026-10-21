@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from sqlalchemy import Enum, Text, event, inspect
@@ -31,6 +32,31 @@ def format_duration_seconds(seconds: int | None) -> str | None:
         if seconds % size == 0:
             return f"{seconds // size} {_(f'bia.duration.units.{unit}')}"
     return f"{seconds} {_('bia.duration.units.s')}"  # pragma: no cover
+
+
+_MONTH_PREFIXES = ("mo", "maand", "mnd")
+_UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "u": 3600, "d": 86400, "w": 604800, "y": 31536000, "j": 31536000}
+_DURATION_PATTERN = re.compile(r"^(\d+(?:[.,]\d+)?)\s*([a-z]+)")
+
+
+def parse_duration_seconds(text: str | None) -> int | None:
+    """Parse free-text durations such as "4 h", "240 min" or "1,5 uur" into seconds.
+
+    Returns None for empty or unparseable text, including a bare number without a unit.
+    """
+
+    value = (text or "").strip().lower()
+    if not value:
+        return None
+    if value in ("immediate", "0", "none", "-"):
+        return 0
+    match = _DURATION_PATTERN.match(value)
+    if match is None:
+        return None
+    number = float(match.group(1).replace(",", "."))
+    unit = match.group(2)
+    size = 2592000 if unit.startswith(_MONTH_PREFIXES) else _UNIT_SECONDS.get(unit[0])
+    return round(number * size) if size is not None else None
 
 
 class BiaTier(db.Model):
@@ -212,25 +238,56 @@ class Component(db.Model):
             return self.tier
         return self.context_scope.tier if self.context_scope is not None else None
 
-    def _effective_recovery(self, goal_attr: str, stored_attr: str) -> str | None:
+    def _recovery_goal(self, field: str) -> int | None:
         tier = self.effective_tier
-        goal = getattr(tier, goal_attr) if tier is not None else None
-        if goal is not None:
-            return format_duration_seconds(goal)
+        return getattr(tier, f"{field}_goal_seconds") if tier is not None else None
+
+    def _stored_recovery(self, field: str) -> str | None:
         availability = self.availability_requirement
-        return (getattr(availability, stored_attr) or None) if availability is not None else None
+        stored = getattr(availability, field) if availability is not None else None
+        return stored if stored and stored.strip() else None
+
+    def _effective_recovery(self, field: str) -> str | None:
+        return self._stored_recovery(field) or format_duration_seconds(self._recovery_goal(field))
+
+    def tier_goal_display(self, field: str) -> str | None:
+        """The effective tier's goal for "rto" or "rpo", formatted, or None."""
+
+        return format_duration_seconds(self._recovery_goal(field))
+
+    def recovery_source(self, field: str) -> str | None:
+        """Where the effective "rto"/"rpo" comes from: tier, manual, free_text or None.
+
+        Stored text that parses to the tier goal still counts as "tier"; stored text
+        that differs from (or cannot be compared with) the goal is "manual".
+        """
+
+        stored, goal = self._stored_recovery(field), self._recovery_goal(field)
+        if stored is None:
+            return "tier" if goal is not None else None
+        if goal is None:
+            return "free_text"
+        return "tier" if parse_duration_seconds(stored) == goal else "manual"
 
     @property
     def effective_rto(self) -> str | None:
-        """Tier RTO goal if set, else the stored free-text RTO."""
+        """Stored RTO text if set, else the tier RTO goal."""
 
-        return self._effective_recovery("rto_goal_seconds", "rto")
+        return self._effective_recovery("rto")
 
     @property
     def effective_rpo(self) -> str | None:
-        """Tier RPO goal if set, else the stored free-text RPO."""
+        """Stored RPO text if set, else the tier RPO goal."""
 
-        return self._effective_recovery("rpo_goal_seconds", "rpo")
+        return self._effective_recovery("rpo")
+
+    @property
+    def rto_source(self) -> str | None:
+        return self.recovery_source("rto")
+
+    @property
+    def rpo_source(self) -> str | None:
+        return self.recovery_source("rpo")
 
     @property
     def is_risk_eligible(self) -> bool:
@@ -280,6 +337,17 @@ class ComponentEnvironment(db.Model):
             "<ComponentEnvironment component_id="
             f"{self.component_id} environment_type={self.environment_type} enabled={self.is_enabled}>"
         )
+
+
+CONSEQUENCE_CATEGORIES = (
+    "financial",
+    "operational",
+    "reputation and trust",
+    "regulatory",
+    "human and safety",
+    "privacy",
+)
+SECURITY_PROPERTIES = ("confidentiality", "integrity", "availability")
 
 
 class Consequences(db.Model):

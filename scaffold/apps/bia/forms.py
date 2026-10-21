@@ -9,7 +9,7 @@ from wtforms.form import Form
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, NumberRange, ValidationError
 import sqlalchemy as sa
 from ...extensions import db
-from .models import BiaTier, InformationLabel, InformationLabel
+from .models import CONSEQUENCE_CATEGORIES, BiaTier, InformationLabel, InformationLabel
 from scaffold.core.i18n import gettext as _, lazy_gettext as _l, get_locale
 
 
@@ -310,12 +310,8 @@ class ConsequenceForm(FlaskForm):
     consequence_category = SelectMultipleField(
         "Consequence category",
         choices=[
-            ("financial", "Financial"),
-            ("operational", "Operational"),
-            ("reputation and trust", "Reputation and Trust"),
-            ("regulatory", "Regulatory"),
-            ("human and safety", "Human and Safety"),
-            ("privacy", "Privacy"),
+            (key, _l("bia.consequence_category." + key.replace(" ", "_")))
+            for key in CONSEQUENCE_CATEGORIES
         ],
         validators=[DataRequired()],
     )
@@ -384,6 +380,7 @@ class BIAConsequenceManagerForm(ConsequenceForm):
         validators=[DataRequired()],
     )
     consequence_id = HiddenField()
+    group_ids = HiddenField()
 
 
 class ComponentAIForm(FlaskForm):

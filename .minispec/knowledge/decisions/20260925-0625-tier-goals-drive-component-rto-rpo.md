@@ -2,9 +2,9 @@
 type: decision
 id: 20260925-0625-tier-goals-drive-component-rto-rpo
 date: 2026-09-25
-status: accepted
+status: superseded
 supersedes: null
-superseded_by: null
+superseded_by: 20261021-1655-tier-goal-prefills-component-rto-rpo
 impacts:
   - scaffold/apps/bia/models/__init__.py
   - scaffold/apps/bia/forms.py

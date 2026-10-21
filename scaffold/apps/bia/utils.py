@@ -7,6 +7,7 @@ import io
 import re
 import shutil
 from collections import defaultdict
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -24,9 +25,11 @@ from .models import (
     BiaTier,
     Component,
     ComponentEnvironment,
+    CONSEQUENCE_CATEGORIES,
     Consequences,
     ContextScope,
     ENVIRONMENT_TYPES,
+    SECURITY_PROPERTIES,
     Summary,
 )
 from .services.authentication import AuthenticationOption, list_authentication_options, lookup_by_slug
@@ -168,6 +171,128 @@ def get_cia_impact(
             highest_level = level
             highest_label = value or highest_label
     return highest_label
+
+
+def category_label(value: str | None) -> str:
+    """Return the translated label for a consequence category, or the raw value."""
+
+    raw = (value or "").strip()
+    if raw.lower() in CONSEQUENCE_CATEGORIES:
+        return _("bia.consequence_category." + raw.lower().replace(" ", "_"))
+    return raw
+
+
+@dataclass
+class ConsequenceGroup:
+    """All consequences of one component for one CIA property."""
+
+    component: Component
+    security_property: str
+    records: list[Consequences] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
+    worstcase: str | None = None
+    realisticcase: str | None = None
+    justification_worstcase: str = ""
+    justification_realisticcase: str = ""
+
+    @property
+    def representative_id(self) -> int:
+        return self.records[0].id
+
+
+def _highest_impact(values: Iterable[str | None]) -> str | None:
+    best: str | None = None
+    for value in values:
+        if value and (best is None or get_impact_level(value) > get_impact_level(best)):
+            best = value
+    return best
+
+
+def _join_distinct(values: Iterable[str | None]) -> str:
+    seen: list[str] = []
+    for value in values:
+        text = (value or "").strip()
+        if text and text not in seen:
+            seen.append(text)
+    return "\n\n".join(seen)
+
+
+def group_consequences(consequences: Iterable[Consequences]) -> list[ConsequenceGroup]:
+    """Group consequences per (component, CIA property) with merged labels and max impacts."""
+
+    buckets: dict[tuple[Component, str], list[Consequences]] = defaultdict(list)
+    for consequence in consequences:
+        prop = (consequence.security_property or "").strip().lower()
+        buckets[(consequence.component, prop if prop in SECURITY_PROPERTIES else "")].append(consequence)
+
+    groups: list[ConsequenceGroup] = []
+    for (component, prop), records in buckets.items():
+        records.sort(key=lambda record: record.id or 0)
+        known: set[str] = set()
+        unknown: list[str] = []
+        for record in records:
+            for category in record.get_categories():
+                if category.lower() in CONSEQUENCE_CATEGORIES:
+                    known.add(category.lower())
+                elif category not in unknown:
+                    unknown.append(category)
+        groups.append(
+            ConsequenceGroup(
+                component=component,
+                security_property=prop,
+                records=records,
+                categories=[key for key in CONSEQUENCE_CATEGORIES if key in known] + unknown,
+                worstcase=_highest_impact(record.consequence_worstcase for record in records),
+                realisticcase=_highest_impact(record.consequence_realisticcase for record in records),
+                justification_worstcase=_join_distinct(record.justification_worstcase for record in records),
+                justification_realisticcase=_join_distinct(record.justification_realisticcase for record in records),
+            )
+        )
+
+    property_rank = {prop: index for index, prop in enumerate(SECURITY_PROPERTIES)}
+    groups.sort(
+        key=lambda group: (
+            (group.component.name or "").lower(),
+            group.component.id or 0,
+            property_rank.get(group.security_property, len(SECURITY_PROPERTIES)),
+        )
+    )
+    return groups
+
+
+def save_cia_consequence(
+    component: Component,
+    security_property: str,
+    categories: Sequence[str],
+    worstcase: str | None,
+    justification_worstcase: str | None,
+    realisticcase: str | None,
+    justification_realisticcase: str | None,
+    replace_ids: Sequence[int] = (),
+) -> Consequences:
+    """Store one consequence for a CIA property, replacing the records in ``replace_ids``.
+
+    The lowest id is kept and updated; the other records are deleted. The caller commits.
+    """
+
+    existing = (
+        Consequences.query.filter(Consequences.id.in_(replace_ids)).order_by(Consequences.id).all()
+        if replace_ids
+        else []
+    )
+    consequence = existing[0] if existing else Consequences()
+    for duplicate in existing[1:]:
+        db.session.delete(duplicate)
+
+    consequence.component = component
+    consequence.security_property = security_property
+    consequence.consequence_category = ",".join(categories)
+    consequence.consequence_worstcase = worstcase
+    consequence.justification_worstcase = justification_worstcase
+    consequence.consequence_realisticcase = realisticcase
+    consequence.justification_realisticcase = justification_realisticcase
+    db.session.add(consequence)
+    return consequence
 
 
 def get_max_cia_impact(consequences: Iterable[Consequences]) -> dict[str, str]:
@@ -396,20 +521,28 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
             "Recovery Time Objective",
             "Recovery Point Objective",
             "Minimum Acceptable Service Level",
+            "RTO Source",
+            "Effective RTO",
+            "RPO Source",
+            "Effective RPO",
         ]
     )
+    source_labels = {"tier": "tier", "manual": "manual", "free_text": "free text", None: "not set"}
+    # One row per component, so components that only follow their tier are listed too.
     for component in context.components:
         availability = component.availability_requirement
-        if not availability:
-            continue
         availability_writer.writerow(
             [
                 stringify(context.name),
                 stringify(component.name),
-                stringify(availability.mtd),
-                stringify(availability.rto),
-                stringify(availability.rpo),
-                stringify(availability.masl),
+                stringify(availability.mtd if availability else None),
+                stringify(availability.rto if availability else None),
+                stringify(availability.rpo if availability else None),
+                stringify(availability.masl if availability else None),
+                source_labels[component.rto_source],
+                stringify(component.effective_rto),
+                source_labels[component.rpo_source],
+                stringify(component.effective_rpo),
             ]
         )
     exports[f"{prefix}_availability_requirements.csv"] = availability_buffer.getvalue()
@@ -626,9 +759,18 @@ def import_from_csv(csv_files: dict[str, str]) -> list[str]:
                 db.session.add(consequence)
 
         if availability_csv:
+            stored_columns = (
+                "Maximum Tolerable Downtime",
+                "Recovery Time Objective",
+                "Recovery Point Objective",
+                "Minimum Acceptable Service Level",
+            )
             for row in csv.DictReader(io.StringIO(availability_csv)):
                 component_name = (row.get("Gerelateerd aan Component") or "").strip()
                 if not component_name:
+                    continue
+                # The export lists every component; rows without stored values create no record.
+                if not any((row.get(column) or "").strip() for column in stored_columns):
                     continue
                 context_name = (row.get("Gerelateerd aan BIA") or "").strip()
                 component = resolve_component(component_name, context_name) if context_name else None

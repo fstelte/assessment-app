@@ -1,6 +1,9 @@
 import pytest
 import fakeredis
 import os
+from datetime import UTC, datetime
+
+from flask import g, request_started
 
 # Ensure FIELD_ENCRYPTION_KEYS is set for all tests.
 # This is a test-only key — never use in production.
@@ -12,6 +15,7 @@ os.environ.setdefault(
 from scaffold import create_app
 from scaffold.config import Settings
 from scaffold.extensions import db
+from scaffold.apps.bia.services.authentication import clear_authentication_cache
 from scaffold.apps.identity.models import Role, User, UserStatus
 
 
@@ -51,6 +55,16 @@ def app():
         WTF_CSRF_ENABLED=False,
     )
 
+    # Requests reuse the fixture's app context, so Flask-Login's cached g._login_user
+    # (often an anonymous user cached by audit hooks during setup) would leak into
+    # every request. Production gets a fresh context per request; mirror that here.
+    def _reset_login_cache(sender, **extra):
+        g.pop("_login_user", None)
+
+    request_started.connect(_reset_login_cache, app)
+    # Authentication options are lru_cached process-wide; don't leak them between test databases.
+    clear_authentication_cache()
+
     with app.app_context():
         db.create_all()
         yield app
@@ -65,25 +79,23 @@ def client(app):
 
 @pytest.fixture
 def active_user(app):
-    with app.app_context():
-        user = User()
-        user.email = "user@example.com"
-        user.status = UserStatus.ACTIVE
-        user.set_password("Password123!")
-        db.session.add(user)
-        db.session.commit()
-        return user
+    # The app fixture already holds an app context; a nested one would tear down
+    # the session on exit and leave the returned user detached.
+    user = User()
+    user.email = "user@example.com"
+    user.status = UserStatus.ACTIVE
+    user.set_password("Password123!")
+    db.session.add(user)
+    db.session.commit()
+    return user
 
 
 @pytest.fixture
 def login(client, active_user):
-    response = client.post(
-        "/auth/login",
-        data={
-            "email": active_user.email,
-            "password": "Password123!",
-        },
-        follow_redirects=True,
-    )
-    assert response.status_code == 200
-    return response
+    # Password login now forces MFA enrolment, so authenticate the session directly
+    # (same approach as _sign_in in test_admin_routes.py).
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(active_user.id)
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
+    return active_user

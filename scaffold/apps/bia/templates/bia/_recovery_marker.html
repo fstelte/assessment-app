@@ -1,0 +1,11 @@
+{#
+  Marks an RTO/RPO value that was manually configured and differs from the
+  component's tier goal. Renders nothing for any other source.
+  plain=True renders text only, for HTML/PDF exports.
+#}
+{% macro recovery_marker(component, field, plain=False) -%}
+  {%- if component.recovery_source(field) == 'manual' -%}
+    {%- set text = _('bia.availability.manual_marker', value=component.tier_goal_display(field)) -%}
+    {%- if plain %} ({{ text }}){% else %} <span class="inline-flex items-center rounded-full border border-amber-400/60 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-200">{{ text }}</span>{% endif -%}
+  {%- endif -%}
+{%- endmacro %}

@@ -5,9 +5,6 @@
 {% endblock %}
 {% block title %}{{ _('bia.view_consequences.title', component=component.name) }}{% endblock %}
 {% block content %}
-{% set csrf_field = consequence_form.csrf_token %}
-{% set csrf_value = csrf_field._value() if csrf_field else '' %}
-<input type="hidden" id="csrf-token" value="{{ csrf_value }}">
 <div class="mb-4">
   <a href="{{ url_for('bia.view_components') }}" class="text-[var(--color-muted)] hover:text-[var(--color-text)] no-underline flex items-center gap-1">
     <span>&larr;</span> {{ _('bia.view_consequences.back') }}
@@ -16,39 +13,37 @@
 
 <div class="flex justify-between items-center mb-6">
   <h1 class="text-2xl font-bold mb-0 text-[var(--color-text)]">{{ _('bia.view_consequences.heading', component=component.name) }}</h1>
-  <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" data-modal-target="addConsequenceModal" data-add-url="{{ url_for('bia.add_consequence', component_id=component.id) }}">
-    <i class="fas fa-plus mr-2"></i> {{ _('bia.view_consequences.actions.add') }}
-  </button>
+  {% if can_edit %}
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm no-underline" href="{{ url_for('bia.manage_item_consequences', item_id=component.context_scope_id, component_id=component.id) }}">
+    <i class="fas fa-pen mr-2"></i> {{ _('bia.view_consequences.actions.manage') }}
+  </a>
+  {% endif %}
 </div>
 
 <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
   <div class="p-0">
-    {% if consequences %}
+    {% if consequence_groups %}
     <div class="overflow-x-auto w-full">
       <table class="w-full text-sm border-collapse bg-[var(--color-card)] align-middle mb-0">
         <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
           <tr>
-            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.category') }}</th>
             <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.security_property') }}</th>
+            <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.category') }}</th>
             <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.worst_case') }}</th>
             <th scope="col" class="px-5 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.realistic_case') }}</th>
-            <th scope="col" class="px-5 py-3 text-right font-semibold text-[var(--color-text)]">{{ _('bia.view_consequences.table.actions') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[var(--color-border)]">
-          {% for consequence in consequences %}
+          {% for group in consequence_groups %}
           <tr class="hover:bg-[var(--color-surface-hover)] transition-colors">
             <td class="px-5 py-3">
-              {% set raw_categories = consequence.consequence_category %}
-              {% if raw_categories %}
-                {% if raw_categories is sequence and raw_categories is not string %}
-                  {% set categories = raw_categories %}
-                {% else %}
-                  {% set categories = raw_categories.split(',') %}
-                {% endif %}
+              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ _('bia.export_item.cia.' ~ group.security_property) if group.security_property else _('bia.manage_consequences.empty.not_set') }}</span>
+            </td>
+            <td class="px-5 py-3">
+              {% if group.categories %}
                 <div class="flex flex-wrap gap-1">
-                  {% for category in categories %}
-                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
+                  {% for category in group.categories %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | consequence_category }}</span>
                   {% endfor %}
                 </div>
               {% else %}
@@ -56,31 +51,18 @@
               {% endif %}
             </td>
             <td class="px-5 py-3">
-              <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ consequence.security_property or _('bia.manage_consequences.empty.not_set') }}</span>
-            </td>
-            <td class="px-5 py-3">
-              {% set worst = consequence.consequence_worstcase or 'N/A' %}
+              {% set worst = group.worstcase or 'N/A' %}
               <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
-              {% if consequence.justification_worstcase %}
-                <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_worstcase }}">{{ consequence.justification_worstcase }}</div>
+              {% if group.justification_worstcase %}
+                <div class="text-xs text-[var(--color-muted)] max-w-xs whitespace-pre-line">{{ group.justification_worstcase }}</div>
               {% endif %}
             </td>
             <td class="px-5 py-3">
-              {% set realistic = consequence.consequence_realisticcase or 'N/A' %}
+              {% set realistic = group.realisticcase or 'N/A' %}
               <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></div>
-              {% if consequence.justification_realisticcase %}
-                <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_realisticcase }}">{{ consequence.justification_realisticcase }}</div>
+              {% if group.justification_realisticcase %}
+                <div class="text-xs text-[var(--color-muted)] max-w-xs whitespace-pre-line">{{ group.justification_realisticcase }}</div>
               {% endif %}
-            </td>
-            <td class="px-5 py-3 text-right">
-              <div class="flex justify-end gap-2">
-                <button class="inline-flex items-center justify-center rounded-md w-8 h-8 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-text)]" data-edit-consequence data-edit-url="{{ url_for('bia.get_consequence', consequence_id=consequence.id) }}" data-update-url="{{ url_for('bia.edit_consequence', consequence_id=consequence.id) }}" title="{{ _('bia.actions.edit') }}">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="inline-flex items-center justify-center rounded-md w-8 h-8 text-xs transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30" data-delete-consequence data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=consequence.id) }}" title="{{ _('bia.actions.delete') }}">
-                   <i class="fas fa-trash"></i>
-                </button>
-              </div>
             </td>
           </tr>
           {% endfor %}
@@ -95,286 +77,4 @@
     {% endif %}
   </div>
 </div>
-
-<!-- Add consequence modal -->
-<div class="modal h-screen w-full fixed left-0 top-0 flex justify-center items-center bg-black bg-opacity-50 hidden z-50 transition-opacity opacity-0" id="addConsequenceModal" tabindex="-1" aria-labelledby="addConsequenceLabel" aria-hidden="true">
-  <div class="relative bg-[var(--color-card)] rounded-xl shadow-2xl w-full max-w-2xl m-4 transform transition-all scale-95 border border-[var(--color-border)]">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] rounded-t-xl bg-[var(--color-surface)]">
-      <h2 class="font-bold text-lg text-[var(--color-text)]" id="addConsequenceLabel">{{ _('bia.view_consequences.actions.add') }}</h2>
-      <button type="button" class="text-[var(--color-muted)] hover:text-[var(--color-text)] focus:outline-none" data-modal-close aria-label="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
-      <form id="add-consequence-form" class="flex flex-col gap-5">
-        {{ csrf_field if csrf_field else '' }}
-        <div>
-          <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_category.id }}">{{ _('bia.view_consequences.form.category') }}</label>
-          {{ consequence_form.consequence_category(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=true) }}
-          <div class="text-xs text-[var(--color-muted)] mt-1 ml-1">{{ _('bia.view_consequences.form.category_help') }}</div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.security_property.id }}">{{ _('bia.view_consequences.table.security_property') }}</label>
-            {{ consequence_form.security_property(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_worstcase.id }}">{{ _('bia.view_consequences.table.worst_case') }}</label>
-            {{ consequence_form.consequence_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.justification_worstcase.id }}">{{ _('bia.view_consequences.form.justification_worst') }}</label>
-          {{ consequence_form.justification_worstcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2, placeholder="Rationale...") }}
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-           <div>
-            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.consequence_realisticcase.id }}">{{ _('bia.view_consequences.table.realistic_case') }}</label>
-            {{ consequence_form.consequence_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]" for="{{ consequence_form.justification_realisticcase.id }}">{{ _('bia.view_consequences.form.justification_realistic') }}</label>
-            {{ consequence_form.justification_realisticcase(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", rows=2, placeholder="Expected impact...") }}
-          </div>
-        </div>
-      </form>
-    </div>
-    <div class="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] rounded-b-xl flex justify-end gap-3">
-      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-modal-close>{{ _('bia.actions.cancel') }}</button>
-      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" id="saveConsequenceBtn">{{ _('bia.view_consequences.actions.save') }}</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit consequence modal (structure similar to add, dynamically populated) -->
-<div class="modal h-screen w-full fixed left-0 top-0 flex justify-center items-center bg-black bg-opacity-50 hidden z-50 transition-opacity opacity-0" id="editConsequenceModal" tabindex="-1" aria-hidden="true">
-    <div class="relative bg-[var(--color-card)] rounded-xl shadow-2xl w-full max-w-2xl m-4 transform transition-all scale-95 border border-[var(--color-border)]">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] rounded-t-xl bg-[var(--color-surface)]">
-            <h2 class="font-bold text-lg text-[var(--color-text)]">{{ _('bia.view_consequences.actions.edit') }}</h2>
-            <button type="button" class="text-[var(--color-muted)] hover:text-[var(--color-text)] focus:outline-none" data-modal-close aria-label="Close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="px-6 py-6 max-h-[70vh] overflow-y-auto" id="edit-consequence-modal-body">
-            <!-- Dynamic Form -->
-        </div>
-        <div class="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] rounded-b-xl flex justify-end gap-3">
-            <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-modal-close>{{ _('bia.actions.cancel') }}</button>
-            <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm" id="updateConsequenceBtn">{{ _('bia.view_consequences.actions.save_changes') }}</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-{{ super() }}
-<script nonce="{{ csp_nonce }}">
-// Simple Modal Logic replacer for Bootstrap Modals
-document.addEventListener('DOMContentLoaded', () => {
-    const modals = document.querySelectorAll('.modal');
-    
-    function openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('hidden');
-            // Trigger reflow
-            void modal.offsetWidth;
-            modal.classList.remove('opacity-0');
-            const content = modal.querySelector('div[class*="transform"]');
-            if(content) content.classList.replace('scale-95', 'scale-100');
-        }
-    }
-    
-    function closeModal(modal) {
-        modal.classList.add('opacity-0');
-        const content = modal.querySelector('div[class*="transform"]');
-        if(content) content.classList.replace('scale-100', 'scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-    
-    document.querySelectorAll('[data-modal-target]').forEach(trigger => {
-        trigger.addEventListener('click', (e) => {
-            const targetId = trigger.dataset.modalTarget;
-            openModal(targetId);
-        });
-    });
-    
-    document.querySelectorAll('[data-modal-close]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const modal = btn.closest('.modal');
-            closeModal(modal);
-        });
-    });
-
-    modals.forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-               closeModal(modal);
-            }
-        });
-    });
-
-    // --- Consequence CRUD wiring ---
-    const csrfToken = document.getElementById('csrf-token').value;
-
-    function postJSON(url, payload) {
-        return fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        }).then(r => r.json().then(data => ({ ok: r.ok, data })));
-    }
-
-    function flattenErrors(errors) {
-        if (!errors) return 'Something went wrong.';
-        return Object.values(errors).flat().join(' ');
-    }
-
-    // Add consequence
-    const addBtn = document.getElementById('saveConsequenceBtn');
-    const addForm = document.getElementById('add-consequence-form');
-    if (addBtn && addForm) {
-        addBtn.addEventListener('click', () => {
-            const categorySelect = addForm.querySelector('[name="consequence_category"]');
-            const payload = {
-                consequence_category: categorySelect ? Array.from(categorySelect.selectedOptions).map(o => o.value) : [],
-                security_property: addForm.querySelector('[name="security_property"]').value,
-                consequence_worstcase: addForm.querySelector('[name="consequence_worstcase"]').value,
-                justification_worstcase: addForm.querySelector('[name="justification_worstcase"]').value,
-                consequence_realisticcase: addForm.querySelector('[name="consequence_realisticcase"]').value,
-                justification_realisticcase: addForm.querySelector('[name="justification_realisticcase"]').value,
-            };
-            const addUrl = document.querySelector('[data-add-url]').getAttribute('data-add-url');
-            postJSON(addUrl, payload).then(({ ok, data }) => {
-                if (ok && data.success) {
-                    window.location.reload();
-                } else {
-                    alert(flattenErrors(data.errors) || 'Failed to add consequence.');
-                }
-            }).catch(() => alert('Failed to add consequence.'));
-        });
-    }
-
-    // Edit consequence
-    const editModal = document.getElementById('editConsequenceModal');
-    const editBody = document.getElementById('edit-consequence-modal-body');
-    const updateBtn = document.getElementById('updateConsequenceBtn');
-    const categoryChoices = [
-        ['financial', 'Financial'],
-        ['operational', 'Operational'],
-        ['reputation and trust', 'Reputation and Trust'],
-        ['regulatory', 'Regulatory'],
-        ['human and safety', 'Human and Safety'],
-        ['privacy', 'Privacy'],
-    ];
-    const propertyChoices = [
-        ['confidentiality', 'Confidentiality'],
-        ['integrity', 'Integrity'],
-        ['availability', 'Availability'],
-    ];
-    const caseChoices = [
-        ['catastrophic', 'Catastrophic'],
-        ['major', 'Major'],
-        ['moderate', 'Moderate'],
-        ['minor', 'Minor'],
-        ['insignificant', 'Insignificant'],
-    ];
-
-    function selectOptions(choices, selected) {
-        return choices.map(([value, label]) =>
-            `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`
-        ).join('');
-    }
-
-    function fieldClasses() {
-        return 'w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30';
-    }
-
-    document.querySelectorAll('[data-edit-consequence]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const editUrl = btn.getAttribute('data-edit-url');
-            const updateUrl = btn.getAttribute('data-update-url');
-            fetch(editUrl).then(r => r.json()).then(consequence => {
-                editBody.innerHTML = `
-                    <form id="edit-consequence-form" class="flex flex-col gap-5">
-                        <div>
-                            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.category') }}</label>
-                            <select name="consequence_category" class="${fieldClasses()}">${selectOptions(categoryChoices, consequence.consequence_category)}</select>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.security_property') }}</label>
-                                <select name="security_property" class="${fieldClasses()}">${selectOptions(propertyChoices, consequence.security_property)}</select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.worst_case') }}</label>
-                                <select name="consequence_worstcase" class="${fieldClasses()}">${selectOptions(caseChoices, consequence.consequence_worstcase)}</select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.justification_worst') }}</label>
-                            <textarea name="justification_worstcase" rows="2" class="${fieldClasses()}">${consequence.justification_worstcase || ''}</textarea>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.table.realistic_case') }}</label>
-                                <select name="consequence_realisticcase" class="${fieldClasses()}">${selectOptions(caseChoices, consequence.consequence_realisticcase)}</select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1.5 text-[var(--color-text)]">{{ _('bia.view_consequences.form.justification_realistic') }}</label>
-                                <textarea name="justification_realisticcase" rows="2" class="${fieldClasses()}">${consequence.justification_realisticcase || ''}</textarea>
-                            </div>
-                        </div>
-                    </form>`;
-                updateBtn.setAttribute('data-update-url', updateUrl);
-                openModal('editConsequenceModal');
-            }).catch(() => alert('Failed to load consequence.'));
-        });
-    });
-
-    if (updateBtn) {
-        updateBtn.addEventListener('click', () => {
-            const form = document.getElementById('edit-consequence-form');
-            if (!form) return;
-            const updateUrl = updateBtn.getAttribute('data-update-url');
-            const payload = {
-                consequence_category: form.querySelector('[name="consequence_category"]').value,
-                security_property: form.querySelector('[name="security_property"]').value,
-                consequence_worstcase: form.querySelector('[name="consequence_worstcase"]').value,
-                justification_worstcase: form.querySelector('[name="justification_worstcase"]').value,
-                consequence_realisticcase: form.querySelector('[name="consequence_realisticcase"]').value,
-                justification_realisticcase: form.querySelector('[name="justification_realisticcase"]').value,
-            };
-            postJSON(updateUrl, payload).then(({ ok, data }) => {
-                if (ok && data.success) {
-                    window.location.reload();
-                } else {
-                    alert(flattenErrors(data.errors) || 'Failed to update consequence.');
-                }
-            }).catch(() => alert('Failed to update consequence.'));
-        });
-    }
-
-    // Delete consequence
-    document.querySelectorAll('[data-delete-consequence]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!window.confirm('{{ _('bia.components.table.confirm_delete') }}')) return;
-            const deleteUrl = btn.getAttribute('data-delete-url');
-            const row = btn.closest('tr');
-            fetch(deleteUrl, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
-            }).then(r => r.json()).then(data => {
-                if (data.success) {
-                    row.remove();
-                } else {
-                    alert('Failed to delete consequence.');
-                }
-            }).catch(() => alert('Failed to delete consequence.'));
-        });
-    });
-});
-</script>
 {% endblock %}
