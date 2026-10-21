@@ -260,6 +260,41 @@ def group_consequences(consequences: Iterable[Consequences]) -> list[Consequence
     return groups
 
 
+def save_cia_consequence(
+    component: Component,
+    security_property: str,
+    categories: Sequence[str],
+    worstcase: str | None,
+    justification_worstcase: str | None,
+    realisticcase: str | None,
+    justification_realisticcase: str | None,
+    replace_ids: Sequence[int] = (),
+) -> Consequences:
+    """Store one consequence for a CIA property, replacing the records in ``replace_ids``.
+
+    The lowest id is kept and updated; the other records are deleted. The caller commits.
+    """
+
+    existing = (
+        Consequences.query.filter(Consequences.id.in_(replace_ids)).order_by(Consequences.id).all()
+        if replace_ids
+        else []
+    )
+    consequence = existing[0] if existing else Consequences()
+    for duplicate in existing[1:]:
+        db.session.delete(duplicate)
+
+    consequence.component = component
+    consequence.security_property = security_property
+    consequence.consequence_category = ",".join(categories)
+    consequence.consequence_worstcase = worstcase
+    consequence.justification_worstcase = justification_worstcase
+    consequence.consequence_realisticcase = realisticcase
+    consequence.justification_realisticcase = justification_realisticcase
+    db.session.add(consequence)
+    return consequence
+
+
 def get_max_cia_impact(consequences: Iterable[Consequences]) -> dict[str, str]:
     """Summarise the maximum worst-case CIA impact across all consequences."""
 

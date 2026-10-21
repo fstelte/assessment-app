@@ -260,7 +260,7 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 
 ## Progress
 - [x] Task 1: `group_consequences()` + `category_label()` helpers + tests (76a726a)
-- [ ] Task 2: `save_cia_consequence()` helper + tests
+- [x] Task 2: `save_cia_consequence()` helper + tests
 - [x] Task 3: Translation keys (en/nl) (3439be7)
 - [ ] Task 6: Remove JSON endpoints, redirect `/consequences/new`
 - [ ] Task 4: Manage page route — group edit, create→edit, preselect
