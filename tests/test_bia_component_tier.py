@@ -373,6 +373,39 @@ def test_component_pages_show_tier_goal_without_availability_row(app, client, lo
 
     assert "RTO: 4 h" in components_page and "RPO: 30 min" in components_page
     assert "4 h" in detail_page and "30 min" in detail_page
+    assert "manual · tier" not in components_page + detail_page
+
+
+MANUAL_CHIP = 'bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-200">manual · tier 4 h</span>'
+
+
+def test_manual_rto_is_marked_in_app_views(app, client, logged_in):
+    context_id = _bia_with_component("Manual", tier=_tier(1, rto=14400, rpo=1800), rto="2 h", rpo="30 min")
+
+    pages = {
+        "components": "/bia/components",
+        "detail": f"/bia/item/{context_id}",
+        "requirements": "/bia/requirements",
+        "availability": f"/bia/item/{context_id}/availability",
+    }
+    for name, url in pages.items():
+        body = _request(client, "get", url).data.decode()
+        assert body.count(MANUAL_CHIP) == 1, name  # RTO deviates; RPO equals its goal
+        assert "manual · tier 30 min" not in body, name
+
+
+def test_manual_rto_is_marked_as_text_in_exports(app, client, logged_in, tmp_path, monkeypatch):
+    monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
+    context_id = _bia_with_component("Manual", tier=_tier(1, rto=14400), rto="2 h")
+
+    exports = {
+        "availability": "/bia/export_availability_requirements",
+        "item": f"/bia/item/{context_id}/export",
+    }
+    for name, url in exports.items():
+        body = _request(client, "get", url).data.decode()
+        assert "2 h (manual · tier 4 h)" in body, name
+        assert MANUAL_CHIP not in body, name
 
 
 def test_requirements_page_shows_stored_text_over_tier_goal(app, client, logged_in):

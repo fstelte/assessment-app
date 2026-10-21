@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "bia/_recovery_marker.html" import recovery_marker %}
 {% block extra_css %}
   {{ super() }}
   {% include "bia/_badge_styles.html" %}
@@ -428,8 +429,8 @@
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.mtd if availability else '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rto or '–' }}</td>
-                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rpo or '–' }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rto or '–' }}{{ recovery_marker(component, 'rto', plain=export_mode|default(false)) }}</td>
+                <td class="px-4 py-3 text-[var(--color-muted)]">{{ component.effective_rpo or '–' }}{{ recovery_marker(component, 'rpo', plain=export_mode|default(false)) }}</td>
                 <td class="px-4 py-3 text-[var(--color-muted)]">{{ availability.masl if availability else '–' }}</td>
               </tr>
               {% endfor %}

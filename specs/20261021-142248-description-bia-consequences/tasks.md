@@ -403,6 +403,6 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 11: Cleanup, full validation, docs (confirmed by engineer 2026-10-21; manage-page tests pass, no removed key still referenced)
 - [x] Task 12: Duration parser + `Component` recovery source
 - [x] Task 13: Availability forms: pre-fill, save rule, hints
-- [ ] Task 14: Manual marker in tables and HTML/PDF exports
+- [x] Task 14: Manual marker in tables and HTML/PDF exports
 - [ ] Task 15: Summary export precedence + CSV source columns
 - [ ] Task 16: Docs + full validation (Part 2)

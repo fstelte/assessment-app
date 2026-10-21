@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "bia/_recovery_marker.html" import recovery_marker %}
 {% from "partials/forms.html" import render_field_with_help %}
 {% from "bia/_it_dep_picker.html" import render_it_dep_picker with context %}
 
@@ -301,7 +302,7 @@
                       {{ _('bia.components.mtd_prefix') }}: {{ (component.availability_requirement.mtd if component.availability_requirement else None) or '-' }}
                     </span>
                      <span class="text-xs text-[var(--color-muted)]">
-                      {{ _('bia.components.rto_prefix') }}: {{ component.effective_rto or '-' }} / {{ _('bia.components.rpo_prefix') }}: {{ component.effective_rpo or '-' }}
+                      {{ _('bia.components.rto_prefix') }}: {{ component.effective_rto or '-' }}{{ recovery_marker(component, 'rto') }} / {{ _('bia.components.rpo_prefix') }}: {{ component.effective_rpo or '-' }}{{ recovery_marker(component, 'rpo') }}
                     </span>
                   {% else %}
                     <span class="text-[var(--color-muted)] italic text-xs">{{ _('bia.components.not_set') }}</span>
