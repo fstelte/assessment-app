@@ -50,6 +50,7 @@ from .models import (
     AvailabilityRequirements,
     BiaTier,
     format_duration_seconds,
+    parse_duration_seconds,
     Component,
     ComponentEnvironment,
     Consequences,
@@ -346,7 +347,7 @@ def _can_edit_context(context: ContextScope) -> bool:
 
 
 def _tier_goal_notes(component: Component) -> dict[str, str | None]:
-    """Describe the tier goal that fixes each of RTO/RPO, or None when free text applies."""
+    """Describe the tier goal shown as a hint under each of RTO/RPO, or None without a goal."""
 
     notes: dict[str, str | None] = {"rto": None, "rpo": None}
     tier = component.effective_tier
@@ -364,15 +365,25 @@ def _tier_goal_notes(component: Component) -> dict[str, str | None]:
 
 
 def _apply_availability(requirement: AvailabilityRequirements, form: AvailabilityForm, component: Component) -> None:
-    """Save the form, leaving stored RTO/RPO untouched while a tier goal applies."""
+    """Save the form. RTO/RPO that are empty or equal the tier goal are stored empty,
+    so the component keeps following its tier."""
 
-    notes = _tier_goal_notes(component)
     requirement.mtd = form.mtd.data
     requirement.masl = form.masl.data
-    if notes["rto"] is None:
-        requirement.rto = form.rto.data
-    if notes["rpo"] is None:
-        requirement.rpo = form.rpo.data
+    for field in ("rto", "rpo"):
+        value = (getattr(form, field).data or "").strip()
+        goal = getattr(component.effective_tier, f"{field}_goal_seconds", None)
+        if goal is not None and parse_duration_seconds(value) == goal:
+            value = ""
+        setattr(requirement, field, value)
+
+
+def _prefill_tier_goals(form, component: Component) -> None:
+    """Pre-fill empty RTO/RPO inputs with the effective tier's goal."""
+
+    for field in ("rto", "rpo"):
+        form_field = getattr(form, field)
+        form_field.data = form_field.data or component.tier_goal_display(field) or ""
 
 
 def _safe_return_target(target: str | None) -> str | None:
@@ -1027,6 +1038,8 @@ def manage_component_availability(component_id: int):
         flash(_("bia.flash.owner_forbidden"), "danger")
         return redirect(url_for("bia.view_components"))
     form = AvailabilityForm(obj=component.availability_requirement)
+    if not form.is_submitted():
+        _prefill_tier_goals(form, component)
     return_to = _safe_return_target(request.args.get("return_to"))
     if form.validate_on_submit():
         requirement = component.availability_requirement
@@ -1310,6 +1323,7 @@ def manage_item_availability(item_id: int):
         form.rto.data = requirement.rto if requirement else ""
         form.rpo.data = requirement.rpo if requirement else ""
         form.masl.data = requirement.masl if requirement else ""
+        _prefill_tier_goals(form, selected_component)
     if form.validate_on_submit():
         requirement = selected_component.availability_requirement
         if requirement is None:

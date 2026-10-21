@@ -342,7 +342,9 @@
       }
     },
     "availability": {
-      "tier_goal": "Van {tier}: {value}"
+      "tier_goal": "Van {tier}: {value}",
+      "manual_override": "Handmatig ingesteld; wijkt af van het tierdoel",
+      "manual_marker": "handmatig · tier {value}"
     },
     "duration": {
       "units": {

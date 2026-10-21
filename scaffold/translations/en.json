@@ -188,7 +188,9 @@
       "unknown": "Unknown"
     },
     "availability": {
-      "tier_goal": "From {tier}: {value}"
+      "tier_goal": "From {tier}: {value}",
+      "manual_override": "Manually configured; differs from the tier goal",
+      "manual_marker": "manual · tier {value}"
     },
     "duration": {
       "units": {

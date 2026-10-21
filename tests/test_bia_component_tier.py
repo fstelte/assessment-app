@@ -247,19 +247,57 @@ def _stored(component_id):
     return AvailabilityRequirements.query.filter_by(component_id=component_id).one()
 
 
-def test_availability_page_shows_goal_and_keeps_stored_text(app, client, logged_in):
-    component_id = _availability_component(_tier(1, rto=14400, rpo=1800))
+def test_availability_page_prefills_tier_goal_with_hint(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400, rpo=1800), rto=None, rpo=None)
+
+    body = _request(client, "get", f"/bia/component/{component_id}/availability").data.decode()
+
+    assert 'name="rto"' in body and 'value="4 h"' in body and 'value="30 min"' in body
+    assert "From TIER 1" in body and ": 4 h (inherited from BIA)" in body
+    assert "Manually configured" not in body
+
+
+def test_item_availability_page_prefills_tier_goal(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rto=None)
+    context_id = db.session.get(Component, component_id).context_scope_id
+
+    body = _request(client, "get", f"/bia/item/{context_id}/availability?component_id={component_id}").data.decode()
+
+    assert 'value="4 h"' in body and 'value="old rpo"' in body
+
+
+def test_saving_unchanged_or_equal_goal_stores_empty(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400, rpo=1800), rto=None, rpo=None)
     url = f"/bia/component/{component_id}/availability"
 
-    body = _request(client, "get", url).data.decode()
-    assert "From TIER 1" in body and "4 h" in body and "30 min" in body
-    assert "(inherited from BIA)" in body
-    assert 'name="rto"' not in body and 'name="rpo"' not in body
-
-    assert _request(client, "post", url, data=AVAILABILITY_POST).status_code == 302
+    data = {**AVAILABILITY_POST, "rto": "4 h", "rpo": "0,5 uur"}
+    assert _request(client, "post", url, data=data).status_code == 302
     stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "old rpo")
+    assert (stored.rto, stored.rpo) == ("", "")
     assert (stored.mtd, stored.masl) == ("new mtd", "new masl")
+    assert db.session.get(Component, component_id).rto_source == "tier"
+
+
+def test_deviating_value_is_stored_and_shown_as_manual(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rpo=None)
+    url = f"/bia/component/{component_id}/availability"
+
+    _request(client, "post", url, data={**AVAILABILITY_POST, "rto": "2 h", "rpo": ""})
+    stored = _stored(component_id)
+    assert (stored.rto, stored.rpo) == ("2 h", "")
+
+    body = _request(client, "get", url).data.decode()
+    assert 'value="2 h"' in body
+    assert body.count("Manually configured; differs from the tier goal") == 1
+
+
+def test_clearing_a_manual_value_reverts_to_the_tier(app, client, logged_in):
+    component_id = _availability_component(_tier(1, rto=14400), rto="2 h")
+
+    _request(client, "post", f"/bia/component/{component_id}/availability", data={**AVAILABILITY_POST, "rto": ""})
+
+    assert _stored(component_id).rto == ""
+    assert db.session.get(Component, component_id).effective_rto == "4 h"
 
 
 def test_availability_without_goal_saves_free_text(app, client, logged_in):
@@ -274,26 +312,15 @@ def test_availability_without_goal_saves_free_text(app, client, logged_in):
     assert (stored.rto, stored.rpo) == ("new rto", "new rpo")
 
 
-def test_availability_decides_rto_and_rpo_independently(app, client, logged_in):
-    component_id = _availability_component(_tier(1, rto=3600))
-    url = f"/bia/component/{component_id}/availability"
-
-    body = _request(client, "get", url).data.decode()
-    assert 'name="rto"' not in body and 'name="rpo"' in body
-
-    _request(client, "post", url, data=AVAILABILITY_POST)
-    stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
-
-
-def test_update_availability_json_respects_tier_goal(app, client, logged_in):
+def test_update_availability_json_applies_the_same_save_rule(app, client, logged_in):
     component_id = _availability_component(_tier(1, rto=3600))
 
-    response = _request(client, "post", f"/bia/update_availability/{component_id}", data=AVAILABILITY_POST)
+    data = {**AVAILABILITY_POST, "rto": "60 min"}
+    response = _request(client, "post", f"/bia/update_availability/{component_id}", data=data)
 
     assert response.get_json() == {"success": True}
     stored = _stored(component_id)
-    assert (stored.rto, stored.rpo) == ("old rto", "new rpo")
+    assert (stored.rto, stored.rpo) == ("", "new rpo")
 
 
 # --- Task 4: effective values in views, exports and summary aggregation -----------
@@ -661,6 +688,8 @@ TIERING_TRANSLATION_KEYS = (
     "bia.duration.units.h",
     "bia.duration.units.d",
     "bia.availability.tier_goal",
+    "bia.availability.manual_override",
+    "bia.availability.manual_marker",
     "bia.components.labels.tier",
     "bia.components.tooltips.tier",
     "bia.components.tier.inherit",
