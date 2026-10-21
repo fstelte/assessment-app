@@ -7,6 +7,7 @@ import io
 import re
 import shutil
 from collections import defaultdict
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -24,9 +25,11 @@ from .models import (
     BiaTier,
     Component,
     ComponentEnvironment,
+    CONSEQUENCE_CATEGORIES,
     Consequences,
     ContextScope,
     ENVIRONMENT_TYPES,
+    SECURITY_PROPERTIES,
     Summary,
 )
 from .services.authentication import AuthenticationOption, list_authentication_options, lookup_by_slug
@@ -168,6 +171,93 @@ def get_cia_impact(
             highest_level = level
             highest_label = value or highest_label
     return highest_label
+
+
+def category_label(value: str | None) -> str:
+    """Return the translated label for a consequence category, or the raw value."""
+
+    raw = (value or "").strip()
+    if raw.lower() in CONSEQUENCE_CATEGORIES:
+        return _("bia.consequence_category." + raw.lower().replace(" ", "_"))
+    return raw
+
+
+@dataclass
+class ConsequenceGroup:
+    """All consequences of one component for one CIA property."""
+
+    component: Component
+    security_property: str
+    records: list[Consequences] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
+    worstcase: str | None = None
+    realisticcase: str | None = None
+    justification_worstcase: str = ""
+    justification_realisticcase: str = ""
+
+    @property
+    def representative_id(self) -> int:
+        return self.records[0].id
+
+
+def _highest_impact(values: Iterable[str | None]) -> str | None:
+    best: str | None = None
+    for value in values:
+        if value and (best is None or get_impact_level(value) > get_impact_level(best)):
+            best = value
+    return best
+
+
+def _join_distinct(values: Iterable[str | None]) -> str:
+    seen: list[str] = []
+    for value in values:
+        text = (value or "").strip()
+        if text and text not in seen:
+            seen.append(text)
+    return "\n\n".join(seen)
+
+
+def group_consequences(consequences: Iterable[Consequences]) -> list[ConsequenceGroup]:
+    """Group consequences per (component, CIA property) with merged labels and max impacts."""
+
+    buckets: dict[tuple[Component, str], list[Consequences]] = defaultdict(list)
+    for consequence in consequences:
+        prop = (consequence.security_property or "").strip().lower()
+        buckets[(consequence.component, prop if prop in SECURITY_PROPERTIES else "")].append(consequence)
+
+    groups: list[ConsequenceGroup] = []
+    for (component, prop), records in buckets.items():
+        records.sort(key=lambda record: record.id or 0)
+        known: set[str] = set()
+        unknown: list[str] = []
+        for record in records:
+            for category in record.get_categories():
+                if category.lower() in CONSEQUENCE_CATEGORIES:
+                    known.add(category.lower())
+                elif category not in unknown:
+                    unknown.append(category)
+        groups.append(
+            ConsequenceGroup(
+                component=component,
+                security_property=prop,
+                records=records,
+                categories=[key for key in CONSEQUENCE_CATEGORIES if key in known] + unknown,
+                worstcase=_highest_impact(record.consequence_worstcase for record in records),
+                realisticcase=_highest_impact(record.consequence_realisticcase for record in records),
+                justification_worstcase=_join_distinct(record.justification_worstcase for record in records),
+                justification_realisticcase=_join_distinct(record.justification_realisticcase for record in records),
+            )
+        )
+
+    property_rank = {prop: index for index, prop in enumerate(SECURITY_PROPERTIES)}
+    groups.sort(
+        key=lambda group: (
+            (group.component.name or "").lower(),
+            group.component.id or 0,
+            property_rank.get(group.security_property, len(SECURITY_PROPERTIES)),
+        )
+    )
+    return groups
 
 
 def get_max_cia_impact(consequences: Iterable[Consequences]) -> dict[str, str]:

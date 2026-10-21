@@ -282,6 +282,17 @@ class ComponentEnvironment(db.Model):
         )
 
 
+CONSEQUENCE_CATEGORIES = (
+    "financial",
+    "operational",
+    "reputation and trust",
+    "regulatory",
+    "human and safety",
+    "privacy",
+)
+SECURITY_PROPERTIES = ("confidentiality", "integrity", "availability")
+
+
 class Consequences(db.Model):
     """CIA consequence records per component."""
 

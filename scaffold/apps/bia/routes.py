@@ -63,6 +63,7 @@ from .services.authentication import (
     lookup_by_id as lookup_authentication_option,
 )
 from .utils import (
+    category_label,
     ensure_export_folder,
     export_to_csv,
     export_to_sql,
@@ -94,6 +95,7 @@ bp = Blueprint(
 )
 
 bp.app_template_filter("duration")(format_duration_seconds)
+bp.app_template_filter("consequence_category")(category_label)
 
 
 # Environment selection order and ranking for fallback authentication resolution.
