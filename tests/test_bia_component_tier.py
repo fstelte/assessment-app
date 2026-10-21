@@ -16,6 +16,7 @@ from scaffold.apps.bia.models import (
     ComponentEnvironment,
     ContextScope,
     format_duration_seconds,
+    parse_duration_seconds,
 )
 from scaffold.core.i18n import set_locale
 from scaffold.apps.bia.utils import export_to_csv, export_to_sql, import_from_csv, import_from_sql
@@ -62,11 +63,61 @@ def test_effective_tier_prefers_own_then_bia_then_none(app):
     assert _component().effective_tier is None
 
 
-def test_effective_recovery_uses_tier_goal_over_stored_text(app):
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("45 s", 45),
+        ("30 sec", 30),
+        ("90 min", 5400),
+        ("15 m", 900),
+        ("4 h", 14400),
+        ("8 hours", 28800),
+        ("4 u", 14400),
+        ("2 uur", 7200),
+        ("1,5 u", 5400),
+        ("1.5 h", 5400),
+        ("2 d", 172800),
+        ("3 dagen", 259200),
+        ("1 week", 604800),
+        ("2 weken", 1209600),
+        ("1 month", 2592000),
+        ("1 maand", 2592000),
+        ("2 mnd", 5184000),
+        ("1 year", 31536000),
+        ("1 jaar", 31536000),
+        ("Immediate", 0),
+        ("0", 0),
+        ("none", 0),
+        ("-", 0),
+        ("60", None),
+        ("next business day", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_parse_duration_seconds(text, expected):
+    assert parse_duration_seconds(text) == expected
+
+
+def test_effective_recovery_prefers_stored_text_over_tier_goal(app):
     with app.test_request_context():
         component = _component(context_tier=_tier(1, rto=14400, rpo=1800), rto="8 hours", rpo="1 hour")
-        assert component.effective_rto == "4 h"
-        assert component.effective_rpo == "30 min"
+        assert component.effective_rto == "8 hours"
+        assert component.effective_rpo == "1 hour"
+        assert component.tier_goal_display("rto") == "4 h"
+
+
+def test_recovery_source_covers_every_branch(app):
+    with app.test_request_context():
+        tier = _tier(1, rto=14400, rpo=0)
+        assert _component(context_tier=tier).rto_source == "tier"  # goal, nothing stored
+        assert _component(context_tier=tier, rto="240 min").rto_source == "tier"  # stored equals goal
+        assert _component(context_tier=tier, rto="2 h").rto_source == "manual"  # stored differs
+        assert _component(context_tier=tier, rto="next business day").rto_source == "manual"  # unparseable
+        assert _component(rto="2 h").rto_source == "free_text"  # no goal
+        assert _component().rto_source is None  # neither
+        assert _component(context_tier=tier, rpo="immediate").rpo_source == "tier"  # 0 s goal
+        assert _component(context_tier=tier, rto="   ").rto_source == "tier"  # blank counts as empty
 
 
 def test_effective_recovery_falls_back_per_field(app):
@@ -297,24 +348,25 @@ def test_component_pages_show_tier_goal_without_availability_row(app, client, lo
     assert "4 h" in detail_page and "30 min" in detail_page
 
 
-def test_requirements_page_shows_tier_goal_instead_of_stored_text(app, client, logged_in):
-    _bia_with_component("Tiered", tier=_tier(1, rto=14400), rto="stale text", rpo="kept text")
+def test_requirements_page_shows_stored_text_over_tier_goal(app, client, logged_in):
+    _bia_with_component("Tiered", tier=_tier(1, rto=14400, rpo=1800), rto="stale text")
 
     body = _request(client, "get", "/bia/requirements").data.decode()
 
-    assert "4 h" in body and "stale text" not in body
-    assert "kept text" in body
+    assert "stale text" in body  # manual override wins
+    assert "30 min" in body  # nothing stored for RPO: the tier goal applies
 
 
 # --- Task 5: incident prefill ------------------------------------------------------
 
 
-def test_incident_prefill_uses_tier_goal_then_stored_text(app):
+def test_incident_prefill_uses_stored_text_then_tier_goal(app):
     from scaffold.apps.incident.services import get_bia_requirements
 
     with app.test_request_context():
-        goal = _component(context_tier=_tier(1, rto=14400), rto="stale", rpo="1 hour")
-        assert get_bia_requirements(goal.id) == {"rto": "4 h", "rpo": "1 hour"}
+        manual = _component(context_tier=_tier(1, rto=14400, rpo=1800), rto="stale")
+        assert manual.rto_source == "manual"
+        assert get_bia_requirements(manual.id) == {"rto": "stale", "rpo": "30 min"}
 
 
 def test_incident_prefill_is_empty_without_tier_or_text(app):
