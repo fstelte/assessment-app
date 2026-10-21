@@ -224,7 +224,8 @@ conflicts should be trivial.
 - **Estimate:** ~40 lines
 - **Files:** `scaffold/translations/en.json`, `scaffold/translations/nl.json`,
   `docs/models.md` (L16 `Consequences` entry),
-  `scaffold/apps/bia/templates/bia/export_item.html` (delete — unused), `graphify-out/`
+  `scaffold/apps/bia/templates/bia/export_item.html` and
+  `scaffold/apps/bia/templates/bia/detail.html` (delete — neither is rendered), `graphify-out/`
 - **Description:** Remove now-unused keys (`bia.consequence_form.validation.single_category`,
   modal/JSON strings, `Added %(count)d consequence entries.`); reword the create flash (`consequence_created` now
   always has count=1 → e.g. "Consequence saved."); delete `export_item.html`; update
@@ -271,6 +272,6 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 5: Group delete
 - [x] Task 7: Component consequences page — read-only grouped
 - [x] Task 8: All-consequences page — grouped (paginates by component)
-- [ ] Task 9: BIA detail (and item export) — grouped, plus group counts
+- [x] Task 9: BIA detail (and item export) — grouped, plus group counts
 - [ ] Task 10: Global consequences export — grouped
 - [ ] Task 11: Cleanup, full validation, docs

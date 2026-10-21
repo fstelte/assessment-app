@@ -98,6 +98,7 @@ bp = Blueprint(
 
 bp.app_template_filter("duration")(format_duration_seconds)
 bp.app_template_filter("consequence_category")(category_label)
+bp.app_template_filter("consequence_groups")(group_consequences)
 
 
 # Environment selection order and ranking for fallback authentication resolution.
@@ -474,7 +475,7 @@ def view_item(item_id: int):
     return render_template(
         "bia/context_detail.html",
         item=item,
-        consequences=consequences,
+        consequence_groups=group_consequences(consequences),
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
@@ -1531,7 +1532,7 @@ def export_item(item_id: int):
     html_content = render_template(
         "bia/context_detail.html",
         item=item,
-        consequences=consequences,
+        consequence_groups=group_consequences(consequences),
         max_cia_impact=max_cia_impact,
         ai_identifications=ai_identifications,
         can_edit_context=_can_edit_context(item),
