@@ -153,3 +153,19 @@ def test_preselect_params_and_return_to(app, client, login):
 
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/bia/components")
+
+
+def test_list_shows_one_row_per_cia_group(app, client, login):
+    context, ledger, _gateway = _setup(login)
+    legacy = _legacy_group(ledger)
+    db.session.add(Consequences(component=ledger, security_property="integrity", consequence_category="regulatory"))
+    db.session.commit()
+
+    body = client.get(f"/bia/item/{context.id}/consequences").data.decode()
+
+    assert body.count(f'consequence_id={legacy[0].id}"') == 1
+    for record in legacy[1:]:
+        assert f'consequence_id={record.id}"' not in body
+    assert "3 records, will be merged on edit" in body
+    for label in ("Financial", "Operational", "Privacy", "Regulatory"):
+        assert f">{label}</span>" in body

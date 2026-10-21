@@ -19,7 +19,7 @@
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card h-full">
       <div class="px-5 py-4 border-b border-[var(--color-border)] flex justify-between items-center bg-[var(--color-surface)] rounded-t-xl">
         <span class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)]">{{ _('bia.components.table.headers.consequences') }}</span>
-        {% if editing_consequence %}
+        {% if editing_group %}
         <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-3 py-1 text-xs transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.manage_consequences.actions.reset') }}</a>
         {% endif %}
       </div>
@@ -83,7 +83,7 @@
           </div>
           <div class="flex justify-end gap-3 pt-2 mt-2 border-t border-[var(--color-border)]">
             <a href="{{ url_for('bia.view_item', item_id=item.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10">{{ _('bia.actions.cancel') }}</a>
-            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer", value=editing_consequence and _('bia.view_consequences.actions.save_changes') or _('bia.view_consequences.actions.save')) }}
+            {{ form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700 shadow-sm cursor-pointer", value=editing_group and _('bia.view_consequences.actions.save_changes') or _('bia.view_consequences.actions.save')) }}
           </div>
         </form>
       </div>
@@ -97,8 +97,8 @@
           <p class="uppercase text-xs font-bold tracking-wider text-[var(--color-muted)] mb-1">{{ _('bia.manage_consequences.sections.recorded') }}</p>
           <p class="mb-0 text-sm text-[var(--color-muted)]">{{ _('bia.manage_consequences.sections.recorded_subtitle') }}</p>
         </div>
-        {% if consequence_rows %}
-          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ consequence_rows|length }} entries</span>
+        {% if consequence_groups %}
+          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-3 py-0.5 bg-slate-500/20 text-[var(--color-text)]">{{ consequence_groups|length }} entries</span>
         {% endif %}
       </div>
       <div class="p-0">
@@ -107,41 +107,41 @@
             <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.component') }}</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.categories') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.security_property') }}</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.categories') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.realistic') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.manage_consequences.table.worst_case') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]">
-              {% if consequence_rows %}
-                {% for row in consequence_rows %}
+              {% if consequence_groups %}
+                {% for group in consequence_groups %}
                 <tr class="hover:bg-[var(--color-surface-hover)] transition-colors">
                   <td class="px-4 py-3">
                     <div class="flex flex-col gap-1">
-                      <div class="font-semibold text-[var(--color-text)]">{{ row.component.name }}</div>
-                      <div class="text-[var(--color-muted)] text-xs">{{ row.component.info_label.get_label() if row.component.info_label else (row.component.info_type or 'Details pending') }}</div>
+                      <div class="font-semibold text-[var(--color-text)]">{{ group.component.name }}</div>
+                      <div class="text-[var(--color-muted)] text-xs">{{ group.component.info_label.get_label() if group.component.info_label else (group.component.info_type or 'Details pending') }}</div>
                       <div class="flex gap-1 mt-1">
-                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=row.consequence.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)]">
+                        <a href="{{ url_for('bia.manage_item_consequences', item_id=item.id, consequence_id=group.representative_id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-[var(--color-surface-active)]">
                           <i class="fas fa-pencil-alt mr-1"></i> {{ _('bia.actions.edit') }}
                         </a>
-                        <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30" data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=row.consequence.id) }}" title="{{ _('bia.actions.delete') }}">
+                        <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-2 py-1 text-xs transition-colors border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/30" data-delete-url="{{ url_for('bia.delete_consequence', consequence_id=group.representative_id) }}" title="{{ _('bia.actions.delete') }}">
                           <i class="fas fa-trash mr-1"></i> {{ _('bia.actions.delete') }}
                         </button>
                       </div>
                     </div>
                   </td>
                   <td class="px-4 py-3">
-                    {% set raw_categories = row.consequence.consequence_category %}
-                    {% if raw_categories %}
-                      {% if raw_categories is sequence and raw_categories is not string %}
-                        {% set categories = raw_categories %}
-                      {% else %}
-                        {% set categories = raw_categories.split(',') %}
-                      {% endif %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ _('bia.export_item.cia.' ~ group.security_property) if group.security_property else _('bia.manage_consequences.empty.not_set') }}</span>
+                    {% if group.records|length > 1 %}
+                      <div class="text-[var(--color-muted)] text-xs mt-1 italic">{{ _('bia.consequences.group.merge_hint', count=group.records|length) }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3">
+                    {% if group.categories %}
                       <div class="flex flex-wrap gap-1">
-                        {% for category in categories %}
-                          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
+                        {% for category in group.categories %}
+                          <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | consequence_category }}</span>
                         {% endfor %}
                       </div>
                     {% else %}
@@ -149,20 +149,17 @@
                     {% endif %}
                   </td>
                   <td class="px-4 py-3">
-                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ row.consequence.security_property or _('bia.manage_consequences.empty.not_set') }}</span>
-                  </td>
-                  <td class="px-4 py-3">
-                    {% set realistic = row.consequence.consequence_realisticcase or 'N/A' %}
+                    {% set realistic = group.realisticcase or 'N/A' %}
                     <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ realistic | lower }}">{{ realistic }}</span></div>
-                    {% if row.consequence.justification_realisticcase %}
-                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_realisticcase }}">{{ row.consequence.justification_realisticcase }}</div>
+                    {% if group.justification_realisticcase %}
+                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2 whitespace-pre-line" title="{{ group.justification_realisticcase }}">{{ group.justification_realisticcase }}</div>
                     {% endif %}
                   </td>
                   <td class="px-4 py-3">
-                    {% set worst = row.consequence.consequence_worstcase or 'N/A' %}
+                    {% set worst = group.worstcase or 'N/A' %}
                     <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
-                    {% if row.consequence.justification_worstcase %}
-                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2" title="{{ row.consequence.justification_worstcase }}">{{ row.consequence.justification_worstcase }}</div>
+                    {% if group.justification_worstcase %}
+                      <div class="text-[var(--color-muted)] text-xs mt-1 line-clamp-2 whitespace-pre-line" title="{{ group.justification_worstcase }}">{{ group.justification_worstcase }}</div>
                     {% endif %}
                   </td>
                 </tr>

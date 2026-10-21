@@ -1430,18 +1430,12 @@ def manage_item_consequences(item_id: int):
                 flash(_("bia.flash.consequence_created", count=1), "success")
             return redirect(return_to or url_for("bia.manage_item_consequences", item_id=item.id))
 
-    consequence_rows = []
-    for component in components:
-        for consequence in component.consequences:
-            consequence_rows.append({"component": component, "consequence": consequence})
     return render_template(
         "bia/manage_item_consequences.html",
         item=item,
         form=form,
-        consequence_rows=consequence_rows,
         consequence_groups=groups,
         editing_group=editing_group,
-        editing_consequence=editing_group.records[0] if editing_group else None,
     )
 
 
