@@ -3,8 +3,8 @@ feature: 20261021-142248-description-bia-consequences
 status: planned
 created: 2026-10-21
 chunk_size: adaptive
-total_tasks: 11
-estimated_lines: 900
+total_tasks: 16
+estimated_lines: 1285
 ---
 
 # BIA Consequences per CIA with Category Labels — Tasks
@@ -230,10 +230,133 @@ conflicts should be trivial.
   modal/JSON strings, `Added %(count)d consequence entries.`); reword the create flash (`consequence_created` now
   always has count=1 → e.g. "Consequence saved."); delete `export_item.html`; update
   `docs/models.md` to say "one consequence per CIA property per component;
-  categories stored comma-joined as labels"; `graphify update .`.
+  categories stored comma-joined as labels". Fix the delete confirmation on
+  `manage_item_consequences.html` (~L192). It currently uses
+  `bia.components.table.confirm_delete` ("Delete this component?"). Switch it to
+  `bia.all_consequences.confirm_delete`, or for groups with more than one record
+  to the new en/nl key `bia.consequences.group.confirm_delete` with
+  `{count}` (design §Rules "Delete confirmation"). Run `graphify update .`.
 - **Depends on:** All other tasks
 - **Acceptance:** No template references removed context vars/endpoints/keys.
+  No consequence delete path uses a `components.*` confirm key. A route test
+  checks that the manage page renders the group-count confirmation for a legacy
+  group.
 - **Evidence:** Full `pytest` passes; grep for removed keys/endpoints is empty.
+
+---
+
+## Part 2: Tier RTO/RPO pre-fill with manual overrides
+
+Design: `design.md` Part 2. Decisions: `20261021-1655-tier-goal-prefills-component-rto-rpo`,
+`20261021-1655-availability-csv-rto-rpo-source-columns`.
+
+### Wave 4: Foundation
+
+#### Task 12: Duration parser + `Component` recovery source
+- **Estimate:** ~110 lines (incl. tests)
+- **Files:** `scaffold/apps/bia/models/__init__.py` (next to `format_duration_seconds`),
+  `tests/test_bia_component_tier.py`
+- **Description:** Add `parse_duration_seconds(text) -> int | None`, moved from
+  `_parse_duration` in the summary export (do not switch the caller yet; Task 15
+  does that). It returns seconds and follows the unit table in design.md Part 2:
+  longest prefix first (`mo`/`maand`/`mnd` = 30 d before `m`), `.`/`,`
+  decimals, `j`/`jaar`, a bare number other than 0 → `None`. Flip
+  `_effective_recovery` so stored text wins over the goal. Add
+  `recovery_source(field)` (tier/manual/free_text/None), `tier_goal_display(field)`
+  and the `rto_source`/`rpo_source` properties.
+- **Depends on:** None
+- **Acceptance:** All five `recovery_source` branches are covered. Rewrite
+  `test_effective_recovery_uses_tier_goal_over_stored_text` (stored text now
+  wins). Rewrite `test_incident_prefill_uses_tier_goal_then_stored_text`
+  (`"stale"` becomes the effective RTO and counts as manual). The parser test
+  has one case per row of the unit table, plus `1,5 u` = 5400, `1 maand` =
+  2592000, `60` → `None`, and `immediate`/`-` = 0. A goal of 0 with
+  `immediate` gives `tier`.
+- **Evidence:** `pytest tests/test_bia_component_tier.py -k "duration or recovery or incident"` passes.
+
+### Wave 5: Core
+
+#### Task 13: Availability forms: pre-fill, save rule, hints
+- **Estimate:** ~100 lines (incl. tests)
+- **Files:** `scaffold/apps/bia/routes.py` (`_tier_goal_notes`, `_apply_availability`,
+  `manage_component_availability` ~L1020, `manage_item_availability` ~L1300),
+  `manage_component_availability.html`, `manage_item_availability.html` (form part),
+  `scaffold/translations/en.json`, `nl.json`, `tests/test_bia_component_tier.py`
+- **Description:** Drop the read-only goal box. Always render the input with
+  the goal hint below it, plus a "Manually configured (tier goal: …)" line when
+  the source is manual. On GET, pre-fill the formatted goal when nothing is
+  stored. `manage_component_availability` uses `AvailabilityForm(obj=…)`, so set
+  the data only when `not form.is_submitted()`. In `_apply_availability`, store
+  `""` when the submitted text is empty or parses to the goal, else store it as
+  typed. Add the en/nl keys for the manual form line and the marker text
+  (`manual · tier {value}` / `handmatig · tier {value}`). There is no tooltip.
+- **Depends on:** Task 12
+- **Acceptance:** Rewrite tests 199–238 (`…shows_goal_and_keeps_stored_text`,
+  `…decides_rto_and_rpo_independently`,
+  `…update_availability_json_respects_tier_goal`). The new behaviour is:
+  unchanged pre-fill → stored `""`; `"240 min"` against a 4 h goal → `""`;
+  `"2 h"` → stored and manual; cleared → `""`; GET shows a pre-filled input.
+  The translation-parity test includes the new keys.
+- **Evidence:** `pytest tests/test_bia_component_tier.py -k availability` passes.
+
+#### Task 14: Manual marker in tables and HTML/PDF exports [P]
+- **Estimate:** ~70 lines (incl. tests)
+- **Parallel:** Can run with Task 15
+- **Files:** new `scaffold/apps/bia/templates/bia/_recovery_marker.html` (macro),
+  `manage_item_availability.html` (list), `components.html` (~L299),
+  `context_detail.html` (~L431), `requirements.html` (~L128),
+  `export_availability_requirements.html` (~L43), `tests/test_bia_component_tier.py`
+- **Description:** Add a macro `recovery_marker(component, field, plain=False)`
+  that renders **visible text** `manual · tier 4 h` (nl `handmatig · tier 4 u`)
+  only when the source is manual. No tooltip. In-app it uses the amber chip
+  classes; with `plain=True` (exports) it renders plain text in parentheses.
+  Call it after every `effective_rto`/`effective_rpo` output. In
+  `components.html`, call it after each value. The summary export gets no
+  marker.
+- **Depends on:** Task 12 (keys from Task 13)
+- **Acceptance:** Update `test_requirements_page_shows_tier_goal_instead_of_stored_text`
+  (stored text now shown with the marker) and
+  `test_component_pages_show_tier_goal_without_availability_row` (still the
+  goal, no marker). New test: a manual component shows the marker on
+  components, BIA detail and the requirements export; a tier-following one
+  does not.
+- **Evidence:** targeted pytest passes; rendered HTML contains/omits the marker.
+
+#### Task 15: Summary export precedence + CSV source columns [P]
+- **Estimate:** ~80 lines (incl. tests)
+- **Parallel:** Can run with Task 14
+- **Files:** `scaffold/apps/bia/routes.py` (summary export ~L1931–2000),
+  `scaffold/apps/bia/utils.py` (availability CSV ~L515), `tests/test_bia_component_tier.py`
+- **Description:** Remove the local `_parse_duration`, use
+  `parse_duration_seconds` (`None` → inf), and drop the "tier goal replaces
+  stored text" branch so each component contributes its effective value. Append
+  `RTO Source`, `Effective RTO`, `RPO Source` and `Effective RPO` to the
+  availability CSV (`tier`/`manual`/`free text`/`not set`, mapped from the
+  internal `free_text`/`None`). The CSV now writes **one row per component**,
+  including those without an availability record. The CSV import
+  (`utils.py` ~L768) skips rows whose MTD, RTO, RPO and MASL are all empty.
+- **Depends on:** Task 12
+- **Acceptance:** Rewrite `test_summary_export_takes_lowest_of_tier_goal_and_stored_text`
+  and `test_summary_export_uses_tier_goals_and_stored_text` for the new
+  precedence. A new CSV test checks the headers, one row per source, and a row
+  for a component with no record. The CSV round trip still passes and does not
+  create empty availability records.
+- **Evidence:** `pytest tests/test_bia_component_tier.py -k "summary or csv"` passes.
+
+### Wave 6: Integration
+
+#### Task 16: Docs + full validation (Part 2)
+- **Estimate:** ~25 lines
+- **Files:** `docs/models.md` (`Component` effective RTO/RPO, `AvailabilityRequirements`),
+  `docs/history.md`, `graphify-out/`
+- **Description:** Document the new precedence, the sources, "empty stored
+  text means follow the tier", and that imports store text as given. Add a
+  history entry with an explicit **behaviour change** note: hidden legacy
+  RTO/RPO text becomes effective again, so incident steps and summary exports
+  can change. Run `graphify update .`.
+- **Depends on:** Tasks 13–15 (and Task 11 for the shared docs files)
+- **Acceptance:** The docs no longer say that the tier goal replaces stored text.
+- **Evidence:** Full `pytest` passes, apart from the known pre-existing failures listed in Notes.
 
 ## Parallel Waves
 
@@ -242,6 +365,9 @@ conflicts should be trivial.
 | 1 | 1, 2, 3, 6 | Fully independent |
 | 2 | 4, 4b, 5, 7, 8, 9, 10 | Need Tasks 1 (+2 for Task 4) and 3; touch different `routes.py` functions/templates |
 | 3 | 11 | After everything |
+| 4 | 12 | Part 2 foundation; independent of Part 1 |
+| 5 | 13, then 14 ∥ 15 | 14 and 15 touch different files (except the test file; add tests in separate sections) |
+| 6 | 16 | After 11 and 13–15 |
 
 Critical path: Task 1/2 → Task 4 → Task 11.
 
@@ -274,4 +400,9 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 8: All-consequences page — grouped (paginates by component)
 - [x] Task 9: BIA detail (and item export) — grouped, plus group counts
 - [x] Task 10: Global consequences export — grouped (detailed + summary counts)
-- [ ] Task 11: Cleanup, full validation, docs
+- [x] Task 11: Cleanup, full validation, docs (confirmed by engineer 2026-10-21; manage-page tests pass, no removed key still referenced)
+- [x] Task 12: Duration parser + `Component` recovery source
+- [ ] Task 13: Availability forms: pre-fill, save rule, hints
+- [ ] Task 14: Manual marker in tables and HTML/PDF exports
+- [ ] Task 15: Summary export precedence + CSV source columns
+- [ ] Task 16: Docs + full validation (Part 2)
