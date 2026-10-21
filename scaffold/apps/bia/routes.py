@@ -1100,9 +1100,22 @@ def delete_consequence(consequence_id: int):
             jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
             403,
         )
-    db.session.delete(consequence)
+    # Delete the whole (component, CIA property) group, normalised as group_consequences() does.
+    def group_key(record):
+        prop = (record.security_property or "").strip().lower()
+        return prop if prop in SECURITY_PROPERTIES else ""
+
+    key = group_key(consequence)
+    for record in list(consequence.component.consequences):
+        if group_key(record) == key:
+            db.session.delete(record)
     db.session.commit()
-    return jsonify({"success": True, "message": "Consequence deleted."})
+    if request.is_json:
+        return jsonify({"success": True, "message": "Consequence deleted."})
+    flash(_("bia.flash.consequence_group_deleted"), "success")
+    referrer = urlparse(request.referrer or "")
+    back = _safe_return_target(referrer._replace(scheme="", netloc="").geturl()) if referrer.netloc == request.host else None
+    return redirect(back or url_for("bia.view_all_consequences"))
 
 
 @bp.route("/delete_availability_requirement/<int:requirement_id>", methods=["POST"])
