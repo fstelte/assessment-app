@@ -129,7 +129,9 @@ conflicts should be trivial.
   else `save_cia_consequence(..., replace_ids=group_ids)`; if the target
   (component, property) changed and already has a group → form error
   `target_exists`. At least one label required (create and edit). Drop
-  `single_category` check. Pass `consequence_groups`.
+  `single_category` check. Pass `consequence_groups`. Honour a
+  `return_to` query param (via `_safe_return_target`) as the redirect target
+  after a successful save (Task 6 forwards it from the old add page).
 - **Depends on:** Tasks 1, 2, 3
 - **Acceptance:** Multi-label create stores 1 row; duplicate create doesn't save
   and shows edit mode; editing a 3-row legacy group leaves 1 row with union
@@ -245,8 +247,9 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 ## Notes
 - Display-only grouping means Wave 2 view tasks work on legacy data without
   any migration.
-- Task 6 temporarily breaks the modal on `view_consequences.html` until Task 7
-  lands — acceptable on the feature branch; don't release between them.
+- Task 6 pointed the Add/Edit buttons on `view_consequences.html` at the
+  manage page (the template's `url_for` calls to removed endpoints would have
+  500'd the page). Task 7 still removes the modal markup/JS and groups rows.
 - Use separate new test files per task to avoid conflicts in `tests/test_bia_routes.py`
   (only Task 6 edits it).
 - Deferred: CSV import label splitting, DB uniqueness constraint, legacy data
@@ -262,7 +265,7 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 1: `group_consequences()` + `category_label()` helpers + tests (76a726a)
 - [x] Task 2: `save_cia_consequence()` helper + tests
 - [x] Task 3: Translation keys (en/nl) (3439be7)
-- [ ] Task 6: Remove JSON endpoints, redirect `/consequences/new`
+- [x] Task 6: Remove JSON endpoints, redirect `/consequences/new`
 - [ ] Task 4: Manage page route — group edit, create→edit, preselect
 - [ ] Task 4b: Manage page template — grouped list
 - [ ] Task 5: Group delete

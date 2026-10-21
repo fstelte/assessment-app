@@ -1040,41 +1040,21 @@ def manage_component_availability(component_id: int):
     )
 
 
-@bp.route("/component/<int:component_id>/consequences/new", methods=["GET", "POST"])
+@bp.route("/component/<int:component_id>/consequences/new")
 @login_required
 def add_component_consequence_view(component_id: int):
+    """Legacy entry point; consequences are created on the BIA manage page."""
     component = Component.query.options(joinedload(Component.context_scope)).get_or_404(component_id)
     if not _can_edit_context(component.context_scope):
         flash(_("bia.flash.owner_forbidden"), "danger")
         return redirect(url_for("bia.view_components"))
-    form = ConsequenceForm()
-    return_to = _safe_return_target(request.args.get("return_to"))
-    if form.validate_on_submit():
-        categories = form.consequence_category.data or []
-        for category in categories:
-            consequence = Consequences(
-                component=component,
-                consequence_category=category,
-                security_property=form.security_property.data,
-                consequence_worstcase=form.consequence_worstcase.data,
-                justification_worstcase=form.justification_worstcase.data,
-                consequence_realisticcase=form.consequence_realisticcase.data,
-                justification_realisticcase=form.justification_realisticcase.data,
-            )
-            db.session.add(consequence)
-        db.session.commit()
-        flash(
-            _("Added %(count)d consequence entries.", count=len(categories)),
-            "success",
+    return redirect(
+        url_for(
+            "bia.manage_item_consequences",
+            item_id=component.context_scope_id,
+            component_id=component.id,
+            return_to=_safe_return_target(request.args.get("return_to")),
         )
-        if return_to:
-            return redirect(return_to)
-        return redirect(url_for("bia.view_consequences", component_id=component.id))
-    return render_template(
-        "bia/manage_component_consequence.html",
-        component=component,
-        form=form,
-        return_to=return_to,
     )
 
 
@@ -1106,83 +1086,6 @@ def get_component(component_id: int):
             "environments": _serialize_environments(component),
         }
     )
-
-
-@bp.route("/add_consequence/<int:component_id>", methods=["POST"])
-@login_required
-def add_consequence(component_id: int):
-    component = Component.query.get_or_404(component_id)
-    if not _can_edit_context(component.context_scope):
-        return (
-            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
-            403,
-        )
-    data = request.get_json() or {}
-    form = ConsequenceForm(data=data)
-    if form.validate():
-        categories = data.get("consequence_category") or []
-        if not isinstance(categories, list):
-            categories = [categories]
-        for category in categories:
-            consequence = Consequences(
-                component=component,
-                consequence_category=category,
-                security_property=form.security_property.data,
-                consequence_worstcase=form.consequence_worstcase.data,
-                justification_worstcase=form.justification_worstcase.data,
-                consequence_realisticcase=form.consequence_realisticcase.data,
-                justification_realisticcase=form.justification_realisticcase.data,
-            )
-            db.session.add(consequence)
-        db.session.commit()
-        return jsonify({"success": True, "message": f"{len(categories)} consequences added."})
-    return jsonify({"success": False, "errors": form.errors}), 400
-
-
-@bp.route("/get_consequence/<int:consequence_id>")
-@login_required
-def get_consequence(consequence_id: int):
-    consequence = Consequences.query.get_or_404(consequence_id)
-    return jsonify(
-        {
-            "id": consequence.id,
-            "consequence_category": consequence.consequence_category,
-            "security_property": consequence.security_property,
-            "consequence_worstcase": consequence.consequence_worstcase,
-            "justification_worstcase": consequence.justification_worstcase,
-            "consequence_realisticcase": consequence.consequence_realisticcase,
-            "justification_realisticcase": consequence.justification_realisticcase,
-        }
-    )
-
-
-@bp.route("/edit_consequence/<int:consequence_id>", methods=["POST"])
-@login_required
-def edit_consequence(consequence_id: int):
-    consequence = Consequences.query.get_or_404(consequence_id)
-    if not _can_edit_context(consequence.component.context_scope):
-        return (
-            jsonify({"success": False, "errors": {"permission": ["You are not allowed to modify this BIA."]}}),
-            403,
-        )
-    data = request.get_json() or {}
-    required = [
-        "consequence_category",
-        "security_property",
-        "consequence_worstcase",
-        "consequence_realisticcase",
-    ]
-    missing = [field for field in required if not data.get(field)]
-    if missing:
-        return jsonify({"success": False, "errors": {field: ["This field is required."] for field in missing}}), 400
-    consequence.consequence_category = data.get("consequence_category")
-    consequence.security_property = data.get("security_property")
-    consequence.consequence_worstcase = data.get("consequence_worstcase")
-    consequence.justification_worstcase = data.get("justification_worstcase")
-    consequence.consequence_realisticcase = data.get("consequence_realisticcase")
-    consequence.justification_realisticcase = data.get("justification_realisticcase")
-    db.session.commit()
-    return jsonify({"success": True, "message": "Consequence updated."})
 
 
 @bp.route("/delete_consequence/<int:consequence_id>", methods=["POST"])
