@@ -15,6 +15,7 @@ os.environ.setdefault(
 from scaffold import create_app
 from scaffold.config import Settings
 from scaffold.extensions import db
+from scaffold.apps.bia.services.authentication import clear_authentication_cache
 from scaffold.apps.identity.models import Role, User, UserStatus
 
 
@@ -61,6 +62,8 @@ def app():
         g.pop("_login_user", None)
 
     request_started.connect(_reset_login_cache, app)
+    # Authentication options are lru_cached process-wide; don't leak them between test databases.
+    clear_authentication_cache()
 
     with app.app_context():
         db.create_all()
