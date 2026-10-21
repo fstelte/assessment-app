@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import io
 import logging
-import re
 from collections import defaultdict
 from datetime import date, datetime, timezone
 
@@ -1942,28 +1941,6 @@ def export_all_consequences():
 @bp.route("/export_availability_requirements")
 @login_required
 def export_availability_requirements():
-    def _parse_duration(value: str | None) -> float:
-        if not value:
-            return float('inf')
-        val = value.lower().strip()
-        if val in ('immediate', '0', 'none', '-'):
-            return 0.0
-        try:
-            match = re.match(r'^([\d\.]+)\s*([a-z]*)', val)
-            if match:
-                num = float(match.group(1))
-                unit = match.group(2)
-                if not unit:
-                    return float('inf')
-                if unit.startswith('m'): return num
-                if unit.startswith('h'): return num * 60
-                if unit.startswith('d'): return num * 60 * 24
-                if unit.startswith('w'): return num * 60 * 24 * 7
-                if unit.startswith('y'): return num * 60 * 24 * 365
-        except (ValueError, AttributeError):
-            pass
-        return float('inf')
-
     export_type = request.args.get("type", "detailed")
     bias = ContextScope.query.filter(ContextScope.is_archived == False).all()
 
@@ -1993,18 +1970,16 @@ def export_availability_requirements():
 
             for component in components:
                 req = component.availability_requirement
-                tier = component.effective_tier
                 for field in ["mtd", "rto", "rpo", "masl"]:
-                    # Only RTO and RPO have tier goals; mtd/masl always use stored text.
-                    goal = getattr(tier, f"{field}_goal_seconds", None) if tier else None
-                    if goal is not None:
-                        # A tier goal replaces the stored RTO/RPO text.
-                        dur, val_str = goal / 60, format_duration_seconds(goal)
+                    # RTO/RPO use the effective value (stored text, else the tier goal).
+                    if field in ("rto", "rpo"):
+                        val_str = getattr(component, f"effective_{field}")
                     else:
                         val_str = getattr(req, field) if req else None
-                        if field == "masl" and val_str:
-                            unique_masl.add(val_str)
-                        dur = _parse_duration(val_str)
+                    if field == "masl" and val_str:
+                        unique_masl.add(val_str)
+                    seconds = parse_duration_seconds(val_str)
+                    dur = float('inf') if seconds is None else seconds
                     if dur < aggr[field][0]:
                         aggr[field] = (dur, val_str)
 

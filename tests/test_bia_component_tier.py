@@ -351,18 +351,62 @@ def test_summary_export_uses_tier_goals_and_stored_text(app, client, logged_in, 
     assert "2 hours" in body and "45 minutes" in body
 
 
-def test_summary_export_takes_lowest_of_tier_goal_and_stored_text(app, client, logged_in, tmp_path, monkeypatch):
+def test_summary_export_takes_lowest_effective_value(app, client, logged_in, tmp_path, monkeypatch):
     monkeypatch.setattr("scaffold.apps.bia.routes.ensure_export_folder", lambda: tmp_path)
     context = ContextScope(name="Mixed", author=User.find_by_email("user@example.com"))
-    with_goal = Component(name="A", context_scope=context, tier=_tier(1, rto=600))
-    stored_only = Component(name="B", context_scope=context, tier=_tier(2))
-    stored_only.availability_requirement = AvailabilityRequirements(rto="30 minutes")
-    db.session.add_all([context, with_goal, stored_only])
+    goal_only = Component(name="A", context_scope=context, tier=_tier(1, rto=3600))
+    manual = Component(name="B", context_scope=context, tier=_tier(2, rto=600))
+    manual.availability_requirement = AvailabilityRequirements(rto="30 minutes")  # overrides its 10 min goal
+    db.session.add_all([context, goal_only, manual])
     db.session.commit()
 
     body = _request(client, "get", "/bia/export_availability_requirements?type=summary").data.decode()
 
-    assert "10 min" in body and "30 minutes" not in body
+    assert "30 minutes" in body and "10 min" not in body and ">1 h<" not in body
+
+
+def _availability_csv(context):
+    exports = export_to_csv(context)
+    return next(v for k, v in exports.items() if k.endswith("_availability_requirements.csv"))
+
+
+def test_availability_csv_lists_every_component_with_source_and_effective_value(app, signed_in):
+    tier = _tier(1, rto=14400, rpo=1800)
+    context = ContextScope(name="Sources", author=User.find_by_email("user@example.com"))
+    follows = Component(name="Follows", context_scope=context, tier=tier)
+    manual = Component(name="Manual", context_scope=context, tier=tier)
+    manual.availability_requirement = AvailabilityRequirements(rto="2 h", rpo="0,5 uur")
+    free = Component(name="Free", context_scope=context)
+    free.availability_requirement = AvailabilityRequirements(rto="1 day", mtd="2 days")
+    unset = Component(name="Unset", context_scope=context)
+    db.session.add_all([context, follows, manual, free, unset])
+    db.session.commit()
+
+    rows = list(csv.reader(io.StringIO(_availability_csv(context))))
+
+    assert rows[0][-4:] == ["RTO Source", "Effective RTO", "RPO Source", "Effective RPO"]
+    by_name = {row[1]: row for row in rows[1:]}
+    assert by_name["Follows"][3:] == ["", "", "", "tier", "4 h", "tier", "30 min"]
+    assert by_name["Manual"][3:] == ["2 h", "0,5 uur", "", "manual", "2 h", "tier", "0,5 uur"]
+    assert by_name["Free"][2:] == ["2 days", "1 day", "", "", "free text", "1 day", "not set", ""]
+    assert by_name["Unset"][6:] == ["not set", "", "not set", ""]
+
+
+def test_availability_csv_import_skips_rows_without_stored_values(app, signed_in):
+    context = ContextScope(name="Import", author=User.find_by_email("user@example.com"))
+    follows = Component(name="Follows", context_scope=context, tier=_tier(1, rto=14400))
+    manual = Component(name="Manual", context_scope=context)
+    manual.availability_requirement = AvailabilityRequirements(rto="2 h")
+    db.session.add_all([context, follows, manual])
+    db.session.commit()
+    files = {**_csv_files(context), "availability_requirements": _availability_csv(context)}
+
+    assert import_from_csv(files) == []  # replaces the BIA with the same name
+
+    db.session.expire_all()
+    imported = {c.name: c.availability_requirement for c in Component.query.all()}
+    assert imported["Follows"] is None  # tier-only row creates no empty record
+    assert imported["Manual"].rto == "2 h"
 
 
 def test_component_pages_show_tier_goal_without_availability_row(app, client, logged_in):

@@ -404,5 +404,5 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 12: Duration parser + `Component` recovery source
 - [x] Task 13: Availability forms: pre-fill, save rule, hints
 - [x] Task 14: Manual marker in tables and HTML/PDF exports
-- [ ] Task 15: Summary export precedence + CSV source columns
+- [x] Task 15: Summary export precedence + CSV source columns
 - [ ] Task 16: Docs + full validation (Part 2)

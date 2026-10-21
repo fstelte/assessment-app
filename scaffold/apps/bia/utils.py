@@ -521,20 +521,28 @@ def export_to_csv(context: ContextScope) -> dict[str, str]:
             "Recovery Time Objective",
             "Recovery Point Objective",
             "Minimum Acceptable Service Level",
+            "RTO Source",
+            "Effective RTO",
+            "RPO Source",
+            "Effective RPO",
         ]
     )
+    source_labels = {"tier": "tier", "manual": "manual", "free_text": "free text", None: "not set"}
+    # One row per component, so components that only follow their tier are listed too.
     for component in context.components:
         availability = component.availability_requirement
-        if not availability:
-            continue
         availability_writer.writerow(
             [
                 stringify(context.name),
                 stringify(component.name),
-                stringify(availability.mtd),
-                stringify(availability.rto),
-                stringify(availability.rpo),
-                stringify(availability.masl),
+                stringify(availability.mtd if availability else None),
+                stringify(availability.rto if availability else None),
+                stringify(availability.rpo if availability else None),
+                stringify(availability.masl if availability else None),
+                source_labels[component.rto_source],
+                stringify(component.effective_rto),
+                source_labels[component.rpo_source],
+                stringify(component.effective_rpo),
             ]
         )
     exports[f"{prefix}_availability_requirements.csv"] = availability_buffer.getvalue()
@@ -751,9 +759,18 @@ def import_from_csv(csv_files: dict[str, str]) -> list[str]:
                 db.session.add(consequence)
 
         if availability_csv:
+            stored_columns = (
+                "Maximum Tolerable Downtime",
+                "Recovery Time Objective",
+                "Recovery Point Objective",
+                "Minimum Acceptable Service Level",
+            )
             for row in csv.DictReader(io.StringIO(availability_csv)):
                 component_name = (row.get("Gerelateerd aan Component") or "").strip()
                 if not component_name:
+                    continue
+                # The export lists every component; rows without stored values create no record.
+                if not any((row.get(column) or "").strip() for column in stored_columns):
                     continue
                 context_name = (row.get("Gerelateerd aan BIA") or "").strip()
                 component = resolve_component(component_name, context_name) if context_name else None
