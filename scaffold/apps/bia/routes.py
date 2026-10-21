@@ -24,7 +24,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from urllib.parse import urlparse
 
 from ...core.audit import log_change_event, log_event
@@ -921,20 +921,21 @@ def view_all_consequences():
         page = 1
     per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
 
+    # Paginate components (not records) so a component's CIA groups never split across pages.
     query = (
-        Consequences.query.options(
-            joinedload(Consequences.component).joinedload(Component.context_scope)
+        Component.query.options(
+            joinedload(Component.context_scope),
+            selectinload(Component.consequences),
         )
-        .join(Component, Consequences.component_id == Component.id)
         .join(ContextScope, Component.context_scope_id == ContextScope.id)
-        .filter(ContextScope.is_archived == False)
+        .filter(ContextScope.is_archived == False, Component.consequences.any())
     )
     if selected_bia_id:
         query = query.filter(ContextScope.id == selected_bia_id)
     if search_term:
         query = query.filter(Component.name.ilike(f"%{search_term}%"))
 
-    pagination = query.order_by(Component.name.asc(), Consequences.id.asc()).paginate(
+    pagination = query.order_by(Component.name.asc(), Component.id.asc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     if pagination.total and page > pagination.pages:
@@ -953,7 +954,9 @@ def view_all_consequences():
 
     return render_template(
         "bia/all_consequences.html",
-        consequences=pagination.items,
+        consequence_groups=group_consequences(
+            consequence for component in pagination.items for consequence in component.consequences
+        ),
         pagination=pagination,
         page_start=page_start,
         page_end=page_end,

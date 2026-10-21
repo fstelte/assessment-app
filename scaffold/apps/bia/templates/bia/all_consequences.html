@@ -92,20 +92,21 @@
           <tr>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.component') }}</th>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.context') }}</th>
-            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.category') }}</th>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.security_property') }}</th>
+            <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.category') }}</th>
             <th scope="col" class="px-3 py-3">{{ _('bia.requirements.table.worst_case') }}</th>
             <th scope="col" class="px-3 py-3 text-right sticky right-0 bg-[var(--color-surface)]">{{ _('bia.common.actions') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[var(--color-border)]">
-          {% for consequence in consequences %}
+          {% for group in consequence_groups %}
+            {% set component = group.component %}
             <tr class="hover:bg-[var(--color-surface)]/50 transition-colors group">
               <td class="px-3 py-3 w-[200px] max-w-[200px]">
-                <div class="font-medium text-[var(--color-text)] break-words">{{ consequence.component.name }}</div>
+                <div class="font-medium text-[var(--color-text)] break-words">{{ component.name }}</div>
                 <div class="mt-1">
-                  {% if consequence.component.info_label %}
-                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ consequence.component.info_label.get_label() }}</span>
+                  {% if component.info_label %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ component.info_label.get_label() }}</span>
                   {% else %}
                     <span class="text-[var(--color-muted)] text-xs">—</span>
                   {% endif %}
@@ -113,20 +114,17 @@
               </td>
               <td class="px-3 py-3">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] uppercase tracking-wide">
-                  {{ consequence.component.context_scope.name }}
+                  {{ component.context_scope.name }}
                 </span>
               </td>
               <td class="px-3 py-3">
-                {% set raw_categories = consequence.consequence_category %}
-                {% if raw_categories %}
-                  {% if raw_categories is sequence and raw_categories is not string %}
-                    {% set categories = raw_categories %}
-                  {% else %}
-                    {% set categories = raw_categories.split(',') %}
-                  {% endif %}
+                <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ _('bia.export_item.cia.' ~ group.security_property) if group.security_property else _('bia.manage_consequences.empty.not_set') }}</span>
+              </td>
+              <td class="px-3 py-3">
+                {% if group.categories %}
                   <div class="flex flex-wrap gap-1">
-                    {% for category in categories %}
-                      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | trim }}</span>
+                    {% for category in group.categories %}
+                      <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ category | consequence_category }}</span>
                     {% endfor %}
                   </div>
                 {% else %}
@@ -134,27 +132,20 @@
                 {% endif %}
               </td>
               <td class="px-3 py-3">
-                {% if consequence.security_property %}
-                  <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{{ consequence.security_property }}</span>
-                {% else %}
-                  <span class="text-[var(--color-muted)] text-xs italic">{{ _('bia.manage_consequences.empty.not_set') }}</span>
-                {% endif %}
-              </td>
-              <td class="px-3 py-3">
-                {% set worst = consequence.consequence_worstcase or 'N/A' %}
+                {% set worst = group.worstcase or 'N/A' %}
                 <div class="mb-1"><span class="bia-impact-badge" data-impact="{{ worst | lower }}">{{ worst }}</span></div>
-                {% if consequence.justification_worstcase %}
-                  <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ consequence.justification_worstcase }}">{{ consequence.justification_worstcase }}</div>
+                {% if group.justification_worstcase %}
+                  <div class="text-xs text-[var(--color-muted)] max-w-xs truncate" title="{{ group.justification_worstcase }}">{{ group.justification_worstcase }}</div>
                 {% endif %}
               </td>
               <td class="px-3 py-3 text-right sticky right-0 bg-[var(--color-card)] group-hover:bg-[var(--color-surface)]/50 transition-colors">
                 <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <a href="{{ url_for('bia.view_consequences', component_id=consequence.component_id) }}"
+                  <a href="{{ url_for('bia.view_consequences', component_id=component.id) }}"
                      class="text-[var(--color-muted)] hover:text-primary-600 transition-colors p-1"
                      title="{{ _('bia.actions.edit') }}">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                   </a>
-                  <form method="POST" action="{{ url_for('bia.delete_consequence', consequence_id=consequence.id) }}" onsubmit="return confirm('{{ _('bia.all_consequences.confirm_delete') }}');" class="inline">
+                  <form method="POST" action="{{ url_for('bia.delete_consequence', consequence_id=group.representative_id) }}" onsubmit="return confirm('{{ _('bia.all_consequences.confirm_delete') }}');" class="inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="text-[var(--color-muted)] hover:text-red-600 transition-colors p-1"
@@ -166,7 +157,7 @@
               </td>
             </tr>
           {% endfor %}
-          {% if not consequences %}
+          {% if not consequence_groups %}
             <tr>
               <td colspan="6" class="px-3 py-12 text-center text-[var(--color-muted)]">
                 <svg class="h-12 w-12 mx-auto mb-3 text-[var(--color-border)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>

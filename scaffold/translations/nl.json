@@ -1125,7 +1125,7 @@
       "showing_count": "{start}–{end} van {total} gevolgen",
       "no_consequences": "Nog geen gevolgen geregistreerd.",
       "list_title": "Alle gevolgen",
-      "count_suffix": "gevolgen",
+      "count_suffix": "componenten",
       "no_results": "Geen gevolgen gevonden voor dit filter.",
       "confirm_delete": "Dit gevolg verwijderen? Deze actie kan niet ongedaan worden gemaakt."
     },

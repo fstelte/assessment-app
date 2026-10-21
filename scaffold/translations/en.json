@@ -983,7 +983,7 @@
       "showing_count": "{start}–{end} of {total} consequences",
       "no_consequences": "No consequences registered yet.",
       "list_title": "All consequences",
-      "count_suffix": "consequences",
+      "count_suffix": "components",
       "no_results": "No consequences match this filter.",
       "confirm_delete": "Delete this consequence? This action cannot be undone."
     },

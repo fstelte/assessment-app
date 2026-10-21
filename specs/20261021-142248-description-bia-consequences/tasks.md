@@ -270,7 +270,7 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 4b: Manage page template — grouped list
 - [x] Task 5: Group delete
 - [x] Task 7: Component consequences page — read-only grouped
-- [ ] Task 8: All-consequences page — grouped
+- [x] Task 8: All-consequences page — grouped (paginates by component)
 - [ ] Task 9: BIA detail (and item export) — grouped, plus group counts
 - [ ] Task 10: Global consequences export — grouped
 - [ ] Task 11: Cleanup, full validation, docs
