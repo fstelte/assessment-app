@@ -772,6 +772,7 @@ TIERING_TRANSLATION_KEYS = (
     "bia.components.tier.inherit",
     "bia.components.tier.inherit_with",
     "bia.components.tier.inherited_suffix",
+    "bia.components.table.tier",
     "bia.flash.import_tier_unknown",
     "bia.flash.import_context_tier_unknown",
     *(
@@ -972,3 +973,46 @@ def test_home_hides_exports_for_anonymous_users(app, client):
 
     assert response.status_code == 200
     assert "/bia/export_" not in response.data.decode()
+
+
+# --- Tier column in component overviews -------------------------------------------
+
+
+def test_components_overview_shows_effective_tier_instead_of_context(app, client, logged_in):
+    context = _owned_context(tier=_tier(2))
+    db.session.add_all([
+        Component(name="Own", context_scope=context, tier=_tier(1)),
+        Component(name="Inherited", context_scope=context),
+    ])
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/components").data.decode()
+
+    assert ">Tier</th>" in body
+    assert ">Context</th>" not in body
+    assert "TIER 1 &gt;" in body and "TIER 2 &gt;" in body
+
+
+def test_components_overview_without_any_tier_shows_dash(app, client, logged_in):
+    db.session.add(Component(name="Untiered", context_scope=_owned_context()))
+    db.session.commit()
+
+    body = _request(client, "get", "/bia/components").data.decode()
+
+    assert "Untiered" in body and "TIER " not in body
+
+
+def test_bia_detail_and_item_export_show_component_tier(app, client, logged_in):
+    context = _owned_context(tier=_tier(2))
+    db.session.add(Component(name="Portal", context_scope=context, tier=_tier(1)))
+    db.session.commit()
+    context_id = context.id
+
+    detail = _request(client, "get", f"/bia/item/{context_id}").data.decode()
+    export = _request(client, "get", f"/bia/item/{context_id}/export")
+    export_body = export.data.decode()
+    export.close()
+
+    for body in (detail, export_body):
+        assert ">Tier</th>" in body
+        assert "TIER 1 &gt;" in body

@@ -472,6 +472,8 @@ def view_item(item_id: int):
             joinedload(ContextScope.components).joinedload(Component.consequences),
             joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
             joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+            joinedload(ContextScope.components).joinedload(Component.tier),
+            joinedload(ContextScope.tier),
         )
         .filter(ContextScope.id == item_id)
         .one_or_none()
@@ -862,7 +864,8 @@ def view_components():
     per_page = current_app.config.get("BIA_COMPONENTS_PER_PAGE", 25)
     query = (
         Component.query.options(
-            joinedload(Component.context_scope),
+            joinedload(Component.context_scope).joinedload(ContextScope.tier),
+            joinedload(Component.tier),
             joinedload(Component.environments).joinedload(ComponentEnvironment.authentication_method),
             joinedload(Component.availability_requirement),
             joinedload(Component.ai_identificaties),
@@ -1533,6 +1536,8 @@ def export_item(item_id: int):
             joinedload(ContextScope.components).joinedload(Component.consequences),
             joinedload(ContextScope.components).joinedload(Component.ai_identificaties),
             joinedload(ContextScope.components).joinedload(Component.availability_requirement),
+            joinedload(ContextScope.components).joinedload(Component.tier),
+            joinedload(ContextScope.tier),
         )
         .filter(ContextScope.id == item_id)
         .one_or_none()

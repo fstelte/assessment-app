@@ -1,10 +1,10 @@
 ---
 feature: 20261021-142248-description-bia-consequences
-status: completed
+status: planned
 created: 2026-10-21
 chunk_size: adaptive
-total_tasks: 16
-estimated_lines: 1285
+total_tasks: 18
+estimated_lines: 1365
 ---
 
 # BIA Consequences per CIA with Category Labels — Tasks
@@ -358,6 +358,49 @@ Design: `design.md` Part 2. Decisions: `20261021-1655-tier-goal-prefills-compone
 - **Acceptance:** The docs no longer say that the tier goal replaces stored text.
 - **Evidence:** Full `pytest` passes, apart from the known pre-existing failures listed in Notes.
 
+### Wave 7: Tier column in component overviews (Part 3)
+
+#### Task 17: Tier column in both component overviews
+- **Estimate:** ~70 lines
+- **Files:** `scaffold/apps/bia/routes.py` (`view_components`, `view_item`),
+  `scaffold/apps/bia/templates/bia/components.html`,
+  `scaffold/apps/bia/templates/bia/context_detail.html`,
+  `scaffold/translations/en.json`, `scaffold/translations/nl.json`,
+  `tests/test_bia_component_tier.py`
+- **Description:** Implements design Part 3 /
+  [[20261021-1855-component-tier-column-in-overviews]].
+  - `view_components`: add `joinedload(Component.tier)` and
+    `joinedload(Component.context_scope).joinedload(ContextScope.tier)`.
+  - `components.html`: remove the Context `<th>`/`<td>`. Add a Tier column
+    directly before Availability that shows `component.effective_tier.get_label()`
+    as a chip (the old Context chip styling), or a muted `—`. The empty-row
+    `colspan` stays 8 (one column removed, one added).
+  - `view_item`: add `joinedload(ContextScope.components).joinedload(Component.tier)`
+    and `joinedload(ContextScope.tier)`.
+  - `context_detail.html` components table: add a Tier column after Name, with
+    the same cell content. The item HTML/PDF export (`export_item`) renders this
+    template, so it gets the column automatically.
+  - Add key `bia.components.table.tier` ("Tier" in en/nl).
+- **Depends on:** None
+- **Acceptance:** `/bia/components` has no Context column. Its Tier column,
+  placed before Availability, shows the own tier, the inherited BIA tier, or
+  `—`. The BIA dropdown still filters. The `/bia/item/<id>` components table
+  shows Tier after Name, and so does the item HTML export.
+- **Evidence:** New route tests in `tests/test_bia_component_tier.py` pass,
+  using the `logged_in` fixture with a BIA authored by the login user. They cover
+  an own tier, an inherited tier, no tier (`—`), no Context header on
+  `/bia/components`, and the tier on `/bia/item/<id>` and in its HTML export.
+
+#### Task 18: Docs + full validation (Part 3)
+- **Estimate:** ~10 lines
+- **Files:** `docs/history.md`, `graphify-out/`
+- **Description:** Add a history entry: Tier column on component overviews,
+  Context column removed from `/bia/components` (filter by BIA instead). Run
+  `graphify update .`.
+- **Depends on:** Task 17
+- **Acceptance:** The history entry exists and the graph is updated.
+- **Evidence:** Full `pytest` passes, apart from the known pre-existing failures listed in Notes.
+
 ## Parallel Waves
 
 | Wave | Tasks | Notes |
@@ -368,6 +411,7 @@ Design: `design.md` Part 2. Decisions: `20261021-1655-tier-goal-prefills-compone
 | 4 | 12 | Part 2 foundation; independent of Part 1 |
 | 5 | 13, then 14 ∥ 15 | 14 and 15 touch different files (except the test file; add tests in separate sections) |
 | 6 | 16 | After 11 and 13–15 |
+| 7 | 17, then 18 | Part 3; independent of Parts 1–2 |
 
 Critical path: Task 1/2 → Task 4 → Task 11.
 
@@ -406,3 +450,5 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 14: Manual marker in tables and HTML/PDF exports
 - [x] Task 15: Summary export precedence + CSV source columns
 - [x] Task 16: Docs + full validation (Part 2) (full suite confirmed by engineer 2026-10-21)
+- [ ] Task 17: Tier column in both component overviews
+- [ ] Task 18: Docs + full validation (Part 3)

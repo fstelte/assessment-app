@@ -676,6 +676,7 @@
         "availability": "Beschikbaarheid",
         "consequences": "Gevolgen",
         "intelligence": "Inzichten",
+        "tier": "Tier",
         "headers": {
           "component": "Component",
           "bia": "BIA",

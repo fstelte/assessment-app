@@ -338,6 +338,7 @@
             <thead class="bg-[var(--color-surface)]">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Name</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.components.table.tier') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">{{ _('bia.components.labels.information_type') }}</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Owner</th>
                 <th scope="col" class="px-4 py-3 text-left font-semibold text-[var(--color-text)]">Users</th>
@@ -350,6 +351,13 @@
               {% for component in item.components %}
               <tr>
                 <td class="px-4 py-3 font-medium">{{ component.name }}</td>
+                <td class="px-4 py-3">
+                  {% if component.effective_tier %}
+                    <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] whitespace-nowrap">{{ component.effective_tier.get_label() }}</span>
+                  {% else %}
+                    <span class="text-[var(--color-muted)] text-xs">—</span>
+                  {% endif %}
+                </td>
                 <td class="px-4 py-3">
                   {% if component.info_label %}
                     <span class="inline-flex items-center text-xs font-semibold uppercase tracking-wide rounded-full px-2.5 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]">{{ component.info_label.get_label() }}</span>

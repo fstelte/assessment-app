@@ -472,6 +472,7 @@
         "availability": "Availability",
         "consequences": "Consequences",
         "intelligence": "Intelligence",
+        "tier": "Tier",
         "headers": {
           "component": "Component",
           "bia": "BIA",

@@ -1,6 +1,6 @@
 ---
 feature: 20261021-142248-description-bia-consequences
-status: implemented
+status: planned
 created: 2026-10-21
 decisions:
   - 20261021-1424-consequence-category-labels-storage
@@ -10,11 +10,14 @@ decisions:
   - 20261021-1655-tier-goal-prefills-component-rto-rpo
   - 20261021-1655-availability-csv-rto-rpo-source-columns
   - 20261021-1730-rto-rpo-prefill-checklist-gap-resolutions
+  - 20261021-1855-component-tier-column-in-overviews
 ---
 
 > This branch has two parts. **Part 1** (CIA-grouped consequences, below) is
 > implemented. **Part 2** ([Tier RTO/RPO pre-fill](#part-2-tier-rtorpo-pre-fill-with-manual-overrides),
-> at the end) is implemented (Tasks 12–16).
+> at the end) is implemented (Tasks 12–16). **Part 3**
+> ([Tier column in component overviews](#part-3-tier-column-in-component-overviews))
+> is designed.
 
 # BIA Consequences per CIA with Category Labels
 
@@ -402,3 +405,76 @@ None. The checklist gaps are resolved in
 [[20261021-1730-rto-rpo-prefill-checklist-gap-resolutions]].
 Deferred: grading overrides by direction (weaker vs. stricter); a marker in
 the summary export and in incident steps.
+
+
+---
+
+# Part 3: Tier column in component overviews
+
+Decision: [[20261021-1855-component-tier-column-in-overviews]]
+
+## Overview
+
+Components already have a tier: `Component.tier_id`, a nullable override that
+falls back to the BIA tier through `effective_tier`. It can be edited in the
+add and edit forms. The two component overviews now show it as a read-only
+column. The `/bia/components` table drops its Context column to make room. The
+BIA dropdown filter still covers that need.
+
+## User Stories
+
+- As a BIA owner, I want to see each component's tier in the components
+  overview, so that I don't have to open every component to find it.
+- As a BIA owner viewing one BIA, I want the components table to show each
+  component's tier, so that I can spot components that deviate from the BIA tier.
+
+## Components
+
+### `/bia/components` — `view_components` + `bia/components.html`
+- Remove the **Context** column (header and cell) and lower the empty-row
+  `colspan` accordingly. The `bia_id` dropdown and the `scope` query
+  parameter keep filtering by BIA.
+- Add a **Tier** column directly before **Availability**. The cell shows
+  `component.effective_tier.get_label()`, or `—` (muted) when there is no tier.
+  It uses the same chip styling as the old Context cell.
+- Query: add `joinedload(Component.tier)` and
+  `joinedload(Component.context_scope).joinedload(ContextScope.tier)`.
+
+### `/bia/item/<id>` — `view_item` + `bia/context_detail.html`
+- Components table: add a **Tier** column after **Name**. The cell content is
+  the same as above.
+- Query: add `joinedload(ContextScope.components).joinedload(Component.tier)`
+  and `joinedload(ContextScope.tier)`.
+
+## Data Model
+
+No change.
+
+## API/Interface
+
+| Surface | Change |
+|---|---|
+| `/bia/components` table | −Context, +Tier (before Availability) |
+| `/bia/item/<id>` components table | +Tier (after Name) |
+| Translations (en/nl) | New key `bia.components.table.tier` ("Tier") |
+| BIA item HTML/PDF export (`export_item`) | +Tier column, via the shared `context_detail.html` |
+
+Unchanged: forms, other exports (CSV/SQL, inventory, authentication: these already show `effective_tier`), filters, availability table.
+
+## Constitution Check
+
+- **Module ownership:** only `scaffold/apps/bia/` and translations.
+- **Security:** no change to access. This is a read-only display on existing
+  `login_required` pages, and the tier was already visible through the edit form.
+- **Export parity:** the item HTML/PDF export renders `context_detail.html`, so
+  it shows the same Tier column as the UI.
+- **Validation:** route tests in `tests/test_bia_component_tier.py`:
+  `/bia/components` shows an explicit tier, an inherited tier and `—`, and no
+  longer renders the Context header. `/bia/item/<id>` and its HTML export show
+  the tier column.
+- **Localization:** en/nl key `bia.components.table.tier`.
+- **Docs:** `docs/history.md` entry.
+
+## Open Questions
+
+None. Deferred: tier filter on `/bia/components`, inline tier editing.
