@@ -227,7 +227,9 @@ conflicts should be trivial.
   `scaffold/apps/bia/templates/bia/export_item.html` (delete — unused), `graphify-out/`
 - **Description:** Remove now-unused keys (`bia.consequence_form.validation.single_category`,
   modal/JSON strings, `Added %(count)d consequence entries.`); remove
-  `consequence_rows` if unused; delete `export_item.html`; update
+  `consequence_rows` / `editing_consequence` from the manage route once 4b
+  no longer uses them; reword the create flash (`consequence_created` now
+  always has count=1 → e.g. "Consequence saved."); delete `export_item.html`; update
   `docs/models.md` to say "one consequence per CIA property per component;
   categories stored comma-joined as labels"; `graphify update .`.
 - **Depends on:** All other tasks
@@ -266,7 +268,7 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 2: `save_cia_consequence()` helper + tests
 - [x] Task 3: Translation keys (en/nl) (3439be7)
 - [x] Task 6: Remove JSON endpoints, redirect `/consequences/new`
-- [ ] Task 4: Manage page route — group edit, create→edit, preselect
+- [x] Task 4: Manage page route — group edit, create→edit, preselect
 - [ ] Task 4b: Manage page template — grouped list
 - [ ] Task 5: Group delete
 - [ ] Task 7: Component consequences page — read-only grouped

@@ -380,6 +380,7 @@ class BIAConsequenceManagerForm(ConsequenceForm):
         validators=[DataRequired()],
     )
     consequence_id = HiddenField()
+    group_ids = HiddenField()
 
 
 class ComponentAIForm(FlaskForm):

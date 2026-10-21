@@ -56,6 +56,7 @@ from .models import (
     Consequences,
     ContextScope,
     ENVIRONMENT_TYPES,
+    SECURITY_PROPERTIES,
     Summary,
 )
 from .services.authentication import (
@@ -71,8 +72,10 @@ from .utils import (
     get_impact_color,
     get_impact_level,
     get_max_cia_impact,
+    group_consequences,
     import_from_csv,
     import_sql_file,
+    save_cia_consequence,
 )
 
 
@@ -1340,64 +1343,93 @@ def manage_item_consequences(item_id: int):
     component_map = {component.id: component for component in components}
     form = BIAConsequenceManagerForm()
     form.component_id.choices = [(component.id, component.name) for component in components]
-    editing_id = request.args.get("consequence_id", type=int)
-    editing_consequence: Consequences | None = None
-    if form.is_submitted():
-        raw_id = (form.consequence_id.data or "").strip()
-        editing_id = int(raw_id) if raw_id else None
-    elif editing_id:
-        editing_consequence = Consequences.query.get_or_404(editing_id)
-        if editing_consequence.component.context_scope_id != item.id:
-            abort(404)
-        form.consequence_id.data = str(editing_consequence.id)
-        form.component_id.data = editing_consequence.component_id
-        form.consequence_category.data = [editing_consequence.consequence_category] if editing_consequence.consequence_category else []
-        form.security_property.data = editing_consequence.security_property
-        form.consequence_worstcase.data = editing_consequence.consequence_worstcase
-        form.justification_worstcase.data = editing_consequence.justification_worstcase
-        form.consequence_realisticcase.data = editing_consequence.consequence_realisticcase
-        form.justification_realisticcase.data = editing_consequence.justification_realisticcase
-    if form.is_submitted() and editing_id and editing_consequence is None:
-        editing_consequence = Consequences.query.get_or_404(editing_id)
-        if editing_consequence.component.context_scope_id != item.id:
-            abort(404)
-    if form.validate_on_submit():
+    return_to = _safe_return_target(request.args.get("return_to"))
+    groups = group_consequences(
+        consequence for component in components for consequence in component.consequences
+    )
+
+    def find_group(component_id, security_property):
+        prop = (security_property or "").strip().lower()
+        return next(
+            (g for g in groups if g.component.id == component_id and g.security_property == prop),
+            None,
+        )
+
+    def prefill(group, extra_categories=()):
+        form.consequence_id.data = str(group.representative_id)
+        form.group_ids.data = ",".join(str(record.id) for record in group.records)
+        form.component_id.data = group.component.id
+        form.security_property.data = group.security_property
+        form.consequence_category.data = list(dict.fromkeys([*group.categories, *extra_categories]))
+        form.consequence_worstcase.data = group.worstcase
+        form.justification_worstcase.data = group.justification_worstcase
+        form.consequence_realisticcase.data = group.realisticcase
+        form.justification_realisticcase.data = group.justification_realisticcase
+        return group
+
+    # The group being edited, resolved from the representative consequence id.
+    raw_id = form.consequence_id.data if form.is_submitted() else request.args.get("consequence_id")
+    editing_group = None
+    if raw_id and str(raw_id).strip().isdigit():
+        record = db.session.get(Consequences, int(raw_id))
+        if record is None or record.component.context_scope_id != item.id:
+            if not form.is_submitted():
+                abort(404)
+            flash(_("bia.flash.consequence_group_changed"), "warning")
+            return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+        editing_group = find_group(record.component_id, record.security_property)
+
+    if not form.is_submitted():
+        if editing_group:
+            prefill(editing_group)
+        else:
+            form.component_id.data = request.args.get("component_id", type=int)
+            if request.args.get("security_property") in SECURITY_PROPERTIES:
+                form.security_property.data = request.args["security_property"]
+    elif form.validate_on_submit():
         component = component_map.get(form.component_id.data)
         if component is None:
             abort(404)
-        categories = form.consequence_category.data or []
-        if editing_id:
-            if len(categories) != 1:
-                form.consequence_category.errors.append(_("bia.consequence_form.validation.single_category"))
+        prop = form.security_property.data
+        categories = form.consequence_category.data
+        target = find_group(component.id, prop)
+        blocked = True
+        replace_ids: list[int] = []
+        if editing_group:
+            replace_ids = sorted(record.id for record in editing_group.records)
+            submitted_ids = sorted(int(v) for v in (form.group_ids.data or "").split(",") if v.strip().isdigit())
+            if submitted_ids != replace_ids:
+                # Someone changed the group since the form was loaded: show the latest values.
+                flash(_("bia.flash.consequence_group_changed"), "warning")
+                prefill(editing_group)
+            elif target is not None and target is not editing_group:
+                form.security_property.errors.append(_("bia.consequence_form.validation.target_exists"))
             else:
-                editing_consequence.component = component
-                editing_consequence.consequence_category = categories[0]
-                editing_consequence.security_property = form.security_property.data
-                editing_consequence.consequence_worstcase = form.consequence_worstcase.data
-                editing_consequence.justification_worstcase = form.justification_worstcase.data
-                editing_consequence.consequence_realisticcase = form.consequence_realisticcase.data
-                editing_consequence.justification_realisticcase = form.justification_realisticcase.data
-                db.session.commit()
-                flash(_("bia.flash.consequence_updated"), "success")
-                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+                blocked = False
+        elif target is not None:
+            # One consequence per CIA property: switch to editing the existing group.
+            flash(_("bia.flash.consequence_exists_edit"), "warning")
+            editing_group = prefill(target, extra_categories=categories)
         else:
-            if not categories:
-                form.consequence_category.errors.append(_("bia.consequence_form.validation.at_least_one"))
+            blocked = False
+        if not blocked:
+            save_cia_consequence(
+                component,
+                prop,
+                categories,
+                form.consequence_worstcase.data,
+                form.justification_worstcase.data,
+                form.consequence_realisticcase.data,
+                form.justification_realisticcase.data,
+                replace_ids=replace_ids,
+            )
+            db.session.commit()
+            if editing_group:
+                flash(_("bia.flash.consequence_updated"), "success")
             else:
-                for category in categories:
-                    consequence = Consequences(
-                        component=component,
-                        consequence_category=category,
-                        security_property=form.security_property.data,
-                        consequence_worstcase=form.consequence_worstcase.data,
-                        justification_worstcase=form.justification_worstcase.data,
-                        consequence_realisticcase=form.consequence_realisticcase.data,
-                        justification_realisticcase=form.justification_realisticcase.data,
-                    )
-                    db.session.add(consequence)
-                db.session.commit()
-                flash(_("bia.flash.consequence_created", count=len(categories)), "success")
-                return redirect(url_for("bia.manage_item_consequences", item_id=item.id))
+                flash(_("bia.flash.consequence_created", count=1), "success")
+            return redirect(return_to or url_for("bia.manage_item_consequences", item_id=item.id))
+
     consequence_rows = []
     for component in components:
         for consequence in component.consequences:
@@ -1407,7 +1439,9 @@ def manage_item_consequences(item_id: int):
         item=item,
         form=form,
         consequence_rows=consequence_rows,
-        editing_consequence=editing_consequence,
+        consequence_groups=groups,
+        editing_group=editing_group,
+        editing_consequence=editing_group.records[0] if editing_group else None,
     )
 
 

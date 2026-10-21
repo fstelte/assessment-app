@@ -28,6 +28,7 @@
         <form method="post" class="flex flex-col gap-4">
           {{ form.hidden_tag() }}
           {{ form.consequence_id }}
+          {{ form.group_ids }}
           <div>
             {{ form.component_id.label(class="block text-sm font-medium mb-1.5 text-[var(--color-text)]") }}
             {{ form.component_id(class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
