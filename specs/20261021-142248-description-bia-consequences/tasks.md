@@ -273,5 +273,5 @@ Critical path: Task 1/2 → Task 4 → Task 11.
 - [x] Task 7: Component consequences page — read-only grouped
 - [x] Task 8: All-consequences page — grouped (paginates by component)
 - [x] Task 9: BIA detail (and item export) — grouped, plus group counts
-- [ ] Task 10: Global consequences export — grouped
+- [x] Task 10: Global consequences export — grouped (detailed + summary counts)
 - [ ] Task 11: Cleanup, full validation, docs

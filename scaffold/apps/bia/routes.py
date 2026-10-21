@@ -1886,7 +1886,7 @@ def export_all_consequences():
                 {
                     "bia": bia,
                     "component_count": len(bia.components),
-                    "consequence_count": len(consequences),
+                    "consequence_count": len(group_consequences(consequences)),
                     "max_impacts": _summary_impacts(consequences),
                 }
             )
@@ -1899,21 +1899,17 @@ def export_all_consequences():
         )
         filename = f"CIA_Consequences_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     else:
-        # Detailed export: list every consequence with its parent BIA and component
-        all_consequences = []
-        for bia in bias:
-            for component in bia.components:
-                for consequence in component.consequences:
-                    all_consequences.append(
-                        {
-                            "bia": bia,
-                            "component": component,
-                            "consequence": consequence,
-                        }
-                    )
+        # Detailed export: one row per component and CIA property, with its parent BIA
+        consequence_groups = [
+            {"bia": bia, "component": group.component, "group": group}
+            for bia in bias
+            for group in group_consequences(
+                consequence for component in bia.components for consequence in component.consequences
+            )
+        ]
         html_content = render_template(
             "bia/export_all_consequences.html",
-            consequences=all_consequences,
+            consequence_groups=consequence_groups,
             generated_at=datetime.now(),
             export_mode=True,
             export_css=_load_export_css(),
