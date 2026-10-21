@@ -266,7 +266,10 @@
       "unarchived": "BIA is gedearchiveerd.",
       "archived_readonly": "Deze BIA is gearchiveerd en kan niet worden gewijzigd.",
       "archive_forbidden": "Je hebt geen toestemming om deze BIA te archiveren.",
-      "copied": "BIA succesvol gekopieerd."
+      "copied": "BIA succesvol gekopieerd.",
+      "consequence_exists_edit": "Dit component heeft al een gevolg voor deze beveiligingseigenschap. Controleer en sla het hieronder op.",
+      "consequence_group_changed": "Dit gevolg is intussen gewijzigd. Het formulier toont nu de meest recente waarden.",
+      "consequence_group_deleted": "Gevolg verwijderd."
     },
     "actions": {
       "edit": "Bewerken",
@@ -645,7 +648,8 @@
     "consequence_form": {
       "validation": {
         "single_category": "Selecteer precies één categorie bij het bijwerken van een gevolg.",
-        "at_least_one": "Selecteer minimaal één categorie."
+        "at_least_one": "Selecteer minimaal één categorie.",
+        "target_exists": "Het gekozen component heeft al een gevolg voor deze beveiligingseigenschap."
       }
     },
     "components": {
@@ -854,7 +858,8 @@
       "actions": {
         "save": "Opslaan",
         "save_changes": "Wijzigingen opslaan",
-        "add": "Gevolg toevoegen"
+        "add": "Gevolg toevoegen",
+        "manage": "Gevolgen beheren"
       },
       "table": {
         "category": "Categorie",
@@ -1123,6 +1128,19 @@
       "count_suffix": "gevolgen",
       "no_results": "Geen gevolgen gevonden voor dit filter.",
       "confirm_delete": "Dit gevolg verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+    },
+    "consequence_category": {
+      "financial": "Financieel",
+      "operational": "Operationeel",
+      "reputation_and_trust": "Reputatie en vertrouwen",
+      "regulatory": "Wet- en regelgeving",
+      "human_and_safety": "Mens en veiligheid",
+      "privacy": "Privacy"
+    },
+    "consequences": {
+      "group": {
+        "merge_hint": "{count} records, worden samengevoegd bij bewerken"
+      }
     }
   },
   "csa": {

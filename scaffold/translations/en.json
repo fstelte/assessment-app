@@ -104,7 +104,10 @@
       "unarchived": "BIA has been unarchived.",
       "archived_readonly": "This BIA is archived and cannot be modified.",
       "archive_forbidden": "You do not have permission to archive this BIA.",
-      "copied": "BIA copied successfully."
+      "copied": "BIA copied successfully.",
+      "consequence_exists_edit": "This component already has a consequence for this security property. Review and save it below.",
+      "consequence_group_changed": "This consequence was changed in the meantime. The form now shows the latest values.",
+      "consequence_group_deleted": "Consequence deleted."
     },
     "actions": {
       "edit": "Edit",
@@ -441,7 +444,8 @@
     "consequence_form": {
       "validation": {
         "single_category": "Select exactly one category when updating a consequence.",
-        "at_least_one": "Select at least one category."
+        "at_least_one": "Select at least one category.",
+        "target_exists": "The selected component already has a consequence for this security property."
       }
     },
     "components": {
@@ -712,7 +716,8 @@
       "actions": {
         "save": "Save",
         "save_changes": "Save changes",
-        "add": "Add Consequence"
+        "add": "Add Consequence",
+        "manage": "Manage consequences"
       },
       "table": {
         "category": "Category",
@@ -981,6 +986,19 @@
       "count_suffix": "consequences",
       "no_results": "No consequences match this filter.",
       "confirm_delete": "Delete this consequence? This action cannot be undone."
+    },
+    "consequence_category": {
+      "financial": "Financial",
+      "operational": "Operational",
+      "reputation_and_trust": "Reputation and trust",
+      "regulatory": "Regulatory",
+      "human_and_safety": "Human and safety",
+      "privacy": "Privacy"
+    },
+    "consequences": {
+      "group": {
+        "merge_hint": "{count} records, will be merged on edit"
+      }
     }
   },
   "csa": {
