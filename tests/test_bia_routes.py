@@ -793,3 +793,36 @@ def test_export_authentication_overview_shows_authorization_column_and_counts(ap
     assert match is not None
     assert match.group(1) == "2"
     assert match.group(2) == "1"
+
+
+def test_context_edit_page_builds_component_modal_urls(app, client, login):
+    with app.app_context():
+        user = User.find_by_email("user@example.com")
+        context = ContextScope(name="Modal URL BIA", author=user)
+        component = Component(name="Modal Component", context_scope=context)
+        db.session.add_all([context, component])
+        db.session.commit()
+        context_id = context.id
+
+    response = client.get(f"/bia/item/{context_id}/edit")
+    assert response.status_code == 200
+    body = response.data.decode()
+
+    expected = {
+        "getComponentUrl": ("/bia/get_component/0", "/bia/get_component/42"),
+        "deleteComponentUrl": ("/bia/delete_component/0", "/bia/delete_component/42"),
+        "editComponentUrl": ("/bia/component/0/edit", "/bia/component/42/edit"),
+        "viewConsequencesUrl": ("/bia/consequences/0", "/bia/consequences/42"),
+    }
+    match = re.search(
+        r"function withId\(tpl, id\) \{ return tpl\.replace\(/(.+?)/, '/' \+ id\); \}",
+        body,
+    )
+    assert match is not None
+    pattern = match.group(1)
+    for name, (template, built) in expected.items():
+        assert f"var {name} = '{template}';" in body
+        assert re.sub(pattern, "/42", template, count=1) == built
+
+    # A forwarded URL prefix containing a "/0" segment is left untouched.
+    assert re.sub(pattern, "/42", "/0/bia/component/0/edit", count=1) == "/0/bia/component/42/edit"
