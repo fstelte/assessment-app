@@ -347,10 +347,12 @@
 {% block extra_js %}
 <script nonce="{{ csp_nonce }}">
 (function () {
-  var getComponentUrl = '{{ url_for("bia.get_component", component_id=0) }}'.replace('/0', '/');
-  var deleteComponentUrl = '{{ url_for("bia.delete_component", component_id=0) }}'.replace('/0', '/');
-  var editComponentUrl = '{{ url_for("bia.edit_component_form", component_id=0) }}'.replace('/0', '/');
-  var viewConsequencesUrl = '{{ url_for("bia.view_consequences", component_id=0) }}'.replace('/0', '/');
+  var getComponentUrl = '{{ url_for("bia.get_component", component_id=0) }}';
+  var deleteComponentUrl = '{{ url_for("bia.delete_component", component_id=0) }}';
+  var editComponentUrl = '{{ url_for("bia.edit_component_form", component_id=0) }}';
+  var viewConsequencesUrl = '{{ url_for("bia.view_consequences", component_id=0) }}';
+  // Replace the last "/0" path segment, so ids mid-path and URL prefixes both work.
+  function withId(tpl, id) { return tpl.replace(/\/0(?=\/|$)(?!.*\/0(?:\/|$))/, '/' + id); }
   var csrfToken = '{{ csrf_token() }}';
 
   function openModal(modalId) {
@@ -394,7 +396,8 @@
     var viewBtn = e.target.closest('.bia-view-component');
     if (viewBtn) {
       var componentId = viewBtn.getAttribute('data-component-id');
-      fetch(getComponentUrl + componentId)
+      if (!componentId) return;
+      fetch(withId(getComponentUrl, componentId))
         .then(function (r) { return r.json(); })
         .then(function (data) {
           document.getElementById('bia-view-component-name').textContent = data.name || '-';
@@ -416,9 +419,9 @@
           document.getElementById('bia-view-component-description').textContent = data.description || '-';
           document.getElementById('bia-view-component-consequences').textContent = data.consequences_count || 0;
           var editLink = document.getElementById('bia-edit-component-launch');
-          if (editLink) editLink.href = editComponentUrl + componentId + '/edit';
+          if (editLink) editLink.href = withId(editComponentUrl, componentId);
           var consLink = document.getElementById('bia-view-consequences-link');
-          if (consLink) consLink.href = viewConsequencesUrl + componentId;
+          if (consLink) consLink.href = withId(viewConsequencesUrl, componentId);
           var delBtn = document.getElementById('bia-delete-component-launch');
           if (delBtn) delBtn.setAttribute('data-component-id', componentId);
           openModal('biaViewComponentModal');
@@ -453,8 +456,9 @@
   }
 
   function doDeleteComponent(componentId) {
+    if (!componentId) return;
     if (!confirm('{{ _('bia.actions.confirm_delete') }}')) return;
-    fetch(deleteComponentUrl + componentId, {
+    fetch(withId(deleteComponentUrl, componentId), {
       method: 'POST',
       headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
     })
