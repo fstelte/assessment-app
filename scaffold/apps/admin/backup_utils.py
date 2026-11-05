@@ -323,29 +323,9 @@ def inspect_pgsql_backup(data: bytes) -> list[RestorableTable]:
         t = m.group(2)
         table_inserts[t] = table_inserts.get(t, 0) + 1
 
-    # Pattern: COPY <table_name> (...) FROM stdin -- count data lines
-    copy_re = re.compile(
-        r"COPY\s+(?:public\.)?([\"']?)(\w+)\1\s*\(.*?\)\s+FROM\s+stdin\s*;",
-        re.IGNORECASE | re.DOTALL,
-    )
-    # Data block: lines between COPY … FROM stdin; and \.
-    data_block_re = re.compile(
-        r"COPY\s+(?:public\.)?(?:[\"']?\w+[\"']?)\s*\(.*?\)\s+FROM\s+stdin\s*;\n(.*?)\\\.[\n$]",
-        re.IGNORECASE | re.DOTALL,
-    )
-    for m in data_block_re.finditer(sql_text):
-        data_lines = [l for l in m.group(1).splitlines() if l.strip()]
-        # Find table name from preceding COPY statement
-        start = m.start()
-        preceding = sql_text[max(0, start - 200) : start + 50]
-        cm = re.search(
-            r"COPY\s+(?:public\.)?([\"']?)(\w+)\1",
-            preceding,
-            re.IGNORECASE,
-        )
-        if cm:
-            t = cm.group(2)
-            table_inserts[t] = max(table_inserts.get(t, 0), len(data_lines))
+    # COPY <table> (...) FROM stdin; blocks: one data line per row
+    for t, (_cols, block) in _extract_copy_blocks(sql_text).items():
+        table_inserts[t] = max(table_inserts.get(t, 0), block.count("\n"))
 
     # Also discover CREATE TABLE statements to include tables with 0 rows
     create_re = re.compile(

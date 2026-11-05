@@ -180,8 +180,11 @@ The section now states:
 
 ### Unchanged
 
-- `inspect_pgsql_backup` keeps its `INSERT`/`COPY`/`CREATE` counting for
-  estimates.
+- `inspect_pgsql_backup` keeps its `INSERT` and `CREATE` counting. Its `COPY`
+  row counts now come from `_extract_copy_blocks`. The old lookup searched the
+  200 characters before each block for the table name, so it credited rows to
+  the wrong table when small blocks sat close together (changed during
+  Task 1, 2026-11-05).
 - The SQLite partial restore.
 - Both backup paths.
 - Full restore (`docker/restore/restore_db.py`).

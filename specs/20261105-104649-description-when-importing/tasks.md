@@ -158,7 +158,9 @@ See [design.md](design.md) and the decisions
   record the output.
 - `COPY` data is passed to Postgres unchanged, so there is no unescaping in
   Python.
-- `inspect_pgsql_backup` is left unchanged.
+- `inspect_pgsql_backup` now counts `COPY` rows with `_extract_copy_blocks`
+  (done in Task 1 after review, which fixed rows being credited to the wrong
+  table).
 - **Deferred:** restoring `--inserts` dumps, Postgres in CI, translating
   per-table result messages.
 - After the code changes, run `graphify update .`.

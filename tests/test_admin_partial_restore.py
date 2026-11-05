@@ -262,6 +262,17 @@ class TestPostgresInspection:
         assert logs.row_count_kind == "estimate"
         assert logs.row_count_estimate == 2
 
+    def test_inspect_pgsql_counts_adjacent_small_tables(self):
+        """Each COPY block's rows are credited to its own table, even when blocks are close together."""
+        from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
+
+        backup_data = _make_pgsql_backup_gz({
+            "items": (["id", "name"], [(1, "a"), (2, "b"), (3, "c")]),
+            "tags": (["id", "label"], [(1, "x")]),
+        })
+        counts = {t.table_name: t.row_count_estimate for t in inspect_pgsql_backup(backup_data)}
+        assert counts == {"items": 3, "tags": 1}
+
 
 class TestExtractCopyBlocks:
     def _extract(self, sql: str):

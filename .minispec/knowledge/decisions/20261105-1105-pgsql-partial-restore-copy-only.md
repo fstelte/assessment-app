@@ -41,8 +41,10 @@ made by hand with `pg_dump --inserts`.
 - `_make_pgsql_backup_gz` in the tests writes real pg_dump `COPY` output: a
   `CREATE TABLE`, then `COPY public.<t> (cols) FROM stdin;`, tab-separated rows,
   and `\.`.
-- `inspect_pgsql_backup` keeps counting `INSERT` lines. It only produces row
-  estimates and changing it is out of scope.
+- `inspect_pgsql_backup` keeps counting `INSERT` lines for estimates. Its
+  `COPY` counts now use `_extract_copy_blocks`, which fixes rows being credited
+  to the wrong table when small blocks sat close together (added during
+  Task 1, 2026-11-05).
 
 ## Consequences
 
