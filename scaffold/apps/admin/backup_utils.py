@@ -700,8 +700,9 @@ def execute_partial_restore_pgsql(
 
     blocks = _extract_copy_blocks(gzip.decompress(data).decode("utf-8", errors="replace"))
 
+    insp = sa_inspect(engine)
     # Parents before children so foreign keys resolve; unknown tables last.
-    fk_order = [t for t, _fks in sa_inspect(engine).get_sorted_table_and_fkc_names() if t]
+    fk_order = [t for t, _fks in insp.get_sorted_table_and_fkc_names() if t]
     ordered = [t for t in fk_order if t in selected_tables]
     ordered += [t for t in selected_tables if t not in ordered]
 
@@ -738,6 +739,24 @@ def execute_partial_restore_pgsql(
                         "ON CONFLICT DO NOTHING"
                     )).rowcount
                     conn.execute(_sa_text(f"DROP TABLE {tmp}"))
+
+                    # Move a serial/identity sequence past restored ids (never backwards).
+                    pk_cols = insp.get_pk_constraint(table_name).get("constrained_columns") or []
+                    if restored > 0 and len(pk_cols) == 1:
+                        pk = f'"{_validate_table_name(pk_cols[0])}"'
+                        seq = conn.execute(
+                            _sa_text("SELECT pg_get_serial_sequence(:t, :c)"),
+                            {"t": tbl, "c": pk_cols[0]},
+                        ).scalar()
+                        if seq:
+                            conn.execute(
+                                _sa_text(
+                                    "SELECT setval(CAST(:seq AS regclass), GREATEST("
+                                    f"(SELECT MAX({pk}) FROM {tbl}), "
+                                    "pg_sequence_last_value(CAST(:seq AS regclass))))"
+                                ),
+                                {"seq": seq},
+                            )
 
                 results[table_name] = TableRestoreResult(
                     table_name=table_name,

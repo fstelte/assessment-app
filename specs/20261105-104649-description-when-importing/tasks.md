@@ -171,4 +171,6 @@ See [design.md](design.md) and the decisions
   - Implemented (2026-11-05). Waiting for the local `TEST_POSTGRES_URL` test run
     before this task can be marked done.
 - [ ] Task 3: Move sequences forward after a restore
+  - Implemented (2026-11-05). Waiting for the local `TEST_POSTGRES_URL` test run
+    before this task can be marked done.
 - [ ] Task 4: Treat an all-skipped run as completed, and update the docs

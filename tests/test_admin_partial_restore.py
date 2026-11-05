@@ -928,7 +928,7 @@ class TestDependencyAutoInclusion:
 # ---------------------------------------------------------------------------
 
 _PG_URL = os.environ.get("TEST_POSTGRES_URL")
-_PR_TABLES = "pr_child, pr_parent, pr_items"
+_PR_TABLES = "pr_child, pr_parent, pr_items, pr_tags"
 
 
 @pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
@@ -945,6 +945,7 @@ class TestPgsqlRestore:
             conn.execute(sa_text(f"DROP TABLE IF EXISTS {_PR_TABLES}"))
             conn.execute(sa_text("CREATE TABLE pr_items (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_parent (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text("CREATE TABLE pr_tags (code text PRIMARY KEY, label text)"))
             conn.execute(sa_text(
                 "CREATE TABLE pr_child (id serial PRIMARY KEY, "
                 "parent_id integer NOT NULL REFERENCES pr_parent(id), name text)"
@@ -1008,6 +1009,33 @@ class TestPgsqlRestore:
         results = self._restore(pg_engine, tables, ["pr_child", "pr_parent"])
         assert results["pr_parent"].status == "restored"
         assert results["pr_child"].status == "restored"
+
+    @staticmethod
+    def _insert_new_item(engine) -> int:
+        from sqlalchemy import text as sa_text
+
+        with engine.begin() as conn:
+            return conn.execute(sa_text("INSERT INTO pr_items (name) VALUES ('new') RETURNING id")).scalar_one()
+
+    def test_sequence_advanced_past_restored_ids(self, pg_engine):
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])  # ids 1, 2; sequence never used
+        assert self._insert_new_item(pg_engine) == 3
+
+    def test_sequence_never_moved_backwards(self, pg_engine):
+        from sqlalchemy import text as sa_text
+
+        for _ in range(5):
+            self._insert_new_item(pg_engine)  # sequence now at 5
+        with pg_engine.begin() as conn:
+            conn.execute(sa_text("DELETE FROM pr_items"))
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])  # max restored id is 2
+        assert self._insert_new_item(pg_engine) == 6
+
+    def test_table_without_serial_key_restores(self, pg_engine):
+        tables = {"pr_tags": (["code", "label"], [("a", "Alpha")])}
+        result = self._restore(pg_engine, tables, ["pr_tags"])["pr_tags"]
+        assert result.status == "restored"
+        assert self._rows(pg_engine, "SELECT code, label FROM pr_tags") == [("a", "Alpha")]
 
 
 # ---------------------------------------------------------------------------
