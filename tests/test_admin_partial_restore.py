@@ -93,25 +93,40 @@ def _make_sqlite_backup_gz(tables: dict[str, list[dict]] | None = None) -> bytes
     return buf.getvalue()
 
 
-def _make_pgsql_backup_gz(tables: dict[str, list[str]] | None = None) -> bytes:
-    """Return a gzip-compressed plain pg_dump SQL file.
+def _copy_escape(value) -> str:
+    """Encode one value the way pg_dump writes it in COPY text format."""
+    if value is None:
+        return "\\N"
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("\t", "\\t")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+    )
 
-    ``tables`` maps table_name -> list of INSERT SQL strings.
+
+def _make_pgsql_backup_gz(
+    tables: dict[str, tuple[list[str], list[tuple]]] | None = None,
+) -> bytes:
+    """Return a gzip-compressed plain pg_dump SQL file with COPY data blocks.
+
+    ``tables`` maps table_name -> (columns, rows). The first column is created
+    as the integer primary key, the others as text.
     """
     if tables is None:
-        tables = {
-            "sample_data": [
-                "INSERT INTO sample_data (id, name) VALUES (1, 'alpha');",
-                "INSERT INTO sample_data (id, name) VALUES (2, 'beta');",
-            ]
-        }
+        tables = {"sample_data": (["id", "name"], [(1, "alpha"), (2, "beta")])}
 
     lines = ["-- pg_dump plain sql backup\n"]
-    for table_name, inserts in tables.items():
-        lines.append(f"-- Table: {table_name}\n")
-        lines.append(f"CREATE TABLE IF NOT EXISTS {table_name} (id integer PRIMARY KEY, name text);\n")
-        for ins in inserts:
-            lines.append(ins + "\n")
+    for table_name, (columns, rows) in tables.items():
+        col_defs = ", ".join(
+            [f"{columns[0]} integer PRIMARY KEY"] + [f"{c} text" for c in columns[1:]]
+        )
+        lines.append(f"CREATE TABLE public.{table_name} ({col_defs});\n")
+        lines.append(f"COPY public.{table_name} ({', '.join(columns)}) FROM stdin;\n")
+        for row in rows:
+            lines.append("\t".join(_copy_escape(v) for v in row) + "\n")
+        lines.append("\\.\n\n")
 
     sql_bytes = "".join(lines).encode("utf-8")
 
@@ -225,11 +240,7 @@ class TestPostgresInspection:
     def test_inspect_pgsql_returns_tables(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"reports": [
-                "INSERT INTO reports (id, title) VALUES (1, 'R1');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"reports": (["id", "title"], [(1, "R1")])})
         tables = inspect_pgsql_backup(backup_data)
         assert len(tables) >= 1
         assert any(t.table_name == "reports" for t in tables)
@@ -237,11 +248,7 @@ class TestPostgresInspection:
     def test_inspect_pgsql_identity_not_selected_by_default(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"users": [
-                "INSERT INTO users (id, email) VALUES (1, 'a@b.com');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"users": (["id", "email"], [(1, "a@b.com")])})
         tables = inspect_pgsql_backup(backup_data)
         users = next(t for t in tables if t.table_name == "users")
         assert users.selected_by_default is False
@@ -249,15 +256,60 @@ class TestPostgresInspection:
     def test_inspect_pgsql_row_count_is_estimate(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"logs": [
-                "INSERT INTO logs (id, msg) VALUES (1, 'x');",
-                "INSERT INTO logs (id, msg) VALUES (2, 'y');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"logs": (["id", "msg"], [(1, "x"), (2, "y")])})
         tables = inspect_pgsql_backup(backup_data)
         logs = next(t for t in tables if t.table_name == "logs")
         assert logs.row_count_kind == "estimate"
+        assert logs.row_count_estimate == 2
+
+
+class TestExtractCopyBlocks:
+    def _extract(self, sql: str):
+        from scaffold.apps.admin.backup_utils import _extract_copy_blocks
+
+        return _extract_copy_blocks(sql)
+
+    def test_multiple_tables(self):
+        sql = gzip.decompress(
+            _make_pgsql_backup_gz({
+                "items": (["id", "name"], [(1, "a"), (2, "b")]),
+                "tags": (["id", "label"], [(1, "x")]),
+            })
+        ).decode()
+        blocks = self._extract(sql)
+        assert blocks == {
+            "items": (["id", "name"], "1\ta\n2\tb\n"),
+            "tags": (["id", "label"], "1\tx\n"),
+        }
+
+    def test_quoted_identifiers_and_public_prefix(self):
+        sql = 'COPY public."user" (id, "order", name) FROM stdin;\n1\t2\tz\n\\.\n'
+        assert self._extract(sql) == {"user": (["id", "order", "name"], "1\t2\tz\n")}
+
+    def test_empty_block(self):
+        sql = "COPY public.items (id, name) FROM stdin;\n\\.\n"
+        assert self._extract(sql) == {"items": (["id", "name"], "")}
+
+    def test_line_starting_with_terminator_is_data(self):
+        sql = "COPY public.items (id, name) FROM stdin;\n\\.not-end\t1\n\\.\n"
+        assert self._extract(sql) == {"items": (["id", "name"], "\\.not-end\t1\n")}
+
+    def test_escapes_nulls_and_semicolons_untouched(self):
+        sql = gzip.decompress(
+            _make_pgsql_backup_gz({
+                "items": (["id", "name"], [(1, "a;b\tc\nd\\e"), (2, None)]),
+            })
+        ).decode()
+        _, data = self._extract(sql)["items"]
+        assert data == "1\ta;b\\tc\\nd\\\\e\n2\t\\N\n"
+
+    def test_no_copy_block_means_table_absent(self):
+        sql = (
+            "CREATE TABLE public.other (id integer);\n"
+            "INSERT INTO items (id) VALUES (1);\n"
+            "COPY public.unterminated (id) FROM stdin;\n1\n"
+        )
+        assert self._extract(sql) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -870,10 +922,7 @@ class TestPgsqlRestoreIdempotence:
         from sqlalchemy import create_engine, text as sa_text
 
         backup_data = _make_pgsql_backup_gz(
-            {"items": [
-                "INSERT INTO items (id, name) VALUES (1, 'alpha');",
-                "INSERT INTO items (id, name) VALUES (2, 'beta');",
-            ]}
+            {"items": (["id", "name"], [(1, "alpha"), (2, "beta")])}
         )
 
         engine = create_engine("sqlite:///:memory:")

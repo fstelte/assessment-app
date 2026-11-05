@@ -676,6 +676,36 @@ def execute_partial_restore_sqlite(
     return results
 
 
+_COPY_HEADER_RE = re.compile(
+    r'^COPY\s+(?:"?public"?\.)?("?)(\w+)\1\s*\(([^)]*)\)\s+FROM\s+stdin;\s*$',
+    re.IGNORECASE,
+)
+
+
+def _extract_copy_blocks(sql_text: str) -> dict[str, tuple[list[str], str]]:
+    """Return ``{table: (columns, data)}`` for each ``COPY ... FROM stdin;`` block.
+
+    ``data`` is the raw COPY text (escapes and ``\\N`` untouched) up to, but not
+    including, the line that is exactly ``\\.``. Unterminated blocks are ignored.
+    """
+    blocks: dict[str, tuple[list[str], str]] = {}
+    lines = sql_text.split("\n")
+    i = 0
+    while i < len(lines):
+        m = _COPY_HEADER_RE.match(lines[i].rstrip("\r"))
+        i += 1
+        if not m:
+            continue
+        columns = [c.strip().strip('"') for c in m.group(3).split(",")]
+        start = i
+        while i < len(lines) and lines[i].rstrip("\r") != "\\.":
+            i += 1
+        if i < len(lines):
+            blocks[m.group(2).lower()] = (columns, "".join(l + "\n" for l in lines[start:i]))
+        i += 1
+    return blocks
+
+
 def execute_partial_restore_pgsql(
     data: bytes, selected_tables: list[str], engine: Any
 ) -> dict[str, TableRestoreResult]:
