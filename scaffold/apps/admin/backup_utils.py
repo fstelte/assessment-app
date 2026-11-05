@@ -1127,7 +1127,8 @@ def orchestrate_partial_restore(
         statuses = {r.status for r in table_results.values()}
         if not table_results:
             overall = "failed"
-        elif statuses == {"restored"} or statuses == {"restored", "skipped"}:
+        elif statuses <= {"restored", "skipped"}:
+            # All-skipped is a successful no-op (rows already present), not partial.
             overall = "completed"
         elif "failed" in statuses and "restored" not in statuses:
             overall = "failed"

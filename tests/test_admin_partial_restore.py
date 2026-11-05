@@ -860,6 +860,43 @@ class TestStalePreviewRejection:
                 state_dir=tmp_path,
             )
 
+    def test_all_skipped_run_is_completed(self, tmp_path):
+        """A run where every table is skipped (rows already present) is completed, not partial."""
+        from scaffold.apps.admin.backup_utils import (
+            BackupInspection,
+            TableRestoreResult,
+            orchestrate_partial_restore,
+        )
+        from datetime import UTC, datetime, timedelta
+
+        insp = BackupInspection(
+            inspection_id="skip-001",
+            backup_filename="backup.sql.gz",
+            backend="postgresql",
+            source_format="sql.gz",
+            encrypted=False,
+            inspected_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(minutes=30),
+            table_summaries=[],
+            parse_warnings=[],
+            full_restore_only=False,
+        )
+        skipped = {
+            t: TableRestoreResult(table_name=t, status="skipped", skipped_conflict_count=2)
+            for t in ("items", "tags")
+        }
+        with patch("scaffold.apps.admin.backup_utils.check_schema_compatibility", return_value={}), \
+             patch("scaffold.apps.admin.backup_utils.execute_partial_restore_pgsql", return_value=skipped):
+            run = orchestrate_partial_restore(
+                inspection=insp,
+                file_bytes=b"",
+                selected_tables=["items", "tags"],
+                user_id=None,
+                engine=MagicMock(),
+                state_dir=tmp_path,
+            )
+        assert run.status == "completed"
+
     def test_duplicate_selection_is_collapsed(self):
         from scaffold.apps.admin.backup_utils import dedup_table_selection
 

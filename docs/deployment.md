@@ -146,6 +146,16 @@ Partial restore is available from **Admin → Backup → Partial Restore**.
 
 - Supported formats: `.db.gz`, `.db.gz.enc`, `.sql.gz`, `.sql.gz.enc`.
 - Strategy: skip-existing (INSERT OR IGNORE / ON CONFLICT DO NOTHING). No data is overwritten.
+  Rows that already exist are counted as skipped; a run where every table is skipped
+  reports **completed**.
+- PostgreSQL backups made by the app (manual and scheduled `pg_dump --format=plain`)
+  are restored from their `COPY` data blocks:
+  - Selected tables are restored parents-first (foreign-key order), each in its own
+    savepoint, so one failing table does not stop the others.
+  - After a table restores rows, its serial/identity sequence is moved past the highest
+    restored id (never backwards), so new records don't collide with restored ids.
+  - Hand-made `pg_dump --inserts` dumps are not supported for partial restore; use
+    **Full Restore** for those.
 - Identity tables (`users`, `roles`, `user_roles`, etc.) must be selected as a group.
 - An inspection expires after 30 minutes. If it expires the administrator must re-upload the backup.
 - A file lock in `{tempdir}/scaffold_partial_restore/` prevents concurrent restore runs. Stale locks (>2 hours) are auto-cleared.
