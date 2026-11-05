@@ -691,56 +691,59 @@ def execute_partial_restore_pgsql(
 ) -> dict[str, TableRestoreResult]:
     """Execute a partial restore from a PostgreSQL .sql.gz stream.
 
-    Parses INSERT statements from the plain pg_dump SQL and replays them
-    with ON CONFLICT DO NOTHING semantics (skip-existing strategy).
+    Each selected table's ``COPY ... FROM stdin`` block is loaded into a temp
+    table by Postgres itself, then merged with ON CONFLICT DO NOTHING
+    (skip-existing strategy). Tables are restored parents-first, each inside its
+    own savepoint so one failure does not abort the others.
     """
-    sql_text = gzip.decompress(data).decode("utf-8", errors="replace")
+    from sqlalchemy import inspect as sa_inspect
 
-    # Collect INSERT statements per selected table
-    table_inserts: dict[str, list[str]] = {t: [] for t in selected_tables}
+    blocks = _extract_copy_blocks(gzip.decompress(data).decode("utf-8", errors="replace"))
 
-    # Match INSERT INTO <table> ... VALUES (...); (multi-line safe)
-    insert_re = re.compile(
-        r"INSERT\s+INTO\s+(?:public\.)?(\w+)\s*(?:\([^)]*\))?\s*VALUES\s*\([^;]+\);",
-        re.IGNORECASE | re.DOTALL,
-    )
-    for m in insert_re.finditer(sql_text):
-        tname = m.group(1).lower()
-        if tname in table_inserts:
-            table_inserts[tname].append(m.group(0))
+    # Parents before children so foreign keys resolve; unknown tables last.
+    fk_order = [t for t, _fks in sa_inspect(engine).get_sorted_table_and_fkc_names() if t]
+    ordered = [t for t in fk_order if t in selected_tables]
+    ordered += [t for t in selected_tables if t not in ordered]
 
     results: dict[str, TableRestoreResult] = {}
 
     with engine.begin() as conn:
-        for table_name in selected_tables:
-            inserts = table_inserts.get(table_name, [])
-            if not inserts:
+        for table_name in ordered:
+            if table_name not in blocks:
                 results[table_name] = TableRestoreResult(
                     table_name=table_name,
                     status="skipped",
                     restored_row_count=0,
                     skipped_conflict_count=0,
-                    error_message="No INSERT statements found for this table.",
+                    error_message="Backup contains no data for this table.",
                 )
                 continue
 
+            columns, copy_data = blocks[table_name]
             try:
-                restored = 0
-                skipped = 0
-                for stmt in inserts:
-                    bare = stmt.rstrip(";").rstrip()
-                    upsert = bare + " ON CONFLICT DO NOTHING"
-                    row_count = conn.execute(_sa_text(upsert)).rowcount
-                    if row_count and row_count > 0:
-                        restored += row_count
-                    else:
-                        skipped += 1
+                with conn.begin_nested():
+                    tbl = f'"{_validate_table_name(table_name)}"'
+                    tmp = f'"{_validate_table_name("_pr_" + table_name)}"'
+                    cols = ", ".join(f'"{_validate_table_name(c)}"' for c in columns)
+
+                    conn.execute(_sa_text(
+                        f"CREATE TEMP TABLE {tmp} (LIKE {tbl} INCLUDING DEFAULTS) ON COMMIT DROP"
+                    ))
+                    with conn.connection.driver_connection.cursor() as cur:
+                        with cur.copy(f"COPY {tmp} ({cols}) FROM STDIN") as copy:
+                            copy.write(copy_data)
+                    total = conn.execute(_sa_text(f"SELECT count(*) FROM {tmp}")).scalar_one()
+                    restored = conn.execute(_sa_text(
+                        f"INSERT INTO {tbl} ({cols}) SELECT {cols} FROM {tmp} "
+                        "ON CONFLICT DO NOTHING"
+                    )).rowcount
+                    conn.execute(_sa_text(f"DROP TABLE {tmp}"))
 
                 results[table_name] = TableRestoreResult(
                     table_name=table_name,
                     status="restored" if restored > 0 else "skipped",
                     restored_row_count=restored,
-                    skipped_conflict_count=skipped,
+                    skipped_conflict_count=total - restored,
                 )
             except Exception as exc:
                 results[table_name] = TableRestoreResult(

@@ -168,5 +168,7 @@ See [design.md](design.md) and the decisions
 ## Progress
 - [x] Task 1: Parse COPY blocks and make the test fixture realistic
 - [ ] Task 2: Rewrite `execute_partial_restore_pgsql` to restore from COPY blocks
+  - Implemented (2026-11-05). Waiting for the local `TEST_POSTGRES_URL` test run
+    before this task can be marked done.
 - [ ] Task 3: Move sequences forward after a restore
 - [ ] Task 4: Treat an all-skipped run as completed, and update the docs

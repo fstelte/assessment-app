@@ -4,6 +4,7 @@ from __future__ import annotations
 import gzip
 import io
 import json
+import os
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -922,34 +923,91 @@ class TestDependencyAutoInclusion:
 
 
 # ---------------------------------------------------------------------------
-# T045 – Extra idempotence: repeated PostgreSQL execution
+# PostgreSQL partial restore from COPY blocks (needs a real Postgres)
+# Run with: TEST_POSTGRES_URL=postgresql://user:pw@host:port/db pytest ...
 # ---------------------------------------------------------------------------
 
+_PG_URL = os.environ.get("TEST_POSTGRES_URL")
+_PR_TABLES = "pr_child, pr_parent, pr_items"
 
-class TestPgsqlRestoreIdempotence:
-    def test_pgsql_skip_existing_returns_skipped_status(self):
-        """Second pg restore run should return skipped status, not restored."""
-        from scaffold.apps.admin.backup_utils import execute_partial_restore_pgsql
+
+@pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
+class TestPgsqlRestore:
+    @pytest.fixture
+    def pg_engine(self):
         from sqlalchemy import create_engine, text as sa_text
 
-        backup_data = _make_pgsql_backup_gz(
-            {"items": (["id", "name"], [(1, "alpha"), (2, "beta")])}
-        )
+        url = _PG_URL
+        if url.startswith(("postgresql://", "postgres://")):
+            url = "postgresql+psycopg://" + url.split("://", 1)[1]
+        engine = create_engine(url)
+        with engine.begin() as conn:
+            conn.execute(sa_text(f"DROP TABLE IF EXISTS {_PR_TABLES}"))
+            conn.execute(sa_text("CREATE TABLE pr_items (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text("CREATE TABLE pr_parent (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text(
+                "CREATE TABLE pr_child (id serial PRIMARY KEY, "
+                "parent_id integer NOT NULL REFERENCES pr_parent(id), name text)"
+            ))
+        yield engine
+        with engine.begin() as conn:
+            conn.execute(sa_text(f"DROP TABLE IF EXISTS {_PR_TABLES}"))
+        engine.dispose()
 
-        engine = create_engine("sqlite:///:memory:")
+    @staticmethod
+    def _restore(engine, tables, selected):
+        from scaffold.apps.admin.backup_utils import execute_partial_restore_pgsql
+
+        return execute_partial_restore_pgsql(_make_pgsql_backup_gz(tables), selected, engine)
+
+    @staticmethod
+    def _rows(engine, sql):
+        from sqlalchemy import text as sa_text
+
         with engine.connect() as conn:
-            conn.execute(sa_text("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)"))
-            conn.commit()
+            return [tuple(r) for r in conn.execute(sa_text(sql))]
 
-        # First run
-        result1 = execute_partial_restore_pgsql(backup_data, ["items"], engine)
-        # Second run
-        result2 = execute_partial_restore_pgsql(backup_data, ["items"], engine)
+    _ITEMS = {"pr_items": (["id", "name"], [(1, "alpha"), (2, "beta")])}
 
-        # First run restores rows (or at least completes without error)
-        assert result1["items"].status in ("restored", "skipped", "failed")
-        # Second run: same rows → skipped (no duplicates)
-        assert result2["items"].status in ("restored", "skipped", "failed")
+    def test_restores_rows_into_empty_table(self, pg_engine):
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items"])["pr_items"]
+        assert (result.status, result.restored_row_count, result.skipped_conflict_count) == ("restored", 2, 0)
+        assert self._rows(pg_engine, "SELECT id, name FROM pr_items ORDER BY id") == [(1, "alpha"), (2, "beta")]
+
+    def test_rerun_skips_existing_rows(self, pg_engine):
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items"])["pr_items"]
+        assert (result.status, result.restored_row_count, result.skipped_conflict_count) == ("skipped", 0, 2)
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
+
+    def test_escapes_nulls_and_semicolons_round_trip(self, pg_engine):
+        tricky = "a;b\tc\nd\\e'f"
+        self._restore(pg_engine, {"pr_items": (["id", "name"], [(1, tricky), (2, None)])}, ["pr_items"])
+        assert self._rows(pg_engine, "SELECT id, name FROM pr_items ORDER BY id") == [(1, tricky), (2, None)]
+
+    def test_table_without_copy_block_is_skipped(self, pg_engine):
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items", "pr_parent"])["pr_parent"]
+        assert result.status == "skipped"
+        assert result.error_message == "Backup contains no data for this table."
+
+    def test_failing_table_does_not_abort_others(self, pg_engine):
+        tables = {
+            **self._ITEMS,
+            "pr_child": (["id", "parent_id", "name"], [(1, 99, "orphan")]),  # no parent 99
+        }
+        results = self._restore(pg_engine, tables, ["pr_child", "pr_items"])
+        assert results["pr_child"].status == "failed"
+        assert results["pr_items"].status == "restored"
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
+
+    def test_parent_restored_before_child_regardless_of_selection(self, pg_engine):
+        tables = {
+            "pr_child": (["id", "parent_id", "name"], [(1, 1, "kid")]),
+            "pr_parent": (["id", "name"], [(1, "mum")]),
+        }
+        results = self._restore(pg_engine, tables, ["pr_child", "pr_parent"])
+        assert results["pr_parent"].status == "restored"
+        assert results["pr_child"].status == "restored"
 
 
 # ---------------------------------------------------------------------------
