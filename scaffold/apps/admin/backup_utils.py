@@ -323,29 +323,9 @@ def inspect_pgsql_backup(data: bytes) -> list[RestorableTable]:
         t = m.group(2)
         table_inserts[t] = table_inserts.get(t, 0) + 1
 
-    # Pattern: COPY <table_name> (...) FROM stdin -- count data lines
-    copy_re = re.compile(
-        r"COPY\s+(?:public\.)?([\"']?)(\w+)\1\s*\(.*?\)\s+FROM\s+stdin\s*;",
-        re.IGNORECASE | re.DOTALL,
-    )
-    # Data block: lines between COPY … FROM stdin; and \.
-    data_block_re = re.compile(
-        r"COPY\s+(?:public\.)?(?:[\"']?\w+[\"']?)\s*\(.*?\)\s+FROM\s+stdin\s*;\n(.*?)\\\.[\n$]",
-        re.IGNORECASE | re.DOTALL,
-    )
-    for m in data_block_re.finditer(sql_text):
-        data_lines = [l for l in m.group(1).splitlines() if l.strip()]
-        # Find table name from preceding COPY statement
-        start = m.start()
-        preceding = sql_text[max(0, start - 200) : start + 50]
-        cm = re.search(
-            r"COPY\s+(?:public\.)?([\"']?)(\w+)\1",
-            preceding,
-            re.IGNORECASE,
-        )
-        if cm:
-            t = cm.group(2)
-            table_inserts[t] = max(table_inserts.get(t, 0), len(data_lines))
+    # COPY <table> (...) FROM stdin; blocks: one data line per row
+    for t, (_cols, block) in _extract_copy_blocks(sql_text).items():
+        table_inserts[t] = max(table_inserts.get(t, 0), block.count("\n"))
 
     # Also discover CREATE TABLE statements to include tables with 0 rows
     create_re = re.compile(
@@ -676,61 +656,113 @@ def execute_partial_restore_sqlite(
     return results
 
 
+_COPY_HEADER_RE = re.compile(
+    r'^COPY\s+(?:"?public"?\.)?("?)(\w+)\1\s*\(([^)]*)\)\s+FROM\s+stdin;\s*$',
+    re.IGNORECASE,
+)
+
+
+def _extract_copy_blocks(sql_text: str) -> dict[str, tuple[list[str], str]]:
+    """Return ``{table: (columns, data)}`` for each ``COPY ... FROM stdin;`` block.
+
+    ``data`` is the raw COPY text (escapes and ``\\N`` untouched) up to, but not
+    including, the line that is exactly ``\\.``. Unterminated blocks are ignored.
+    """
+    blocks: dict[str, tuple[list[str], str]] = {}
+    lines = sql_text.split("\n")
+    i = 0
+    while i < len(lines):
+        m = _COPY_HEADER_RE.match(lines[i].rstrip("\r"))
+        i += 1
+        if not m:
+            continue
+        columns = [c.strip().strip('"') for c in m.group(3).split(",")]
+        start = i
+        while i < len(lines) and lines[i].rstrip("\r") != "\\.":
+            i += 1
+        if i < len(lines):
+            blocks[m.group(2).lower()] = (columns, "".join(l + "\n" for l in lines[start:i]))
+        i += 1
+    return blocks
+
+
 def execute_partial_restore_pgsql(
     data: bytes, selected_tables: list[str], engine: Any
 ) -> dict[str, TableRestoreResult]:
     """Execute a partial restore from a PostgreSQL .sql.gz stream.
 
-    Parses INSERT statements from the plain pg_dump SQL and replays them
-    with ON CONFLICT DO NOTHING semantics (skip-existing strategy).
+    Each selected table's ``COPY ... FROM stdin`` block is loaded into a temp
+    table by Postgres itself, then merged with ON CONFLICT DO NOTHING
+    (skip-existing strategy). Tables are restored parents-first, each inside its
+    own savepoint so one failure does not abort the others.
     """
-    sql_text = gzip.decompress(data).decode("utf-8", errors="replace")
+    from sqlalchemy import inspect as sa_inspect
 
-    # Collect INSERT statements per selected table
-    table_inserts: dict[str, list[str]] = {t: [] for t in selected_tables}
+    blocks = _extract_copy_blocks(gzip.decompress(data).decode("utf-8", errors="replace"))
 
-    # Match INSERT INTO <table> ... VALUES (...); (multi-line safe)
-    insert_re = re.compile(
-        r"INSERT\s+INTO\s+(?:public\.)?(\w+)\s*(?:\([^)]*\))?\s*VALUES\s*\([^;]+\);",
-        re.IGNORECASE | re.DOTALL,
-    )
-    for m in insert_re.finditer(sql_text):
-        tname = m.group(1).lower()
-        if tname in table_inserts:
-            table_inserts[tname].append(m.group(0))
+    insp = sa_inspect(engine)
+    # Parents before children so foreign keys resolve; unknown tables last.
+    fk_order = [t for t, _fks in insp.get_sorted_table_and_fkc_names() if t]
+    ordered = [t for t in fk_order if t in selected_tables]
+    ordered += [t for t in selected_tables if t not in ordered]
 
     results: dict[str, TableRestoreResult] = {}
 
     with engine.begin() as conn:
-        for table_name in selected_tables:
-            inserts = table_inserts.get(table_name, [])
-            if not inserts:
+        for table_name in ordered:
+            if table_name not in blocks:
                 results[table_name] = TableRestoreResult(
                     table_name=table_name,
                     status="skipped",
                     restored_row_count=0,
                     skipped_conflict_count=0,
-                    error_message="No INSERT statements found for this table.",
+                    error_message="Backup contains no data for this table.",
                 )
                 continue
 
+            columns, copy_data = blocks[table_name]
             try:
-                restored = 0
-                skipped = 0
-                for stmt in inserts:
-                    bare = stmt.rstrip(";").rstrip()
-                    upsert = bare + " ON CONFLICT DO NOTHING"
-                    row_count = conn.execute(_sa_text(upsert)).rowcount
-                    if row_count and row_count > 0:
-                        restored += row_count
-                    else:
-                        skipped += 1
+                with conn.begin_nested():
+                    tbl = f'"{_validate_table_name(table_name)}"'
+                    tmp = f'"{_validate_table_name("_pr_" + table_name)}"'
+                    cols = ", ".join(f'"{_validate_table_name(c)}"' for c in columns)
+
+                    conn.execute(_sa_text(
+                        f"CREATE TEMP TABLE {tmp} (LIKE {tbl} INCLUDING DEFAULTS) ON COMMIT DROP"
+                    ))
+                    with conn.connection.driver_connection.cursor() as cur:
+                        with cur.copy(f"COPY {tmp} ({cols}) FROM STDIN") as copy:
+                            copy.write(copy_data)
+                    total = conn.execute(_sa_text(f"SELECT count(*) FROM {tmp}")).scalar_one()
+                    restored = conn.execute(_sa_text(
+                        f"INSERT INTO {tbl} ({cols}) SELECT {cols} FROM {tmp} "
+                        "ON CONFLICT DO NOTHING"
+                    )).rowcount
+                    conn.execute(_sa_text(f"DROP TABLE {tmp}"))
+
+                    # Move a serial/identity sequence past restored ids (never backwards).
+                    pk_cols = insp.get_pk_constraint(table_name).get("constrained_columns") or []
+                    if restored > 0 and len(pk_cols) == 1:
+                        pk = f'"{_validate_table_name(pk_cols[0])}"'
+                        seq = conn.execute(
+                            _sa_text("SELECT pg_get_serial_sequence(:t, :c)"),
+                            {"t": tbl, "c": pk_cols[0]},
+                        ).scalar()
+                        if seq:
+                            conn.execute(
+                                _sa_text(
+                                    "SELECT setval(CAST(:seq AS regclass), GREATEST("
+                                    f"(SELECT MAX({pk}) FROM {tbl}), "
+                                    "pg_sequence_last_value(CAST(:seq AS regclass))))"
+                                ),
+                                {"seq": seq},
+                            )
 
                 results[table_name] = TableRestoreResult(
                     table_name=table_name,
                     status="restored" if restored > 0 else "skipped",
                     restored_row_count=restored,
-                    skipped_conflict_count=skipped,
+                    skipped_conflict_count=total - restored,
                 )
             except Exception as exc:
                 results[table_name] = TableRestoreResult(
@@ -1095,7 +1127,8 @@ def orchestrate_partial_restore(
         statuses = {r.status for r in table_results.values()}
         if not table_results:
             overall = "failed"
-        elif statuses == {"restored"} or statuses == {"restored", "skipped"}:
+        elif statuses <= {"restored", "skipped"}:
+            # All-skipped is a successful no-op (rows already present), not partial.
             overall = "completed"
         elif "failed" in statuses and "restored" not in statuses:
             overall = "failed"

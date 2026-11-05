@@ -4,6 +4,7 @@ from __future__ import annotations
 import gzip
 import io
 import json
+import os
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -93,25 +94,40 @@ def _make_sqlite_backup_gz(tables: dict[str, list[dict]] | None = None) -> bytes
     return buf.getvalue()
 
 
-def _make_pgsql_backup_gz(tables: dict[str, list[str]] | None = None) -> bytes:
-    """Return a gzip-compressed plain pg_dump SQL file.
+def _copy_escape(value) -> str:
+    """Encode one value the way pg_dump writes it in COPY text format."""
+    if value is None:
+        return "\\N"
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("\t", "\\t")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+    )
 
-    ``tables`` maps table_name -> list of INSERT SQL strings.
+
+def _make_pgsql_backup_gz(
+    tables: dict[str, tuple[list[str], list[tuple]]] | None = None,
+) -> bytes:
+    """Return a gzip-compressed plain pg_dump SQL file with COPY data blocks.
+
+    ``tables`` maps table_name -> (columns, rows). The first column is created
+    as the integer primary key, the others as text.
     """
     if tables is None:
-        tables = {
-            "sample_data": [
-                "INSERT INTO sample_data (id, name) VALUES (1, 'alpha');",
-                "INSERT INTO sample_data (id, name) VALUES (2, 'beta');",
-            ]
-        }
+        tables = {"sample_data": (["id", "name"], [(1, "alpha"), (2, "beta")])}
 
     lines = ["-- pg_dump plain sql backup\n"]
-    for table_name, inserts in tables.items():
-        lines.append(f"-- Table: {table_name}\n")
-        lines.append(f"CREATE TABLE IF NOT EXISTS {table_name} (id integer PRIMARY KEY, name text);\n")
-        for ins in inserts:
-            lines.append(ins + "\n")
+    for table_name, (columns, rows) in tables.items():
+        col_defs = ", ".join(
+            [f"{columns[0]} integer PRIMARY KEY"] + [f"{c} text" for c in columns[1:]]
+        )
+        lines.append(f"CREATE TABLE public.{table_name} ({col_defs});\n")
+        lines.append(f"COPY public.{table_name} ({', '.join(columns)}) FROM stdin;\n")
+        for row in rows:
+            lines.append("\t".join(_copy_escape(v) for v in row) + "\n")
+        lines.append("\\.\n\n")
 
     sql_bytes = "".join(lines).encode("utf-8")
 
@@ -225,11 +241,7 @@ class TestPostgresInspection:
     def test_inspect_pgsql_returns_tables(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"reports": [
-                "INSERT INTO reports (id, title) VALUES (1, 'R1');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"reports": (["id", "title"], [(1, "R1")])})
         tables = inspect_pgsql_backup(backup_data)
         assert len(tables) >= 1
         assert any(t.table_name == "reports" for t in tables)
@@ -237,11 +249,7 @@ class TestPostgresInspection:
     def test_inspect_pgsql_identity_not_selected_by_default(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"users": [
-                "INSERT INTO users (id, email) VALUES (1, 'a@b.com');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"users": (["id", "email"], [(1, "a@b.com")])})
         tables = inspect_pgsql_backup(backup_data)
         users = next(t for t in tables if t.table_name == "users")
         assert users.selected_by_default is False
@@ -249,15 +257,71 @@ class TestPostgresInspection:
     def test_inspect_pgsql_row_count_is_estimate(self):
         from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
 
-        backup_data = _make_pgsql_backup_gz(
-            {"logs": [
-                "INSERT INTO logs (id, msg) VALUES (1, 'x');",
-                "INSERT INTO logs (id, msg) VALUES (2, 'y');",
-            ]}
-        )
+        backup_data = _make_pgsql_backup_gz({"logs": (["id", "msg"], [(1, "x"), (2, "y")])})
         tables = inspect_pgsql_backup(backup_data)
         logs = next(t for t in tables if t.table_name == "logs")
         assert logs.row_count_kind == "estimate"
+        assert logs.row_count_estimate == 2
+
+    def test_inspect_pgsql_counts_adjacent_small_tables(self):
+        """Each COPY block's rows are credited to its own table, even when blocks are close together."""
+        from scaffold.apps.admin.backup_utils import inspect_pgsql_backup
+
+        backup_data = _make_pgsql_backup_gz({
+            "items": (["id", "name"], [(1, "a"), (2, "b"), (3, "c")]),
+            "tags": (["id", "label"], [(1, "x")]),
+        })
+        counts = {t.table_name: t.row_count_estimate for t in inspect_pgsql_backup(backup_data)}
+        assert counts == {"items": 3, "tags": 1}
+
+
+class TestExtractCopyBlocks:
+    def _extract(self, sql: str):
+        from scaffold.apps.admin.backup_utils import _extract_copy_blocks
+
+        return _extract_copy_blocks(sql)
+
+    def test_multiple_tables(self):
+        sql = gzip.decompress(
+            _make_pgsql_backup_gz({
+                "items": (["id", "name"], [(1, "a"), (2, "b")]),
+                "tags": (["id", "label"], [(1, "x")]),
+            })
+        ).decode()
+        blocks = self._extract(sql)
+        assert blocks == {
+            "items": (["id", "name"], "1\ta\n2\tb\n"),
+            "tags": (["id", "label"], "1\tx\n"),
+        }
+
+    def test_quoted_identifiers_and_public_prefix(self):
+        sql = 'COPY public."user" (id, "order", name) FROM stdin;\n1\t2\tz\n\\.\n'
+        assert self._extract(sql) == {"user": (["id", "order", "name"], "1\t2\tz\n")}
+
+    def test_empty_block(self):
+        sql = "COPY public.items (id, name) FROM stdin;\n\\.\n"
+        assert self._extract(sql) == {"items": (["id", "name"], "")}
+
+    def test_line_starting_with_terminator_is_data(self):
+        sql = "COPY public.items (id, name) FROM stdin;\n\\.not-end\t1\n\\.\n"
+        assert self._extract(sql) == {"items": (["id", "name"], "\\.not-end\t1\n")}
+
+    def test_escapes_nulls_and_semicolons_untouched(self):
+        sql = gzip.decompress(
+            _make_pgsql_backup_gz({
+                "items": (["id", "name"], [(1, "a;b\tc\nd\\e"), (2, None)]),
+            })
+        ).decode()
+        _, data = self._extract(sql)["items"]
+        assert data == "1\ta;b\\tc\\nd\\\\e\n2\t\\N\n"
+
+    def test_no_copy_block_means_table_absent(self):
+        sql = (
+            "CREATE TABLE public.other (id integer);\n"
+            "INSERT INTO items (id) VALUES (1);\n"
+            "COPY public.unterminated (id) FROM stdin;\n1\n"
+        )
+        assert self._extract(sql) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -796,6 +860,43 @@ class TestStalePreviewRejection:
                 state_dir=tmp_path,
             )
 
+    def test_all_skipped_run_is_completed(self, tmp_path):
+        """A run where every table is skipped (rows already present) is completed, not partial."""
+        from scaffold.apps.admin.backup_utils import (
+            BackupInspection,
+            TableRestoreResult,
+            orchestrate_partial_restore,
+        )
+        from datetime import UTC, datetime, timedelta
+
+        insp = BackupInspection(
+            inspection_id="skip-001",
+            backup_filename="backup.sql.gz",
+            backend="postgresql",
+            source_format="sql.gz",
+            encrypted=False,
+            inspected_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(minutes=30),
+            table_summaries=[],
+            parse_warnings=[],
+            full_restore_only=False,
+        )
+        skipped = {
+            t: TableRestoreResult(table_name=t, status="skipped", skipped_conflict_count=2)
+            for t in ("items", "tags")
+        }
+        with patch("scaffold.apps.admin.backup_utils.check_schema_compatibility", return_value={}), \
+             patch("scaffold.apps.admin.backup_utils.execute_partial_restore_pgsql", return_value=skipped):
+            run = orchestrate_partial_restore(
+                inspection=insp,
+                file_bytes=b"",
+                selected_tables=["items", "tags"],
+                user_id=None,
+                engine=MagicMock(),
+                state_dir=tmp_path,
+            )
+        assert run.status == "completed"
+
     def test_duplicate_selection_is_collapsed(self):
         from scaffold.apps.admin.backup_utils import dedup_table_selection
 
@@ -859,37 +960,119 @@ class TestDependencyAutoInclusion:
 
 
 # ---------------------------------------------------------------------------
-# T045 – Extra idempotence: repeated PostgreSQL execution
+# PostgreSQL partial restore from COPY blocks (needs a real Postgres)
+# Run with: TEST_POSTGRES_URL=postgresql://user:pw@host:port/db pytest ...
 # ---------------------------------------------------------------------------
 
+_PG_URL = os.environ.get("TEST_POSTGRES_URL")
+_PR_TABLES = "pr_child, pr_parent, pr_items, pr_tags"
 
-class TestPgsqlRestoreIdempotence:
-    def test_pgsql_skip_existing_returns_skipped_status(self):
-        """Second pg restore run should return skipped status, not restored."""
-        from scaffold.apps.admin.backup_utils import execute_partial_restore_pgsql
+
+@pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
+class TestPgsqlRestore:
+    @pytest.fixture
+    def pg_engine(self):
         from sqlalchemy import create_engine, text as sa_text
 
-        backup_data = _make_pgsql_backup_gz(
-            {"items": [
-                "INSERT INTO items (id, name) VALUES (1, 'alpha');",
-                "INSERT INTO items (id, name) VALUES (2, 'beta');",
-            ]}
-        )
+        url = _PG_URL
+        if url.startswith(("postgresql://", "postgres://")):
+            url = "postgresql+psycopg://" + url.split("://", 1)[1]
+        engine = create_engine(url)
+        with engine.begin() as conn:
+            conn.execute(sa_text(f"DROP TABLE IF EXISTS {_PR_TABLES}"))
+            conn.execute(sa_text("CREATE TABLE pr_items (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text("CREATE TABLE pr_parent (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text("CREATE TABLE pr_tags (code text PRIMARY KEY, label text)"))
+            conn.execute(sa_text(
+                "CREATE TABLE pr_child (id serial PRIMARY KEY, "
+                "parent_id integer NOT NULL REFERENCES pr_parent(id), name text)"
+            ))
+        yield engine
+        with engine.begin() as conn:
+            conn.execute(sa_text(f"DROP TABLE IF EXISTS {_PR_TABLES}"))
+        engine.dispose()
 
-        engine = create_engine("sqlite:///:memory:")
+    @staticmethod
+    def _restore(engine, tables, selected):
+        from scaffold.apps.admin.backup_utils import execute_partial_restore_pgsql
+
+        return execute_partial_restore_pgsql(_make_pgsql_backup_gz(tables), selected, engine)
+
+    @staticmethod
+    def _rows(engine, sql):
+        from sqlalchemy import text as sa_text
+
         with engine.connect() as conn:
-            conn.execute(sa_text("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)"))
-            conn.commit()
+            return [tuple(r) for r in conn.execute(sa_text(sql))]
 
-        # First run
-        result1 = execute_partial_restore_pgsql(backup_data, ["items"], engine)
-        # Second run
-        result2 = execute_partial_restore_pgsql(backup_data, ["items"], engine)
+    _ITEMS = {"pr_items": (["id", "name"], [(1, "alpha"), (2, "beta")])}
 
-        # First run restores rows (or at least completes without error)
-        assert result1["items"].status in ("restored", "skipped", "failed")
-        # Second run: same rows → skipped (no duplicates)
-        assert result2["items"].status in ("restored", "skipped", "failed")
+    def test_restores_rows_into_empty_table(self, pg_engine):
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items"])["pr_items"]
+        assert (result.status, result.restored_row_count, result.skipped_conflict_count) == ("restored", 2, 0)
+        assert self._rows(pg_engine, "SELECT id, name FROM pr_items ORDER BY id") == [(1, "alpha"), (2, "beta")]
+
+    def test_rerun_skips_existing_rows(self, pg_engine):
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items"])["pr_items"]
+        assert (result.status, result.restored_row_count, result.skipped_conflict_count) == ("skipped", 0, 2)
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
+
+    def test_escapes_nulls_and_semicolons_round_trip(self, pg_engine):
+        tricky = "a;b\tc\nd\\e'f"
+        self._restore(pg_engine, {"pr_items": (["id", "name"], [(1, tricky), (2, None)])}, ["pr_items"])
+        assert self._rows(pg_engine, "SELECT id, name FROM pr_items ORDER BY id") == [(1, tricky), (2, None)]
+
+    def test_table_without_copy_block_is_skipped(self, pg_engine):
+        result = self._restore(pg_engine, self._ITEMS, ["pr_items", "pr_parent"])["pr_parent"]
+        assert result.status == "skipped"
+        assert result.error_message == "Backup contains no data for this table."
+
+    def test_failing_table_does_not_abort_others(self, pg_engine):
+        tables = {
+            **self._ITEMS,
+            "pr_child": (["id", "parent_id", "name"], [(1, 99, "orphan")]),  # no parent 99
+        }
+        results = self._restore(pg_engine, tables, ["pr_child", "pr_items"])
+        assert results["pr_child"].status == "failed"
+        assert results["pr_items"].status == "restored"
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
+
+    def test_parent_restored_before_child_regardless_of_selection(self, pg_engine):
+        tables = {
+            "pr_child": (["id", "parent_id", "name"], [(1, 1, "kid")]),
+            "pr_parent": (["id", "name"], [(1, "mum")]),
+        }
+        results = self._restore(pg_engine, tables, ["pr_child", "pr_parent"])
+        assert results["pr_parent"].status == "restored"
+        assert results["pr_child"].status == "restored"
+
+    @staticmethod
+    def _insert_new_item(engine) -> int:
+        from sqlalchemy import text as sa_text
+
+        with engine.begin() as conn:
+            return conn.execute(sa_text("INSERT INTO pr_items (name) VALUES ('new') RETURNING id")).scalar_one()
+
+    def test_sequence_advanced_past_restored_ids(self, pg_engine):
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])  # ids 1, 2; sequence never used
+        assert self._insert_new_item(pg_engine) == 3
+
+    def test_sequence_never_moved_backwards(self, pg_engine):
+        from sqlalchemy import text as sa_text
+
+        for _ in range(5):
+            self._insert_new_item(pg_engine)  # sequence now at 5
+        with pg_engine.begin() as conn:
+            conn.execute(sa_text("DELETE FROM pr_items"))
+        self._restore(pg_engine, self._ITEMS, ["pr_items"])  # max restored id is 2
+        assert self._insert_new_item(pg_engine) == 6
+
+    def test_table_without_serial_key_restores(self, pg_engine):
+        tables = {"pr_tags": (["code", "label"], [("a", "Alpha")])}
+        result = self._restore(pg_engine, tables, ["pr_tags"])["pr_tags"]
+        assert result.status == "restored"
+        assert self._rows(pg_engine, "SELECT code, label FROM pr_tags") == [("a", "Alpha")]
 
 
 # ---------------------------------------------------------------------------
