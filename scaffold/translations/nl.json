@@ -1851,6 +1851,7 @@
           "submit": "Back-up inspecteren",
           "not_eligible": "Dit back-upformaat ondersteunt gedeeltelijk herstellen niet. Gebruik volledig herstellen.",
           "decrypt_failed": "Ontsleuteling mislukt. Controleer de sleutel en probeer opnieuw.",
+          "invalid_key": "De versleutelingssleutel is geen geldige back-upsleutel. Controleer of je de sleutel volledig hebt gekopieerd. Heb je het sleutelveld leeg gelaten, dan is de back-upsleutel van de server ongeldig; vraag je beheerder BACKUP_ENCRYPTION_KEY te controleren.",
           "inspect_failed": "Kon deze back-up niet inspecteren. Mogelijk beschadigd of niet-ondersteund formaat.",
           "active_run": "Er wordt al een gedeeltelijk herstel uitgevoerd. Wacht totdat het is voltooid."
         },

@@ -2305,10 +2305,13 @@ def partial_restore_inspect():
     file_bytes = uploaded.read()
     provided_key = (form.encryption_key.data or "").strip() or None
     configured_key = get_configured_key(current_app)
-    encryption_key = provided_key or configured_key
+    keys = [k for k in (provided_key, configured_key) if k]
 
     try:
-        inspection = build_inspection(filename, file_bytes, encryption_key=encryption_key)
+        inspection = build_inspection(filename, file_bytes, encryption_keys=keys)
+    except InvalidBackupKey:
+        flash(_("admin.backup.partial_restore.entry.invalid_key"), "danger")
+        return redirect(url_for("admin.partial_restore_entry"))
     except RuntimeError as exc:
         msg = str(exc)
         if "ecrypt" in msg.lower():
@@ -2327,13 +2330,13 @@ def partial_restore_inspect():
     # Store the decrypted file bytes so the execute path can re-use them
     # without needing a re-upload. We reuse the inspection_id as a key.
     # If the file was encrypted, decrypt now so execute never needs the key again.
-    if inspection.encrypted and encryption_key:
-        from .backup_crypto import try_decrypt
-        from cryptography.fernet import InvalidToken
+    # Never cache ciphertext: on failure, cache nothing.
+    if inspection.encrypted:
         try:
-            bytes_to_cache = try_decrypt(file_bytes, [encryption_key])
-        except (InvalidToken, Exception):
-            bytes_to_cache = file_bytes  # fallback; won't succeed on execute either
+            bytes_to_cache = try_decrypt(file_bytes, keys)
+        except Exception:
+            flash(_("admin.backup.partial_restore.entry.decrypt_failed"), "danger")
+            return redirect(url_for("admin.partial_restore_entry"))
     else:
         bytes_to_cache = file_bytes
     _store_backup_bytes(inspection.inspection_id, bytes_to_cache)

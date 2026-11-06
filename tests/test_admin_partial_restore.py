@@ -7,6 +7,7 @@ import json
 import os
 import sqlite3
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -40,12 +41,13 @@ def _create_admin(app) -> tuple[User, Role]:
 
 
 def _login_admin(client) -> None:
-    resp = client.post(
-        "/auth/login",
-        data={"email": "admin@example.com", "password": "Password123!"},
-        follow_redirects=True,
-    )
-    assert resp.status_code == 200
+    # Password login forces MFA enrolment; authenticate the session directly
+    # (same approach as conftest.login and _sign_in in test_admin_routes.py).
+    user = User.query.filter_by(email="admin@example.com").one()
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(user.id)
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
 
 
 def _make_sqlite_backup_gz(tables: dict[str, list[dict]] | None = None) -> bytes:
@@ -794,7 +796,7 @@ class TestFailurePaths:
         from scaffold.apps.admin.backup_utils import build_inspection
 
         with pytest.raises(Exception):
-            build_inspection("backup.db.gz", b"not-valid-data", encryption_key=None)
+            build_inspection("backup.db.gz", b"not-valid-data", encryption_keys=[])
 
 
 # ---------------------------------------------------------------------------
@@ -1242,3 +1244,94 @@ class TestAuditEventPayloads:
             assert event.payload["status"] == "partial"
             assert "t1" in event.payload["table_outcomes"]
             assert "t2" in event.payload["skipped_conflict_counts"]
+
+
+# ---------------------------------------------------------------------------
+# Encrypted uploads: key normalization and error messages (inspect route)
+# ---------------------------------------------------------------------------
+
+
+_ENC_BACKUPS = {
+    "pg_dump-manual-20261106T070556Z.sql.gz.enc": lambda: _make_pgsql_backup_gz(
+        {"sample_data": (["id", "name"], [(1, "alpha")])}
+    ),
+    "sqlite-manual-20261106T070556Z.db.gz.enc": lambda: _make_sqlite_backup_gz(),
+}
+
+
+class TestEncryptedInspect:
+    @pytest.fixture
+    def env(self, app, client, tmp_path, monkeypatch):
+        from cryptography.fernet import Fernet
+
+        app.config.update(BACKUP_DIR=str(tmp_path), BACKUP_ENCRYPTION_KEY=None)
+        _create_admin(app)
+        _login_admin(client)
+        cached: dict[str, bytes] = {}
+        monkeypatch.setattr(
+            "scaffold.apps.admin.routes._store_backup_bytes",
+            lambda key, data: cached.__setitem__(key, data),
+        )
+        return {"key": Fernet.generate_key().decode(), "cached": cached}
+
+    @staticmethod
+    def _inspect(client, filename, plain, key, typed=""):
+        from scaffold.apps.admin.backup_crypto import encrypt_bytes
+
+        return client.post(
+            "/admin/backup/partial-restore/inspect",
+            data={
+                "backup_file": (io.BytesIO(encrypt_bytes(plain, key)), filename),
+                "encryption_key": typed,
+            },
+            content_type="multipart/form-data",
+        )
+
+    @staticmethod
+    def _flashes(client) -> str:
+        with client.session_transaction() as sess:
+            return " ".join(msg for _cat, msg in sess.get("_flashes", []))
+
+    @pytest.mark.parametrize("filename", list(_ENC_BACKUPS))
+    def test_key_without_padding_lists_tables(self, client, env, filename):  # scenario 1
+        plain = _ENC_BACKUPS[filename]()
+        resp = self._inspect(client, filename, plain, env["key"], env["key"].rstrip("="))
+        assert resp.status_code == 200
+        assert b"sample_data" in resp.data
+        assert list(env["cached"].values()) == [plain]
+
+    @pytest.mark.parametrize("filename", list(_ENC_BACKUPS))
+    def test_invalid_key_says_invalid_not_ineligible(self, client, env, filename, caplog):  # scenarios 3, 10
+        resp = self._inspect(client, filename, _ENC_BACKUPS[filename](), env["key"], "my-passphrase")
+        assert resp.status_code == 302
+        flashes = self._flashes(client)
+        assert "not a valid backup key" in flashes
+        assert "does not support partial restore" not in flashes
+        assert "my-passphrase" not in flashes + caplog.text
+        assert env["cached"] == {}
+
+    @pytest.mark.parametrize("filename", list(_ENC_BACKUPS))
+    def test_wrong_key_says_decrypt_failed(self, client, env, filename):  # scenario 4
+        from cryptography.fernet import Fernet
+
+        other = Fernet.generate_key().decode()
+        resp = self._inspect(client, filename, _ENC_BACKUPS[filename](), env["key"], other)
+        assert resp.status_code == 302
+        assert "Decryption failed" in self._flashes(client)
+        assert env["cached"] == {}
+
+    @pytest.mark.parametrize("filename", list(_ENC_BACKUPS))
+    def test_invalid_typed_key_falls_back_to_configured(self, app, client, env, filename):  # scenario 8
+        app.config["BACKUP_ENCRYPTION_KEY"] = env["key"]
+        plain = _ENC_BACKUPS[filename]()
+        resp = self._inspect(client, filename, plain, env["key"], "my-passphrase")
+        assert resp.status_code == 200
+        assert b"sample_data" in resp.data
+        assert list(env["cached"].values()) == [plain]
+
+    @pytest.mark.parametrize("filename", list(_ENC_BACKUPS))
+    def test_no_key_says_decrypt_failed(self, client, env, filename):  # scenario 9
+        resp = self._inspect(client, filename, _ENC_BACKUPS[filename](), env["key"])
+        assert resp.status_code == 302
+        assert "Decryption failed" in self._flashes(client)
+        assert env["cached"] == {}
