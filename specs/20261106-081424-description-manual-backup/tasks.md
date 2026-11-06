@@ -171,5 +171,5 @@ Decisions:
 
 ## Progress
 - [x] Task 1: Normalize keys and classify failures in `backup_crypto`
-- [ ] Task 2: Full restore handles invalid and wrong keys
+- [x] Task 2: Full restore handles invalid and wrong keys
 - [ ] Task 3: Partial restore reports invalid keys correctly

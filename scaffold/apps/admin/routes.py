@@ -90,7 +90,7 @@ from .forms import (
     PrincipleUpdateForm,
     SetPasswordForm,
 )
-from .backup_crypto import try_decrypt
+from .backup_crypto import InvalidBackupKey, try_decrypt
 from .backup_utils import (
     create_sqlite_backup,
     create_postgres_backup,
@@ -2206,12 +2206,13 @@ def restore_backup():
         filename = uploaded.filename
 
         if filename.endswith(".enc"):
-            keys_to_try = [k for k in [provided_key, configured_key] if k]
-            if not keys_to_try:
-                keys_to_try = [None]
+            keys_to_try = [k for k in (provided_key, configured_key) if k]
             try:
-                file_bytes = try_decrypt(file_bytes, keys_to_try + [None])
+                file_bytes = try_decrypt(file_bytes, keys_to_try)
                 filename = filename[:-4]
+            except InvalidBackupKey:
+                flash(_("admin.backup.restore.invalid_key"), "error")
+                return render_template("admin/backup_restore.html", form=form)
             except InvalidToken:
                 flash(_("admin.backup.restore.decrypt_failed"), "error")
                 return render_template("admin/backup_restore.html", form=form)

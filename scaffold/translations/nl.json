@@ -1828,6 +1828,7 @@
         "key_placeholder": "Leeg laten om geconfigureerde sleutel te gebruiken",
         "submit": "Uploaden & herstel plannen",
         "decrypt_failed": "Ontsleuteling mislukt. Controleer de versleutelingssleutel en probeer het opnieuw.",
+        "invalid_key": "De versleutelingssleutel is geen geldige back-upsleutel. Controleer of je de sleutel volledig hebt gekopieerd. Heb je het sleutelveld leeg gelaten, dan is de back-upsleutel van de server ongeldig; vraag je beheerder BACKUP_ENCRYPTION_KEY te controleren.",
         "write_error": "Het back-upbestand kon niet worden opgeslagen: {error}",
         "queued": "Back-upbestand '{filename}' gepland voor herstel."
       },
