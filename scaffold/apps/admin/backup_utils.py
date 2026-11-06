@@ -992,12 +992,14 @@ def release_run_lock(state_dir: Path | None = None) -> None:
 def build_inspection(
     filename: str,
     file_bytes: bytes,
-    encryption_key: str | None = None,
+    encryption_keys: list[str] | None = None,
 ) -> BackupInspection:
     """Decrypt (if needed) and inspect a backup file. Return a BackupInspection.
 
+    Keys are tried in order; they are ignored for non-.enc files.
     Raises ValueError for non-eligible formats.
-    Raises RuntimeError on decryption or parsing failures.
+    Raises InvalidBackupKey when no key worked and a key was malformed.
+    Raises RuntimeError on other decryption or parsing failures.
     """
     from .backup_crypto import try_decrypt
     from cryptography.fernet import InvalidToken
@@ -1011,9 +1013,8 @@ def build_inspection(
 
     data = file_bytes
     if encrypted:
-        keys_to_try = [k for k in [encryption_key] if k] + [None]
         try:
-            data = try_decrypt(file_bytes, keys_to_try)
+            data = try_decrypt(file_bytes, encryption_keys or [])
         except InvalidToken:
             raise RuntimeError("Decryption failed. Verify the encryption key.")
 

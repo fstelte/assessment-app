@@ -1558,6 +1558,7 @@
         "key_placeholder": "Leave empty to use configured key",
         "submit": "Upload & queue restore",
         "decrypt_failed": "Decryption failed. Please verify the encryption key and try again.",
+        "invalid_key": "The encryption key is not a valid backup key. Check that you copied it completely. If you left the key field empty, the server's configured backup key is invalid; ask your administrator to check BACKUP_ENCRYPTION_KEY.",
         "write_error": "Failed to save backup file: {error}",
         "queued": "Backup file '{filename}' queued for restore."
       },
@@ -1580,6 +1581,7 @@
           "submit": "Inspect backup",
           "not_eligible": "This backup format does not support partial restore. Use full restore instead.",
           "decrypt_failed": "Decryption failed. Verify the encryption key and try again.",
+          "invalid_key": "The encryption key is not a valid backup key. Check that you copied it completely. If you left the key field empty, the server's configured backup key is invalid; ask your administrator to check BACKUP_ENCRYPTION_KEY.",
           "inspect_failed": "Could not inspect this backup. It may be corrupted or use an unsupported format.",
           "active_run": "A partial restore is already in progress. Please wait until it completes before starting another."
         },

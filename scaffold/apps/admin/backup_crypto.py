@@ -20,17 +20,46 @@ def decrypt_bytes(data: bytes, key: str) -> bytes:
     return Fernet(key.encode()).decrypt(data)
 
 
-def try_decrypt(data: bytes, keys: list) -> bytes:
+class InvalidBackupKey(Exception):
+    """No key decrypted the data and at least one key was not a valid Fernet key.
+
+    Deliberately not a ValueError: callers treat ValueError as "unsupported
+    backup format". The message never contains key material.
     """
-    Try each key in order (str or None). Returns decrypted bytes on first success.
-    Raises InvalidToken if all keys fail.
-    Pass None as a key to return data as-is (unencrypted fallback).
+
+
+def normalize_key(key: str) -> str:
+    """Repair common copy-paste damage to a Fernet key.
+
+    Removes all whitespace, one matching pair of surrounding quotes, and
+    restores missing '=' padding. Standard base64 ('+', '/') is not converted.
     """
+    key = "".join(key.split())
+    if len(key) >= 2 and key[0] == key[-1] and key[0] in "'\"":
+        key = key[1:-1]
+    return key + "=" * (-len(key) % 4)
+
+
+def try_decrypt(data: bytes, keys: list[str]) -> bytes:
+    """Try each key in order and return the bytes from the first that works.
+
+    Empty or None keys are skipped; data is never returned undecrypted.
+    Raises InvalidBackupKey when no key worked and any key was malformed,
+    otherwise InvalidToken.
+    """
+    saw_invalid_key = False
     for key in keys:
-        if key is None:
-            return data
+        if not key:
+            continue
         try:
-            return Fernet(key.encode()).decrypt(data)
+            fernet = Fernet(normalize_key(key).encode())
+        except ValueError:
+            saw_invalid_key = True
+            continue
+        try:
+            return fernet.decrypt(data)
         except InvalidToken:
             continue
+    if saw_invalid_key:
+        raise InvalidBackupKey("The encryption key is not a valid backup key.")
     raise InvalidToken("No key succeeded in decrypting the backup.")
