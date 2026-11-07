@@ -1,6 +1,6 @@
 ---
 feature: 20261106-161847-description-partial-restore
-status: planned
+status: implemented
 created: 2026-11-06
 decisions:
   - 20261106-1626-pgsql-partial-restore-dangling-fk-handling

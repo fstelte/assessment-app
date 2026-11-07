@@ -1,6 +1,6 @@
 ---
 feature: 20261106-161847-description-partial-restore
-status: planned
+status: completed
 created: 2026-11-07
 chunk_size: medium
 total_tasks: 4
@@ -148,7 +148,7 @@ page and in the audit event. See [design.md](design.md) and decisions
   the message text. The reasons are in decision 20261106-1635.
 
 ## Progress
-- [ ] Task 1: Clear or skip dangling foreign keys in the PostgreSQL restore — *implemented and committed; waiting on evidence: `-k Pgsql` against a real Postgres (not run yet, Docker unavailable on 2026-11-07). Without Postgres: 75 passed, 13 skipped.*
-- [ ] Task 2: Order and counting edge cases — *implemented and committed; waiting on evidence: `-k Pgsql` against a real Postgres (not run yet). Without Postgres: 91 tests, 75 passed, 16 skipped, 0 failed.*
-- [ ] Task 3: Self-referencing foreign keys — *implemented and committed; waiting on evidence: `-k Pgsql` against a real Postgres (not run yet). Without Postgres: 93 tests, 75 passed, 18 skipped, 0 failed.*
+- [x] Task 1: Clear or skip dangling foreign keys in the PostgreSQL restore — *checked off by the engineer on 2026-11-07 (application builds). Note: `-k Pgsql` against a real Postgres has not been run yet. Without Postgres: 75 passed, 13 skipped.*
+- [x] Task 2: Order and counting edge cases — *checked off by the engineer on 2026-11-07 (application builds). Note: `-k Pgsql` against a real Postgres has not been run yet. Without Postgres: 91 tests, 75 passed, 16 skipped, 0 failed.*
+- [x] Task 3: Self-referencing foreign keys — *checked off by the engineer on 2026-11-07 (application builds). Note: `-k Pgsql` against a real Postgres has not been run yet. Without Postgres: 93 tests, 75 passed, 18 skipped, 0 failed.*
 - [x] Task 4: Results page, translations, audit event and docs — *evidence: `pytest tests/test_admin_partial_restore.py` without Postgres: 95 tests, 77 passed, 18 skipped (Postgres), 0 failed; `test_translation_keys.py` passes. As agreed, no route test for the audit payload (only `log_event` directly).*
