@@ -967,7 +967,7 @@ class TestDependencyAutoInclusion:
 # ---------------------------------------------------------------------------
 
 _PG_URL = os.environ.get("TEST_POSTGRES_URL")
-_PR_TABLES = "pr_child, pr_parent, pr_items, pr_tags"
+_PR_TABLES = "pr_child, pr_parent, pr_owner, pr_items, pr_tags"
 
 
 @pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
@@ -985,9 +985,11 @@ class TestPgsqlRestore:
             conn.execute(sa_text("CREATE TABLE pr_items (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_parent (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_tags (code text PRIMARY KEY, label text)"))
+            conn.execute(sa_text("CREATE TABLE pr_owner (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text(
                 "CREATE TABLE pr_child (id serial PRIMARY KEY, "
-                "parent_id integer NOT NULL REFERENCES pr_parent(id), name text)"
+                "parent_id integer NOT NULL REFERENCES pr_parent(id), "
+                "owner_id integer REFERENCES pr_owner(id), name text)"
             ))
         yield engine
         with engine.begin() as conn:
@@ -1030,13 +1032,11 @@ class TestPgsqlRestore:
         assert result.status == "skipped"
         assert result.error_message == "Backup contains no data for this table."
 
+    _BAD_PARENT = {"pr_parent": (["id", "name"], [("not-an-int", "mum")])}  # COPY fails on the integer id
+
     def test_failing_table_does_not_abort_others(self, pg_engine):
-        tables = {
-            **self._ITEMS,
-            "pr_child": (["id", "parent_id", "name"], [(1, 99, "orphan")]),  # no parent 99
-        }
-        results = self._restore(pg_engine, tables, ["pr_child", "pr_items"])
-        assert results["pr_child"].status == "failed"
+        results = self._restore(pg_engine, {**self._ITEMS, **self._BAD_PARENT}, ["pr_parent", "pr_items"])
+        assert results["pr_parent"].status == "failed"
         assert results["pr_items"].status == "restored"
         assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
 
@@ -1048,6 +1048,37 @@ class TestPgsqlRestore:
         results = self._restore(pg_engine, tables, ["pr_child", "pr_parent"])
         assert results["pr_parent"].status == "restored"
         assert results["pr_child"].status == "restored"
+
+    # --- Dangling foreign keys (decision 20261106-1626) ---
+
+    _CHILD_COLS = ["id", "parent_id", "owner_id", "name"]
+    _MUM = {"pr_parent": (["id", "name"], [(1, "mum")])}
+
+    def test_reference_to_unselected_table_is_cleared(self, pg_engine):
+        tables = {**self._MUM, "pr_child": (self._CHILD_COLS, [(1, 1, 99, "kid")])}  # owner 99 missing
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.status, r.restored_row_count, r.cleared_reference_count, r.skipped_missing_parent_count) == (
+            "restored", 1, 1, 0,
+        )
+        assert self._rows(pg_engine, "SELECT id, owner_id FROM pr_child") == [(1, None)]
+
+    def test_not_null_reference_to_unselected_table_is_skipped(self, pg_engine):
+        tables = {"pr_child": (self._CHILD_COLS, [(1, 99, None, "orphan")])}  # parent 99 missing
+        r = self._restore(pg_engine, tables, ["pr_child"])["pr_child"]
+        assert (r.status, r.restored_row_count, r.skipped_missing_parent_count, r.skipped_conflict_count) == (
+            "skipped", 0, 1, 0,
+        )
+
+    def test_missing_row_in_selected_parent_is_skipped_not_cleared(self, pg_engine):
+        tables = {**self._MUM, "pr_child": (self._CHILD_COLS, [(1, 2, None, "kid")])}  # parent 2 not in backup
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.restored_row_count, r.skipped_missing_parent_count, r.cleared_reference_count) == (0, 1, 0)
+
+    def test_child_of_failed_parent_is_skipped_not_failed(self, pg_engine):
+        tables = {**self._BAD_PARENT, "pr_child": (self._CHILD_COLS, [(1, 1, None, "kid")])}
+        results = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])
+        assert results["pr_parent"].status == "failed"
+        assert (results["pr_child"].status, results["pr_child"].skipped_missing_parent_count) == ("skipped", 1)
 
     @staticmethod
     def _insert_new_item(engine) -> int:

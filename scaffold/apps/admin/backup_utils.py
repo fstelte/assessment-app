@@ -141,6 +141,8 @@ class TableRestoreResult:
     status: str  # restored | skipped | blocked | failed
     restored_row_count: int = 0
     skipped_conflict_count: int = 0
+    cleared_reference_count: int = 0
+    skipped_missing_parent_count: int = 0
     blocked_reason: str | None = None
     error_message: str | None = None
 
@@ -686,6 +688,58 @@ def _extract_copy_blocks(sql_text: str) -> dict[str, tuple[list[str], str]]:
     return blocks
 
 
+def _resolve_dangling_fks(
+    conn: Any, insp: Any, table_name: str, tmp: str, selected: set[str]
+) -> tuple[int, int]:
+    """Make the temp table's rows satisfy the target's foreign keys.
+
+    In order: drop rows whose primary key already exists live (they would be
+    skipped as conflicts anyway); drop rows whose parent is missing; then set
+    to NULL nullable single-column references to tables not in this restore.
+    Returns ``(cleared_reference_count, skipped_missing_parent_count)``.
+    """
+    q = lambda name: f'"{_validate_table_name(name)}"'  # noqa: E731
+    tbl = q(table_name)
+
+    pk_cols = insp.get_pk_constraint(table_name).get("constrained_columns") or []
+    if pk_cols:
+        match = " AND ".join(f"live.{q(c)} = t.{q(c)}" for c in pk_cols)
+        conn.execute(_sa_text(
+            f"DELETE FROM {tmp} AS t "  # nosec B608
+            f"WHERE EXISTS (SELECT 1 FROM {tbl} AS live WHERE {match})"
+        ))
+
+    live_tables = set(insp.get_table_names())
+    nullable = {c["name"]: c["nullable"] for c in insp.get_columns(table_name)}
+    # Self-references are handled separately (Task 3).
+    fks = [fk for fk in insp.get_foreign_keys(table_name) if fk["referred_table"] != table_name]
+
+    def dangling(fk: dict) -> str:
+        cols = [f"t.{q(c)}" for c in fk["constrained_columns"]]
+        cond = " AND ".join(f"{c} IS NOT NULL" for c in cols)
+        if fk["referred_table"] in live_tables:  # a missing parent table means every parent is missing
+            match = " AND ".join(f"p.{q(r)} = {c}" for r, c in zip(fk["referred_columns"], cols))
+            cond += f" AND NOT EXISTS (SELECT 1 FROM {q(fk['referred_table'])} AS p WHERE {match})"
+        return cond
+
+    def clearable(fk: dict) -> bool:
+        cols = fk["constrained_columns"]
+        return fk["referred_table"] not in selected and len(cols) == 1 and nullable.get(cols[0], False)
+
+    skipped = 0
+    for fk in fks:
+        if not clearable(fk):
+            skipped += conn.execute(_sa_text(f"DELETE FROM {tmp} AS t WHERE {dangling(fk)}")).rowcount  # nosec B608
+    cleared = 0
+    for fk in fks:
+        if clearable(fk):
+            col = q(fk["constrained_columns"][0])
+            cleared += conn.execute(_sa_text(
+                f"UPDATE {tmp} AS t SET {col} = NULL WHERE {dangling(fk)}"  # nosec B608
+            )).rowcount
+    return cleared, skipped
+
+
 def execute_partial_restore_pgsql(
     data: bytes, selected_tables: list[str], engine: Any
 ) -> dict[str, TableRestoreResult]:
@@ -734,6 +788,9 @@ def execute_partial_restore_pgsql(
                         with cur.copy(f"COPY {tmp} ({cols}) FROM STDIN") as copy:
                             copy.write(copy_data)
                     total = conn.execute(_sa_text(f"SELECT count(*) FROM {tmp}")).scalar_one()
+                    cleared, missing_parent = _resolve_dangling_fks(
+                        conn, insp, table_name, tmp, set(selected_tables)
+                    )
                     restored = conn.execute(_sa_text(
                         f"INSERT INTO {tbl} ({cols}) SELECT {cols} FROM {tmp} "
                         "ON CONFLICT DO NOTHING"
@@ -762,7 +819,9 @@ def execute_partial_restore_pgsql(
                     table_name=table_name,
                     status="restored" if restored > 0 else "skipped",
                     restored_row_count=restored,
-                    skipped_conflict_count=total - restored,
+                    skipped_conflict_count=total - restored - missing_parent,
+                    cleared_reference_count=cleared,
+                    skipped_missing_parent_count=missing_parent,
                 )
             except Exception as exc:
                 results[table_name] = TableRestoreResult(
