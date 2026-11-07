@@ -149,6 +149,6 @@ page and in the audit event. See [design.md](design.md) and decisions
 
 ## Progress
 - [ ] Task 1: Clear or skip dangling foreign keys in the PostgreSQL restore — *implemented and committed; waiting on evidence: `-k Pgsql` against a real Postgres (not run yet, Docker unavailable on 2026-11-07). Without Postgres: 75 passed, 13 skipped.*
-- [ ] Task 2: Order and counting edge cases
+- [ ] Task 2: Order and counting edge cases — *implemented and committed; waiting on evidence: `-k Pgsql` against a real Postgres (not run yet). Without Postgres: 91 tests, 75 passed, 16 skipped, 0 failed.*
 - [ ] Task 3: Self-referencing foreign keys
 - [ ] Task 4: Results page, translations, audit event and docs
