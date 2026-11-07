@@ -696,6 +696,7 @@ def _resolve_dangling_fks(
     In order: drop rows whose primary key already exists live (they would be
     skipped as conflicts anyway); drop rows whose parent is missing; then set
     to NULL nullable single-column references to tables not in this restore.
+    For a self-reference, a parent elsewhere in the same backup counts as present.
     Returns ``(cleared_reference_count, skipped_missing_parent_count)``.
     """
     q = lambda name: f'"{_validate_table_name(name)}"'  # noqa: E731
@@ -711,25 +712,33 @@ def _resolve_dangling_fks(
 
     live_tables = set(insp.get_table_names())
     nullable = {c["name"]: c["nullable"] for c in insp.get_columns(table_name)}
-    # Self-references are handled separately (Task 3).
-    fks = [fk for fk in insp.get_foreign_keys(table_name) if fk["referred_table"] != table_name]
+    fks = insp.get_foreign_keys(table_name)
 
     def dangling(fk: dict) -> str:
         cols = [f"t.{q(c)}" for c in fk["constrained_columns"]]
         cond = " AND ".join(f"{c} IS NOT NULL" for c in cols)
+        match = " AND ".join(f"p.{q(r)} = {c}" for r, c in zip(fk["referred_columns"], cols))
         if fk["referred_table"] in live_tables:  # a missing parent table means every parent is missing
-            match = " AND ".join(f"p.{q(r)} = {c}" for r, c in zip(fk["referred_columns"], cols))
             cond += f" AND NOT EXISTS (SELECT 1 FROM {q(fk['referred_table'])} AS p WHERE {match})"
+        if fk["referred_table"] == table_name:  # self-reference: a parent in this backup also counts
+            cond += f" AND NOT EXISTS (SELECT 1 FROM {tmp} AS p WHERE {match})"
         return cond
 
     def clearable(fk: dict) -> bool:
         cols = fk["constrained_columns"]
         return fk["referred_table"] not in selected and len(cols) == 1 and nullable.get(cols[0], False)
 
+    # Repeat until stable: skipping a self-referenced parent can orphan its children.
     skipped = 0
-    for fk in fks:
-        if not clearable(fk):
-            skipped += conn.execute(_sa_text(f"DELETE FROM {tmp} AS t WHERE {dangling(fk)}")).rowcount  # nosec B608
+    while True:
+        deleted = sum(
+            conn.execute(_sa_text(f"DELETE FROM {tmp} AS t WHERE {dangling(fk)}")).rowcount  # nosec B608
+            for fk in fks
+            if not clearable(fk)
+        )
+        skipped += deleted
+        if deleted == 0:
+            break
     cleared = 0
     for fk in fks:
         if clearable(fk):

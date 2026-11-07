@@ -967,7 +967,7 @@ class TestDependencyAutoInclusion:
 # ---------------------------------------------------------------------------
 
 _PG_URL = os.environ.get("TEST_POSTGRES_URL")
-_PR_TABLES = "pr_child, pr_parent, pr_owner, pr_pair, pr_items, pr_tags"
+_PR_TABLES = "pr_child, pr_parent, pr_owner, pr_pair, pr_node, pr_items, pr_tags"
 
 
 @pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
@@ -987,6 +987,10 @@ class TestPgsqlRestore:
             conn.execute(sa_text("CREATE TABLE pr_tags (code text PRIMARY KEY, label text)"))
             conn.execute(sa_text("CREATE TABLE pr_owner (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_pair (a integer, b integer, PRIMARY KEY (a, b))"))
+            conn.execute(sa_text(
+                "CREATE TABLE pr_node (id serial PRIMARY KEY, "
+                "parent_id integer REFERENCES pr_node(id), name text)"
+            ))
             conn.execute(sa_text(
                 "CREATE TABLE pr_child (id serial PRIMARY KEY, "
                 "parent_id integer NOT NULL REFERENCES pr_parent(id), "
@@ -1114,6 +1118,23 @@ class TestPgsqlRestore:
         assert (r.restored_row_count, r.skipped_missing_parent_count, r.cleared_reference_count) == (1, 0, 0)
         assert self._rows(pg_engine, "SELECT pair_a, pair_b FROM pr_child") == [(5, None)]
         self._assert_buckets(r, 1)
+
+    # --- Self-referencing foreign keys (Task 3, like adr_records.supersedes_id) ---
+
+    _NODE_COLS = ["id", "parent_id", "name"]
+
+    def test_self_referencing_chain_restores(self, pg_engine):
+        rows = [(3, 2, "c"), (2, 1, "b"), (1, None, "a")]  # children before parents in the backup
+        r = self._restore(pg_engine, {"pr_node": (self._NODE_COLS, rows)}, ["pr_node"])["pr_node"]
+        assert (r.restored_row_count, r.skipped_missing_parent_count) == (3, 0)
+        self._assert_buckets(r, 3)
+
+    def test_self_referencing_orphan_chain_is_skipped(self, pg_engine):
+        rows = [(1, 99, "a"), (2, 1, "b"), (3, 2, "c")]  # root parent 99 missing
+        r = self._restore(pg_engine, {"pr_node": (self._NODE_COLS, rows)}, ["pr_node"])["pr_node"]
+        assert (r.status, r.restored_row_count, r.skipped_missing_parent_count) == ("skipped", 0, 3)
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_node") == [(0,)]
+        self._assert_buckets(r, 3)
 
     @staticmethod
     def _insert_new_item(engine) -> int:
