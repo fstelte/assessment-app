@@ -27,3 +27,5 @@ Security checklist decisions (2026-09-24): the route is limited to 10 requests p
 
 - The admin knows the user's password until the user changes it.
 - No schema change or migration.
+
+> **Partly superseded (2026-11-07)** by [[20261107-0905-invalidate-user-sessions-rotates-token]]: `invalidate_user_sessions` now rotates the user's session token, so it also works without Redis and ends remember-me cookies. The `sessions_not_revoked` warning has been removed.

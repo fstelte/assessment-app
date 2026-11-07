@@ -51,6 +51,9 @@ Without the `--env-file` flag, `${DATABASE_URL}` remains empty during compose pa
 
 - `docker/compose.backup.yml` also defines a `db-restore` service that watches a queue directory (default `/restore/incoming`).
 - When a dump file appears (`.sql`/`.sql.gz`, `.dump`/`.dump.gz`, `.db`/`.db.gz`), the service stops the containers listed in `RESTORE_STOP_CONTAINERS`, restores the configured database, and restarts those containers (plus any names in `RESTORE_START_CONTAINERS`).
+- After the restore, and before the containers start again, the service gives every user a new
+  session token, so everyone has to sign in again. The result is logged and stored in the state
+  file under `last_processed.session_rotation`. See [Sessions after a restore](#sessions-after-a-restore).
 - Mount both `./backups:/backups` and `./restore:/restore` when running the overlay so backups and queued restores persist.
 - Provide Docker API access (`/var/run/docker.sock`) and populate the relevant environment variables in `.env.production`:
   - `RESTORE_STOP_CONTAINERS` — comma-separated container names to stop before the restore (for example `assessment-app-web-1`).
@@ -128,6 +131,8 @@ Refer to `docs/authentication.md` for the full end-to-end setup guide, troublesh
 
 - Validate new migrations locally or in staging, then run `flask db upgrade`
   (or the equivalent task) before exposing the new release to users.
+- The release that adds migration `20261107_0001` (`users.session_token`) signs every user out
+  once: existing sessions and remember-me cookies hold the old numeric id. Announce it.
 - Confirm environment variable changes (including `SAML_ALLOWED_GROUP_IDS`,
   `SAML_ROLE_MAP`, `SAML_REQUESTED_AUTHN_CONTEXT`, and `SAML_LOGOUT_RETURN_URL`)
   are committed to infrastructure configuration and secrets stores.
@@ -154,10 +159,56 @@ Partial restore is available from **Admin → Backup → Partial Restore**.
     savepoint, so one failing table does not stop the others.
   - After a table restores rows, its serial/identity sequence is moved past the highest
     restored id (never backwards), so new records don't collide with restored ids.
+  - Rows whose foreign-key parent is missing do not fail the table. A reference to a
+    table that is not part of this restore (for example `users` when the identity group
+    is not selected) is set to NULL when the column allows it; any other row with a
+    missing parent is skipped. The results page and the audit trail show both counts
+    per table ("Rows skipped (missing parent)", "References cleared").
+  - Known limitation: if two selected tables reference each other (a foreign-key cycle),
+    rows of the table restored first are skipped. The current schema has no such cycle.
   - Hand-made `pg_dump --inserts` dumps are not supported for partial restore; use
     **Full Restore** for those.
 - Identity tables (`users`, `roles`, `user_roles`, etc.) must be selected as a group.
 - An inspection expires after 30 minutes. If it expires the administrator must re-upload the backup.
 - A file lock in `{tempdir}/scaffold_partial_restore/` prevents concurrent restore runs. Stale locks (>2 hours) are auto-cleared.
 - All inspect and execute actions are written to the admin audit trail.
+- After a completed or partial run, every other user is signed out; the administrator who ran it
+  stays signed in. See [Sessions after a restore](#sessions-after-a-restore).
 - If a backup format is not supported for partial restore, use the **Full Restore** workflow instead.
+
+## Sessions after a restore
+
+Sessions and remember-me cookies are bound to a random per-user token (`users.session_token`),
+not to the numeric user id. After a restore an id can belong to someone else; a token never can.
+
+- **Full restore** (`db-restore` service): every user gets a new token right after the restore,
+  so everyone signs in again. Logged as `session tokens rotated for N users`, and stored in the
+  state file under `last_processed.session_rotation` (`rotated`, `skipped` or `failed`).
+  A backup from before migration `20261107_0001` has no token column: the step is `skipped`,
+  and the migration gives every user a fresh token when the app starts.
+- **Partial restore**: every user except the administrator who ran it gets a new token. The
+  `partial_restore_execute` audit event records `sessions_rotated` and `sessions_kept_user_id`.
+- **Admin actions**: deactivating a user, setting a user's password and resetting a user's MFA
+  end that user's sessions and remember-me cookies, with or without server-side (Redis) sessions.
+- **Restarting the app no longer signs anyone out.** The session fingerprint is stable across
+  restarts, so a restart is not a way to end sessions.
+
+### If rotation fails
+
+The restore itself is never undone. The results page shows a warning (partial restore), or the
+restore log shows `WARNING: session token rotation failed` and the state file says `failed`
+(full restore). Rotate the tokens by hand:
+
+- **Any database**, from a shell in the app container:
+
+  ```bash
+  python -c "from scaffold import create_app; from scaffold.core.security import rotate_all_session_tokens; app = create_app(); app.app_context().push(); print(rotate_all_session_tokens(), 'users signed out')"
+  ```
+
+- **PostgreSQL**, with `psql` against the application database:
+
+  ```sql
+  UPDATE users SET session_token = replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+  ```
+
+Both sign out every user, including yourself.

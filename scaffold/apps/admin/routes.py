@@ -1610,8 +1610,6 @@ def set_user_password(user_id: int):
     db.session.commit()
     if not is_self:
         invalidate_user_sessions(user.id)
-        if current_app.config.get("SESSION_TYPE") != "redis":
-            flash(_("admin.users.flash.sessions_not_revoked"), "warning")
     flash(_("admin.users.flash.password_set"), "success")
     return redirect(manage_url)
 
@@ -1646,8 +1644,6 @@ def reset_user_mfa(user_id: int):
     )
     db.session.commit()
     invalidate_user_sessions(user.id)
-    if current_app.config.get("SESSION_TYPE") != "redis":
-        flash(_("admin.users.flash.sessions_not_revoked"), "warning")
     flash(_("admin.users.flash.mfa_reset"), "success")
     return redirect(manage_url)
 
@@ -2471,6 +2467,10 @@ def partial_restore_execute():
     # Audit the completed restore
     table_outcomes = {r.table_name: r.status for r in completed_run.table_results}
     skipped_counts = {r.table_name: r.skipped_conflict_count for r in completed_run.table_results}
+    missing_parent_counts = {
+        r.table_name: r.skipped_missing_parent_count for r in completed_run.table_results
+    }
+    cleared_counts = {r.table_name: r.cleared_reference_count for r in completed_run.table_results}
     log_event(
         action="partial_restore_execute",
         entity_type="backup",
@@ -2480,7 +2480,14 @@ def partial_restore_execute():
             "selected_tables": completed_run.selected_tables,
             "status": completed_run.status,
             "skipped_conflict_counts": skipped_counts,
+            "skipped_missing_parent_counts": missing_parent_counts,
+            "cleared_reference_counts": cleared_counts,
             "table_outcomes": table_outcomes,
+            # Everyone except the initiating admin was logged out (decision 20261107-0855).
+            "sessions_rotated": completed_run.sessions_rotated,
+            "sessions_kept_user_id": (
+                completed_run.initiated_by_user_id if completed_run.sessions_rotated is not None else None
+            ),
         },
     )
     db.session.commit()

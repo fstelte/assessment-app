@@ -45,7 +45,7 @@ def _login_admin(client) -> None:
     # (same approach as conftest.login and _sign_in in test_admin_routes.py).
     user = User.query.filter_by(email="admin@example.com").one()
     with client.session_transaction() as sess:
-        sess["_user_id"] = str(user.id)
+        sess["_user_id"] = user.get_id()
         sess["_fresh"] = True
         sess["login_time"] = datetime.now(UTC).isoformat()
 
@@ -967,7 +967,7 @@ class TestDependencyAutoInclusion:
 # ---------------------------------------------------------------------------
 
 _PG_URL = os.environ.get("TEST_POSTGRES_URL")
-_PR_TABLES = "pr_child, pr_parent, pr_items, pr_tags"
+_PR_TABLES = "pr_child, pr_parent, pr_owner, pr_pair, pr_node, pr_items, pr_tags"
 
 
 @pytest.mark.skipif(not _PG_URL, reason="set TEST_POSTGRES_URL to run PostgreSQL restore tests")
@@ -985,9 +985,18 @@ class TestPgsqlRestore:
             conn.execute(sa_text("CREATE TABLE pr_items (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_parent (id serial PRIMARY KEY, name text)"))
             conn.execute(sa_text("CREATE TABLE pr_tags (code text PRIMARY KEY, label text)"))
+            conn.execute(sa_text("CREATE TABLE pr_owner (id serial PRIMARY KEY, name text)"))
+            conn.execute(sa_text("CREATE TABLE pr_pair (a integer, b integer, PRIMARY KEY (a, b))"))
+            conn.execute(sa_text(
+                "CREATE TABLE pr_node (id serial PRIMARY KEY, "
+                "parent_id integer REFERENCES pr_node(id), name text)"
+            ))
             conn.execute(sa_text(
                 "CREATE TABLE pr_child (id serial PRIMARY KEY, "
-                "parent_id integer NOT NULL REFERENCES pr_parent(id), name text)"
+                "parent_id integer NOT NULL REFERENCES pr_parent(id), "
+                "owner_id integer REFERENCES pr_owner(id), name text, "
+                "pair_a integer, pair_b integer, "
+                "FOREIGN KEY (pair_a, pair_b) REFERENCES pr_pair(a, b))"
             ))
         yield engine
         with engine.begin() as conn:
@@ -1030,13 +1039,11 @@ class TestPgsqlRestore:
         assert result.status == "skipped"
         assert result.error_message == "Backup contains no data for this table."
 
+    _BAD_PARENT = {"pr_parent": (["id", "name"], [("not-an-int", "mum")])}  # COPY fails on the integer id
+
     def test_failing_table_does_not_abort_others(self, pg_engine):
-        tables = {
-            **self._ITEMS,
-            "pr_child": (["id", "parent_id", "name"], [(1, 99, "orphan")]),  # no parent 99
-        }
-        results = self._restore(pg_engine, tables, ["pr_child", "pr_items"])
-        assert results["pr_child"].status == "failed"
+        results = self._restore(pg_engine, {**self._ITEMS, **self._BAD_PARENT}, ["pr_parent", "pr_items"])
+        assert results["pr_parent"].status == "failed"
         assert results["pr_items"].status == "restored"
         assert self._rows(pg_engine, "SELECT count(*) FROM pr_items") == [(2,)]
 
@@ -1048,6 +1055,86 @@ class TestPgsqlRestore:
         results = self._restore(pg_engine, tables, ["pr_child", "pr_parent"])
         assert results["pr_parent"].status == "restored"
         assert results["pr_child"].status == "restored"
+
+    # --- Dangling foreign keys (decision 20261106-1626) ---
+
+    _CHILD_COLS = ["id", "parent_id", "owner_id", "name"]
+    _MUM = {"pr_parent": (["id", "name"], [(1, "mum")])}
+
+    @staticmethod
+    def _assert_buckets(r, total):
+        """Every backup row lands in exactly one bucket (decision 20261106-1635)."""
+        assert r.restored_row_count + r.skipped_conflict_count + r.skipped_missing_parent_count == total
+
+    def test_reference_to_unselected_table_is_cleared(self, pg_engine):
+        tables = {**self._MUM, "pr_child": (self._CHILD_COLS, [(1, 1, 99, "kid")])}  # owner 99 missing
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.status, r.restored_row_count, r.cleared_reference_count, r.skipped_missing_parent_count) == (
+            "restored", 1, 1, 0,
+        )
+        assert self._rows(pg_engine, "SELECT id, owner_id FROM pr_child") == [(1, None)]
+        self._assert_buckets(r, 1)
+
+    def test_not_null_reference_to_unselected_table_is_skipped(self, pg_engine):
+        tables = {"pr_child": (self._CHILD_COLS, [(1, 99, None, "orphan")])}  # parent 99 missing
+        r = self._restore(pg_engine, tables, ["pr_child"])["pr_child"]
+        assert (r.status, r.restored_row_count, r.skipped_missing_parent_count, r.skipped_conflict_count) == (
+            "skipped", 0, 1, 0,
+        )
+        self._assert_buckets(r, 1)
+
+    def test_missing_row_in_selected_parent_is_skipped_not_cleared(self, pg_engine):
+        tables = {**self._MUM, "pr_child": (self._CHILD_COLS, [(1, 2, None, "kid")])}  # parent 2 not in backup
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.restored_row_count, r.skipped_missing_parent_count, r.cleared_reference_count) == (0, 1, 0)
+        self._assert_buckets(r, 1)
+
+    def test_child_of_failed_parent_is_skipped_not_failed(self, pg_engine):
+        tables = {**self._BAD_PARENT, "pr_child": (self._CHILD_COLS, [(1, 1, None, "kid")])}
+        results = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])
+        assert results["pr_parent"].status == "failed"
+        assert (results["pr_child"].status, results["pr_child"].skipped_missing_parent_count) == ("skipped", 1)
+        self._assert_buckets(results["pr_child"], 1)
+
+    # --- Order and counting (Task 2) ---
+
+    def test_skip_wins_over_clear_on_the_same_row(self, pg_engine):
+        tables = {"pr_child": (self._CHILD_COLS, [(1, 99, 99, "orphan")])}  # parent and owner missing
+        r = self._restore(pg_engine, tables, ["pr_child"])["pr_child"]
+        assert (r.skipped_missing_parent_count, r.cleared_reference_count) == (1, 0)
+        self._assert_buckets(r, 1)
+
+    def test_rerun_reports_conflict_not_cleared(self, pg_engine):
+        tables = {**self._MUM, "pr_child": (self._CHILD_COLS, [(1, 1, 99, "kid")])}
+        self._restore(pg_engine, tables, ["pr_parent", "pr_child"])
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.restored_row_count, r.cleared_reference_count, r.skipped_conflict_count) == (0, 0, 1)
+        self._assert_buckets(r, 1)
+
+    def test_partly_null_composite_key_is_not_checked(self, pg_engine):
+        cols = ["id", "parent_id", "name", "pair_a", "pair_b"]
+        tables = {**self._MUM, "pr_child": (cols, [(1, 1, "kid", 5, None)])}  # pr_pair empty
+        r = self._restore(pg_engine, tables, ["pr_parent", "pr_child"])["pr_child"]
+        assert (r.restored_row_count, r.skipped_missing_parent_count, r.cleared_reference_count) == (1, 0, 0)
+        assert self._rows(pg_engine, "SELECT pair_a, pair_b FROM pr_child") == [(5, None)]
+        self._assert_buckets(r, 1)
+
+    # --- Self-referencing foreign keys (Task 3, like adr_records.supersedes_id) ---
+
+    _NODE_COLS = ["id", "parent_id", "name"]
+
+    def test_self_referencing_chain_restores(self, pg_engine):
+        rows = [(3, 2, "c"), (2, 1, "b"), (1, None, "a")]  # children before parents in the backup
+        r = self._restore(pg_engine, {"pr_node": (self._NODE_COLS, rows)}, ["pr_node"])["pr_node"]
+        assert (r.restored_row_count, r.skipped_missing_parent_count) == (3, 0)
+        self._assert_buckets(r, 3)
+
+    def test_self_referencing_orphan_chain_is_skipped(self, pg_engine):
+        rows = [(1, 99, "a"), (2, 1, "b"), (3, 2, "c")]  # root parent 99 missing
+        r = self._restore(pg_engine, {"pr_node": (self._NODE_COLS, rows)}, ["pr_node"])["pr_node"]
+        assert (r.status, r.restored_row_count, r.skipped_missing_parent_count) == ("skipped", 0, 3)
+        assert self._rows(pg_engine, "SELECT count(*) FROM pr_node") == [(0,)]
+        self._assert_buckets(r, 3)
 
     @staticmethod
     def _insert_new_item(engine) -> int:
@@ -1182,13 +1269,53 @@ class TestResultsPage:
             revalidated_at=datetime.now(UTC),
             status="completed",
             table_results=[
-                TableRestoreResult(table_name="sample", status="restored", restored_row_count=2),
+                TableRestoreResult(
+                    table_name="sample", status="restored", restored_row_count=2,
+                    skipped_missing_parent_count=7, cleared_reference_count=11,
+                ),
             ],
         )
         save_run_state(run)
 
         resp = client.get("/admin/backup/partial-restore/results/test-run-render")
         assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert "Rows skipped (missing parent)" in html
+        assert "References cleared (parent not restored)" in html
+        assert ">7</td>" in html and ">11</td>" in html
+
+    def test_new_counts_round_trip_through_run_state(self, tmp_path):
+        from datetime import UTC, datetime
+
+        from scaffold.apps.admin.backup_utils import (
+            PartialRestoreRun,
+            TableRestoreResult,
+            load_run_state,
+            save_run_state,
+        )
+
+        result = TableRestoreResult(
+            table_name="t", status="restored", skipped_missing_parent_count=3, cleared_reference_count=4
+        )
+        now = datetime.now(UTC)
+        save_run_state(PartialRestoreRun("r1", "i1", 1, ["t"], now, now, now, "completed", [result]), tmp_path)
+        loaded = load_run_state("r1", tmp_path).table_results[0]
+        assert (loaded.skipped_missing_parent_count, loaded.cleared_reference_count) == (3, 4)
+
+    def test_old_run_state_without_new_counts_still_loads(self, tmp_path):
+        import json
+
+        from scaffold.apps.admin.backup_utils import load_run_state
+
+        old = {  # written before cleared/missing-parent counts existed
+            "run_id": "old", "inspection_id": "i1", "status": "completed",
+            "started_at": "2026-11-05T10:00:00+00:00",
+            "table_results": [{"table_name": "t", "status": "restored", "restored_row_count": 1,
+                               "skipped_conflict_count": 0, "blocked_reason": None, "error_message": None}],
+        }
+        (tmp_path / "run_old.json").write_text(json.dumps(old), encoding="utf-8")
+        loaded = load_run_state("old", tmp_path).table_results[0]
+        assert (loaded.skipped_missing_parent_count, loaded.cleared_reference_count) == (0, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -1233,6 +1360,8 @@ class TestAuditEventPayloads:
                     "selected_tables": ["t1", "t2"],
                     "status": "partial",
                     "skipped_conflict_counts": {"t1": 0, "t2": 3},
+                    "skipped_missing_parent_counts": {"t1": 0, "t2": 2},
+                    "cleared_reference_counts": {"t1": 5, "t2": 0},
                     "table_outcomes": {"t1": "restored", "t2": "skipped"},
                 },
             )
@@ -1244,6 +1373,8 @@ class TestAuditEventPayloads:
             assert event.payload["status"] == "partial"
             assert "t1" in event.payload["table_outcomes"]
             assert "t2" in event.payload["skipped_conflict_counts"]
+            assert event.payload["skipped_missing_parent_counts"] == {"t1": 0, "t2": 2}
+            assert event.payload["cleared_reference_counts"] == {"t1": 5, "t2": 0}
 
 
 # ---------------------------------------------------------------------------
@@ -1335,3 +1466,70 @@ class TestEncryptedInspect:
         assert resp.status_code == 302
         assert "Decryption failed" in self._flashes(client)
         assert env["cached"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Session rotation after a partial restore (decision 20261107-0855, SC-002)
+# ---------------------------------------------------------------------------
+
+
+class TestSessionRotationAfterRestore:
+    @staticmethod
+    def _user(email: str) -> User:
+        user = User()
+        user.email = email
+        user.status = UserStatus.ACTIVE
+        user.set_password("Password123!")
+        db.session.add(user)
+        db.session.commit()
+        return user
+
+    @staticmethod
+    def _orchestrate(tmp_path, results, user_id):
+        from datetime import UTC, datetime, timedelta
+
+        from scaffold.apps.admin.backup_utils import BackupInspection, orchestrate_partial_restore
+
+        insp = BackupInspection(
+            inspection_id="rot-001", backup_filename="backup.sql.gz", backend="postgresql",
+            source_format="sql.gz", encrypted=False, inspected_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(minutes=30), table_summaries=[],
+            parse_warnings=[], full_restore_only=False,
+        )
+        with patch("scaffold.apps.admin.backup_utils.check_schema_compatibility", return_value={}), \
+             patch("scaffold.apps.admin.backup_utils.execute_partial_restore_pgsql", return_value=results):
+            return orchestrate_partial_restore(
+                inspection=insp, file_bytes=b"", selected_tables=list(results), user_id=user_id,
+                engine=MagicMock(), state_dir=tmp_path,
+            )
+
+    def test_everyone_but_the_initiating_admin_is_logged_out(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult, load_run_state
+
+        admin, other = self._user("admin@example.com"), self._user("other@example.com")
+        admin_token, other_token = admin.session_token, other.session_token
+        run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "restored", 1)}, admin.id)
+
+        assert run.status == "completed" and run.sessions_rotated == 1 and run.warnings == []
+        assert db.session.get(User, admin.id).session_token == admin_token
+        assert db.session.get(User, other.id).session_token != other_token
+        assert load_run_state(run.run_id, tmp_path).sessions_rotated == 1  # survives the run-state file
+
+    def test_failed_run_rotates_nothing(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult
+
+        other = self._user("other@example.com")
+        token = other.session_token
+        run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "failed")}, None)
+
+        assert run.status == "failed" and run.sessions_rotated is None
+        assert db.session.get(User, other.id).session_token == token
+
+    def test_rotation_error_warns_and_keeps_status(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult
+
+        with patch("scaffold.core.security.rotate_all_session_tokens", side_effect=RuntimeError("db down")):
+            run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "restored", 1)}, None)
+
+        assert run.status == "completed" and run.sessions_rotated is None
+        assert any("could not be signed out" in w for w in run.warnings)

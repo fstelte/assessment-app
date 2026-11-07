@@ -95,7 +95,7 @@ def login(client, active_user):
     # Password login now forces MFA enrolment, so authenticate the session directly
     # (same approach as _sign_in in test_admin_routes.py).
     with client.session_transaction() as sess:
-        sess["_user_id"] = str(active_user.id)
+        sess["_user_id"] = active_user.get_id()  # session token (decision 20261107-0848)
         sess["_fresh"] = True
         sess["login_time"] = datetime.now(UTC).isoformat()
     return active_user

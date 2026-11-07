@@ -9,6 +9,7 @@ import dataclasses
 import gzip
 import io
 import json
+import logging
 import os
 import re
 import shutil
@@ -23,6 +24,8 @@ from pathlib import Path
 from typing import Any
 
 from .backup_crypto import encrypt_bytes
+
+logger = logging.getLogger(__name__)
 
 try:
     from sqlalchemy import text as _sa_text
@@ -141,6 +144,8 @@ class TableRestoreResult:
     status: str  # restored | skipped | blocked | failed
     restored_row_count: int = 0
     skipped_conflict_count: int = 0
+    cleared_reference_count: int = 0
+    skipped_missing_parent_count: int = 0
     blocked_reason: str | None = None
     error_message: str | None = None
 
@@ -157,6 +162,7 @@ class PartialRestoreRun:
     status: str  # previewed | running | completed | partial | failed | blocked
     table_results: list[TableRestoreResult] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    sessions_rotated: int | None = None  # users logged out after the run; None = no rotation
 
 
 # ---------------------------------------------------------------------------
@@ -686,6 +692,67 @@ def _extract_copy_blocks(sql_text: str) -> dict[str, tuple[list[str], str]]:
     return blocks
 
 
+def _resolve_dangling_fks(
+    conn: Any, insp: Any, table_name: str, tmp: str, selected: set[str]
+) -> tuple[int, int]:
+    """Make the temp table's rows satisfy the target's foreign keys.
+
+    In order: drop rows whose primary key already exists live (they would be
+    skipped as conflicts anyway); drop rows whose parent is missing; then set
+    to NULL nullable single-column references to tables not in this restore.
+    For a self-reference, a parent elsewhere in the same backup counts as present.
+    Returns ``(cleared_reference_count, skipped_missing_parent_count)``.
+    """
+    q = lambda name: f'"{_validate_table_name(name)}"'  # noqa: E731
+    tbl = q(table_name)
+
+    pk_cols = insp.get_pk_constraint(table_name).get("constrained_columns") or []
+    if pk_cols:
+        match = " AND ".join(f"live.{q(c)} = t.{q(c)}" for c in pk_cols)
+        conn.execute(_sa_text(
+            f"DELETE FROM {tmp} AS t "  # nosec B608
+            f"WHERE EXISTS (SELECT 1 FROM {tbl} AS live WHERE {match})"
+        ))
+
+    live_tables = set(insp.get_table_names())
+    nullable = {c["name"]: c["nullable"] for c in insp.get_columns(table_name)}
+    fks = insp.get_foreign_keys(table_name)
+
+    def dangling(fk: dict) -> str:
+        cols = [f"t.{q(c)}" for c in fk["constrained_columns"]]
+        cond = " AND ".join(f"{c} IS NOT NULL" for c in cols)
+        match = " AND ".join(f"p.{q(r)} = {c}" for r, c in zip(fk["referred_columns"], cols))
+        if fk["referred_table"] in live_tables:  # a missing parent table means every parent is missing
+            cond += f" AND NOT EXISTS (SELECT 1 FROM {q(fk['referred_table'])} AS p WHERE {match})"
+        if fk["referred_table"] == table_name:  # self-reference: a parent in this backup also counts
+            cond += f" AND NOT EXISTS (SELECT 1 FROM {tmp} AS p WHERE {match})"
+        return cond
+
+    def clearable(fk: dict) -> bool:
+        cols = fk["constrained_columns"]
+        return fk["referred_table"] not in selected and len(cols) == 1 and nullable.get(cols[0], False)
+
+    # Repeat until stable: skipping a self-referenced parent can orphan its children.
+    skipped = 0
+    while True:
+        deleted = sum(
+            conn.execute(_sa_text(f"DELETE FROM {tmp} AS t WHERE {dangling(fk)}")).rowcount  # nosec B608
+            for fk in fks
+            if not clearable(fk)
+        )
+        skipped += deleted
+        if deleted == 0:
+            break
+    cleared = 0
+    for fk in fks:
+        if clearable(fk):
+            col = q(fk["constrained_columns"][0])
+            cleared += conn.execute(_sa_text(
+                f"UPDATE {tmp} AS t SET {col} = NULL WHERE {dangling(fk)}"  # nosec B608
+            )).rowcount
+    return cleared, skipped
+
+
 def execute_partial_restore_pgsql(
     data: bytes, selected_tables: list[str], engine: Any
 ) -> dict[str, TableRestoreResult]:
@@ -734,6 +801,9 @@ def execute_partial_restore_pgsql(
                         with cur.copy(f"COPY {tmp} ({cols}) FROM STDIN") as copy:
                             copy.write(copy_data)
                     total = conn.execute(_sa_text(f"SELECT count(*) FROM {tmp}")).scalar_one()
+                    cleared, missing_parent = _resolve_dangling_fks(
+                        conn, insp, table_name, tmp, set(selected_tables)
+                    )
                     restored = conn.execute(_sa_text(
                         f"INSERT INTO {tbl} ({cols}) SELECT {cols} FROM {tmp} "
                         "ON CONFLICT DO NOTHING"
@@ -762,7 +832,9 @@ def execute_partial_restore_pgsql(
                     table_name=table_name,
                     status="restored" if restored > 0 else "skipped",
                     restored_row_count=restored,
-                    skipped_conflict_count=total - restored,
+                    skipped_conflict_count=total - restored - missing_parent,
+                    cleared_reference_count=cleared,
+                    skipped_missing_parent_count=missing_parent,
                 )
             except Exception as exc:
                 results[table_name] = TableRestoreResult(
@@ -910,6 +982,7 @@ def save_run_state(run: PartialRestoreRun, state_dir: Path | None = None) -> Non
             "status": run.status,
             "table_results": [_result_to_dict(r) for r in run.table_results],
             "warnings": run.warnings,
+            "sessions_rotated": run.sessions_rotated,
         },
         indent=2,
     )
@@ -942,6 +1015,7 @@ def load_run_state(run_id: str, state_dir: Path | None = None) -> PartialRestore
         status=data["status"],
         table_results=table_results,
         warnings=data.get("warnings", []),
+        sessions_rotated=data.get("sessions_rotated"),
     )
 
 
@@ -1141,6 +1215,19 @@ def orchestrate_partial_restore(
         run.table_results = list(table_results.values())
         run.status = overall
         run.completed_at = datetime.now(UTC)
+
+        # Log everyone out except the initiating admin (decision 20261107-0855).
+        # A failed or blocked run changed nothing, so there is nothing to protect.
+        if overall in ("completed", "partial"):
+            from ...core.i18n import gettext
+            from ...core.security import rotate_all_session_tokens
+
+            try:
+                run.sessions_rotated = rotate_all_session_tokens(except_user_id=user_id)
+            except Exception:  # never fail the restore over this; make it visible instead
+                logger.exception("Session token rotation failed after partial restore %s", run.run_id)
+                run.warnings.append(gettext("admin.backup.partial_restore.results.sessions_rotation_failed"))
+
         save_run_state(run, state_dir=state_dir)
 
     finally:

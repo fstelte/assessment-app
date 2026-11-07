@@ -27,14 +27,15 @@ _MFA_SESSION_KEYS = ("mfa_pending_user_id", "mfa_enroll_user_id", "mfa_remember_
 def queue_mfa_verification(user: User, remember: bool) -> None:
     """Flag the current session to require MFA verification."""
 
-    session["mfa_pending_user_id"] = user.id
+    # Session token, not user.id: a restore must not redirect a half-finished login.
+    session["mfa_pending_user_id"] = user.get_id()
     session["mfa_remember_me"] = remember
 
 
 def queue_mfa_enrolment(user: User, remember: bool) -> None:
     """Flag the current session to require MFA enrolment."""
 
-    session["mfa_enroll_user_id"] = user.id
+    session["mfa_enroll_user_id"] = user.get_id()
     session["mfa_remember_me"] = remember
 
 
@@ -47,19 +48,13 @@ def current_remember_me(default: bool = False) -> bool:
 def get_pending_user() -> User | None:
     """Retrieve the user awaiting MFA verification."""
 
-    user_id = session.get("mfa_pending_user_id")
-    if not user_id:
-        return None
-    return db.session.get(User, user_id)
+    return User.find_by_session_token(session.get("mfa_pending_user_id"))
 
 
 def get_enrolment_user() -> User | None:
     """Retrieve the user awaiting MFA enrolment."""
 
-    user_id = session.get("mfa_enroll_user_id")
-    if not user_id:
-        return None
-    return db.session.get(User, user_id)
+    return User.find_by_session_token(session.get("mfa_enroll_user_id"))
 
 
 def ensure_mfa_provisioning(user: User, issuer: str) -> MFAProvisioning:

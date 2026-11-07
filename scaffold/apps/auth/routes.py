@@ -545,7 +545,7 @@ def mfa_passkey_register_begin():
 
     options_json, challenge = begin_passkey_registration(user, current_app.config)
     session["passkey_reg_challenge"] = challenge_to_session(challenge)
-    session["passkey_reg_user_id"] = user.id
+    session["passkey_reg_user_id"] = user.get_id()  # session token, not user.id
     return options_json, 200, {"Content-Type": "application/json"}
 
 
@@ -558,7 +558,7 @@ def mfa_passkey_register_complete():
     if not challenge_encoded or not user_id:
         return jsonify({"error": "No pending passkey registration in session"}), 400
 
-    user: User | None = db.session.get(User, user_id)
+    user: User | None = User.find_by_session_token(user_id)
     if user is None:
         return jsonify({"error": "User not found"}), 404
 

@@ -47,7 +47,7 @@
   {% endif %}
 </div>
 
-<div class="rounded-md border border-[var(--color-border)] overflow-hidden">
+<div class="rounded-md border border-[var(--color-border)] overflow-x-auto">
   <table class="w-full text-sm">
     <thead>
       <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -55,6 +55,8 @@
         <th class="px-4 py-2 text-left font-semibold">{{ _('admin.backup.partial_restore.results.status') }}</th>
         <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.results.restored_rows') }}</th>
         <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.results.skipped_rows') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.results.skipped_missing_parent') }}</th>
+        <th class="px-4 py-2 text-right font-semibold">{{ _('admin.backup.partial_restore.results.cleared_references') }}</th>
         <th class="px-4 py-2 text-left font-semibold">{{ _('admin.backup.partial_restore.results.blocked_reason') }}</th>
       </tr>
     </thead>
@@ -75,6 +77,8 @@
           </td>
           <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ r.restored_row_count }}</td>
           <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ r.skipped_conflict_count }}</td>
+          <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ r.skipped_missing_parent_count }}</td>
+          <td class="px-4 py-2 text-right text-[var(--color-muted)]">{{ r.cleared_reference_count }}</td>
           <td class="px-4 py-2 text-xs text-[var(--color-muted)]">
             {{ r.blocked_reason or r.error_message or '' }}
           </td>

@@ -49,9 +49,4 @@ login_manager.login_message_category = "warning"
 def _load_user(user_id: str):
     from .apps.identity.models import User
 
-    if not user_id:
-        return None
-    try:
-        return User.query.get(int(user_id))
-    except ValueError:
-        return None
+    return User.find_by_session_token(user_id)

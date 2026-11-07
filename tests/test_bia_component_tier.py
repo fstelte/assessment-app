@@ -142,9 +142,9 @@ def test_effective_recovery_without_tier_or_text_is_none(app):
 @pytest.fixture
 def logged_in(app, client, active_user, monkeypatch):
     monkeypatch.setattr(login_manager, "session_protection", None)
-    user_id = User.find_by_email("user@example.com").id
+    token = User.find_by_email("user@example.com").get_id()
     with client.session_transaction() as session:
-        session["_user_id"] = str(user_id)
+        session["_user_id"] = token
         session["_fresh"] = True
 
 
