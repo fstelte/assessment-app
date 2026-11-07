@@ -3,7 +3,9 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import secrets
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -308,7 +310,59 @@ def restore_postgres(db_uri: str, backup_path: Path) -> None:
             sanitized_path.unlink(missing_ok=True)
 
 
-def process_backup(db_uri: str, backup_path: Path) -> None:
+def psql_scalar(pg_uri: str, sql: str) -> str:
+    """Run one SQL statement with psql and return its single value."""
+    result = subprocess.run(
+        ["psql", pg_uri, "-v", "ON_ERROR_STOP=1", "-tA", "-c", sql],
+        capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip()
+
+
+_PG_HAS_TOKEN_COLUMN = (
+    "SELECT count(*) FROM information_schema.columns WHERE table_schema = current_schema() "
+    "AND table_name = 'users' AND column_name = 'session_token'"
+)
+# gen_random_uuid() uses a cryptographic RNG (built in since PostgreSQL 13); random() does not.
+_PG_ROTATE_TOKENS = (
+    "WITH u AS (UPDATE users SET session_token = "
+    "replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') RETURNING 1) "
+    "SELECT count(*) FROM u"
+)
+
+
+def rotate_session_tokens(db_uri: str) -> dict:
+    """Give every user a new session token so no session survives the restore.
+
+    Decision 20261107-0855. Never raises: a failure must not undo a finished
+    restore, so it is returned (and logged) for the state file instead.
+    """
+    try:
+        if detect_backend(db_uri).startswith("sqlite"):
+            conn = sqlite3.connect(sqlite_target_path(db_uri))
+            try:
+                if "session_token" not in {row[1] for row in conn.execute("PRAGMA table_info(users)")}:
+                    return {"status": "skipped", "reason": "no users.session_token column"}
+                ids = [row[0] for row in conn.execute("SELECT id FROM users")]
+                with conn:  # one transaction
+                    for user_id in ids:
+                        conn.execute(
+                            "UPDATE users SET session_token = ? WHERE id = ?", (secrets.token_hex(32), user_id)
+                        )
+                users = len(ids)
+            finally:
+                conn.close()
+        else:
+            pg_uri = normalize_postgres_uri(db_uri)
+            if psql_scalar(pg_uri, _PG_HAS_TOKEN_COLUMN) == "0":
+                return {"status": "skipped", "reason": "no users.session_token column"}
+            users = int(psql_scalar(pg_uri, _PG_ROTATE_TOKENS))
+        return {"status": "rotated", "users": users}
+    except Exception as exc:
+        return {"status": "failed", "error": str(exc)}
+
+
+def process_backup(db_uri: str, backup_path: Path) -> dict:
     backend = detect_backend(db_uri)
     if backend.startswith("sqlite"):
         restore_sqlite(db_uri, backup_path)
@@ -316,6 +370,16 @@ def process_backup(db_uri: str, backup_path: Path) -> None:
         restore_postgres(db_uri, backup_path)
     else:
         raise RuntimeError(f"unsupported database backend '{backend}'")
+    # Before the app containers start again: every session from before the restore ends.
+    rotation = rotate_session_tokens(db_uri)
+    if rotation["status"] == "rotated":
+        log(f"session tokens rotated for {rotation['users']} users; everyone must sign in again")
+    elif rotation["status"] == "skipped":
+        log(f"session token rotation skipped: {rotation['reason']}")
+    else:
+        log(f"WARNING: session token rotation failed: {rotation['error']}; "
+            "restart the app or rotate tokens manually (see docs/deployment.md)")
+    return rotation
 
 
 def select_candidates(watch_dir: Path) -> list[Path]:
@@ -385,7 +449,7 @@ def main() -> None:
                 try:
                     work_path = decrypt_if_needed(backup)
                     try:
-                        process_backup(db_uri, work_path)
+                        rotation = process_backup(db_uri, work_path)
                     finally:
                         if work_path != backup:
                             work_path.unlink(missing_ok=True)
@@ -393,6 +457,7 @@ def main() -> None:
                         "path": str(backup),
                         "mtime": backup.stat().st_mtime,
                         "completed_at": timestamp(),
+                        "session_rotation": rotation,
                     }
                     try:
                         backup.unlink()

@@ -46,7 +46,10 @@ There are two restore paths:
 - **Full restore:** `restore_db.py` runs, after the restore and **before**
   starting the app containers again:
   - PostgreSQL:
-    `UPDATE users SET session_token = md5(random()::text || clock_timestamp()::text || id::text) || md5(random()::text || id::text)`
+    `UPDATE users SET session_token = replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`
+    (C2, 2026-11-07: `gen_random_uuid()` uses a cryptographic random generator and is built in since
+    PostgreSQL 13; the earlier `md5(random()…)` did not and was rejected). The number of rotated
+    users is logged and stored in the state file under `last_processed.session_rotation` (C3).
   - SQLite (Python's `sqlite3` module; the image has no `sqlite3` command-line tool):
     per row `secrets.token_hex(32)`, in one transaction, the same format and random
     source as the app.

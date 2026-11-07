@@ -101,7 +101,8 @@ This is built on the same branch as the partial-restore FK fix.
     If it doesn't, log it and do nothing; the migration fills the column when
     the app starts.
   - PostgreSQL (through `psql -c`):
-    `UPDATE users SET session_token = md5(random()::text || clock_timestamp()::text || id::text) || md5(random()::text || id::text)`
+    `WITH u AS (UPDATE users SET session_token = replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') RETURNING 1) SELECT count(*) FROM u`
+    (C2: `gen_random_uuid()` is a cryptographic random generator, built in since PostgreSQL 13).
   - SQLite (through Python's `sqlite3` module; the image has no `sqlite3`
     command-line tool): read all `id`s, and per row
     `UPDATE users SET session_token = ? WHERE id = ?` with `secrets.token_hex(32)`,
@@ -259,5 +260,5 @@ Answers to the clarification questions from `checklists/security.md`.
   module (the image only has `postgresql-client-18`).
 - **Still open (critical, from `/minispec.analyze`):**
   - ~~**C1:** MFA and passkey steps before login use the numeric `user.id`.~~ Settled in Task 1: `mfa_pending_user_id`, `mfa_enroll_user_id` and `passkey_reg_user_id` store `user.get_id()` and are looked up with `User.find_by_session_token`.
-  - **C2:** PostgreSQL `random()` in the token SQL.
-  - **C3:** no audit record of "all sessions ended".
+  - ~~**C2:** PostgreSQL `random()` in the token SQL.~~ Settled in Task 4: `gen_random_uuid()`.
+  - ~~**C3:** no audit record of "all sessions ended".~~ Settled: partial restore in the audit event (Task 3), full restore in the log and `last_processed.session_rotation` in the state file (Task 4).
