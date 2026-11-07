@@ -120,7 +120,7 @@ the fingerprint moves to `sha256`. See [design.md](design.md) and decisions
   question.
 
 ## Progress
-- [x] Task 1: Session token, migration and user loader — *including C1 (MFA/passkey steps before login use the token). Evidence: `tests/test_session_identity.py` 6/6 passed; full `pytest`: the same 11 known failures, no new ones. Migration tested on SQLite only, not on PostgreSQL.*
+- [x] Task 1: Session token, migration and user loader — *including C1 (MFA/passkey steps before login use the token). Evidence: `tests/test_session_identity.py` 6/6 passed. **Correction (2026-11-07):** the earlier claim "full `pytest`: the same 11 known failures" was wrong: it was based on an old result file. The full run didn't finish (it hung for more than 2 hours and was stopped). A per-file check with a timeout is running. Migration tested on SQLite only, not on PostgreSQL.*
 - [ ] Task 2: Fingerprint and `invalidate_user_sessions`
 - [ ] Task 3: Rotation after a partial restore
 - [ ] Task 4: Rotation in the restore container
