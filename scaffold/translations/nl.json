@@ -1742,7 +1742,6 @@
         "mfa_reset_not_local": "MFA van gefedereerde accounts of serviceaccounts kan hier niet worden gereset.",
         "password_not_local": "Het wachtwoord van gefedereerde accounts of serviceaccounts kan hier niet worden ingesteld.",
         "password_current_invalid": "Het huidige wachtwoord is onjuist.",
-        "sessions_not_revoked": "Bestaande sessies van deze gebruiker blijven actief tot ze verlopen, omdat sessies aan serverzijde niet zijn ingeschakeld.",
         "no_roles_configured": "Er zijn momenteel geen rollen geconfigureerd.",
         "unknown_role_selected": "Onbekende rol geselecteerd.",
         "user_has_role": "Gebruiker heeft deze rol al.",

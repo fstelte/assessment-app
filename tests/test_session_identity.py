@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import subprocess
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -108,6 +111,50 @@ def test_pending_mfa_steps_follow_the_token(app, active_user):
 
         session["mfa_enroll_user_id"] = active_user.id  # numeric id from an old session
         assert get_enrolment_user() is None
+
+
+def test_admin_password_set_ends_target_cookie_session(app, active_user):
+    """SC-003: invalidate_user_sessions works with cookie sessions (no Redis)."""
+    from scaffold.apps.identity.models import Role
+
+    role = Role()
+    role.name = "admin"
+    admin = _make_user("admin@example.com")
+    admin.roles.append(role)
+    db.session.commit()
+
+    target_browser, admin_browser = app.test_client(), app.test_client()
+    _sign_in(target_browser, active_user.get_id())
+    assert _whoami(target_browser) == "user@example.com"
+
+    _sign_in(admin_browser, admin.get_id())
+    with admin_browser.session_transaction() as sess:
+        sess["login_time"] = datetime.now(UTC).isoformat()  # require_fresh_login
+    new_password = "CorrectHorse-Battery9"
+    admin_browser.post(
+        f"/admin/users/{active_user.id}/password",
+        data={"new_password": new_password, "confirm_password": new_password},
+    )
+    assert User.query.get(active_user.id).check_password(new_password)  # the action ran
+    assert _whoami(target_browser) is None
+
+
+def test_fingerprint_is_stable_across_processes():
+    """SC-004: the same User-Agent gives the same fingerprint after a restart."""
+    code = (
+        "from scaffold import create_app; from scaffold.config import Settings;"
+        "from scaffold.core.security import generate_session_fingerprint as f;"
+        "app = create_app(Settings(secret_key='x', database_url='sqlite://'));"
+        "ctx = app.test_request_context(headers={'User-Agent': 'UA/1.0'}); ctx.push();"
+        "print(f())"
+    )
+    root = Path(__file__).resolve().parents[1]
+    runs = [
+        subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, check=True)
+        .stdout.strip().splitlines()[-1]
+        for _ in range(2)
+    ]
+    assert runs[0] == runs[1] and re.fullmatch(r"[0-9a-f]{64}", runs[0])
 
 
 def test_migration_backfills_unique_hex_tokens():

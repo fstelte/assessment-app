@@ -330,7 +330,7 @@ def test_admin_sets_password_and_logs_event_without_password(app, client):
     assert resp.status_code == 200
     page = resp.get_data(as_text=True)
     assert "Password updated." in page
-    assert "stay active until they expire" in page
+    assert "stay active until they expire" not in page  # sessions are now always ended
     with app.app_context():
         assert db.session.get(User, target_id).check_password(NEW_PASSWORD)
         events = AuditLog.query.filter_by(event_type="user_password_set").all()

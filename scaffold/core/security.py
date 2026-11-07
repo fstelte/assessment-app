@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Callable, TypeVar
 
-from flask import current_app, flash, redirect, request, session, url_for
+from flask import flash, redirect, request, session, url_for
 from flask_login import current_user, logout_user
 
 logger = logging.getLogger(__name__)
@@ -55,11 +56,16 @@ def init_session_security(app) -> None:
         return None
 
 
-def generate_session_fingerprint() -> int:
-    """Generate a fingerprint for the current session."""
+def generate_session_fingerprint() -> str:
+    """Generate a fingerprint for the current session.
+
+    sha256, not hash(): hash() is randomised per process, which logged everyone
+    out on every restart. Stable is only safe now that sessions carry the
+    session token instead of the numeric user id (decision 20261107-0848).
+    """
 
     user_agent = request.headers.get("User-Agent", "")
-    return hash(user_agent)
+    return hashlib.sha256(user_agent.encode("utf-8")).hexdigest()
 
 
 def require_fresh_login(max_age_minutes: int = 30) -> Callable[[T], T]:
@@ -89,28 +95,16 @@ def require_fresh_login(max_age_minutes: int = 30) -> Callable[[T], T]:
 
 
 def invalidate_user_sessions(user_id: int) -> None:
-    """Delete all server-side sessions belonging to a user.
+    """End every session and remember-me cookie of a user, with any session backend.
 
-    Only has an effect when Flask-Session is using the Redis backend
-    (i.e. ``SESSION_TYPE == "redis"``).
+    Rotates the user's session token (decision 20261107-0905); sessions that still
+    carry the old token no longer load a user.
     """
-    if current_app.config.get("SESSION_TYPE") != "redis":
-        return
-    try:
-        from ..extensions import get_redis
+    from ..apps.identity.models import User
+    from ..extensions import db
 
-        r = get_redis()
-        prefix = current_app.config.get("SESSION_KEY_PREFIX", "session:")
-        cursor = 0
-        while True:
-            cursor, keys = r.scan(cursor, match=f"{prefix}*", count=100)
-            for key in keys:
-                data = r.get(key)
-                if data and f'"_user_id": "{user_id}"'.encode() in (
-                    data if isinstance(data, bytes) else data.encode()
-                ):
-                    r.delete(key)
-            if cursor == 0:
-                break
-    except Exception:
-        logger.warning("Failed to invalidate server-side sessions for user %s", user_id, exc_info=True)
+    user = db.session.get(User, user_id)
+    if user is None:
+        return
+    user.rotate_session_token()
+    db.session.commit()

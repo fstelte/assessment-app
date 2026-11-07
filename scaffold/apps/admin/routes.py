@@ -1610,8 +1610,6 @@ def set_user_password(user_id: int):
     db.session.commit()
     if not is_self:
         invalidate_user_sessions(user.id)
-        if current_app.config.get("SESSION_TYPE") != "redis":
-            flash(_("admin.users.flash.sessions_not_revoked"), "warning")
     flash(_("admin.users.flash.password_set"), "success")
     return redirect(manage_url)
 
@@ -1646,8 +1644,6 @@ def reset_user_mfa(user_id: int):
     )
     db.session.commit()
     invalidate_user_sessions(user.id)
-    if current_app.config.get("SESSION_TYPE") != "redis":
-        flash(_("admin.users.flash.sessions_not_revoked"), "warning")
     flash(_("admin.users.flash.mfa_reset"), "success")
     return redirect(manage_url)
 
