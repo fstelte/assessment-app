@@ -1466,3 +1466,70 @@ class TestEncryptedInspect:
         assert resp.status_code == 302
         assert "Decryption failed" in self._flashes(client)
         assert env["cached"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Session rotation after a partial restore (decision 20261107-0855, SC-002)
+# ---------------------------------------------------------------------------
+
+
+class TestSessionRotationAfterRestore:
+    @staticmethod
+    def _user(email: str) -> User:
+        user = User()
+        user.email = email
+        user.status = UserStatus.ACTIVE
+        user.set_password("Password123!")
+        db.session.add(user)
+        db.session.commit()
+        return user
+
+    @staticmethod
+    def _orchestrate(tmp_path, results, user_id):
+        from datetime import UTC, datetime, timedelta
+
+        from scaffold.apps.admin.backup_utils import BackupInspection, orchestrate_partial_restore
+
+        insp = BackupInspection(
+            inspection_id="rot-001", backup_filename="backup.sql.gz", backend="postgresql",
+            source_format="sql.gz", encrypted=False, inspected_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(minutes=30), table_summaries=[],
+            parse_warnings=[], full_restore_only=False,
+        )
+        with patch("scaffold.apps.admin.backup_utils.check_schema_compatibility", return_value={}), \
+             patch("scaffold.apps.admin.backup_utils.execute_partial_restore_pgsql", return_value=results):
+            return orchestrate_partial_restore(
+                inspection=insp, file_bytes=b"", selected_tables=list(results), user_id=user_id,
+                engine=MagicMock(), state_dir=tmp_path,
+            )
+
+    def test_everyone_but_the_initiating_admin_is_logged_out(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult, load_run_state
+
+        admin, other = self._user("admin@example.com"), self._user("other@example.com")
+        admin_token, other_token = admin.session_token, other.session_token
+        run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "restored", 1)}, admin.id)
+
+        assert run.status == "completed" and run.sessions_rotated == 1 and run.warnings == []
+        assert db.session.get(User, admin.id).session_token == admin_token
+        assert db.session.get(User, other.id).session_token != other_token
+        assert load_run_state(run.run_id, tmp_path).sessions_rotated == 1  # survives the run-state file
+
+    def test_failed_run_rotates_nothing(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult
+
+        other = self._user("other@example.com")
+        token = other.session_token
+        run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "failed")}, None)
+
+        assert run.status == "failed" and run.sessions_rotated is None
+        assert db.session.get(User, other.id).session_token == token
+
+    def test_rotation_error_warns_and_keeps_status(self, app, tmp_path):
+        from scaffold.apps.admin.backup_utils import TableRestoreResult
+
+        with patch("scaffold.core.security.rotate_all_session_tokens", side_effect=RuntimeError("db down")):
+            run = self._orchestrate(tmp_path, {"items": TableRestoreResult("items", "restored", 1)}, None)
+
+        assert run.status == "completed" and run.sessions_rotated is None
+        assert any("could not be signed out" in w for w in run.warnings)

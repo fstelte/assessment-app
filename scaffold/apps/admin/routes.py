@@ -2483,6 +2483,11 @@ def partial_restore_execute():
             "skipped_missing_parent_counts": missing_parent_counts,
             "cleared_reference_counts": cleared_counts,
             "table_outcomes": table_outcomes,
+            # Everyone except the initiating admin was logged out (decision 20261107-0855).
+            "sessions_rotated": completed_run.sessions_rotated,
+            "sessions_kept_user_id": (
+                completed_run.initiated_by_user_id if completed_run.sessions_rotated is not None else None
+            ),
         },
     )
     db.session.commit()

@@ -9,6 +9,7 @@ import dataclasses
 import gzip
 import io
 import json
+import logging
 import os
 import re
 import shutil
@@ -23,6 +24,8 @@ from pathlib import Path
 from typing import Any
 
 from .backup_crypto import encrypt_bytes
+
+logger = logging.getLogger(__name__)
 
 try:
     from sqlalchemy import text as _sa_text
@@ -159,6 +162,7 @@ class PartialRestoreRun:
     status: str  # previewed | running | completed | partial | failed | blocked
     table_results: list[TableRestoreResult] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    sessions_rotated: int | None = None  # users logged out after the run; None = no rotation
 
 
 # ---------------------------------------------------------------------------
@@ -978,6 +982,7 @@ def save_run_state(run: PartialRestoreRun, state_dir: Path | None = None) -> Non
             "status": run.status,
             "table_results": [_result_to_dict(r) for r in run.table_results],
             "warnings": run.warnings,
+            "sessions_rotated": run.sessions_rotated,
         },
         indent=2,
     )
@@ -1010,6 +1015,7 @@ def load_run_state(run_id: str, state_dir: Path | None = None) -> PartialRestore
         status=data["status"],
         table_results=table_results,
         warnings=data.get("warnings", []),
+        sessions_rotated=data.get("sessions_rotated"),
     )
 
 
@@ -1209,6 +1215,19 @@ def orchestrate_partial_restore(
         run.table_results = list(table_results.values())
         run.status = overall
         run.completed_at = datetime.now(UTC)
+
+        # Log everyone out except the initiating admin (decision 20261107-0855).
+        # A failed or blocked run changed nothing, so there is nothing to protect.
+        if overall in ("completed", "partial"):
+            from ...core.i18n import gettext
+            from ...core.security import rotate_all_session_tokens
+
+            try:
+                run.sessions_rotated = rotate_all_session_tokens(except_user_id=user_id)
+            except Exception:  # never fail the restore over this; make it visible instead
+                logger.exception("Session token rotation failed after partial restore %s", run.run_id)
+                run.warnings.append(gettext("admin.backup.partial_restore.results.sessions_rotation_failed"))
+
         save_run_state(run, state_dir=state_dir)
 
     finally:

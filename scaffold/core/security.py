@@ -108,3 +108,25 @@ def invalidate_user_sessions(user_id: int) -> None:
         return
     user.rotate_session_token()
     db.session.commit()
+
+
+def rotate_all_session_tokens(except_user_id: int | None = None) -> int:
+    """End every session except one user's; used after a restore (decision 20261107-0855).
+
+    Returns the number of users whose token was rotated.
+    """
+    from ..apps.identity.models import User
+    from ..extensions import db
+
+    try:
+        query = User.query
+        if except_user_id is not None:
+            query = query.filter(User.id != except_user_id)
+        users = query.all()
+        for user in users:
+            user.rotate_session_token()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return len(users)

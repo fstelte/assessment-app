@@ -1649,6 +1649,7 @@
           "skipped_rows": "Rows skipped (conflict)",
           "skipped_missing_parent": "Rows skipped (missing parent)",
           "cleared_references": "References cleared (parent not restored)",
+          "sessions_rotation_failed": "Other users could not be signed out after this restore. Restart the application or rotate session tokens manually (see the deployment guide).",
           "outcome_restored": "Restored",
           "outcome_skipped": "Skipped",
           "outcome_blocked": "Blocked",
