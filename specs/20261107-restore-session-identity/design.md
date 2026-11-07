@@ -1,6 +1,6 @@
 ---
 feature: 20261107-restore-session-identity
-status: planned
+status: implemented
 created: 2026-11-07
 branch: 20261106-161847-description-partial-restore
 decisions:
@@ -110,7 +110,7 @@ This is built on the same branch as the partial-restore FK fix.
     the app.
 - A failure in this step is logged and recorded in the state file. The restore
   itself counts as successful (decision 0855). The error message tells the
-  operator to rotate manually or restart the app.
+  operator to rotate manually (a restart doesn't sign anyone out since the fingerprint is stable, Task 2).
 
 ### Partial restore (`scaffold/apps/admin/backup_utils.py`, `orchestrate_partial_restore`)
 

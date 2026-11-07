@@ -1,6 +1,6 @@
 ---
 feature: 20261107-restore-session-identity
-status: planned
+status: completed
 created: 2026-11-07
 chunk_size: medium
 total_tasks: 5
@@ -102,7 +102,7 @@ the fingerprint moves to `sha256`. See [design.md](design.md) and decisions
 - **Description:** Document:
   - every restore logs everyone out (partial: except the admin who ran it);
   - the deployment of this change logs everyone out once;
-  - the manual fallback when rotation fails (restart the app, or run the `UPDATE` by hand);
+  - the manual fallback when rotation fails (rotate by hand; **not** "restart the app", which no longer logs anyone out since the stable fingerprint of Task 2);
   - `invalidate_user_sessions` now works without Redis.
 - **Depends on:** Tasks 2, 3, 4
 - **Acceptance:** Constitution V is met.
@@ -126,4 +126,4 @@ the fingerprint moves to `sha256`. See [design.md](design.md) and decisions
 - [x] Task 2: Fingerprint and `invalidate_user_sessions` — *evidence: `tests/test_session_identity.py` 8/8 passed (SC-003, SC-004); per-file run of every test file compared with `fb0aea5`: the same 160 failing tests, no new ones. `test_auth_login_audit::test_password_login_records_audit_entry` fails alone also on `fb0aea5` (order-dependent, existing).*
 - [x] Task 3: Rotation after a partial restore — *including the partial-restore half of C3 (`sessions_rotated` and `sessions_kept_user_id` in the `partial_restore_execute` audit event). Rotates only on `completed`/`partial` (not on `failed`/`blocked`, which change nothing). Evidence: `TestSessionRotationAfterRestore` 3/3 (SC-002, failed run, rotation error); per file compared with `fb0aea5`: `test_admin_partial_restore` 0/0, `test_admin_routes` 10/10, `test_translation_keys` 0/0, `test_no_eager_translations` 1/1, `test_session_identity` 0, no new failures. Not tested: the audit fields in `routes.py` (no route test).*
 - [x] Task 4: Rotation in the restore container — *including C2 (`gen_random_uuid()` instead of `random()`) and the full-restore half of C3 (log line plus `last_processed.session_rotation` in the state file). Evidence: `tests/test_restore_db.py` 5/5 (SQLite for real, no column, PostgreSQL SQL with mocked `psql`, failure without an exception, order restore → rotate). Not tested: real `psql` against PostgreSQL.*
-- [ ] Task 5: Operations docs
+- [x] Task 5: Operations docs — *`docs/deployment.md`: new section "Sessions after a restore" (full/partial restore, admin actions, restart no longer logs anyone out, manual fallback), plus references in the restore companion, partial restore and release checklist. While writing it, fixed the outdated "restart the app" fallback in the EN/NL warning and in `restore_db.py`. Evidence: the diff; affected tests 10/10. Not tested: the `python -c` fallback command.*

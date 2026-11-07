@@ -378,7 +378,7 @@ def process_backup(db_uri: str, backup_path: Path) -> dict:
         log(f"session token rotation skipped: {rotation['reason']}")
     else:
         log(f"WARNING: session token rotation failed: {rotation['error']}; "
-            "restart the app or rotate tokens manually (see docs/deployment.md)")
+            "rotate tokens manually (docs/deployment.md, 'Sessions after a restore'); a restart does not sign anyone out")
     return rotation
 
 

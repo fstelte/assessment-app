@@ -1919,7 +1919,7 @@
           "skipped_rows": "Overgeslagen rijen (conflict)",
           "skipped_missing_parent": "Overgeslagen rijen (ontbrekende bovenliggende rij)",
           "cleared_references": "Verwijzingen gewist (bovenliggende tabel niet hersteld)",
-          "sessions_rotation_failed": "Andere gebruikers konden na deze herstelactie niet worden afgemeld. Herstart de applicatie of roteer de sessietokens handmatig (zie de deployment-handleiding).",
+          "sessions_rotation_failed": "Andere gebruikers konden na deze herstelactie niet worden afgemeld. Roteer de sessietokens handmatig (zie \"Sessions after a restore\" in de deployment-handleiding); een herstart meldt niemand af.",
           "outcome_restored": "Hersteld",
           "outcome_skipped": "Overgeslagen",
           "outcome_blocked": "Geblokkeerd",
