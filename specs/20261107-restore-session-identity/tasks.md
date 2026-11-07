@@ -112,16 +112,18 @@ the fingerprint moves to `sha256`. See [design.md](design.md) and decisions
 - The setup script isn't used, because it would overwrite the tasks.md of the
   partial-restore feature (same branch). Everything is on branch
   `20261106-161847-description-partial-restore`.
-- Known baseline: 11 failing admin tests from before this feature
-  (`test_admin_principles.py`, audit-trail tests in `test_admin_routes.py`,
-  `test_no_eager_translations.py`). Evidence is "no new failures".
+- Known baseline, measured per file (each test file separately, 5-minute
+  limit): **160 failing tests on `fb0aea5`**, from before this feature. Evidence
+  is "no new failures compared with that baseline". The full suite in one run
+  hangs (stopped after more than 2 hours); whether that also happens on the
+  baseline hasn't been checked.
 - Out of scope: rotating the token when users change their own password, an
   audit event per rotation, cleaning up stale Redis sessions, and the STRIDE-LM
   question.
 
 ## Progress
-- [x] Task 1: Session token, migration and user loader — *including C1 (MFA/passkey steps before login use the token). Evidence: `tests/test_session_identity.py` 6/6 passed. **Correction (2026-11-07):** the earlier claim "full `pytest`: the same 11 known failures" was wrong: it was based on an old result file. The full run didn't finish (it hung for more than 2 hours and was stopped). A per-file check with a timeout is running. Migration tested on SQLite only, not on PostgreSQL.*
-- [ ] Task 2: Fingerprint and `invalidate_user_sessions`
+- [x] Task 1: Session token, migration and user loader — *including C1 (MFA/passkey steps before login use the token). Evidence: `tests/test_session_identity.py` 6/6 passed. **Correction (2026-11-07):** the earlier claim "full `pytest`: the same 11 known failures" was wrong: it was based on an old result file. The full run didn't finish (it hung for more than 2 hours and was stopped). Replacement evidence: every test file run separately (5-minute limit), compared with the same run on `fb0aea5` (before the session work): **exactly the same 160 failing tests, no new ones**; `test_session_identity.py` passes. Migration tested on SQLite only, not on PostgreSQL.*
+- [x] Task 2: Fingerprint and `invalidate_user_sessions` — *evidence: `tests/test_session_identity.py` 8/8 passed (SC-003, SC-004); per-file run of every test file compared with `fb0aea5`: the same 160 failing tests, no new ones. `test_auth_login_audit::test_password_login_records_audit_entry` fails alone also on `fb0aea5` (order-dependent, existing).*
 - [ ] Task 3: Rotation after a partial restore
 - [ ] Task 4: Rotation in the restore container
 - [ ] Task 5: Operations docs
