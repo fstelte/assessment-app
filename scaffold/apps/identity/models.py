@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import enum
+import secrets
 from datetime import UTC, datetime
 from typing import Iterable, List, Set
 
@@ -171,6 +172,11 @@ class AADGroupMapping(TimestampMixin, db.Model):
         return f"<AADGroupMapping group={self.group_object_id!r} role_id={self.role_id}>"
 
 
+def _new_session_token() -> str:
+    """Random per-user session token: 64 hex characters (decision 20261107-0848)."""
+    return secrets.token_hex(32)
+
+
 class User(TimestampMixin, UserMixin, db.Model):
     """Application user with status-driven lifecycle."""
 
@@ -191,6 +197,11 @@ class User(TimestampMixin, UserMixin, db.Model):
     locale_preference = db.Column(db.String(10), default="en", nullable=False)
     azure_oid = db.Column(db.String(255), unique=True, index=True)
     aad_upn = db.Column(db.String(255), unique=True)
+    # Sessions and remember-me cookies carry this token instead of ``id``, so a
+    # restore that reassigns ids can never log a browser in as someone else.
+    session_token = db.Column(
+        db.String(64), unique=True, nullable=False, index=True, default=_new_session_token
+    )
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
     mfa_setting = db.relationship(
@@ -224,6 +235,20 @@ class User(TimestampMixin, UserMixin, db.Model):
     @property
     def is_anonymous(self) -> bool:  # type: ignore[override]
         return False
+
+    def get_id(self) -> str:  # type: ignore[override]
+        """Flask-Login identity: the session token, never the numeric id."""
+        return self.session_token
+
+    def rotate_session_token(self) -> None:
+        """End every session and remember-me cookie of this user. Caller commits."""
+        self.session_token = _new_session_token()
+
+    @classmethod
+    def find_by_session_token(cls, token: object) -> "User | None":
+        if not token or not isinstance(token, str):
+            return None
+        return cls.query.filter_by(session_token=token).one_or_none()
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)

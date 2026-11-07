@@ -45,7 +45,7 @@ def _login_admin(client) -> None:
     # (same approach as conftest.login and _sign_in in test_admin_routes.py).
     user = User.query.filter_by(email="admin@example.com").one()
     with client.session_transaction() as sess:
-        sess["_user_id"] = str(user.id)
+        sess["_user_id"] = user.get_id()
         sess["_fresh"] = True
         sess["login_time"] = datetime.now(UTC).isoformat()
 

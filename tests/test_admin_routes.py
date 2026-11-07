@@ -218,8 +218,10 @@ def test_role_assignment_records_audit_event(app, client):
 
 def _sign_in(client, user_id: int) -> None:
     """Authenticate the test client directly; the password login now forces MFA enrolment."""
+    with client.application.app_context():
+        token = db.session.get(User, user_id).get_id()
     with client.session_transaction() as sess:
-        sess["_user_id"] = str(user_id)
+        sess["_user_id"] = token
         sess["_fresh"] = True
         sess["login_time"] = datetime.now(UTC).isoformat()
 
