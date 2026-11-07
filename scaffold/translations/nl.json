@@ -1918,6 +1918,8 @@
           "status": "Status",
           "restored_rows": "Herstelde rijen",
           "skipped_rows": "Overgeslagen rijen (conflict)",
+          "skipped_missing_parent": "Overgeslagen rijen (ontbrekende bovenliggende rij)",
+          "cleared_references": "Verwijzingen gewist (bovenliggende tabel niet hersteld)",
           "outcome_restored": "Hersteld",
           "outcome_skipped": "Overgeslagen",
           "outcome_blocked": "Geblokkeerd",

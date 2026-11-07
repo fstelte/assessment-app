@@ -1648,6 +1648,8 @@
           "status": "Status",
           "restored_rows": "Rows restored",
           "skipped_rows": "Rows skipped (conflict)",
+          "skipped_missing_parent": "Rows skipped (missing parent)",
+          "cleared_references": "References cleared (parent not restored)",
           "outcome_restored": "Restored",
           "outcome_skipped": "Skipped",
           "outcome_blocked": "Blocked",

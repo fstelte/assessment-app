@@ -1269,13 +1269,53 @@ class TestResultsPage:
             revalidated_at=datetime.now(UTC),
             status="completed",
             table_results=[
-                TableRestoreResult(table_name="sample", status="restored", restored_row_count=2),
+                TableRestoreResult(
+                    table_name="sample", status="restored", restored_row_count=2,
+                    skipped_missing_parent_count=7, cleared_reference_count=11,
+                ),
             ],
         )
         save_run_state(run)
 
         resp = client.get("/admin/backup/partial-restore/results/test-run-render")
         assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert "Rows skipped (missing parent)" in html
+        assert "References cleared (parent not restored)" in html
+        assert ">7</td>" in html and ">11</td>" in html
+
+    def test_new_counts_round_trip_through_run_state(self, tmp_path):
+        from datetime import UTC, datetime
+
+        from scaffold.apps.admin.backup_utils import (
+            PartialRestoreRun,
+            TableRestoreResult,
+            load_run_state,
+            save_run_state,
+        )
+
+        result = TableRestoreResult(
+            table_name="t", status="restored", skipped_missing_parent_count=3, cleared_reference_count=4
+        )
+        now = datetime.now(UTC)
+        save_run_state(PartialRestoreRun("r1", "i1", 1, ["t"], now, now, now, "completed", [result]), tmp_path)
+        loaded = load_run_state("r1", tmp_path).table_results[0]
+        assert (loaded.skipped_missing_parent_count, loaded.cleared_reference_count) == (3, 4)
+
+    def test_old_run_state_without_new_counts_still_loads(self, tmp_path):
+        import json
+
+        from scaffold.apps.admin.backup_utils import load_run_state
+
+        old = {  # written before cleared/missing-parent counts existed
+            "run_id": "old", "inspection_id": "i1", "status": "completed",
+            "started_at": "2026-11-05T10:00:00+00:00",
+            "table_results": [{"table_name": "t", "status": "restored", "restored_row_count": 1,
+                               "skipped_conflict_count": 0, "blocked_reason": None, "error_message": None}],
+        }
+        (tmp_path / "run_old.json").write_text(json.dumps(old), encoding="utf-8")
+        loaded = load_run_state("old", tmp_path).table_results[0]
+        assert (loaded.skipped_missing_parent_count, loaded.cleared_reference_count) == (0, 0)
 
 
 # ---------------------------------------------------------------------------
@@ -1320,6 +1360,8 @@ class TestAuditEventPayloads:
                     "selected_tables": ["t1", "t2"],
                     "status": "partial",
                     "skipped_conflict_counts": {"t1": 0, "t2": 3},
+                    "skipped_missing_parent_counts": {"t1": 0, "t2": 2},
+                    "cleared_reference_counts": {"t1": 5, "t2": 0},
                     "table_outcomes": {"t1": "restored", "t2": "skipped"},
                 },
             )
@@ -1331,6 +1373,8 @@ class TestAuditEventPayloads:
             assert event.payload["status"] == "partial"
             assert "t1" in event.payload["table_outcomes"]
             assert "t2" in event.payload["skipped_conflict_counts"]
+            assert event.payload["skipped_missing_parent_counts"] == {"t1": 0, "t2": 2}
+            assert event.payload["cleared_reference_counts"] == {"t1": 5, "t2": 0}
 
 
 # ---------------------------------------------------------------------------

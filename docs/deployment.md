@@ -154,6 +154,13 @@ Partial restore is available from **Admin → Backup → Partial Restore**.
     savepoint, so one failing table does not stop the others.
   - After a table restores rows, its serial/identity sequence is moved past the highest
     restored id (never backwards), so new records don't collide with restored ids.
+  - Rows whose foreign-key parent is missing do not fail the table. A reference to a
+    table that is not part of this restore (for example `users` when the identity group
+    is not selected) is set to NULL when the column allows it; any other row with a
+    missing parent is skipped. The results page and the audit trail show both counts
+    per table ("Rows skipped (missing parent)", "References cleared").
+  - Known limitation: if two selected tables reference each other (a foreign-key cycle),
+    rows of the table restored first are skipped. The current schema has no such cycle.
   - Hand-made `pg_dump --inserts` dumps are not supported for partial restore; use
     **Full Restore** for those.
 - Identity tables (`users`, `roles`, `user_roles`, etc.) must be selected as a group.

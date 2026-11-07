@@ -2471,6 +2471,10 @@ def partial_restore_execute():
     # Audit the completed restore
     table_outcomes = {r.table_name: r.status for r in completed_run.table_results}
     skipped_counts = {r.table_name: r.skipped_conflict_count for r in completed_run.table_results}
+    missing_parent_counts = {
+        r.table_name: r.skipped_missing_parent_count for r in completed_run.table_results
+    }
+    cleared_counts = {r.table_name: r.cleared_reference_count for r in completed_run.table_results}
     log_event(
         action="partial_restore_execute",
         entity_type="backup",
@@ -2480,6 +2484,8 @@ def partial_restore_execute():
             "selected_tables": completed_run.selected_tables,
             "status": completed_run.status,
             "skipped_conflict_counts": skipped_counts,
+            "skipped_missing_parent_counts": missing_parent_counts,
+            "cleared_reference_counts": cleared_counts,
             "table_outcomes": table_outcomes,
         },
     )
