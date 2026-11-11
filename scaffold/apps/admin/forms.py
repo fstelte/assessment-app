@@ -123,7 +123,7 @@ class PrincipleCreateForm(FlaskForm):
     )
     description = TextAreaField(
         _label("admin.principles.manual.description_label"),
-        validators=[DataRequired(), Length(max=5000)],
+        validators=[DataRequired()],
         render_kw={
             "placeholder": _l("admin.principles.manual.description_placeholder"),
             "rows": 4,

@@ -1,5 +1,6 @@
 import io
 import json
+from datetime import UTC, datetime
 
 from scaffold.apps.bia.models import ContextScope
 from scaffold.apps.identity.models import Role, User, UserStatus
@@ -24,11 +25,13 @@ def _make_admin(app):
 
 
 def _login(client, email="admin@example.com", password="Password123!"):
-    client.post(
-        "/auth/login",
-        data={"email": email, "password": password},
-        follow_redirects=True,
-    )
+    """Authenticate the test client directly; the password login now forces MFA enrolment."""
+    with client.application.app_context():
+        token = User.query.filter_by(email=email).one().get_id()
+    with client.session_transaction() as sess:
+        sess["_user_id"] = token
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
 
 
 def _upload(client, payload):
@@ -159,3 +162,80 @@ def test_create_writes_audit_log_row(app, client):
         entry = AuditLog.query.filter_by(event_type="create", target_type="architecture_principle").first()
         assert entry is not None
         assert entry.payload.get("name") == "Audited Principle"
+
+
+def test_admin_sees_principles_links_in_admin_menu_and_nav(app, client):
+    _make_admin(app)
+    _login(client)
+
+    html = client.get("/admin/users").get_data(as_text=True)
+    assert 'id="nav-principles"' in html
+    assert html.count('href="/admin/principles"') >= 2  # nav button + admin menu button
+
+
+def test_control_owner_does_not_see_nav_principles_button(app, client):
+    with app.app_context():
+        role = Role()
+        role.name = "control_owner"
+        db.session.add(role)
+        user = User()
+        user.email = "owner@example.com"
+        user.status = UserStatus.ACTIVE
+        user.set_password("Password123!")
+        user.roles.append(role)
+        db.session.add(user)
+        db.session.commit()
+
+    _login(client, email="owner@example.com", password="Password123!")
+    response = client.get("/admin/principles")
+    assert response.status_code == 200
+    assert 'id="nav-principles"' not in response.get_data(as_text=True)
+
+
+def test_create_and_update_accept_description_over_5000_chars(app, client):
+    _make_admin(app)
+    _login(client)
+    long_text = "x" * 6000
+
+    client.post(
+        "/admin/principles/create",
+        data={"name": "Long Principle", "description": long_text},
+        follow_redirects=True,
+    )
+    with app.app_context():
+        principle = ArchitecturePrinciple.query.filter_by(name="Long Principle").first()
+        assert principle is not None
+        assert len(principle.description) == 6000
+        principle_id = principle.id
+
+    updated_text = "y" * 7000
+    client.post(
+        f"/admin/principles/{principle_id}/update",
+        data={"principle_id": str(principle_id), "name": "Long Principle", "description": updated_text},
+        follow_redirects=True,
+    )
+    with app.app_context():
+        assert db.session.get(ArchitecturePrinciple, principle_id).description == updated_text
+
+
+def test_import_skips_description_over_form_memory_limit(app, client):
+    _make_admin(app)
+    _login(client)
+    # Werkzeug also applies this limit to its ~64 KB multipart read buffer,
+    # so it must stay above that or every upload is rejected with a 413.
+    app.config["MAX_FORM_MEMORY_SIZE"] = 100_000
+
+    response = _upload(
+        client,
+        {
+            "principles": [
+                {"name": "Too Long", "description": "x" * 100_001},
+                {"name": "Fits", "description": "x" * 100_000},
+            ]
+        },
+    )
+    assert response.status_code == 200
+    assert "exceeds 100000 bytes" in response.get_data(as_text=True)
+    with app.app_context():
+        assert ArchitecturePrinciple.query.filter_by(name="Too Long").first() is None
+        assert ArchitecturePrinciple.query.filter_by(name="Fits").first() is not None

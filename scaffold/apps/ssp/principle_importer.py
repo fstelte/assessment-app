@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
+from flask import current_app
 from sqlalchemy import func, select
 
 from ...extensions import db
@@ -57,6 +58,9 @@ def import_principles_from_mapping(payload: Mapping[str, Any]) -> ImportStats:
     stats = ImportStats()
     principles = _build_payload(payload)
 
+    # Same limit the edit form is subject to, so every imported principle stays editable.
+    max_bytes = current_app.config.get("MAX_FORM_MEMORY_SIZE")
+
     seen_at_row: dict[str, int] = {}
     for index, raw in enumerate(principles, start=1):
         if not isinstance(raw, Mapping):
@@ -67,6 +71,9 @@ def import_principles_from_mapping(payload: Mapping[str, Any]) -> ImportStats:
         description = str(raw.get("description") or "").strip()
         if not name or not description:
             stats.errors.append(f"Entry {index} requires both 'name' and 'description'")
+            continue
+        if max_bytes is not None and len(description.encode("utf-8")) > max_bytes:
+            stats.errors.append(f"Entry {index} description exceeds {max_bytes} bytes; skipped")
             continue
 
         normalised = _normalise_name(name)
