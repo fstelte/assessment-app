@@ -13,6 +13,7 @@
       "home": "Home",
       "bia": "BIA",
       "profile": "Profile",
+      "principles": "Principles",
       "admin": "Admin",
       "audit_trail": "Audit trail",
       "logout": "Logout",
@@ -1420,6 +1421,7 @@
       "link_authentication_methods": "Authentication methods",
       "link_risk_management": "Risk management",
       "link_sensitivity_labels": "Sensitivity labels",
+      "link_principles": "Principles",
       "link_audit_trail": "Audit trail",
       "button": {
         "import_controls": "Import controls"

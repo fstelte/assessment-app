@@ -13,6 +13,7 @@
       "home": "Start",
       "created": "Authenticatiemethode {name} aangemaakt.",
       "profile": "Profiel",
+      "principles": "Principes",
       "admin": "Beheer",
       "audit_trail": "Auditlog",
       "logout": "Afmelden",
@@ -1689,6 +1690,7 @@
       "link_bia_dashboard": "BIA-dashboard",
       "link_authentication_methods": "Authenticatiemethoden",
       "link_sensitivity_labels": "Gevoeligheidslabels",
+      "link_principles": "Principes",
       "link_audit_trail": "Audittrail",
       "button": {
         "import_controls": "Controls importeren"

@@ -73,6 +73,7 @@
         {% if current_user.is_authenticated %}
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 px-2.5 py-1 text-xs" href="{{ url_for('auth.profile') }}">{{ _('app.navigation.profile') }}</a>
           {% if current_user.has_role('admin') %}
+            <a id="nav-principles" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 px-2.5 py-1 text-xs" href="{{ url_for('admin.principles') }}">{{ _('app.navigation.principles') }}</a>
             <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-yellow-400 text-yellow-400 hover:bg-yellow-400/10 px-2.5 py-1 text-xs" href="{{ url_for('admin.list_users') }}">{{ _('app.navigation.admin') }}</a>
           {% endif %}
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-red-600 text-white hover:bg-red-700 px-2.5 py-1 text-xs" href="{{ url_for('auth.logout') }}">{{ _('app.navigation.logout') }}</a>
