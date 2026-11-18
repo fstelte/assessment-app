@@ -230,7 +230,8 @@ def view(ssp_id: int):
         for risk in component.risks:
             if risk.is_closed:
                 continue
-            sev = risk.determine_severity(thresholds)
+            # Actual severity, so mitigated (still open) risks count at their residual level.
+            sev = risk.determine_actual_severity(thresholds)
             key = sev.value if sev else "unknown"
             risk_summary[key] = risk_summary.get(key, 0) + 1
 
@@ -548,7 +549,8 @@ def export_pdf(ssp_id: int):
         for risk in component.risks:
             if risk.is_closed:
                 continue
-            sev = risk.determine_severity(thresholds)
+            # Actual severity, so mitigated (still open) risks count at their residual level.
+            sev = risk.determine_actual_severity(thresholds)
             key = sev.value if sev else "unknown"
             risk_summary[key] = risk_summary.get(key, 0) + 1
 

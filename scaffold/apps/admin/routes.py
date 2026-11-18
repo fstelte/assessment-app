@@ -1210,7 +1210,8 @@ def list_risks():
     }
 
     for risk in pagination.items:
-        score = risk.score()
+        # Actual score: residual when mitigated (decision 20261118-0830).
+        score = risk.actual_score()
         severity = determine_risk_severity(score, thresholds)
         severity_value = severity.value if severity else "low"
         
@@ -1303,7 +1304,7 @@ def edit_risk(risk_id: int):
                 flash(error, "danger")
 
     thresholds = load_thresholds()
-    score = risk.score()
+    score = risk.actual_score()
     severity = determine_risk_severity(score, thresholds)
 
     return render_template(

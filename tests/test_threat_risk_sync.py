@@ -360,3 +360,79 @@ def test_linked_risk_form_renders_sync_fields_disabled(app, client, login):
     for field_id in ("title", "chance", "mitigated", "residual_impact", "component_ids"):
         tag = page[page.index(f'id="{field_id}"') - 300 : page.index(f'id="{field_id}"') + 300]
         assert "disabled" in tag, field_id
+
+
+# ---------------------------------------------------------------------------
+# Admin risk register and SSP summary use the actual score (Task 8)
+# ---------------------------------------------------------------------------
+
+
+def _capture(client, url: str, template_name: str) -> dict:
+    from flask import template_rendered
+
+    captured: dict = {}
+
+    def _record(sender, template, context, **extra):
+        if template.name == template_name:
+            captured.update(context)
+
+    template_rendered.connect(_record)
+    try:
+        client.get(url)
+    finally:
+        template_rendered.disconnect(_record)
+    return captured
+
+
+def _seed_scope_risks():
+    from scaffold.apps.risk.models import RiskSeverity, RiskSeverityThreshold
+
+    for severity, low, high in (
+        (RiskSeverity.LOW, 1, 5),
+        (RiskSeverity.MODERATE, 6, 10),
+        (RiskSeverity.HIGH, 11, 15),
+        (RiskSeverity.CRITICAL, 16, 25),
+    ):
+        db.session.add(RiskSeverityThreshold(severity=severity, min_score=low, max_score=high))
+    scope, (component,) = _bia("SSP BIA", ["App"])
+    mitigated = Risk(
+        title="Mitigated", description="d", impact=RiskImpact.MAJOR, chance=RiskChance.LIKELY,
+        mitigated_at=datetime.now(UTC), residual_impact=RiskImpact.MINOR, residual_chance=RiskChance.POSSIBLE,
+    )
+    closed = Risk(
+        title="Closed", description="d", impact=RiskImpact.MAJOR, chance=RiskChance.LIKELY,
+        closed_at=datetime.now(UTC),
+    )
+    mitigated.components = [component]
+    closed.components = [component]
+    db.session.add_all([mitigated, closed])
+    db.session.commit()
+    return scope, mitigated
+
+
+def test_admin_risk_register_shows_actual_score(app, client, login):
+    from scaffold.apps.identity.models import ROLE_ADMIN, Role
+
+    login.roles.append(Role.query.filter_by(name=ROLE_ADMIN).first() or Role(name=ROLE_ADMIN))
+    db.session.commit()
+    _, mitigated = _seed_scope_risks()
+
+    context = _capture(client, "/admin/risks", "admin/risks.html")
+
+    scores = {risk.id: risk.inherent_risk_score for risk in context["pagination"].items}
+    assert scores[mitigated.id] == 6
+
+
+@pytest.mark.parametrize("suffix, template", [("", "ssp/view.html"), ("/export/pdf", "ssp/print.html")])
+def test_ssp_risk_summary_uses_actual_severity(app, client, login, suffix, template):
+    from scaffold.apps.ssp.models import SSPlan
+
+    scope, _ = _seed_scope_risks()
+    ssp = SSPlan(context_scope_id=scope.id)
+    db.session.add(ssp)
+    db.session.commit()
+
+    context = _capture(client, f"/ssp/{ssp.id}{suffix}", template)
+
+    # Mitigated 16 -> 6 counts as moderate; the closed risk is excluded.
+    assert context["risk_summary"] == {"moderate": 1}
