@@ -194,14 +194,12 @@ def sync_from_threats():
     return redirect(url_for("risk.dashboard"))
 
 
-@bp.route("/")
-@login_required
-def dashboard():
-    """Show a human-friendly overview of every registered risk."""
+def _bia_filter_args():
+    """Parse ``?bia=<id>&bia=<id>`` (decision 20261118-0801); unknown ids are ignored.
 
-    _require_risk_access()
-    thresholds = load_thresholds()
-    # BIA filter (decision 20261118-0801): ?bia=<id>&bia=<id>; unknown ids are ignored.
+    Returns the BIA options, the selected ids and the SQL filter for them.
+    """
+
     bia_options = (
         ContextScope.query.filter(ContextScope.components.any())
         .order_by(ContextScope.name)
@@ -212,14 +210,26 @@ def dashboard():
         {int(value) for value in request.args.getlist("bia") if value.isdigit()} & known_bia_ids
     )
     bia_filter = Risk.components.any(Component.context_scope_id.in_(selected_bia_ids)) if selected_bia_ids else sa.true()
-    # Approval filter (decisions 20261118-1048, -1058): open risks only; unknown values are ignored.
+    return bia_options, selected_bia_ids, bia_filter
+
+
+@bp.route("/")
+@login_required
+def dashboard():
+    """Show the workspace of open risks; closed ones are on the overview (decision 20261118-1200)."""
+
+    _require_risk_access()
+    thresholds = load_thresholds()
+    bia_options, selected_bia_ids, bia_filter = _bia_filter_args()
+    # Approval filter (decisions 20261118-1048, -1058); unknown values are ignored.
     selected_approval = request.args.get("approval")
     if selected_approval not in _APPROVAL_FILTERS:
         selected_approval = None
-    query = _risk_query().filter(bia_filter)
+    query = _risk_query().filter(bia_filter, Risk.closed_at.is_(None))
     if selected_approval:
-        query = query.filter(Risk.closed_at.is_(None), _APPROVAL_FILTERS[selected_approval]())
+        query = query.filter(_APPROVAL_FILTERS[selected_approval]())
     risks = query.order_by(Risk.created_at.desc()).all()
+    has_closed_risks = db.session.query(Risk.query.filter(Risk.closed_at.isnot(None)).exists()).scalar()
     mine_count = Risk.query.filter(bia_filter, Risk.closed_at.is_(None), _APPROVAL_FILTERS["mine"]()).count()
     cards = _build_dashboard_cards(risks, thresholds)
     metrics = _dashboard_metrics(cards, selected_bia_ids)
@@ -239,6 +249,7 @@ def dashboard():
         selected_bia_ids=selected_bia_ids,
         selected_approval=selected_approval,
         mine_count=mine_count,
+        has_closed_risks=has_closed_risks,
     )
 
 

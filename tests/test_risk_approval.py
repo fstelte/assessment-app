@@ -624,7 +624,7 @@ def _shown(client, query: str, risks: dict[str, Risk]) -> set[str]:
         ("?approval=mine", {"mine_awaiting", "mine_rejected", "other_bia"}),
         ("?approval=awaiting", {"mine_awaiting", "other_awaiting", "other_bia"}),
         ("?approval=rejected", {"mine_rejected", "other_rejected"}),
-        ("?approval=bogus", None),  # ignored -> everything
+        ("?approval=bogus", None),  # ignored -> every open risk
         ("", None),
     ],
 )
@@ -633,7 +633,8 @@ def test_approval_filter(client, query, expected):
     risks = _dashboard_set(me, _user("other@example.com"))
     _sign_in(client, me)
 
-    assert _shown(client, query, risks) == (expected if expected is not None else set(risks))
+    # The workspace lists open risks only (decision 20261118-1200).
+    assert _shown(client, query, risks) == (expected if expected is not None else set(risks) - {"mine_closed"})
 
 
 def test_approval_filter_combines_with_bia_filter_and_counts_mine(client):

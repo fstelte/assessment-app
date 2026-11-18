@@ -167,7 +167,9 @@
       "approval_filter_label": "Goedkeuring",
       "approval_filter_all": "Alle",
       "approval_filter_mine": "Wacht op mijn goedkeuring ({count})",
-      "approval_filter_empty": "Geen risico's voldoen aan het goedkeuringsfilter."
+      "approval_filter_empty": "Geen risico's voldoen aan het goedkeuringsfilter.",
+      "no_open_risks": "Geen open risico's.",
+      "no_open_risks_hint": "Afgesloten risico's staan in het risico-overzicht."
     },
     "residual": {
       "mitigated": "Gemitigeerd",
@@ -248,7 +250,7 @@
     },
     "flash": {
       "invalid_request": "Kan het verzoek niet valideren.",
-      "archived": "Risico \"{title}\" is gearchiveerd.",
+      "archived": "Risico \"{title}\" is afgesloten. Je vindt het in het risico-overzicht.",
       "already_archived": "Risico is al gearchiveerd.",
       "reopened": "Risico \"{title}\" is heropend.",
       "already_open": "Risico is al actief.",

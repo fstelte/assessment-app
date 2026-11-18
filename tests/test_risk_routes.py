@@ -599,3 +599,124 @@ def test_bia_filter_options_and_active_summary_render(client, app, login):
     assert f'<option value="{beta}" selected>Beta BIA</option>' in page
     assert "Showing risks for: Beta BIA" in page
     assert "Clear filter" in page
+
+
+def _seed_open_and_closed_risks(app) -> dict[str, Risk]:
+    """A manual open risk, a manual closed risk and a threat-closed risk, all in Alpha BIA."""
+
+    from datetime import UTC, datetime
+
+    scope = ContextScope(name="Alpha BIA", risk_assessment_human=True)
+    component = Component(name="A1", context_scope=scope)
+    risks = {}
+    for title, closed in (("Open risk", False), ("Closed manual risk", True), ("Threat closed risk", True)):
+        risk = Risk(
+            title=title,
+            description="d",
+            impact=RiskImpact.CATASTROPHIC,
+            chance=RiskChance.ALMOST_CERTAIN,
+            closed_at=datetime.now(UTC) if closed else None,
+        )
+        risk.components = [component]
+        risks[title] = risk
+    db.session.add_all([scope, component, *risks.values()])
+    db.session.commit()
+    return risks
+
+
+def test_workspace_hides_closed_risks_from_cards_metrics_and_matrix(client, app, login):
+    _seed_thresholds(app)
+    _seed_open_and_closed_risks(app)
+
+    context = _dashboard_context(client)
+
+    assert _titles(context) == {"Open risk"}
+    matrix_count = sum(len(cell["risks"]) for row in context["risk_matrix"]["rows"] for cell in row["cells"])
+    assert context["metrics"]["total"] == matrix_count == 1
+    assert context["metrics"]["high"] == 1
+
+
+def test_workspace_bia_filter_still_hides_closed_risks(client, app, login):
+    _seed_open_and_closed_risks(app)
+    scope_id = ContextScope.query.filter_by(name="Alpha BIA").one().id
+
+    context = _dashboard_context(client, f"?bia={scope_id}")
+
+    assert _titles(context) == {"Open risk"}
+
+
+def test_threat_closed_risk_leaves_the_workspace(client, app, login):
+    from scaffold.apps.threat.models import (
+        AssetType,
+        ScenarioStatus,
+        StrideCategory,
+        ThreatModel,
+        ThreatModelAsset,
+        ThreatScenario,
+        TreatmentOption,
+    )
+    from scaffold.apps.threat.services import sync_scenario_to_risk
+
+    scope = ContextScope(name="Threat BIA")
+    db.session.add(scope)
+    db.session.flush()
+    db.session.add(Component(name="App", context_scope_id=scope.id))
+    model = ThreatModel(title="TM", context_scope_id=scope.id)
+    db.session.add(model)
+    db.session.flush()
+    asset = ThreatModelAsset(threat_model_id=model.id, name="App", asset_type=AssetType.COMPONENT, order=0)
+    db.session.add(asset)
+    db.session.flush()
+    scenario = ThreatScenario(
+        threat_model_id=model.id,
+        title="Spoofed login",
+        stride_category=StrideCategory.SPOOFING,
+        status=ScenarioStatus.ANALYSED,
+        treatment=TreatmentOption.MITIGATE,
+        likelihood=4,
+        impact_score=4,
+    )
+    scenario.assigned_assets = [asset]
+    db.session.add(scenario)
+    db.session.flush()
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+    risk_title = db.session.get(Risk, scenario.risk_id).title
+    assert risk_title in _titles(_dashboard_context(client))
+
+    scenario.status = ScenarioStatus.ACCEPTED
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+
+    assert db.session.get(Risk, scenario.risk_id).is_closed
+    assert risk_title not in _titles(_dashboard_context(client))
+
+
+def test_workspace_has_no_reopen_button(client, app, login):
+    _seed_open_and_closed_risks(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "Reopen risk" not in page
+    assert "Close &amp; archive" in page
+
+
+def test_workspace_with_only_closed_risks_shows_no_open_risks(client, app, login):
+    from datetime import UTC, datetime
+
+    for risk in _seed_open_and_closed_risks(app).values():
+        risk.closed_at = risk.closed_at or datetime.now(UTC)
+    db.session.commit()
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "data-no-open-risks" in page
+    assert "No open risks." in page
+    assert "No risks recorded yet." not in page
+
+
+def test_empty_workspace_still_shows_first_risk_prompt(client, app, login):
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "No risks recorded yet." in page
+    assert "data-no-open-risks" not in page

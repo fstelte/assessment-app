@@ -2103,7 +2103,9 @@
       "approval_filter_label": "Approval",
       "approval_filter_all": "All",
       "approval_filter_mine": "Awaiting my approval ({count})",
-      "approval_filter_empty": "No risks match the approval filter."
+      "approval_filter_empty": "No risks match the approval filter.",
+      "no_open_risks": "No open risks.",
+      "no_open_risks_hint": "Closed risks are listed on the Risk overview."
     },
     "residual": {
       "mitigated": "Mitigated",
@@ -2184,7 +2186,7 @@
     },
     "flash": {
       "invalid_request": "Unable to validate the request.",
-      "archived": "Risk \"{title}\" archived.",
+      "archived": "Risk \"{title}\" closed. You can find it on the Risk overview.",
       "already_archived": "Risk already archived.",
       "reopened": "Risk \"{title}\" reopened.",
       "already_open": "Risk is already open.",

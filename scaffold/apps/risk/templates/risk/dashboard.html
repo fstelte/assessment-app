@@ -731,15 +731,6 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
               </a>
             </div>
             {% endif %}
-            {% if card.is_closed %}
-            <div class="text-[var(--color-muted)] text-sm mt-2">
-              {% if card.closed_at %}
-              {{ _('risk.status.closed_on').format(date=card.closed_at.strftime('%d %b %Y')) }}
-              {% else %}
-              {{ _('risk.status.archived') }}
-              {% endif %}
-            </div>
-            {% endif %}
           </div>
           <div class="risk-card__score">
             <small class="text-[var(--color-muted)] block">{{ _('Score') }}</small>
@@ -888,17 +879,10 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
           {% if api_endpoint_available %}
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk_api.get_risk', risk_id=card.id) }}" target="_blank" rel="noopener">{{ _('Open API record') }}</a>
           {% endif %}
-          {% if card.is_closed %}
-          <form method="post" action="{{ url_for('risk.reopen', risk_id=card.id) }}">
-            {{ action_form.csrf_token }}
-            <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-primary-500 text-primary-400 hover:bg-primary-500/10" type="submit">{{ _('risk.actions.reopen') }}</button>
-          </form>
-          {% else %}
           <form method="post" action="{{ url_for('risk.close', risk_id=card.id) }}">
             {{ action_form.csrf_token }}
             <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-yellow-400 text-yellow-400 hover:bg-yellow-400/10" type="submit">{{ _('risk.actions.close_archive') }}</button>
           </form>
-          {% endif %}
           <form method="post" action="{{ url_for('risk.delete', risk_id=card.id) }}" data-risk-delete-form data-confirm="{{ _('risk.actions.delete_confirm') }}">
             {{ action_form.csrf_token }}
             <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10" type="submit">{{ _('risk.actions.delete') }}</button>
@@ -910,6 +894,11 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     {% elif selected_approval %}
     <div class="risk-empty" data-approval-empty>
       <h3 class="h5">{{ _('risk.dashboard.approval_filter_empty') }}</h3>
+    </div>
+    {% elif has_closed_risks and not selected_bia_ids %}
+    <div class="risk-empty" data-no-open-risks>
+      <h3 class="h5">{{ _('risk.dashboard.no_open_risks') }}</h3>
+      <p class="text-[var(--color-muted)]">{{ _('risk.dashboard.no_open_risks_hint') }}</p>
     </div>
     {% else %}
     <div class="risk-empty">
