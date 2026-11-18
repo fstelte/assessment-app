@@ -3972,7 +3972,8 @@
         "status": "Status",
         "principle": "Principe",
         "date": "Datum",
-        "empty": "Nog geen ADR's vastgelegd."
+        "empty": "Nog geen ADR's vastgelegd.",
+        "actions": "Acties"
       },
       "detail": {
         "created": "Aangemaakt",
@@ -3993,7 +3994,12 @@
       "print": {
         "described_externally": "Extern beschreven"
       },
-      "edit_title": "Beveiligings-ADR bewerken"
+      "edit_title": "Beveiligings-ADR bewerken",
+      "delete": {
+        "button": "Verwijderen",
+        "confirm": "De ADR \"{title}\" verwijderen? Dit kan niet ongedaan worden gemaakt. Als deze een andere ADR verving, krijgt die ADR zijn vorige status terug.",
+        "flash": "ADR \"{title}\" verwijderd."
+      }
     },
     "architecture_overview": {
       "current_alt": "Huidig architectuuroverzicht diagram",

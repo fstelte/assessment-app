@@ -3902,7 +3902,8 @@
         "status": "Status",
         "principle": "Principle",
         "date": "Date",
-        "empty": "No ADRs recorded yet."
+        "empty": "No ADRs recorded yet.",
+        "actions": "Actions"
       },
       "detail": {
         "created": "Created",
@@ -3923,7 +3924,12 @@
       "print": {
         "described_externally": "Described externally"
       },
-      "edit_title": "Edit security ADR"
+      "edit_title": "Edit security ADR",
+      "delete": {
+        "button": "Delete",
+        "confirm": "Delete the ADR \"{title}\"? This cannot be undone. If it replaced another ADR, that ADR gets its previous status back.",
+        "flash": "ADR \"{title}\" deleted."
+      }
     },
     "architecture_overview": {
       "current_alt": "Current architecture overview diagram",

@@ -1054,3 +1054,47 @@ def delete_architecture_overview(ssp_id: int, version_id: int):
     db.session.commit()
     flash(_("ssp.architecture_overview.delete.flash"), "success")
     return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+
+@bp.route("/<int:ssp_id>/adrs/<int:adr_id>/delete", methods=["POST"])
+@login_required
+def delete_adr(ssp_id: int, adr_id: int):
+    """Delete an ADR and repair supersession links (decisions 20261118-1515, -1530).
+
+    - The ADR it superseded goes back to its status before supersession
+      (``accepted`` for rows from before that column existed).
+    - An ADR that superseded this one loses its ``supersedes`` link.
+    """
+    ssp = _get_ssp_or_404(ssp_id)
+    adr = ADRRecord.query.filter_by(id=adr_id, ssp_id=ssp.id).first_or_404()
+
+    predecessor = adr.supersedes
+    if predecessor is not None:
+        restored = predecessor.status_before_supersede or ADRStatus.ACCEPTED
+        predecessor.status = restored
+        predecessor.status_before_supersede = None
+        adr.supersedes_id = None
+        log_event(
+            "adr_unsuperseded",
+            entity_type="ADRRecord",
+            entity_id=predecessor.id,
+            details={"restored_status": restored.value, "deleted_successor_id": adr.id},
+        )
+
+    successor = adr.superseded_by
+    if successor is not None:
+        successor.supersedes_id = None
+
+    # Clear the self-FK links before the delete so no row points at a deleted ADR.
+    db.session.flush()
+    log_event(
+        "adr_deleted",
+        entity_type="ADRRecord",
+        entity_id=adr.id,
+        details={"title": adr.title, "status": adr.status.value, "ssp_id": ssp.id},
+    )
+    title = adr.title
+    db.session.delete(adr)
+    db.session.commit()
+    flash(_("ssp.adrs.delete.flash", title=title), "success")
+    return redirect(url_for("ssp.adrs", ssp_id=ssp.id))

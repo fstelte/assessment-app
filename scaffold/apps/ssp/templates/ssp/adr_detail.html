@@ -9,7 +9,13 @@
       <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ adr.title }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
     </div>
+    <div class="flex gap-2 shrink-0">
     <a href="{{ url_for('ssp.edit_adr', ssp_id=ssp.id, adr_id=adr.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors shrink-0">{{ _('ssp.adrs.edit') }}</a>
+    <form method="POST" action="{{ url_for('ssp.delete_adr', ssp_id=ssp.id, adr_id=adr.id) }}" data-confirm="{{ _('ssp.adrs.delete.confirm', title=adr.title) }}" onsubmit="return confirm(this.dataset.confirm)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors">{{ _('ssp.adrs.delete.button') }}</button>
+    </form>
+    </div>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
