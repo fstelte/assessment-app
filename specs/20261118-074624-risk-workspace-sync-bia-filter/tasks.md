@@ -1,6 +1,6 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: planned
+status: implemented
 created: 2026-11-18
 chunk_size: adaptive
 total_tasks: 21
@@ -759,4 +759,4 @@ signs in through the session, as the `login` fixture does.
 - [x] Task 18: Collapsible cards
 - [x] Task 19: Risk overview page
 - [x] Task 20: Closed banner with Reopen on the edit page
-- [ ] Task 21: Final validation, release notes and docs
+- [x] Task 21: Final validation, release notes and docs

@@ -1,6 +1,6 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: planned
+status: implemented
 created: 2026-11-18
 decisions:
   - 20261118-0750-risk-sync-components-from-assigned-assets
