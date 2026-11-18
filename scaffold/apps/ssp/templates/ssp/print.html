@@ -371,7 +371,7 @@
           </div>
           <div>
             <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.review_frequency') }}</p>
-            <p class="text-white">{{ ssp.monitoring_frequency or "—" }}</p>
+            <p class="text-white">{{ ssp.monitoring_frequency_option.name if ssp.monitoring_frequency_option else "—" }}</p>
           </div>
         </div>
         <div>

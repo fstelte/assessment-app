@@ -66,12 +66,53 @@ class POAMStatus(enum.Enum):
     DELAYED = "delayed"
 
 
+class InterconnectionSource(enum.Enum):
+    """Where an interconnection's system name comes from (decision 20261118-1455)."""
+
+    BIA = "bia"
+    MANUAL = "manual"
+
+
+class SSPOptionKind(enum.Enum):
+    """Admin-managed SSP option lists (decision 20261118-1500)."""
+
+    LAW_REGULATION = "law_regulation"
+    MONITORING_FREQUENCY = "monitoring_frequency"
+
+
 class ADRStatus(enum.Enum):
     PROPOSED = "proposed"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
     DEPRECATED = "deprecated"
     SUPERSEDED = "superseded"
+
+
+class SSPOption(db.Model):
+    """An admin-managed choice for an SSP list: a law/regulation/policy or a monitoring frequency."""
+
+    __tablename__ = "ssp_options"
+    __table_args__ = (sa.UniqueConstraint("kind", "name", name="uq_ssp_options_kind_name"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    kind = db.Column(_enum_col(SSPOptionKind, name="ssp_option_kind"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=sa.true())
+    created_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
+    updated_at = db.Column(db.DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<SSPOption {self.kind.value}:{self.name!r}>"
+
+
+# M2M: SSPlan <-> SSPOption (kind = law_regulation)
+ssp_plan_laws = db.Table(
+    "ssp_plan_laws",
+    db.metadata,
+    db.Column("ssp_id", db.Integer, db.ForeignKey("ssp_plans.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("option_id", db.Integer, db.ForeignKey("ssp_options.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class SSPlan(db.Model):
@@ -112,7 +153,12 @@ class SSPlan(db.Model):
     monitoring_what = db.Column(db.Text, nullable=True)
     monitoring_who = db.Column(db.Text, nullable=True)
     monitoring_tools = db.Column(db.Text, nullable=True)
-    monitoring_frequency = db.Column(db.String(100), nullable=True)
+    monitoring_frequency_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ssp_options.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    adr_register_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_utc_now, nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), default=_utc_now, onupdate=_utc_now, nullable=False)
     created_by_id = db.Column(
@@ -126,6 +172,12 @@ class SSPlan(db.Model):
         back_populates="ssp",
     )
     created_by = db.relationship("User", foreign_keys=[created_by_id])
+    monitoring_frequency_option = db.relationship("SSPOption", foreign_keys=[monitoring_frequency_id])
+    laws_regulations_options = db.relationship(
+        "SSPOption",
+        secondary=ssp_plan_laws,
+        order_by="SSPOption.name",
+    )
     interconnections = db.relationship(
         "SSPInterconnection",
         back_populates="ssp",
@@ -185,6 +237,12 @@ class SSPInterconnection(db.Model):
     security_contact = db.Column(db.String(255), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     sort_order = db.Column(db.Integer, default=0, nullable=False)
+    source = db.Column(
+        _enum_col(InterconnectionSource, name="ssp_interconnection_source"),
+        nullable=False,
+        default=InterconnectionSource.MANUAL,
+        server_default="manual",
+    )
 
     ssp = db.relationship("SSPlan", back_populates="interconnections")
 
@@ -255,6 +313,7 @@ class POAMItem(db.Model):
     point_of_contact = db.Column(db.String(255), nullable=True)
     scheduled_completion = db.Column(db.Date, nullable=True)
     estimated_cost = db.Column(db.String(100), nullable=True)
+    jira_url = db.Column(db.String(500), nullable=True)
     status = db.Column(
         _enum_col(POAMStatus, name="ssp_poam_status"),
         nullable=False,
@@ -349,9 +408,17 @@ class ADRRecord(db.Model):
         default=ADRStatus.PROPOSED,
         server_default="proposed",
     )
-    context = db.Column(db.Text, nullable=False)
-    decision = db.Column(db.Text, nullable=False)
+    # Either an external link, or both context and decision (decision 20261118-1515).
+    context = db.Column(db.Text, nullable=True)
+    decision = db.Column(db.Text, nullable=True)
     consequences = db.Column(db.Text, nullable=True)
+    external_url = db.Column(db.String(500), nullable=True)
+    # Status this ADR had when another ADR superseded it, restored if that
+    # successor is deleted (decision 20261118-1530, CHK001).
+    status_before_supersede = db.Column(
+        _enum_col(ADRStatus, name="adr_status_before_supersede"),
+        nullable=True,
+    )
     primary_principle_id = db.Column(
         db.Integer,
         db.ForeignKey("architecture_principles.id"),

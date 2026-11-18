@@ -232,7 +232,7 @@ completeness.
 
 ## Progress
 - [x] Task 1: Fix SSP metadata save
-- [ ] Task 2: Models and single migration
+- [x] Task 2: Models and single migration
 - [ ] Task 3: Interconnection reconcile from BIA
 - [ ] Task 4: Admin SSP option lists page
 - [ ] Task 5: SSP edit/view/print, list selection, ADR register URL, monitoring wording

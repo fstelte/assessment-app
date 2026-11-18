@@ -220,7 +220,6 @@ def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
             "plan_completion_date": "2026-12-31",
             "plan_approval_date": "",
             "monitoring_kpis_kris": "Patch latency",
-            "monitoring_frequency": "Monthly",
         },
         follow_redirects=False,
     )
@@ -231,7 +230,6 @@ def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
         assert ssp.laws_regulations == "GDPR, NIS2"
         assert ssp.authorization_boundary == "Internal network only"
         assert ssp.monitoring_kpis_kris == "Patch latency"
-        assert ssp.monitoring_frequency == "Monthly"
 
 
 def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):

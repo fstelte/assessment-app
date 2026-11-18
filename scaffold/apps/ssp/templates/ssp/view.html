@@ -451,7 +451,7 @@
     </div>
     <div>
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.review_frequency') }}</dt>
-      <dd>{{ ssp.monitoring_frequency or "—" }}</dd>
+      <dd>{{ ssp.monitoring_frequency_option.name if ssp.monitoring_frequency_option else "—" }}</dd>
     </div>
     <div class="sm:col-span-2">
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.tools_used') }}</dt>

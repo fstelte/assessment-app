@@ -292,7 +292,6 @@ def edit(ssp_id: int):
         ssp.monitoring_what = form.monitoring_what.data or None
         ssp.monitoring_who = form.monitoring_who.data or None
         ssp.monitoring_tools = form.monitoring_tools.data or None
-        ssp.monitoring_frequency = form.monitoring_frequency.data or None
 
         log_event(
             action="ssp_updated",

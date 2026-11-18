@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
 from PIL import Image, UnidentifiedImageError
@@ -69,6 +71,26 @@ def _validate_architecture_overview_file(form, field):
         stream.seek(0)
 
 
+EXTERNAL_URL_MAX_LENGTH = 500
+
+
+def validate_external_url(form, field):
+    """Accept only an absolute http(s) URL of at most 500 characters (decision 20261118-1530, CHK016).
+
+    Empty values pass (combine with Optional/DataRequired as needed). Blocks
+    ``javascript:`` and other schemes so the link is safe to render.
+    """
+    value = (field.data or "").strip()
+    field.data = value or None
+    if not value:
+        return
+    if len(value) > EXTERNAL_URL_MAX_LENGTH:
+        raise ValidationError(_l("ssp.forms.errors.url_too_long"))
+    parsed = urlsplit(value)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc or any(ch.isspace() for ch in value):
+        raise ValidationError(_l("ssp.forms.errors.url_invalid"))
+
+
 class SSPEditForm(FlaskForm):
     """Edit SSP-specific metadata fields."""
 
@@ -119,12 +141,6 @@ class SSPEditForm(FlaskForm):
         validators=[Optional()],
         description=_l("ssp.forms.help.monitoring_tools"),
         render_kw={"rows": 3},
-    )
-    monitoring_frequency = StringField(
-        _l("ssp.forms.monitoring_frequency"),
-        validators=[Optional(), Length(max=100)],
-        description=_l("ssp.forms.help.monitoring_frequency"),
-        render_kw={"placeholder": "e.g. Monthly, Quarterly, Annually"},
     )
     submit = SubmitField(_l("ssp.forms.save"))
 

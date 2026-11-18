@@ -3771,6 +3771,10 @@
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
         "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
         "status": "Current remediation status of this POA&M item."
+      },
+      "errors": {
+        "url_invalid": "Enter a full web address starting with http:// or https://.",
+        "url_too_long": "The web address may be at most 500 characters."
       }
     },
     "adr": {

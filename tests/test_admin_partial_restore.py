@@ -678,6 +678,50 @@ class TestRepeatRunIdempotence:
         assert result2["items"].skipped_conflict_count == 2
 
 
+class TestSspOptionTablesRestore:
+    def test_ssp_options_and_plan_laws_restore_in_fk_order(self, app):
+        """The SSP option tables (migration 20261118_0003) restore with their parents.
+
+        Partial restore orders tables from the live FK graph, so selecting the
+        link table before its parents still inserts parents first.
+        """
+        from scaffold.apps.admin.backup_utils import execute_partial_restore_sqlite
+        from scaffold.apps.ssp.models import SSPlan, SSPOption, SSPOptionKind
+
+        now = "2026-11-18 12:00:00"
+        backup_data = _make_sqlite_backup_gz(
+            {
+                "bia_context_scope": [{"id": 1, "name": "Payroll"}],
+                "ssp_options": [
+                    {"id": 1, "kind": "law_regulation", "name": "NIS2", "is_active": 1,
+                     "created_at": now, "updated_at": now},
+                    {"id": 2, "kind": "monitoring_frequency", "name": "Monthly", "is_active": 1,
+                     "created_at": now, "updated_at": now},
+                ],
+                "ssp_plans": [
+                    {"id": 1, "context_scope_id": 1, "monitoring_frequency_id": 2,
+                     "fips_confidentiality": "not_set", "fips_integrity": "not_set",
+                     "fips_availability": "not_set", "created_at": now, "updated_at": now},
+                ],
+                "ssp_plan_laws": [{"ssp_id": 1, "option_id": 1}],
+            }
+        )
+
+        with app.app_context():
+            result = execute_partial_restore_sqlite(
+                backup_data,
+                ["ssp_plan_laws", "ssp_plans", "ssp_options", "bia_context_scope"],
+                db.engine,
+            )
+            db.session.expire_all()
+            plan = db.session.get(SSPlan, 1)
+            assert result["ssp_options"].restored_row_count == 2
+            assert result["ssp_plan_laws"].restored_row_count == 1
+            assert plan.monitoring_frequency_option.name == "Monthly"
+            assert [o.name for o in plan.laws_regulations_options] == ["NIS2"]
+            assert db.session.get(SSPOption, 1).kind is SSPOptionKind.LAW_REGULATION
+
+
 # ---------------------------------------------------------------------------
 # T022 – Partial restore HTTP: GET entry page
 # ---------------------------------------------------------------------------

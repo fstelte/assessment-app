@@ -78,21 +78,43 @@ def derive_fips_rating(consequences: list) -> dict[str, str]:
 # Seed interconnections from ContextScope.interfaces free-text
 # ---------------------------------------------------------------------------
 
+def normalise_name(value: str) -> str:
+    """Comparison key for system and option names: trimmed, single-spaced, casefolded.
+
+    Decision 20261118-1530 (CHK004). The migration 20261118_0003 keeps an
+    inline copy of this rule.
+    """
+    return " ".join((value or "").split()).casefold()
+
+
+def parse_interfaces(raw: str | None) -> list[str]:
+    """Split a BIA ``interfaces`` text on newlines or semicolons.
+
+    Returns trimmed names, de-duplicated by :func:`normalise_name`; the first
+    spelling wins.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    for entry in re.split(r"[\n;]+", raw or ""):
+        name = " ".join(entry.split())
+        key = normalise_name(name)
+        if key and key not in seen:
+            seen.add(key)
+            names.append(name)
+    return names
+
+
 def seed_interconnections(ssp: "SSPlan") -> None:
     """Parse ContextScope.interfaces into SSPInterconnection rows."""
-    from .models import SSPInterconnection
+    from .models import InterconnectionSource, SSPInterconnection
 
-    raw = (ssp.context_scope.interfaces or "").strip()
-    if not raw:
-        return
-
-    # Split on newlines or semicolons
-    entries = [e.strip() for e in re.split(r"[\n;]+", raw) if e.strip()]
+    entries = parse_interfaces(ssp.context_scope.interfaces)
     for idx, entry in enumerate(entries):
         interconnection = SSPInterconnection(
             ssp_id=ssp.id,
             system_name=entry[:255],
             sort_order=idx,
+            source=InterconnectionSource.BIA,
         )
         db.session.add(interconnection)
 
