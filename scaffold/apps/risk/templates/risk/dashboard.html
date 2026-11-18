@@ -542,9 +542,9 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             <small>{{ _('Severity-driven follow ups') }}</small>
           </article>
           <article class="risk-hero__metric">
-            <p class="uppercase text-sm mb-1">{{ _('Mitigation tracks') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('risk.dashboard.metric_treatment_mitigate') }}</p>
             <strong>{{ metrics.mitigate or 0 }}</strong>
-            <small>{{ _('Risks in mitigate treatment') }}</small>
+            <small>{{ _('risk.dashboard.metric_treatment_mitigate_help') }}</small>
           </article>
           <article class="risk-hero__metric">
             <p class="uppercase text-sm mb-1">{{ _('Overdue plans') }}</p>
@@ -561,7 +561,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
       <div class="grow">
         <p class="uppercase text-sm mb-2">{{ _('Likelihood vs impact matrix') }}</p>
         <h2 class="h4 mb-2">{{ _('Risk heatmap') }}</h2>
-        <p class="text-[var(--color-muted)] mb-0">{{ _('Plot every recorded risk across the configured severity spectrum to reveal concentration points before treatment review meetings.') }}</p>
+        <p class="text-[var(--color-muted)] mb-0">{{ _('risk.dashboard.matrix_intro') }}</p>
       </div>
       <div>
         <p class="uppercase text-sm text-[var(--color-muted)] mb-2">{{ _('Severity scale') }}</p>
@@ -632,7 +632,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         </div>
         {% endfor %}
       </div>
-      <p class="risk-matrix__footnote text-[var(--color-muted)] text-sm mb-0">{{ _('Scores reflect the configured impact and chance weights; severity colors respect the thresholds set in the risk workspace.') }}</p>
+      <p class="risk-matrix__footnote text-[var(--color-muted)] text-sm mb-0">{{ _('risk.dashboard.matrix_footnote') }}</p>
     </div>
   </section>
 
@@ -672,6 +672,9 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             </div>
             <div class="flex flex-wrap gap-2 mt-2">
               <span class="risk-pill risk-pill--muted">{{ _('risk.treatment.' + card.treatment.value) }}</span>
+              {% if card.is_mitigated %}
+              <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
+              {% endif %}
               <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
             </div>
             <h3 class="h5 mt-3 mb-1">{{ card.title }}</h3>
@@ -698,6 +701,15 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
           <div class="risk-card__score">
             <small class="text-[var(--color-muted)] block">{{ _('Score') }}</small>
             <strong>{{ card.score }}</strong>
+            {% if card.is_mitigated %}
+            <div class="text-xs text-[var(--color-muted)]">
+              {% if card.residual_score is not none %}
+              {{ _('risk.residual.initial_to_residual').format(initial=card.initial_score, residual=card.residual_score) }}
+              {% else %}
+              {{ _('risk.residual.not_set_hint') }}
+              {% endif %}
+            </div>
+            {% endif %}
             {% if card.discovered_on %}
             <div class="text-sm text-[var(--color-muted)]">{{ _('Logged {date}').format(date=card.discovered_on.strftime('%d %b %Y')) }}</div>
             {% endif %}

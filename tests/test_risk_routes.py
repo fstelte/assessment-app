@@ -422,3 +422,75 @@ def test_manual_risk_without_components_is_rejected(client, app, login):
     assert response.status_code == 200  # re-rendered with errors
     db.session.expire_all()
     assert [c.id for c in db.session.get(Risk, risk_id).components] == [component_id]
+
+
+# ---------------------------------------------------------------------------
+# Dashboard shows the actual score (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def _seed_mitigated_and_open_risk(app) -> tuple[Risk, Risk]:
+    from datetime import UTC, datetime
+
+    component = db.session.get(Component, _seed_component(app))
+    mitigated = Risk(
+        title="Mitigated leak",
+        description="d",
+        impact=RiskImpact.MAJOR,  # 4
+        chance=RiskChance.LIKELY,  # 4
+        treatment=RiskTreatmentOption.MITIGATE,
+        mitigated_at=datetime.now(UTC),
+        residual_impact=RiskImpact.MINOR,  # 2
+        residual_chance=RiskChance.POSSIBLE,  # 3
+    )
+    open_risk = Risk(
+        title="Open leak",
+        description="d",
+        impact=RiskImpact.MAJOR,
+        chance=RiskChance.LIKELY,
+        treatment=RiskTreatmentOption.ACCEPT,
+    )
+    mitigated.components = [component]
+    open_risk.components = [component]
+    db.session.add_all([mitigated, open_risk])
+    db.session.commit()
+    return mitigated, open_risk
+
+
+def test_dashboard_cards_matrix_and_metrics_use_actual_score(app):
+    from scaffold.apps.risk.routes import _build_dashboard_cards, _build_risk_matrix, _dashboard_metrics
+    from scaffold.apps.risk.services import load_thresholds
+
+    _seed_thresholds(app)
+    mitigated, open_risk = _seed_mitigated_and_open_risk(app)
+    thresholds = load_thresholds()
+
+    with app.test_request_context():
+        cards = {card["id"]: card for card in _build_dashboard_cards([mitigated, open_risk], thresholds)}
+        matrix = _build_risk_matrix([mitigated, open_risk], thresholds)
+
+    assert cards[mitigated.id]["score"] == 6
+    assert cards[mitigated.id]["severity"] is RiskSeverity.MODERATE
+    assert (cards[mitigated.id]["initial_score"], cards[mitigated.id]["residual_score"]) == (16, 6)
+    assert cards[open_risk.id]["score"] == 16
+    assert cards[open_risk.id]["severity"] is RiskSeverity.CRITICAL
+    assert _dashboard_metrics(list(cards.values()))["high"] == 1
+
+    placed = {
+        (row["chance"], cell["impact"]): [entry["id"] for entry in cell["risks"]]
+        for row in matrix["rows"]
+        for cell in row["cells"]
+    }
+    assert placed[(RiskChance.POSSIBLE, RiskImpact.MINOR)] == [mitigated.id]
+    assert placed[(RiskChance.LIKELY, RiskImpact.MAJOR)] == [open_risk.id]
+
+
+def test_dashboard_card_shows_mitigated_pill_and_initial_hint(client, app, login):
+    _seed_thresholds(app)
+    _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "Initial: 16 → Residual: 6" in page
+    assert "Treatment: mitigate" in page
+    assert page.count('risk-pill risk-pill--low">Mitigated<') == 1

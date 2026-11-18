@@ -537,7 +537,8 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
         pasta_by_risk_id = {}
 
     for risk in risks:
-        score = risk.score()
+        # Actual score: residual when mitigated, initial otherwise (decision 20261118-0802).
+        score = risk.actual_score()
         severity = determine_severity(score, thresholds)
         due_date = risk.treatment_due_date
         status = _risk_status(risk, today)
@@ -575,10 +576,13 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
                 "score": score,
                 "severity": severity,
                 "severity_class": _SEVERITY_BADGES.get(severity, _DEFAULT_PILL),
-                "impact": risk.impact,
-                "impact_weight": IMPACT_WEIGHTS[risk.impact],
-                "chance": risk.chance,
-                "chance_weight": CHANCE_WEIGHTS[risk.chance],
+                "initial_score": risk.score(),
+                "residual_score": risk.residual_score(),
+                "is_mitigated": risk.is_mitigated,
+                "impact": risk.actual_impact,
+                "impact_weight": IMPACT_WEIGHTS[risk.actual_impact],
+                "chance": risk.actual_chance,
+                "chance_weight": CHANCE_WEIGHTS[risk.actual_chance],
                 "treatment": risk.treatment,
                 "treatment_plan": risk.treatment_plan,
                 "treatment_due_date": due_date,
@@ -743,14 +747,14 @@ def _build_risk_matrix(
             )
 
     for risk in risks:
-        cell = lookup[(risk.chance, risk.impact)]
-        severity = determine_severity(risk.score(), thresholds)
+        cell = lookup[(risk.actual_chance, risk.actual_impact)]
+        severity = determine_severity(risk.actual_score(), thresholds)
         cell.risks.append(
             MatrixRisk(
                 id=risk.id,
                 title=risk.title,
                 severity=severity,
-                score=risk.score(),
+                score=risk.actual_score(),
                 url=url_for("risk.edit", risk_id=risk.id),
             )
         )
