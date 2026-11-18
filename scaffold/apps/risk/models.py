@@ -126,8 +126,13 @@ class Risk(TimestampMixin, db.Model):
     treatment_owner_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
     ticket_url = db.Column(db.String(500))
     closed_at = db.Column(sa.DateTime(timezone=True))
+    # Residual assessment (decision 20261118-0800). Only used for the actual
+    # score when the risk is mitigated and both residual values are set.
+    mitigated_at = db.Column(sa.DateTime(timezone=True))
+    residual_impact = db.Column(_enum_column(RiskImpact, name="risk_impact"))
+    residual_chance = db.Column(_enum_column(RiskChance, name="risk_chance"))
 
-    treatment_owner = db.relationship(User, foreign_keys=[treatment_owner_id])
+    treatment_owner =db.relationship(User, foreign_keys=[treatment_owner_id])
     components = db.relationship(
         "Component",
         secondary="risk_component_links",
@@ -159,17 +164,27 @@ class Risk(TimestampMixin, db.Model):
         self,
         thresholds: Sequence["RiskSeverityThreshold"] | None = None,
     ) -> RiskSeverity | None:
-        """Return the configured severity that matches the current score."""
+        """Return the configured severity that matches the initial score."""
 
-        resolved_thresholds: Sequence["RiskSeverityThreshold"]
+        return self._severity_for(self.score(), thresholds)
+
+    def determine_actual_severity(
+        self,
+        thresholds: Sequence["RiskSeverityThreshold"] | None = None,
+    ) -> RiskSeverity | None:
+        """Return the configured severity that matches the actual score."""
+
+        return self._severity_for(self.actual_score(), thresholds)
+
+    @staticmethod
+    def _severity_for(
+        score: int,
+        thresholds: Sequence["RiskSeverityThreshold"] | None,
+    ) -> RiskSeverity | None:
         if thresholds is None:
-            resolved_thresholds = RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score).all()
-        else:
-            resolved_thresholds = thresholds
-
-        current_score = self.score()
-        for threshold in resolved_thresholds:
-            if threshold.min_score <= current_score <= threshold.max_score:
+            thresholds = RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score).all()
+        for threshold in thresholds:
+            if threshold.min_score <= score <= threshold.max_score:
                 return threshold.severity
         return None
 
@@ -178,6 +193,40 @@ class Risk(TimestampMixin, db.Model):
         """Return True when the risk has been archived."""
 
         return self.closed_at is not None
+
+    @property
+    def is_mitigated(self) -> bool:
+        """Return True when the risk has been marked as mitigated."""
+
+        return self.mitigated_at is not None
+
+    def residual_score(self) -> int | None:
+        """Return residual impact * chance, or None when either value is missing."""
+
+        if self.residual_impact is None or self.residual_chance is None:
+            return None
+        return IMPACT_WEIGHTS[self.residual_impact] * CHANCE_WEIGHTS[self.residual_chance]
+
+    @property
+    def _uses_residual(self) -> bool:
+        return self.is_mitigated and self.residual_score() is not None
+
+    @property
+    def actual_impact(self) -> RiskImpact:
+        """Residual impact when mitigated with residual values, otherwise initial."""
+
+        return self.residual_impact if self._uses_residual else self.impact
+
+    @property
+    def actual_chance(self) -> RiskChance:
+        """Residual chance when mitigated with residual values, otherwise initial."""
+
+        return self.residual_chance if self._uses_residual else self.chance
+
+    def actual_score(self) -> int:
+        """Return the residual score when mitigated, otherwise the initial score."""
+
+        return IMPACT_WEIGHTS[self.actual_impact] * CHANCE_WEIGHTS[self.actual_chance]
 
 
 class RiskImpactAreaLink(db.Model):
