@@ -24,6 +24,10 @@ The risk module provides a single workspace for tracking identified risks across
 6. Choose a treatment strategy. When selecting **Mitigate**, the form and API both require at least one CSA control reference. Accept/Avoid/Transfer strategies can omit the control.
 7. Optionally assign a treatment owner, due date, and supporting plan text before saving. The owner is also the person who approves the risk (see below).
 
+### Owner of threat-linked risks
+
+For risks that come from a threat scenario or a PASTA conclusion, the **owner is set by the threat**: the scenario's owner, or the threat model's owner when the scenario has none (PASTA risks always use the threat model's owner). Every sync applies it again. If neither is set, the risk owner is cleared. You can still change the owner on the risk, but the next threat sync overwrites it, and the owner field says so. To change the owner permanently, change it on the scenario or threat model. Existing linked risks pick up the threat owner at their next sync, for example with **Sync from threats** on the workspace.
+
 ## Workspace and Overview
 
 - **The risk workspace (`/risk`) lists open risks only.** A risk leaves it as soon as it is closed: by hand with **Close & archive**, or by the threat sync when its scenario is Accepted or Closed or isn't treated by Mitigate. The cards, summary figures, matrix and approval counts only cover open risks. When every risk is closed, the workspace shows "No open risks." with a link to the closed risks on the overview.
@@ -71,7 +75,7 @@ Every card shows its approval state: **Awaiting approval**, **Approved**, **Reje
 |---|---|
 | `risk_approved` / `risk_rejected` | The owner decides; includes the comment and the approved chance, impact, treatment, residual values and actual score |
 | `risk.updated` | Generic field audit; a reset shows `approval_*` fields changing to empty |
-| `risk_synced_from_threat` | Threat sync; `approval_reset: true` when the sync voided a decision |
+| `risk_synced_from_threat` | Threat sync, listing the changed fields (including `treatment_owner_id` when the threat owner changed); `approval_reset: true` when the sync voided a decision |
 
 ## Selecting CSA Controls for Mitigation
 
@@ -104,6 +108,7 @@ Every card shows its approval state: **Awaiting approval**, **Approved**, **Reje
 - **A risk disappeared from the workspace** – it was closed, by hand or by the threat sync. Find it on the Risk overview (`/risk/overview?status=closed`) and reopen it from its edit page.
 - **403 when approving or rejecting** – only the user set as the risk's owner can decide, and admins are not exempt. Assign the right owner first.
 - **Approval went back to "Awaiting approval"** – a material field (chance, impact, treatment, residual values, Mitigated, owner) changed. The audit log shows which change and who made it; threat-linked risks can be reset by the scenario sync.
+- **The owner I set on a threat-linked risk came back to someone else** – the owner of a threat-linked risk comes from the scenario (or its threat model) and every sync applies it again. Change the owner on the scenario instead.
 
 ## PASTA Risk Publication
 
