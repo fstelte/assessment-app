@@ -2107,7 +2107,8 @@
       "no_open_risks": "No open risks.",
       "no_open_risks_hint": "Closed risks are listed on the Risk overview.",
       "expand_all": "Expand all",
-      "collapse_all": "Collapse all"
+      "collapse_all": "Collapse all",
+      "overview_link": "Risk overview"
     },
     "residual": {
       "mitigated": "Mitigated",
@@ -2221,6 +2222,32 @@
       "approve": "Approve",
       "reject": "Reject",
       "owner_only_hint": "Only the owner ({name}) can approve or reject this risk."
+    },
+    "overview": {
+      "title": "Risk overview",
+      "intro": "Every risk, open and closed, in one table.",
+      "filter_label": "Filter risks",
+      "status_label": "Status",
+      "status_filter": {
+        "all": "All",
+        "open": "Open",
+        "closed": "Closed"
+      },
+      "columns": {
+        "severity": "Severity",
+        "title": "Risk",
+        "score": "Score",
+        "treatment": "Treatment",
+        "owner": "Owner",
+        "approval": "Approval",
+        "bia": "BIA",
+        "status": "Status"
+      },
+      "status_open": "Open",
+      "empty": "No risks match the filter.",
+      "back_link": "Risk workspace",
+      "source_threat": "Threat",
+      "source_pasta": "PASTA"
     }
   },
   "assessments": {

@@ -760,3 +760,161 @@ def test_empty_workspace_has_no_expand_controls(client, app, login):
 
     assert "data-risk-expand aria-controls" not in page
     assert 'id="risk-card-grid"' not in page
+
+
+# ---------------------------------------------------------------------------
+# Risk overview (Task 19)
+# ---------------------------------------------------------------------------
+
+
+def _overview_rows(client, query: str = "") -> list[dict]:
+    from flask import template_rendered
+
+    captured: dict = {}
+
+    def _record(sender, template, context, **extra):
+        if template.name == "risk/overview.html":
+            captured.update(context)
+
+    template_rendered.connect(_record)
+    try:
+        assert client.get(f"/risk/overview{query}").status_code == 200
+    finally:
+        template_rendered.disconnect(_record)
+    return captured["rows"]
+
+
+def _seed_overview_risks(app) -> dict[str, Risk]:
+    from datetime import UTC, datetime
+
+    scope = ContextScope(name="Alpha BIA", risk_assessment_human=True)
+    other = ContextScope(name="Beta BIA", risk_assessment_human=True)
+    a1 = Component(name="A1", context_scope=scope)
+    b1 = Component(name="B1", context_scope=other)
+    now = datetime.now(UTC)
+    specs = {
+        # title: (impact, chance, closed, mitigated, components)
+        "b open low": (RiskImpact.MINOR, RiskChance.RARE, False, False, [a1]),  # 2
+        "A open low": (RiskImpact.MINOR, RiskChance.RARE, False, False, [b1]),  # 2, sorts before "b" by title
+        "Open high": (RiskImpact.CATASTROPHIC, RiskChance.ALMOST_CERTAIN, False, False, [a1]),  # 25
+        "Closed high": (RiskImpact.CATASTROPHIC, RiskChance.ALMOST_CERTAIN, True, True, [a1]),  # 25
+        "Closed low": (RiskImpact.MINOR, RiskChance.RARE, True, False, []),
+    }
+    risks = {}
+    for title, (impact, chance, closed, mitigated, components) in specs.items():
+        risk = Risk(
+            title=title,
+            description="d",
+            impact=impact,
+            chance=chance,
+            closed_at=now if closed else None,
+            mitigated_at=now if mitigated else None,
+        )
+        risk.components = components
+        risks[title] = risk
+    db.session.add_all([scope, other, a1, b1, *risks.values()])
+    db.session.commit()
+    return risks
+
+
+def test_overview_lists_open_first_then_score_then_title(client, app, login):
+    _seed_overview_risks(app)
+
+    rows = _overview_rows(client)
+
+    assert [row["title"] for row in rows] == ["Open high", "A open low", "b open low", "Closed high", "Closed low"]
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("?status=open", {"Open high", "A open low", "b open low"}),
+        ("?status=closed", {"Closed high", "Closed low"}),
+        ("?status=all", {"Open high", "A open low", "b open low", "Closed high", "Closed low"}),
+        ("?status=bogus", {"Open high", "A open low", "b open low", "Closed high", "Closed low"}),
+    ],
+)
+def test_overview_status_filter(client, app, login, query, expected):
+    _seed_overview_risks(app)
+
+    assert {row["title"] for row in _overview_rows(client, query)} == expected
+
+
+def test_overview_bia_filter(client, app, login):
+    _seed_overview_risks(app)
+    beta = ContextScope.query.filter_by(name="Beta BIA").one().id
+
+    assert [row["title"] for row in _overview_rows(client, f"?bia={beta}")] == ["A open low"]
+
+
+def test_overview_renders_status_cells_dashes_and_approval(client, app, login):
+    risks = _seed_overview_risks(app)
+
+    page = client.get("/risk/overview").get_data(as_text=True)
+
+    closed_high = page.split(f'data-risk-row="{risks["Closed high"].id}"', 1)[1].split("</tr>", 1)[0]
+    assert 'data-risk-status="closed"' in page
+    assert "Closed on" in closed_high  # closed wins over mitigated
+    assert "Mitigated" not in closed_high
+    closed_low = page.split(f'data-risk-row="{risks["Closed low"].id}"', 1)[1].split("</tr>", 1)[0]
+    assert closed_low.count("<td>–</td>") == 2  # no owner, no BIA
+    assert 'data-approval-state="no_owner"' in closed_low
+    assert f'href="/risk/{risks["Closed low"].id}/edit"' in closed_low
+
+
+def test_overview_shows_threat_source_label(client, app, login):
+    from scaffold.apps.threat.models import StrideCategory, ThreatModel, ThreatScenario
+
+    risks = _seed_overview_risks(app)
+    model = ThreatModel(title="TM")
+    db.session.add(model)
+    db.session.flush()
+    db.session.add(
+        ThreatScenario(
+            threat_model_id=model.id,
+            title="S",
+            stride_category=StrideCategory.SPOOFING,
+            risk_id=risks["Open high"].id,
+        )
+    )
+    db.session.commit()
+
+    rows = {row["title"]: row for row in _overview_rows(client)}
+
+    assert rows["Open high"]["source"] == "threat"
+    assert rows["A open low"]["source"] is None
+    assert 'data-risk-source="threat">Threat<' in client.get("/risk/overview").get_data(as_text=True)
+
+
+def test_overview_empty_state(client, app, login):
+    page = client.get("/risk/overview?status=closed").get_data(as_text=True)
+
+    assert "No risks match the filter." in page
+
+
+def test_overview_requires_login(client, app):
+    response = client.get("/risk/overview")
+
+    assert response.status_code in (302, 401, 403)
+
+
+def test_workspace_and_overview_link_to_each_other(client, app, login):
+    _seed_open_and_closed_risks(app)
+
+    workspace = client.get("/risk/").get_data(as_text=True)
+    overview = client.get("/risk/overview").get_data(as_text=True)
+
+    assert 'href="/risk/overview" data-overview-link' in workspace
+    assert 'href="/risk/" data-workspace-link' in overview
+
+
+def test_no_open_risks_state_links_to_closed_overview(client, app, login):
+    from datetime import UTC, datetime
+
+    for risk in _seed_open_and_closed_risks(app).values():
+        risk.closed_at = risk.closed_at or datetime.now(UTC)
+    db.session.commit()
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert 'href="/risk/overview?status=closed"' in page

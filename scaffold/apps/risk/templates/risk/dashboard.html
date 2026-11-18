@@ -726,6 +726,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     </div>
     <div class="risk-actions__buttons">
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.create') }}">{{ _('New risk') }}</a>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.overview') }}" data-overview-link>{{ _('risk.dashboard.overview_link') }}</a>
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}#risk-list">{{ _('Refresh view') }}</a>
       {% if current_user.has_role('admin') or current_user.has_role('assessment_manager') %}
       <form method="post" action="{{ url_for('risk.sync_from_threats') }}" class="inline">
@@ -955,6 +956,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     <div class="risk-empty" data-no-open-risks>
       <h3 class="h5">{{ _('risk.dashboard.no_open_risks') }}</h3>
       <p class="text-[var(--color-muted)]">{{ _('risk.dashboard.no_open_risks_hint') }}</p>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.overview', status='closed') }}">{{ _('risk.dashboard.overview_link') }}</a>
     </div>
     {% else %}
     <div class="risk-empty">

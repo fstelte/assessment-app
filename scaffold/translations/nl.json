@@ -171,7 +171,8 @@
       "no_open_risks": "Geen open risico's.",
       "no_open_risks_hint": "Afgesloten risico's staan in het risico-overzicht.",
       "expand_all": "Alles uitklappen",
-      "collapse_all": "Alles inklappen"
+      "collapse_all": "Alles inklappen",
+      "overview_link": "Risico-overzicht"
     },
     "residual": {
       "mitigated": "Gemitigeerd",
@@ -285,6 +286,32 @@
       "approve": "Goedkeuren",
       "reject": "Afwijzen",
       "owner_only_hint": "Alleen de eigenaar ({name}) kan dit risico goedkeuren of afwijzen."
+    },
+    "overview": {
+      "title": "Risico-overzicht",
+      "intro": "Alle risico's, open en afgesloten, in één tabel.",
+      "filter_label": "Risico's filteren",
+      "status_label": "Status",
+      "status_filter": {
+        "all": "Alle",
+        "open": "Open",
+        "closed": "Afgesloten"
+      },
+      "columns": {
+        "severity": "Ernst",
+        "title": "Risico",
+        "score": "Score",
+        "treatment": "Behandeling",
+        "owner": "Eigenaar",
+        "approval": "Goedkeuring",
+        "bia": "BIA",
+        "status": "Status"
+      },
+      "status_open": "Open",
+      "empty": "Geen risico's gevonden voor dit filter.",
+      "back_link": "Risicowerkruimte",
+      "source_threat": "Dreiging",
+      "source_pasta": "PASTA"
     }
   },
   "bia": {

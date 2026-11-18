@@ -253,6 +253,83 @@ def dashboard():
     )
 
 
+_OVERVIEW_STATUSES = ("open", "closed", "all")
+
+
+@bp.route("/overview")
+@login_required
+def overview():
+    """List every risk, open and closed, in a compact table (decisions 20261118-1201, -1210)."""
+
+    from ..threat.models import PastaRiskConclusion, ThreatScenario
+
+    _require_risk_access()
+    thresholds = load_thresholds()
+    bia_options, selected_bia_ids, bia_filter = _bia_filter_args()
+    selected_status = request.args.get("status")
+    if selected_status not in _OVERVIEW_STATUSES:
+        selected_status = "all"
+    query = _risk_query().filter(bia_filter)
+    if selected_status == "open":
+        query = query.filter(Risk.closed_at.is_(None))
+    elif selected_status == "closed":
+        query = query.filter(Risk.closed_at.isnot(None))
+    risks = query.all()
+
+    risk_ids = [risk.id for risk in risks]
+    threat_ids = {
+        risk_id for (risk_id,) in db.session.query(ThreatScenario.risk_id).filter(ThreatScenario.risk_id.in_(risk_ids))
+    }
+    pasta_ids = {
+        risk_id
+        for (risk_id,) in db.session.query(PastaRiskConclusion.published_risk_id).filter(
+            PastaRiskConclusion.published_risk_id.in_(risk_ids)
+        )
+    }
+    rows = []
+    for risk in risks:
+        score = risk.actual_score()
+        severity = determine_severity(score, thresholds)
+        if risk.is_closed:
+            status = "closed"
+        elif risk.is_mitigated:
+            status = "mitigated"
+        else:
+            status = "open"
+        rows.append(
+            {
+                "id": risk.id,
+                "title": risk.title,
+                "source": "threat" if risk.id in threat_ids else "pasta" if risk.id in pasta_ids else None,
+                "score": score,
+                "severity": severity,
+                "severity_class": _SEVERITY_BADGES.get(severity, _DEFAULT_PILL),
+                "treatment": risk.treatment,
+                "owner": risk.treatment_owner,
+                "approval_state": risk.approval_state,
+                "bia_names": sorted({c.context_scope.name for c in risk.components if c.context_scope}),
+                "status": status,
+                "closed_at": risk.closed_at,
+            }
+        )
+    # Open first, then highest actual score (no score last), then title.
+    rows.sort(
+        key=lambda row: (
+            row["status"] == "closed",
+            row["score"] is None,
+            -(row["score"] or 0),
+            row["title"].lower(),
+        )
+    )
+    return render_template(
+        "risk/overview.html",
+        rows=rows,
+        bia_options=bia_options,
+        selected_bia_ids=selected_bia_ids,
+        selected_status=selected_status,
+    )
+
+
 _APPROVAL_FILTERS = {
     "mine": lambda: sa.and_(
         Risk.treatment_owner_id == current_user.id,

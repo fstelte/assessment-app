@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ _("risk.overview.title") }}{% endblock %}
+{% block main_container_class %}container mx-auto max-w-7xl px-4 sm:px-6{% endblock %}
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+/* Pills mirror risk/dashboard.html so labels and colours match (decision 20261118-1210). */
+.risk-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.risk-pill--muted { background: rgba(148, 163, 184, 0.2); color: var(--color-muted); }
+.risk-pill--low { background: rgba(25, 135, 84, 0.15); color: #198754; }
+.risk-pill--moderate { background: rgba(13, 110, 253, 0.15); color: #0d6efd; }
+.risk-pill--high { background: rgba(255, 193, 7, 0.18); color: #b67200; }
+.risk-pill--critical { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+.risk-overview-card {
+  border-radius: 1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  padding: 1rem 1.25rem;
+}
+.risk-overview-table th,
+.risk-overview-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.risk-overview-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.risk-overview-table tr:last-child td {
+  border-bottom: 0;
+}
+</style>
+{% endblock %}
+{% block content %}
+{% set approval_pills = {
+  'approved': 'risk-pill--low',
+  'rejected': 'risk-pill--critical',
+  'awaiting': 'risk-pill--moderate',
+  'no_owner': 'risk-pill--muted'
+} %}
+{% set control_class = "w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" %}
+<div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ _('risk.overview.title') }}</h1>
+    <p class="text-[var(--color-muted)] mb-0">{{ _('risk.overview.intro') }}</p>
+  </div>
+  <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}" data-workspace-link>{{ _('risk.overview.back_link') }}</a>
+</div>
+
+<section class="risk-overview-card mb-4" aria-label="{{ _('risk.overview.filter_label') }}">
+  <form method="get" action="{{ url_for('risk.overview') }}" class="flex flex-col md:flex-row md:items-end gap-3">
+    <div>
+      <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="status-filter">{{ _('risk.overview.status_label') }}</label>
+      <select id="status-filter" name="status" class="{{ control_class }}">
+        {% for value in ('all', 'open', 'closed') %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ _('risk.overview.status_filter.' + value) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="grow">
+      <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="bia-filter">{{ _('risk.dashboard.bia_filter_label') }}</label>
+      <select id="bia-filter" name="bia" multiple size="{{ [bia_options|length, 5]|min or 1 }}" class="{{ control_class }}">
+        {% for scope in bia_options %}
+        <option value="{{ scope.id }}" {% if scope.id in selected_bia_ids %}selected{% endif %}>{{ scope.name }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.dashboard.bia_filter_help') }}</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.dashboard.bia_filter_apply') }}</button>
+      {% if selected_bia_ids or selected_status != 'all' %}
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.overview') }}">{{ _('risk.dashboard.bia_filter_clear') }}</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+<section class="risk-overview-card">
+  {% if rows %}
+  <div class="overflow-x-auto">
+    <table class="risk-overview-table min-w-full text-left text-sm">
+      <thead>
+        <tr>
+          <th scope="col">{{ _('risk.overview.columns.severity') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.title') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.score') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.treatment') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.owner') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.approval') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.bia') }}</th>
+          <th scope="col">{{ _('risk.overview.columns.status') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr data-risk-row="{{ row.id }}" data-risk-status="{{ row.status }}">
+          <td>
+            <span class="{{ row.severity_class }}">
+              {% if row.severity %}{{ _('risk.severity.' + row.severity.value) }}{% else %}{{ _('Severity pending') }}{% endif %}
+            </span>
+          </td>
+          <td>
+            <a class="font-medium text-primary-600" href="{{ url_for('risk.edit', risk_id=row.id) }}">{{ row.title }}</a>
+            {% if row.source %}
+            <span class="block text-xs text-[var(--color-muted)]" data-risk-source="{{ row.source }}">{{ _('risk.overview.source_threat') if row.source == 'threat' else _('risk.overview.source_pasta') }}</span>
+            {% endif %}
+          </td>
+          <td class="font-semibold">{{ row.score }}</td>
+          <td class="whitespace-nowrap">{{ _('risk.treatment.' + row.treatment.value) }}</td>
+          <td>{{ row.owner.full_name if row.owner else '–' }}</td>
+          <td>
+            <span class="risk-pill {{ approval_pills[row.approval_state] }}" data-approval-state="{{ row.approval_state }}">{{ _('risk.approval.state.' + row.approval_state) }}</span>
+          </td>
+          <td>{{ row.bia_names|join(', ') if row.bia_names else '–' }}</td>
+          <td class="whitespace-nowrap">
+            {% if row.status == 'closed' %}
+            {{ _('risk.status.closed_on').format(date=row.closed_at.strftime('%d %b %Y')) }}
+            {% elif row.status == 'mitigated' %}
+            {{ _('risk.residual.mitigated_pill') }}
+            {% else %}
+            {{ _('risk.overview.status_open') }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-[var(--color-muted)] mb-0" data-overview-empty>{{ _('risk.overview.empty') }}</p>
+  {% endif %}
+</section>
+{% endblock %}
