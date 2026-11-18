@@ -4,7 +4,8 @@ The risk module provides a single workspace for tracking identified risks across
 
 ## Access & Roles
 
-- Only users with the `admin` or `manager` roles can open `/risk`, `/risk/new`, and `/risk/<id>/edit`. The API under `/api/risks` requires a fresh login and the same roles.
+- Any signed-in user can open the risk workspace (`/risk`), the Risk overview (`/risk/overview`), `/risk/new` and `/risk/<id>/edit`. The **Sync from threats** button is only shown to the `admin` and `assessment_manager` roles; the endpoint itself only requires a signed-in user.
+- The API under `/api/risks` requires a fresh login and the `admin` role.
 - The admin-only `/admin/risk-thresholds` endpoint lets privileged users tune the severity matrix.
 
 ## Prerequisites
@@ -22,6 +23,24 @@ The risk module provides a single workspace for tracking identified risks across
 5. Link every affected component. Only risk-enabled BIA components are listed. If no options appear, update the BIA context to enable one of the risk flags.
 6. Choose a treatment strategy. When selecting **Mitigate**, the form and API both require at least one CSA control reference. Accept/Avoid/Transfer strategies can omit the control.
 7. Optionally assign a treatment owner, due date, and supporting plan text before saving. The owner is also the person who approves the risk (see below).
+
+## Workspace and Overview
+
+- **The risk workspace (`/risk`) lists open risks only.** A risk leaves it as soon as it is closed: by hand with **Close & archive**, or by the threat sync when its scenario is Accepted or Closed or isn't treated by Mitigate. The cards, summary figures, matrix and approval counts only cover open risks. When every risk is closed, the workspace shows "No open risks." with a link to the closed risks on the overview.
+- **Cards are collapsed** to one line by default: severity, title, actual score, approval state, due status and the **Mitigated** marker. Click a card to open it, or use **Expand all** and **Collapse all**. A link to `/risk/#risk-<id>` opens that card.
+- **The Risk overview (`/risk/overview`)** lists every risk, open and closed, in a table. The columns are severity, title (with a **Threat** or **PASTA** label), actual score, treatment, owner, approval state, BIA and status. Open risks come first, then by highest actual score, then by title. A closed and mitigated risk shows "Closed on D".
+
+| Filter | Values |
+|---|---|
+| `status` | `all` (default), `open`, `closed`; any other value means `all` |
+| `bia` | A BIA id, repeatable (`?bia=3&bia=7`); unknown ids are ignored |
+
+### Reopening a Closed Risk
+
+Open the risk from the overview. Its edit page shows a **This risk is closed** banner with the closing date.
+
+- **Manual and PASTA risks:** click **Reopen risk**. Republishing a PASTA conclusion also reopens its risk.
+- **Threat-linked risks:** there is no button. They reopen when their threat scenario no longer closes them, because opening the edit page re-syncs the risk from its scenario. If the scenario has been reopened already, the page opens with the risk open.
 
 ## Owner Approval
 
@@ -81,7 +100,8 @@ Every card shows its approval state: **Awaiting approval**, **Approved**, **Reje
 - **No components in the selector** – ensure at least one BIA context scope has a risk flag enabled and contains components.
 - **CSA control required errors** – select at least one control whenever the treatment is `mitigate`. The error string is `Select at least one CSA control when the treatment strategy is Mitigate.`
 - **Overlapping severity ranges** – update the surrounding ranges so `max_score` for one severity is strictly less than the `min_score` of the next severity.
-- **403 errors on `/risk`** – confirm the signed-in user has either the admin or assessment manager role.
+- **403 errors on `/risk`** – the workspace only requires a signed-in user; check that the session hasn't expired. The `/api/risks` endpoints also require the `admin` role and a fresh login.
+- **A risk disappeared from the workspace** – it was closed, by hand or by the threat sync. Find it on the Risk overview (`/risk/overview?status=closed`) and reopen it from its edit page.
 - **403 when approving or rejecting** – only the user set as the risk's owner can decide, and admins are not exempt. Assign the right owner first.
 - **Approval went back to "Awaiting approval"** – a material field (chance, impact, treatment, residual values, Mitigated, owner) changed. The audit log shows which change and who made it; threat-linked risks can be reset by the scenario sync.
 

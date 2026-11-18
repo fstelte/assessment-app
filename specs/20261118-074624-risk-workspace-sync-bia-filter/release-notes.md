@@ -1,3 +1,66 @@
+# Release notes: open-only risk workspace, risk overview and collapsible cards
+
+## What's new
+
+- **The risk workspace shows open risks only.** Any risk that is closed no
+  longer appears on `/risk/`. This includes risks closed by hand and
+  threat-linked risks closed by the scenario sync, because their scenario is
+  Accepted or Closed or isn't treated by Mitigate. Closed risks are also left
+  out of the summary figures, the matrix and the "Awaiting my approval"
+  count. The BIA and approval filters work as before, on the open risks.
+- **New Risk overview page (`/risk/overview`).** A compact table of every
+  risk, open and closed, linked from the workspace header.
+  - Columns: severity, title (linking to the edit page, with a "Threat" or
+    "PASTA" label), actual score, treatment, owner, approval state, BIA and
+    status (Open, Mitigated or "Closed on D").
+  - Filter by status (All, Open or Closed) and by BIA, for example
+    `/risk/overview?status=closed&bia=3`.
+  - Open risks come first, then by highest actual score, then by title.
+- **Collapsible risk cards.** Workspace cards start collapsed to one line:
+  severity, title, actual score, approval state, due status and the
+  Mitigated marker. Click a card to open it. "Expand all" and "Collapse all"
+  open or close every card. A link to `/risk/#risk-<id>` opens that card.
+- **Reopen from the edit page.** A closed risk's edit page shows a "This risk
+  is closed" banner with the closing date.
+  - Manual and PASTA risks have a **Reopen risk** button there.
+  - Threat-linked risks show "Reopens when its threat scenario is reopened."
+    instead. Opening the page re-syncs the risk from its scenario, so it
+    reopens on its own once the scenario no longer closes it.
+- **Clearer messages.** Closing a risk now says 'Risk "…" closed. You can
+  find it on the Risk overview.' A workspace where every risk is closed shows
+  "No open risks." with a link to the closed risks on the overview.
+
+## Who can do what
+
+- The overview has the same access as the workspace: any signed-in user.
+- Reopening uses the existing reopen action, with no new permissions.
+
+## Behaviour changes to be aware of
+
+1. **Closed and archived risks no longer appear on the risk workspace**,
+   its summary figures or its matrix. Find them on the **Risk overview**.
+   Before, an unfiltered workspace showed them with a Reopen button.
+2. **The workspace cards have no Reopen button any more.** Reopen a closed
+   risk from its edit page, which you reach from the overview.
+3. **Cards are collapsed by default**, and the page doesn't remember which
+   cards were open.
+
+## Upgrade
+
+- No database migration and no new configuration.
+- The new translation keys are in both `en.json` and `nl.json`.
+
+## Known limitations and follow-ups
+
+- The overview has no column sorting, per-row actions or pagination. It
+  loads every risk that matches the filters.
+- The overview has no approval filter. Use the workspace's Approval filter,
+  which lists open risks.
+- Which scenario statuses close a risk is unchanged: Accepted still closes
+  it.
+
+---
+
 # Release notes: risk owner approval
 
 ## What's new
