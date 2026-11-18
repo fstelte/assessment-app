@@ -483,6 +483,9 @@ which resolves the design's open question.
 - Task 16 comes last.
 
 ## Notes (Part 2)
+- Task 15: an API PUT without `treatment_owner_id` clears the owner, which
+  was already the case. Since Task 11 it also resets the approval. Mention
+  this in the release notes for API clients.
 - Task 11: the 7 watched attributes get `active_history=True` (through a
   no-op "set" listener), so an assignment on an expired instance still knows
   the old value and an equal assignment isn't a change. A decision recorded
@@ -519,5 +522,5 @@ which resolves the design's open question.
 - [x] Task 12: Approve and reject routes
 - [x] Task 13: Approval panel on the edit page
 - [x] Task 14: Dashboard pill and ?approval= filter
-- [ ] Task 15: Approval fields in the API
+- [x] Task 15: Approval fields in the API
 - [ ] Task 16: Final validation and release notes

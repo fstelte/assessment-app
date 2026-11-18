@@ -539,6 +539,12 @@ def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | Non
         "treatment_plan": risk.treatment_plan,
         "treatment_due_date": risk.treatment_due_date.isoformat() if risk.treatment_due_date else None,
         "treatment_owner": _serialize_owner(risk.treatment_owner),
+        # Owner approval, read-only (decision 20261118-1045); apply_payload_to_risk ignores these keys.
+        "approval_status": risk.approval_status.value if risk.approval_status else None,
+        "approval_state": risk.approval_state,
+        "approval_decided_at": risk.approval_decided_at.isoformat() if risk.approval_decided_at else None,
+        "approval_decided_by": _serialize_owner(risk.approval_decided_by),
+        "approval_comment": risk.approval_comment,
         "component_ids": [component["id"] for component in components],
         "components": components,
         "impact_areas": impact_areas,
