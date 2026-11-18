@@ -16,11 +16,12 @@ from ...extensions import db
 from ..bia.models import Component, ContextScope
 from ..csa.models import Control
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER
-from .forms import RiskForm, RiskActionForm
+from .forms import RiskApprovalForm, RiskForm, RiskActionForm
 from .models import (
     CHANCE_WEIGHTS,
     IMPACT_WEIGHTS,
     Risk,
+    RiskApprovalStatus,
     RiskChance,
     RiskImpact,
     RiskSeverity,
@@ -502,6 +503,79 @@ def reopen(risk_id: int):
     db.session.commit()
     flash(_("risk.flash.reopened").format(title=risk.title), "success")
     return redirect(request.referrer or url_for("risk.dashboard"))
+
+
+@bp.route("/<int:risk_id>/approve", methods=["POST"])
+@login_required
+def approve(risk_id: int):
+    """Record the owner's approval of the risk and its treatment."""
+
+    return _decide(risk_id, RiskApprovalStatus.APPROVED)
+
+
+@bp.route("/<int:risk_id>/reject", methods=["POST"])
+@login_required
+def reject(risk_id: int):
+    """Record the owner's rejection; a comment is required."""
+
+    return _decide(risk_id, RiskApprovalStatus.REJECTED)
+
+
+def _decide(risk_id: int, status: RiskApprovalStatus):
+    """Owner decision (decisions 20261118-1046, -1058).
+
+    404 for an unknown risk, then 403 unless the current user is the risk's
+    owner (admins are not exempt). Any state can be decided, so a decision can
+    be flipped or repeated; each one is a new decision and audit event.
+    """
+
+    _require_risk_access()
+    risk = db.session.get(Risk, risk_id)
+    if risk is None:
+        abort(404)
+    if risk.treatment_owner_id is None or risk.treatment_owner_id != current_user.id:
+        abort(403)
+
+    edit_url = url_for("risk.edit", risk_id=risk.id)
+    form = RiskApprovalForm()
+    if not form.validate_on_submit():
+        flash(_("risk.flash.invalid_request"), "danger")
+        return redirect(edit_url)
+    if form.fingerprint.data != risk.approval_fingerprint():
+        flash(_("risk.flash.approval_stale"), "warning")
+        return redirect(edit_url)
+    comment = (form.comment.data or "").strip() or None
+    if status is RiskApprovalStatus.REJECTED and comment is None:
+        flash(_("risk.flash.approval_comment_required"), "danger")
+        return redirect(edit_url)
+
+    risk.approval_status = status
+    risk.approval_decided_at = datetime.now(UTC)
+    risk.approval_decided_by_id = current_user.id
+    risk.approval_comment = comment
+    severity = risk.determine_actual_severity()
+    log_event(
+        action=f"risk_{status.value}",
+        entity_type="risk",
+        entity_id=risk.id,
+        details={
+            "decision": status.value,
+            "comment": comment,
+            "chance": risk.chance.value,
+            "impact": risk.impact.value,
+            "treatment": risk.treatment.value,
+            "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+            "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+            "mitigated": risk.is_mitigated,
+            "actual_score": risk.actual_score(),
+            "actual_severity": severity.value if severity else None,
+            "fingerprint": risk.approval_fingerprint(),
+        },
+    )
+    db.session.commit()
+    message = _("risk.flash.approved") if status is RiskApprovalStatus.APPROVED else _("risk.flash.rejected")
+    flash(message.format(title=risk.title), "success")
+    return redirect(edit_url)
 
 
 @bp.route("/<int:risk_id>/delete", methods=["POST"])

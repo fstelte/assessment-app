@@ -2186,7 +2186,11 @@
       "already_open": "Risk is already open.",
       "deleted": "Risk \"{title}\" deleted.",
       "synced_from_threats": "{count} threat scenario(s) synced to the risk workspace.",
-      "synced_from_threats_none": "No unlinked threat scenarios found that qualify (treatment=Mitigate, active status)."
+      "synced_from_threats_none": "No unlinked threat scenarios found that qualify (treatment=Mitigate, active status).",
+      "approved": "Risk \"{title}\" approved.",
+      "rejected": "Risk \"{title}\" rejected.",
+      "approval_comment_required": "A comment is required to reject a risk.",
+      "approval_stale": "This risk changed since you opened it. Review it again; your comment was not saved."
     },
     "help": {
       "impact_areas": "Select every domain that experiences disruption when this risk materialises.",

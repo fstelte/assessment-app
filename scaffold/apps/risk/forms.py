@@ -130,3 +130,14 @@ class RiskActionForm(FlaskForm):
     """Lightweight form used for close/delete buttons."""
 
     submit = SubmitField("Confirm")
+
+
+class RiskApprovalForm(FlaskForm):
+    """Owner decision on a risk (decisions 20261118-1046, -1058).
+
+    ``fingerprint`` is the risk's approval_fingerprint() when the page was
+    rendered; a mismatch means the risk changed and the decision is refused.
+    """
+
+    fingerprint = HiddenField(validators=[DataRequired()])
+    comment = TextAreaField(validators=[Optional(), Length(max=2000)])

@@ -359,3 +359,145 @@ def test_decision_in_same_flush_as_material_change_is_kept():
 
     db.session.refresh(risk)
     assert risk.approval_status is RiskApprovalStatus.REJECTED
+
+
+# ---------------------------------------------------------------------------
+# Task 12: approve / reject routes (decisions 20261118-1046, -1058)
+# ---------------------------------------------------------------------------
+
+
+def _decision_events(risk: Risk, action: str) -> list[AuditLog]:
+    return AuditLog.query.filter_by(event_type=action, target_id=str(risk.id)).order_by(AuditLog.id).all()
+
+
+def _undecided_risk(owner: User) -> Risk:
+    risk = _approved_risk(owner)
+    risk.approval_status = None
+    risk.approval_decided_at = None
+    risk.approval_decided_by_id = None
+    risk.approval_comment = None
+    db.session.commit()
+    return risk
+
+
+def test_owner_approves(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+
+    resp = client.post(f"/risk/{risk.id}/approve", data={"fingerprint": risk.approval_fingerprint(), "comment": " fine "})
+
+    assert resp.status_code == 302
+    db.session.refresh(risk)
+    assert risk.approval_state == "approved"
+    assert risk.approval_decided_by_id == owner.id
+    assert risk.approval_decided_at is not None
+    assert risk.approval_comment == "fine"
+    (event,) = _decision_events(risk, "risk_approved")
+    assert event.actor_id == owner.id
+    assert event.payload["decision"] == "approved"
+    assert event.payload["chance"] == "likely"
+    assert event.payload["actual_score"] == risk.actual_score()
+    assert event.payload["fingerprint"] == risk.approval_fingerprint()
+
+
+def test_owner_rejects_with_comment(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+
+    client.post(f"/risk/{risk.id}/reject", data={"fingerprint": risk.approval_fingerprint(), "comment": "Chance too low"})
+
+    db.session.refresh(risk)
+    assert risk.approval_state == "rejected"
+    assert risk.approval_comment == "Chance too low"
+    assert len(_decision_events(risk, "risk_rejected")) == 1
+
+
+def test_reject_without_comment_changes_nothing(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+
+    client.post(f"/risk/{risk.id}/reject", data={"fingerprint": risk.approval_fingerprint(), "comment": "  "})
+
+    db.session.refresh(risk)
+    assert risk.approval_state == "awaiting"
+    assert _decision_events(risk, "risk_rejected") == []
+
+
+def test_stale_fingerprint_changes_nothing(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    stale = risk.approval_fingerprint()
+    risk.chance = RiskChance.RARE
+    db.session.commit()
+    _sign_in(client, owner)
+
+    resp = client.post(f"/risk/{risk.id}/approve", data={"fingerprint": stale})
+
+    assert resp.status_code == 302
+    db.session.refresh(risk)
+    assert risk.approval_state == "awaiting"
+    assert _decision_events(risk, "risk_approved") == []
+
+
+def test_owner_can_flip_and_reapprove(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+    fingerprint = risk.approval_fingerprint()
+
+    client.post(f"/risk/{risk.id}/approve", data={"fingerprint": fingerprint})
+    client.post(f"/risk/{risk.id}/reject", data={"fingerprint": fingerprint, "comment": "On second thought"})
+    client.post(f"/risk/{risk.id}/approve", data={"fingerprint": fingerprint})
+    client.post(f"/risk/{risk.id}/approve", data={"fingerprint": fingerprint})
+
+    db.session.refresh(risk)
+    assert risk.approval_state == "approved"
+    assert risk.approval_comment is None
+    assert len(_decision_events(risk, "risk_approved")) == 3
+    assert len(_decision_events(risk, "risk_rejected")) == 1
+
+
+@pytest.mark.parametrize("action", ["approve", "reject"])
+def test_non_owner_and_admin_get_403(client, action):
+    risk = _undecided_risk(_user())
+    data = {"fingerprint": risk.approval_fingerprint(), "comment": "x"}
+
+    _sign_in(client, _user("someone@example.com"))
+    assert client.post(f"/risk/{risk.id}/{action}", data=data).status_code == 403
+
+    _sign_in(client, _user("admin@example.com", admin=True))
+    assert client.post(f"/risk/{risk.id}/{action}", data=data).status_code == 403
+
+    db.session.refresh(risk)
+    assert risk.approval_state == "awaiting"
+
+
+def test_risk_without_owner_gets_403(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    risk.treatment_owner_id = None
+    db.session.commit()
+    _sign_in(client, owner)
+
+    resp = client.post(f"/risk/{risk.id}/approve", data={"fingerprint": risk.approval_fingerprint()})
+
+    assert resp.status_code == 403
+
+
+def test_unknown_risk_gets_404(client):
+    _sign_in(client, _user())
+
+    assert client.post("/risk/999/approve", data={"fingerprint": "x"}).status_code == 404
+
+
+def test_anonymous_is_redirected_to_login(client):
+    risk = _undecided_risk(_user())
+
+    resp = client.post(f"/risk/{risk.id}/approve", data={"fingerprint": risk.approval_fingerprint()})
+
+    assert resp.status_code in (302, 401)
+    db.session.refresh(risk)
+    assert risk.approval_state == "awaiting"

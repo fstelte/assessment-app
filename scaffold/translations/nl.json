@@ -250,7 +250,11 @@
       "already_open": "Risico is al actief.",
       "deleted": "Risico \"{title}\" is verwijderd.",
       "synced_from_threats": "{count} dreigingsscenario('s) gesynchroniseerd naar het risicoregister.",
-      "synced_from_threats_none": "Geen niet-gekoppelde dreigingsscenario's gevonden die kwalificeren (behandeling=Mitigeren, actieve status)."
+      "synced_from_threats_none": "Geen niet-gekoppelde dreigingsscenario's gevonden die kwalificeren (behandeling=Mitigeren, actieve status).",
+      "approved": "Risico \"{title}\" goedgekeurd.",
+      "rejected": "Risico \"{title}\" afgewezen.",
+      "approval_comment_required": "Een toelichting is verplicht om een risico af te wijzen.",
+      "approval_stale": "Dit risico is gewijzigd sinds je het opende. Beoordeel het opnieuw; je toelichting is niet opgeslagen."
     },
     "help": {
       "impact_areas": "Selecteer elk domein dat verstoring ondervindt wanneer dit risico zich voordoet.",
