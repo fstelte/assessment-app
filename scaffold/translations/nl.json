@@ -155,6 +155,11 @@
   },
   "risk": {
     "dashboard": {
+      "bia_filter_label": "Filteren op BIA",
+      "bia_filter_help": "Selecteer één of meer BIA's (Ctrl/Cmd-klik). Toont risico's met minstens één component in een geselecteerde BIA.",
+      "bia_filter_apply": "Filter toepassen",
+      "bia_filter_clear": "Filter wissen",
+      "bia_filter_active": "Risico's voor: {names}",
       "metric_treatment_mitigate": "Behandeling: mitigeren",
       "metric_treatment_mitigate_help": "Risico's met de behandeloptie mitigeren",
       "matrix_intro": "Toont elk geregistreerd risico op basis van de actuele score (restrisico wanneer gemitigeerd, anders het initiële risico) om concentraties zichtbaar te maken vóór behandeloverleggen.",

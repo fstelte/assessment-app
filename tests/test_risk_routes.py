@@ -494,3 +494,108 @@ def test_dashboard_card_shows_mitigated_pill_and_initial_hint(client, app, login
     assert "Initial: 16 → Residual: 6" in page
     assert "Treatment: mitigate" in page
     assert page.count('risk-pill risk-pill--low">Mitigated<') == 1
+
+
+# ---------------------------------------------------------------------------
+# BIA multi-filter on the dashboard (Task 7)
+# ---------------------------------------------------------------------------
+
+
+def _seed_bia_risks(app) -> dict[str, object]:
+    scopes, risks = {}, {}
+    for name in ("Alpha BIA", "Beta BIA", "Gamma BIA"):
+        scope = ContextScope(name=name, risk_assessment_human=True)
+        db.session.add(scope)
+        scopes[name] = scope
+    a1 = Component(name="A1", context_scope=scopes["Alpha BIA"])
+    a2 = Component(name="A2", context_scope=scopes["Alpha BIA"])
+    b1 = Component(name="B1", context_scope=scopes["Beta BIA"])
+    g1 = Component(name="G1", context_scope=scopes["Gamma BIA"])
+    db.session.add_all([a1, a2, b1, g1])
+    for title, components in (
+        ("Alpha risk", [a1, a2]),
+        ("Beta risk", [b1]),
+        ("Gamma risk", [g1]),
+        ("Shared risk", [a1, g1]),
+        ("Orphan risk", []),
+    ):
+        risk = Risk(title=title, description="d", impact=RiskImpact.MINOR, chance=RiskChance.RARE)
+        risk.components = components
+        db.session.add(risk)
+        risks[title] = risk
+    db.session.commit()
+    return {"scopes": scopes, "risks": risks}
+
+
+def _dashboard_context(client, query: str = "") -> dict:
+    from flask import template_rendered
+
+    captured: dict = {}
+
+    def _record(sender, template, context, **extra):
+        if template.name == "risk/dashboard.html":
+            captured.update(context)
+
+    template_rendered.connect(_record)
+    try:
+        assert client.get(f"/risk/{query}").status_code == 200
+    finally:
+        template_rendered.disconnect(_record)
+    return captured
+
+
+def _titles(context) -> set[str]:
+    return {card["title"] for card in context["risk_cards"]}
+
+
+def test_bia_filter_single_shows_only_matching_risks(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha = seed["scopes"]["Alpha BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}")
+
+    assert _titles(context) == {"Alpha risk", "Shared risk"}
+    assert context["selected_bia_ids"] == [alpha]
+
+
+def test_bia_filter_multiple_shows_union(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha, beta = seed["scopes"]["Alpha BIA"].id, seed["scopes"]["Beta BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}&bia={beta}")
+
+    assert _titles(context) == {"Alpha risk", "Beta risk", "Shared risk"}
+
+
+@pytest.mark.parametrize("query", ["", "?bia=x", "?bia=999", "?bia="])
+def test_no_or_invalid_bia_filter_shows_all_risks(client, app, login, query):
+    _seed_bia_risks(app)
+
+    context = _dashboard_context(client, query)
+
+    assert _titles(context) == {"Alpha risk", "Beta risk", "Gamma risk", "Shared risk", "Orphan risk"}
+    assert context["selected_bia_ids"] == []
+
+
+def test_bia_filter_scopes_metrics_matrix_and_component_count(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha = seed["scopes"]["Alpha BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}")
+
+    visible = len(context["risk_cards"])
+    matrix_count = sum(len(cell["risks"]) for row in context["risk_matrix"]["rows"] for cell in row["cells"])
+    assert context["metrics"]["total"] == visible == matrix_count == 2
+    # Shared risk also links G1 (Gamma), which must not count under the Alpha filter.
+    assert context["metrics"]["components"] == 2
+
+
+def test_bia_filter_options_and_active_summary_render(client, app, login):
+    seed = _seed_bia_risks(app)
+    beta = seed["scopes"]["Beta BIA"].id
+
+    page = client.get(f"/risk/?bia={beta}").get_data(as_text=True)
+
+    assert f'<option value="{beta}" selected>Beta BIA</option>' in page
+    assert "Showing risks for: Beta BIA" in page
+    assert "Clear filter" in page

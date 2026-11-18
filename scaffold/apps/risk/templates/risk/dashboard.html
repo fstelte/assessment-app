@@ -556,6 +556,32 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     </div>
   </section>
 
+  <section class="risk-form-card mb-4" aria-label="{{ _('risk.dashboard.bia_filter_label') }}">
+    <form method="get" action="{{ url_for('risk.dashboard') }}" class="flex flex-col md:flex-row md:items-end gap-3">
+      <div class="grow">
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="bia-filter">{{ _('risk.dashboard.bia_filter_label') }}</label>
+        <select id="bia-filter" name="bia" multiple size="{{ [bia_options|length, 5]|min or 1 }}"
+                class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          {% for scope in bia_options %}
+          <option value="{{ scope.id }}" {% if scope.id in selected_bia_ids %}selected{% endif %}>{{ scope.name }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.dashboard.bia_filter_help') }}</p>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.dashboard.bia_filter_apply') }}</button>
+        {% if selected_bia_ids %}
+        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}">{{ _('risk.dashboard.bia_filter_clear') }}</a>
+        {% endif %}
+      </div>
+    </form>
+    {% if selected_bia_ids %}
+    <p class="text-sm text-[var(--color-muted)] mt-2 mb-0" data-bia-filter-active>
+      {{ _('risk.dashboard.bia_filter_active').format(names=bia_options|selectattr('id', 'in', selected_bia_ids)|map(attribute='name')|join(', ')) }}
+    </p>
+    {% endif %}
+  </section>
+
   <section class="risk-matrix">
     <div class="risk-matrix__card">
       <div class="grow">

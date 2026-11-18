@@ -13,7 +13,7 @@ from flask_login import current_user, login_required
 from ...core.audit import log_event
 from ...core.i18n import gettext as _
 from ...extensions import db
-from ..bia.models import Component
+from ..bia.models import Component, ContextScope
 from ..csa.models import Control
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER
 from .forms import RiskForm, RiskActionForm
@@ -200,9 +200,22 @@ def dashboard():
 
     _require_risk_access()
     thresholds = load_thresholds()
-    risks = _risk_query().order_by(Risk.created_at.desc()).all()
+    # BIA filter (decision 20261118-0801): ?bia=<id>&bia=<id>; unknown ids are ignored.
+    bia_options = (
+        ContextScope.query.filter(ContextScope.components.any())
+        .order_by(ContextScope.name)
+        .all()
+    )
+    known_bia_ids = {scope.id for scope in bia_options}
+    selected_bia_ids = sorted(
+        {int(value) for value in request.args.getlist("bia") if value.isdigit()} & known_bia_ids
+    )
+    query = _risk_query()
+    if selected_bia_ids:
+        query = query.filter(Risk.components.any(Component.context_scope_id.in_(selected_bia_ids)))
+    risks = query.order_by(Risk.created_at.desc()).all()
     cards = _build_dashboard_cards(risks, thresholds)
-    metrics = _dashboard_metrics(cards)
+    metrics = _dashboard_metrics(cards, selected_bia_ids)
     matrix = _build_risk_matrix(risks, thresholds)
     severity_scale = _severity_scale(thresholds)
     action_form = RiskActionForm()
@@ -215,6 +228,8 @@ def dashboard():
         api_endpoint_available="risk_api.get_risk" in current_app.view_functions,
         RiskTreatmentOption=RiskTreatmentOption,
         action_form=action_form,
+        bia_options=bia_options,
+        selected_bia_ids=selected_bia_ids,
     )
 
 
@@ -611,6 +626,7 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
 def _component_snapshot(component: Component) -> dict[str, object]:
     return {
         "id": component.id,
+        "context_scope_id": component.context_scope_id,
         "name": component.name or _("Untitled component"),
         "context": component.context_scope.name if component.context_scope else None,
     }
@@ -627,12 +643,17 @@ def _risk_status(risk: Risk, today: date) -> str:
     return "scheduled"
 
 
-def _dashboard_metrics(cards: list[dict[str, object]]) -> dict[str, object]:
+def _dashboard_metrics(
+    cards: list[dict[str, object]],
+    bia_ids: Sequence[int] = (),
+) -> dict[str, object]:
+    # Under a BIA filter, only components of the selected BIAs count as impacted.
     component_ids = {
         component["id"]
         for card in cards
         for component in card["components"]
         if component.get("id") is not None
+        and (not bia_ids or component.get("context_scope_id") in bia_ids)
     }
     return {
         "total": len(cards),

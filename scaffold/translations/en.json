@@ -2091,6 +2091,11 @@
   },
   "risk": {
     "dashboard": {
+      "bia_filter_label": "Filter by BIA",
+      "bia_filter_help": "Select one or more BIAs (Ctrl/Cmd-click). Shows risks with at least one component in a selected BIA.",
+      "bia_filter_apply": "Apply filter",
+      "bia_filter_clear": "Clear filter",
+      "bia_filter_active": "Showing risks for: {names}",
       "metric_treatment_mitigate": "Treatment: mitigate",
       "metric_treatment_mitigate_help": "Risks with the mitigate treatment option",
       "matrix_intro": "Plot every recorded risk by its actual score (residual when mitigated, initial otherwise) to reveal concentration points before treatment review meetings.",
