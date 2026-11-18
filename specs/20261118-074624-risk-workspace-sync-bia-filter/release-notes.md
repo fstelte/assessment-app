@@ -1,4 +1,102 @@
+# Release notes: risk owner approval
+
+## What's new
+
+- **Risk owners approve the risks they own.** The risk's owner (the "Owner"
+  field on the risk) can approve or reject a risk on its edit page. The
+  decision covers the risk's chance, impact and treatment, and the residual
+  values and Mitigated marker when they are set. Rejecting needs a comment.
+  The page shows who decided, when, and the comment.
+- **The owner can change their mind.** An approved risk can be rejected and
+  the other way round, and approving again records a new decision. Every
+  decision is logged.
+- **A material change resets the approval.** If the chance, impact,
+  treatment, residual values, Mitigated marker or owner changes, the risk
+  goes back to "Awaiting approval". This applies whether the change comes
+  from the risk form, the admin risk register, the API, the threat-scenario
+  sync or a PASTA publish. Changes to the title, description, tickets,
+  components, controls, impact areas, due date or treatment plan don't reset
+  it. Closing or reopening a risk doesn't either.
+- **The last rejection reason stays visible.** After a reset, the edit page
+  shows "Previously rejected by X on D" with the comment, so whoever revises
+  the risk can see why it was rejected.
+- **Find the risks that need a decision.** The risk dashboard has an
+  "Approval" filter:
+  - **Awaiting my approval (n):** your open risks with no decision or a
+    rejection.
+  - **Awaiting approval:** every open risk that has an owner but no decision.
+  - **Rejected:** every open rejected risk.
+
+  It works together with the BIA filter (`/risk/?approval=mine&bia=3`). The
+  cards, summary figures and matrix follow it. Every card shows its approval
+  state: Awaiting approval, Approved, Rejected or No owner.
+- **Audit trail.** Decisions are logged as `risk_approved` and
+  `risk_rejected`, with the comment and the values that were approved. The
+  generic risk audit records approval resets. A reset caused by the threat
+  sync is also flagged as `approval_reset: true` on its
+  `risk_synced_from_threat` event.
+- **API.** `GET /api/risks` adds read-only `approval_status`,
+  `approval_state`, `approval_decided_at`, `approval_decided_by` and
+  `approval_comment`. The API can't approve or reject: `POST` and `PUT`
+  ignore these fields.
+
+## Who can do what
+
+- **Approve or reject:** only the user set as the risk's owner. Admins and
+  risk managers can't decide for the owner. They can reassign the owner, and
+  that resets the approval.
+- **A risk without an owner** can't be approved. It shows "No owner" until
+  someone assigns one.
+- **Owners may approve a risk they edited themselves.** The audit trail shows
+  both the edit and the approval.
+- **See approval states and use the filters:** any signed-in user, the same
+  as the rest of the risk dashboard.
+
+## Behaviour changes to be aware of
+
+1. **Every existing risk starts as "Awaiting approval"**, or "No owner" if it
+   has no owner. Nothing is approved automatically, so owners will see their
+   whole backlog under "Awaiting my approval".
+2. **The threat sync can reset approvals.** When a linked scenario's
+   likelihood, impact, treatment, residual values or status (mitigated or
+   not) changes, its risk goes back to "Awaiting approval" on the next sync,
+   including when someone opens the risk.
+3. **An API `PUT` without `treatment_owner_id` clears the owner**, as it
+   already did. That now also resets the approval. API clients that update
+   risks should always send the owner.
+4. **A decision is refused if the risk changed in the meantime.** If someone
+   edits a material field while the owner has the page open, Approve or
+   Reject shows "This risk changed since you opened it". The owner has to
+   review it again, and the comment they typed isn't saved.
+
+## Upgrade
+
+- Migration `20261118_0002` adds four nullable columns to `risk_items`:
+  `approval_status`, `approval_decided_at`, `approval_decided_by_id` (a
+  foreign key to `users`, set to NULL when the user is deleted) and
+  `approval_comment`. It needs no backfill and runs with the usual
+  `flask db upgrade` during deployment.
+- **Downgrade** drops the four columns, and all approval decisions are lost.
+  The `risk_approved` and `risk_rejected` audit entries remain.
+- Tested: upgrade, then downgrade, then upgrade again, on PostgreSQL 16.
+- No new configuration or environment variables.
+
+## Known limitations and follow-ups
+
+- No notifications. Owners have to use the "Awaiting my approval" filter.
+- The admin risk register doesn't show the approval state.
+- Bulk database updates (`query.update()`) bypass the reset. No code path
+  uses them on the approval-relevant fields today.
+- If the decider's account is deleted, the current decision shows "Unknown
+  user". An earlier rejection still shows the name stored in the audit log.
+- The "Previously rejected" reason comes from the audit log, so it isn't
+  shown when audit logging is turned off.
+
+---
+
 # Release notes: risk workspace targeted sync, BIA filter and actual risk score
+
+Released in 2026.11.5.
 
 ## What's new
 
