@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import enum
-from datetime import date
+from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Iterable, Mapping, Sequence
 from urllib.parse import urlparse
@@ -401,6 +401,22 @@ def apply_payload_to_risk(risk: Risk, payload: Mapping[str, object] | None) -> N
         add_error("csa_control_ids", "Mitigation treatment requires at least one CSA control.")
     ticket_url = _coerce_url(payload.get("ticket_url"), "ticket_url", add_error)
 
+    # Residual assessment and mitigated marker: only applied when the key is
+    # present; null/"" clears a residual value (decision 20261118-0830).
+    residual_updates: dict[str, object] = {}
+    for field, enum_cls, weight_index in (
+        ("residual_impact", RiskImpact, _IMPACT_WEIGHT_INDEX),
+        ("residual_chance", RiskChance, _CHANCE_WEIGHT_INDEX),
+    ):
+        if field in payload:
+            raw = payload[field]
+            residual_updates[field] = (
+                None if raw in (None, "") else _coerce_weighted_enum(raw, field, enum_cls, weight_index, add_error)
+            )
+    mitigated = payload.get("mitigated")
+    if "mitigated" in payload and not isinstance(mitigated, bool):
+        add_error("mitigated", "Mitigated must be true or false.")
+
     # ticket_links: list of {label, url} dicts (new format)
     # Falls back to ticket_url compatibility alias if ticket_links not provided
     raw_ticket_links = payload.get("ticket_links")
@@ -447,12 +463,15 @@ def apply_payload_to_risk(risk: Risk, payload: Mapping[str, object] | None) -> N
     # Update scalar ticket_url for backward compat (first link URL or None)
     risk.ticket_url = ticket_url
     risk.components = components
-    risk.impact_area_links = [
-        RiskImpactAreaLink(area=area)
-        for area in sorted(impact_areas, key=lambda entry: entry.value)
-    ]
+    # Diff-update so kept areas are not deleted and re-inserted, which violated
+    # uq_risk_impact_area on PUT.
+    set_impact_areas(risk, [area.value for area in impact_areas])
     if ticket_links_data is not None:
         set_ticket_links(risk, ticket_links_data)
+    for field, value in residual_updates.items():
+        setattr(risk, field, value)
+    if "mitigated" in payload:
+        risk.mitigated_at = (risk.mitigated_at or datetime.now(UTC)) if mitigated else None
 
 
 def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | None = None) -> dict[str, object]:
@@ -461,6 +480,8 @@ def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | Non
     thresholds = thresholds or load_thresholds()
     score = risk.score()
     severity = determine_severity(score, thresholds)
+    actual_score = risk.actual_score()
+    actual_severity = determine_severity(actual_score, thresholds)
     components = [
         {
             "id": component.id,
@@ -500,6 +521,20 @@ def serialize_risk(risk: Risk, thresholds: Sequence[RiskSeverityThreshold] | Non
         },
         "score": score,
         "severity": severity.value if severity else None,
+        "mitigated_at": risk.mitigated_at.isoformat() if risk.mitigated_at else None,
+        "residual_impact": (
+            {"value": risk.residual_impact.value, "weight": IMPACT_WEIGHTS[risk.residual_impact]}
+            if risk.residual_impact
+            else None
+        ),
+        "residual_chance": (
+            {"value": risk.residual_chance.value, "weight": CHANCE_WEIGHTS[risk.residual_chance]}
+            if risk.residual_chance
+            else None
+        ),
+        "residual_score": risk.residual_score(),
+        "actual_score": actual_score,
+        "actual_severity": actual_severity.value if actual_severity else None,
         "treatment": risk.treatment.value,
         "treatment_plan": risk.treatment_plan,
         "treatment_due_date": risk.treatment_due_date.isoformat() if risk.treatment_due_date else None,
