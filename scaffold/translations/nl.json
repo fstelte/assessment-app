@@ -163,7 +163,11 @@
       "metric_treatment_mitigate": "Behandeling: mitigeren",
       "metric_treatment_mitigate_help": "Risico's met de behandeloptie mitigeren",
       "matrix_intro": "Toont elk geregistreerd risico op basis van de actuele score (restrisico wanneer gemitigeerd, anders het initiële risico) om concentraties zichtbaar te maken vóór behandeloverleggen.",
-      "matrix_footnote": "Posities en scores tonen het actuele risico: restimpact en restkans voor gemitigeerde risico's, anders de initiële waarden. Ernstkleuren volgen de drempels die in de risicowerkruimte zijn ingesteld."
+      "matrix_footnote": "Posities en scores tonen het actuele risico: restimpact en restkans voor gemitigeerde risico's, anders de initiële waarden. Ernstkleuren volgen de drempels die in de risicowerkruimte zijn ingesteld.",
+      "approval_filter_label": "Goedkeuring",
+      "approval_filter_all": "Alle",
+      "approval_filter_mine": "Wacht op mijn goedkeuring ({count})",
+      "approval_filter_empty": "Geen risico's voldoen aan het goedkeuringsfilter."
     },
     "residual": {
       "mitigated": "Gemitigeerd",

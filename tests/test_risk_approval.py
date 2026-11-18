@@ -577,3 +577,94 @@ def test_new_risk_page_has_no_approval_panel(client):
     html = client.get("/risk/new").get_data(as_text=True)
 
     assert "data-approval-state" not in html
+
+
+# ---------------------------------------------------------------------------
+# Task 14: dashboard pill and ?approval= filter (decisions 20261118-1048, -1058)
+# ---------------------------------------------------------------------------
+
+
+def _dashboard_set(me: User, other: User) -> dict[str, Risk]:
+    """One risk per case, all in BIA "A" except "other_bia"."""
+
+    bia_a = ContextScope(name="A", risk_assessment_human=True)
+    bia_b = ContextScope(name="B", risk_assessment_human=True)
+    comp_a = Component(name="App A", context_scope=bia_a)
+    comp_b = Component(name="App B", context_scope=bia_b)
+    specs = {
+        "mine_awaiting": (me, None, None, comp_a),
+        "mine_rejected": (me, RiskApprovalStatus.REJECTED, None, comp_a),
+        "mine_approved": (me, RiskApprovalStatus.APPROVED, None, comp_a),
+        "mine_closed": (me, None, datetime.now(UTC), comp_a),
+        "other_awaiting": (other, None, None, comp_a),
+        "other_rejected": (other, RiskApprovalStatus.REJECTED, None, comp_a),
+        "no_owner": (None, None, None, comp_a),
+        "other_bia": (me, None, None, comp_b),
+    }
+    risks = {}
+    for title, (owner, status, closed_at, component) in specs.items():
+        risk = _risk(title=title, treatment_owner_id=owner.id if owner else None, discovered_on=date.today())
+        risk.approval_status = status
+        risk.closed_at = closed_at
+        risk.components = [component]
+        risks[title] = risk
+    db.session.add_all([bia_a, bia_b, comp_a, comp_b, *risks.values()])
+    db.session.commit()
+    return risks
+
+
+def _shown(client, query: str, risks: dict[str, Risk]) -> set[str]:
+    html = client.get(f"/risk/{query}").get_data(as_text=True)
+    return {title for title, risk in risks.items() if f'id="risk-{risk.id}"' in html}
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("?approval=mine", {"mine_awaiting", "mine_rejected", "other_bia"}),
+        ("?approval=awaiting", {"mine_awaiting", "other_awaiting", "other_bia"}),
+        ("?approval=rejected", {"mine_rejected", "other_rejected"}),
+        ("?approval=bogus", None),  # ignored -> everything
+        ("", None),
+    ],
+)
+def test_approval_filter(client, query, expected):
+    me = _user()
+    risks = _dashboard_set(me, _user("other@example.com"))
+    _sign_in(client, me)
+
+    assert _shown(client, query, risks) == (expected if expected is not None else set(risks))
+
+
+def test_approval_filter_combines_with_bia_filter_and_counts_mine(client):
+    me = _user()
+    risks = _dashboard_set(me, _user("other@example.com"))
+    bia_a = ContextScope.query.filter_by(name="A").one()
+    _sign_in(client, me)
+
+    assert _shown(client, f"?approval=mine&bia={bia_a.id}", risks) == {"mine_awaiting", "mine_rejected"}
+    html = client.get(f"/risk/?bia={bia_a.id}").get_data(as_text=True)
+    assert "Awaiting my approval (2)" in html
+    html = client.get("/risk/").get_data(as_text=True)
+    assert "Awaiting my approval (3)" in html
+
+
+def test_cards_show_approval_pill(client):
+    me = _user()
+    _dashboard_set(me, _user("other@example.com"))
+    _sign_in(client, me)
+
+    html = client.get("/risk/").get_data(as_text=True)
+
+    for state in ("awaiting", "approved", "rejected", "no_owner"):
+        assert f'data-approval-state="{state}"' in html
+
+
+def test_empty_approval_filter_shows_message(client):
+    me = _user()
+    _sign_in(client, me)
+
+    html = client.get("/risk/?approval=rejected").get_data(as_text=True)
+
+    assert "data-approval-empty" in html
+    assert "No risks match the approval filter." in html

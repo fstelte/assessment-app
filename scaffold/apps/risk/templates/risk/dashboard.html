@@ -568,9 +568,19 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         </select>
         <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.dashboard.bia_filter_help') }}</p>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="approval-filter">{{ _('risk.dashboard.approval_filter_label') }}</label>
+        <select id="approval-filter" name="approval"
+                class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <option value="" {% if not selected_approval %}selected{% endif %}>{{ _('risk.dashboard.approval_filter_all') }}</option>
+          <option value="mine" {% if selected_approval == 'mine' %}selected{% endif %}>{{ _('risk.dashboard.approval_filter_mine').format(count=mine_count) }}</option>
+          <option value="awaiting" {% if selected_approval == 'awaiting' %}selected{% endif %}>{{ _('risk.approval.state.awaiting') }}</option>
+          <option value="rejected" {% if selected_approval == 'rejected' %}selected{% endif %}>{{ _('risk.approval.state.rejected') }}</option>
+        </select>
+      </div>
       <div class="flex gap-2">
         <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.dashboard.bia_filter_apply') }}</button>
-        {% if selected_bia_ids %}
+        {% if selected_bia_ids or selected_approval %}
         <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}">{{ _('risk.dashboard.bia_filter_clear') }}</a>
         {% endif %}
       </div>
@@ -683,6 +693,12 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
   </section>
 
   <section id="risk-list">
+    {% set approval_pills = {
+      'approved': 'risk-pill--low',
+      'rejected': 'risk-pill--critical',
+      'awaiting': 'risk-pill--moderate',
+      'no_owner': 'risk-pill--muted'
+    } %}
     {% if risk_cards %}
     <div class="risk-card-grid">
       {% for card in risk_cards %}
@@ -701,6 +717,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
               {% if card.is_mitigated %}
               <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
               {% endif %}
+              <span class="risk-pill {{ approval_pills[card.approval_state] }}" data-approval-state="{{ card.approval_state }}">{{ _('risk.approval.state.' + card.approval_state) }}</span>
               <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
             </div>
             <h3 class="h5 mt-3 mb-1">{{ card.title }}</h3>
@@ -889,6 +906,10 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         </div>
       </article>
       {% endfor %}
+    </div>
+    {% elif selected_approval %}
+    <div class="risk-empty" data-approval-empty>
+      <h3 class="h5">{{ _('risk.dashboard.approval_filter_empty') }}</h3>
     </div>
     {% else %}
     <div class="risk-empty">

@@ -211,10 +211,16 @@ def dashboard():
     selected_bia_ids = sorted(
         {int(value) for value in request.args.getlist("bia") if value.isdigit()} & known_bia_ids
     )
-    query = _risk_query()
-    if selected_bia_ids:
-        query = query.filter(Risk.components.any(Component.context_scope_id.in_(selected_bia_ids)))
+    bia_filter = Risk.components.any(Component.context_scope_id.in_(selected_bia_ids)) if selected_bia_ids else sa.true()
+    # Approval filter (decisions 20261118-1048, -1058): open risks only; unknown values are ignored.
+    selected_approval = request.args.get("approval")
+    if selected_approval not in _APPROVAL_FILTERS:
+        selected_approval = None
+    query = _risk_query().filter(bia_filter)
+    if selected_approval:
+        query = query.filter(Risk.closed_at.is_(None), _APPROVAL_FILTERS[selected_approval]())
     risks = query.order_by(Risk.created_at.desc()).all()
+    mine_count = Risk.query.filter(bia_filter, Risk.closed_at.is_(None), _APPROVAL_FILTERS["mine"]()).count()
     cards = _build_dashboard_cards(risks, thresholds)
     metrics = _dashboard_metrics(cards, selected_bia_ids)
     matrix = _build_risk_matrix(risks, thresholds)
@@ -231,7 +237,19 @@ def dashboard():
         action_form=action_form,
         bia_options=bia_options,
         selected_bia_ids=selected_bia_ids,
+        selected_approval=selected_approval,
+        mine_count=mine_count,
     )
+
+
+_APPROVAL_FILTERS = {
+    "mine": lambda: sa.and_(
+        Risk.treatment_owner_id == current_user.id,
+        sa.or_(Risk.approval_status.is_(None), Risk.approval_status == RiskApprovalStatus.REJECTED),
+    ),
+    "awaiting": lambda: sa.and_(Risk.treatment_owner_id.isnot(None), Risk.approval_status.is_(None)),
+    "rejected": lambda: Risk.approval_status == RiskApprovalStatus.REJECTED,
+}
 
 
 def _parse_ticket_links_from_form(form_data) -> list[dict]:
@@ -701,6 +719,7 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
                 "initial_score": risk.score(),
                 "residual_score": risk.residual_score(),
                 "is_mitigated": risk.is_mitigated,
+                "approval_state": risk.approval_state,
                 "impact": risk.actual_impact,
                 "impact_weight": IMPACT_WEIGHTS[risk.actual_impact],
                 "chance": risk.actual_chance,

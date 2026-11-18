@@ -2099,7 +2099,11 @@
       "metric_treatment_mitigate": "Treatment: mitigate",
       "metric_treatment_mitigate_help": "Risks with the mitigate treatment option",
       "matrix_intro": "Plot every recorded risk by its actual score (residual when mitigated, initial otherwise) to reveal concentration points before treatment review meetings.",
-      "matrix_footnote": "Positions and scores show the actual risk: residual impact and chance for mitigated risks, initial values otherwise. Severity colors respect the thresholds set in the risk workspace."
+      "matrix_footnote": "Positions and scores show the actual risk: residual impact and chance for mitigated risks, initial values otherwise. Severity colors respect the thresholds set in the risk workspace.",
+      "approval_filter_label": "Approval",
+      "approval_filter_all": "All",
+      "approval_filter_mine": "Awaiting my approval ({count})",
+      "approval_filter_empty": "No risks match the approval filter."
     },
     "residual": {
       "mitigated": "Mitigated",
