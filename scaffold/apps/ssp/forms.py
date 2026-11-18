@@ -264,6 +264,12 @@ class POAMItemForm(FlaskForm):
         validators=[Optional(), Length(max=100)],
         description=_l("ssp.forms.help.estimated_cost"),
     )
+    jira_url = StringField(
+        _l("ssp.forms.jira_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.forms.help.jira_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
     status = SelectField(
         _l("ssp.forms.status"),
         choices=[

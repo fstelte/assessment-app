@@ -3834,7 +3834,10 @@
       "add_first": "Voeg het eerste item toe →",
       "edit": "Bewerken",
       "delete": "Verwijderen",
-      "delete_confirm": "Dit PvA-item en zijn mijlpalen verwijderen?"
+      "delete_confirm": "Dit PvA-item en zijn mijlpalen verwijderen?",
+      "intro": "Het POA&M wordt gebruikt om verbeteringen aan het systeem dat in dit plan is beschreven te sturen en te monitoren. Leg hier elke zwakke plek vast en volg het gedetailleerde werk in Jira.",
+      "jira_link": "Jira-issue",
+      "jira_label": "Jira"
     },
     "poam_form": {
       "add_title": "PvA-item toevoegen",
@@ -3852,7 +3855,9 @@
       "completed_col": "Voltooid",
       "remove": "Verwijderen",
       "remove_confirm": "Deze mijlpaal verwijderen?",
-      "add_btn": "Toevoegen"
+      "add_btn": "Toevoegen",
+      "details_optional": "Details (optioneel)",
+      "milestones_section_optional": "Mijlpalen (optioneel)"
     },
     "forms": {
       "laws_regulations": "Wet- en regelgeving & Beleid",
@@ -3909,14 +3914,16 @@
         "scheduled_completion": "Beoogde datum voor het afronden van de herstelactie.",
         "estimated_cost": "Geschatte kosten of inspanning (bijv. 3 persoonsdagen, €5.000).",
         "status": "Huidige herstelstatus van dit POA&M-item.",
-        "adr_register_url": "Optionele link naar de pagina waar de beveiligingsarchitectuurbesluiten van dit systeem zijn vastgelegd (bijvoorbeeld een Confluence-pagina). Moet beginnen met http:// of https://."
+        "adr_register_url": "Optionele link naar de pagina waar de beveiligingsarchitectuurbesluiten van dit systeem zijn vastgelegd (bijvoorbeeld een Confluence-pagina). Moet beginnen met http:// of https://.",
+        "jira_url": "Link naar het Jira-issue (of epic) waarin het werk voor deze zwakke plek wordt gevolgd. Moet beginnen met http:// of https://."
       },
       "errors": {
         "url_invalid": "Voer een volledig webadres in dat begint met http:// of https://.",
         "url_too_long": "Het webadres mag maximaal 500 tekens lang zijn."
       },
       "adr_register_url": "ADR-register (link)",
-      "option_inactive": "{name} (inactief)"
+      "option_inactive": "{name} (inactief)",
+      "jira_url": "Jira-link"
     },
     "adr": {
       "forms": {

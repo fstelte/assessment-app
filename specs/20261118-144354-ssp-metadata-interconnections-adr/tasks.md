@@ -238,7 +238,7 @@ completeness.
 - [x] Task 5: SSP edit/view/print, list selection, ADR register URL, monitoring wording
 - [x] Task 6: Architecture overview, PDF support, upload guidance and gateway limit
 - [x] Task 7: Architecture overview, delete per version
-- [ ] Task 8: POA&M Jira-first
+- [x] Task 8: POA&M Jira-first
 - [ ] Task 9: ADR external link, either/or rule, "Security ADRs" wording
 - [ ] Task 10: ADR delete with unlink and restore
 - [x] Task 12: Risk owner from threat owner

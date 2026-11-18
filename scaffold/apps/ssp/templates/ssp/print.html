@@ -390,6 +390,7 @@
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§POA&amp;M</span>
         <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.poam') }}</h2>
       </div>
+      <p class="px-6 pt-4 text-sm text-slate-400">{{ _('ssp.poam.intro') }}</p>
       {% if ssp.poam_items %}
       <table class="w-full text-sm">
         <thead>
@@ -408,6 +409,7 @@
             <td class="px-4 py-2 text-slate-500 align-top">{{ loop.index }}</td>
             <td class="px-4 py-2 text-white align-top">
               <p>{{ item.weakness_description }}</p>
+              {% if item.jira_url %}<p class="text-xs text-slate-400 mt-0.5">{{ _('ssp.poam.jira_label') }}: <span class="break-all">{{ item.jira_url }}</span></p>{% endif %}
               {% if item.milestones %}
               <ul class="mt-1 pl-3 text-xs text-slate-400 list-disc">
                 {% for ms in item.milestones %}

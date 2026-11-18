@@ -3764,7 +3764,10 @@
       "add_first": "Add the first item →",
       "edit": "Edit",
       "delete": "Delete",
-      "delete_confirm": "Delete this POA&M item and its milestones?"
+      "delete_confirm": "Delete this POA&M item and its milestones?",
+      "intro": "The POA&M is used to steer and monitor improvements to the system described in this plan. Record each weakness here and track the detailed work in Jira.",
+      "jira_link": "Jira issue",
+      "jira_label": "Jira"
     },
     "poam_form": {
       "add_title": "Add POA&M Item",
@@ -3782,7 +3785,9 @@
       "completed_col": "Completed",
       "remove": "Remove",
       "remove_confirm": "Remove this milestone?",
-      "add_btn": "Add"
+      "add_btn": "Add",
+      "details_optional": "Details (optional)",
+      "milestones_section_optional": "Milestones (optional)"
     },
     "forms": {
       "laws_regulations": "Laws, Regulations & Policies",
@@ -3839,14 +3844,16 @@
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
         "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
         "status": "Current remediation status of this POA&M item.",
-        "adr_register_url": "Optional link to the page where this system's security architecture decisions are documented (for example a Confluence page). Must start with http:// or https://."
+        "adr_register_url": "Optional link to the page where this system's security architecture decisions are documented (for example a Confluence page). Must start with http:// or https://.",
+        "jira_url": "Link to the Jira issue (or epic) where the work for this weakness is tracked. Must start with http:// or https://."
       },
       "errors": {
         "url_invalid": "Enter a full web address starting with http:// or https://.",
         "url_too_long": "The web address may be at most 500 characters."
       },
       "adr_register_url": "ADR register (link)",
-      "option_inactive": "{name} (inactive)"
+      "option_inactive": "{name} (inactive)",
+      "jira_url": "Jira link"
     },
     "adr": {
       "forms": {

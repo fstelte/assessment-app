@@ -559,3 +559,69 @@ def test_ssp_pdf_export(ssp_app, scope_with_ssp, logged_in_user):
     resp = logged_in_user.get(f"/ssp/{ssp_id}/export/pdf")
     assert resp.status_code == 200
     assert "html" in resp.content_type
+
+
+# --- POA&M Jira-first (Task 8; decision 20261118-1510) -------------------------
+
+
+def _poam_payload(**data):
+    payload = {"weakness_description": "Missing MFA on admin portal", "status": "open", "save_item": "1"}
+    payload.update(data)
+    return payload
+
+
+def test_poam_item_with_only_weakness_status_and_jira_link(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import POAMItem
+
+    _, ssp_id = scope_with_ssp
+    jira = "https://jira.example.com/browse/SEC-42"
+    resp = logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload(jira_url=jira))
+    assert resp.status_code == 302
+
+    with ssp_app.app_context():
+        item = POAMItem.query.filter_by(ssp_id=ssp_id).one()
+        assert (item.jira_url, item.point_of_contact, item.scheduled_completion) == (jira, None, None)
+
+    link = f'href="{jira}" target="_blank" rel="noopener noreferrer"'
+    assert link in logged_in_user.get(f"/ssp/{ssp_id}/poam").get_data(as_text=True)
+    assert link in logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert jira in logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+
+
+@pytest.mark.parametrize("bad", ["ftp://jira.example.com/SEC-1", "javascript:alert(1)", "jira/SEC-1"])
+def test_poam_jira_link_must_be_http(ssp_app, scope_with_ssp, logged_in_user, bad):
+    from scaffold.apps.ssp.models import POAMItem
+
+    _, ssp_id = scope_with_ssp
+    resp = logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload(jira_url=bad))
+
+    assert resp.status_code == 200
+    with ssp_app.app_context():
+        assert POAMItem.query.filter_by(ssp_id=ssp_id).count() == 0
+
+
+def test_poam_details_open_only_when_used(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import POAMItem, POAMMilestone
+
+    _, ssp_id = scope_with_ssp
+    logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload())
+    with ssp_app.app_context():
+        item_id = POAMItem.query.filter_by(ssp_id=ssp_id).one().id
+    url = f"/ssp/{ssp_id}/poam/{item_id}/edit"
+
+    page = logged_in_user.get(url).get_data(as_text=True)
+    assert 'id="poam-details" class="rounded-lg border border-[var(--color-border)] px-4 py-3">' in page
+
+    logged_in_user.post(url, data={"ms-description": "Enable MFA", "add_milestone": "1"})
+    with ssp_app.app_context():
+        assert POAMMilestone.query.filter_by(item_id=item_id).count() == 1
+    page = logged_in_user.get(url).get_data(as_text=True)
+    assert 'id="poam-details" class="rounded-lg border border-[var(--color-border)] px-4 py-3" open>' in page
+
+
+def test_poam_purpose_intro_shown(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+    intro = "The POA&amp;M is used to steer and monitor improvements to the system described in this plan."
+
+    for url in (f"/ssp/{ssp_id}/poam", f"/ssp/{ssp_id}/poam/add", f"/ssp/{ssp_id}"):
+        assert intro in logged_in_user.get(url).get_data(as_text=True), url

@@ -467,6 +467,7 @@
 
   {# ── POA&M Summary ── #}
   {{ section_card("POA&M", _('ssp.sections.poam')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('ssp.poam.intro') }}</p>
   {% if ssp.poam_items %}
   {% set open_items = ssp.poam_items | selectattr('status.value', 'in', ['open', 'in_progress', 'delayed']) | list %}
   {% set done_items = ssp.poam_items | selectattr('status.value', 'equalto', 'completed') | list %}
@@ -495,7 +496,7 @@
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for item in ssp.poam_items %}
         <tr>
-          <td class="py-2 pr-4">{{ item.weakness_description | truncate(80) }}</td>
+          <td class="py-2 pr-4">{{ item.weakness_description | truncate(80) }}{% if item.jira_url %}<br>{% if item.jira_url %}<a href="{{ item.jira_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-primary-500 hover:underline mt-0.5"><i class="fab fa-jira" aria-hidden="true"></i>{{ _('ssp.poam.jira_link') }} <i class="fas fa-arrow-up-right-from-square text-[9px]" aria-hidden="true"></i></a>{% endif %}{% endif %}</td>
           <td class="py-2 pr-4 text-[var(--color-muted)]">{{ item.point_of_contact or "—" }}</td>
           <td class="py-2 pr-4 whitespace-nowrap text-[var(--color-muted)]">{{ item.scheduled_completion or "—" }}</td>
           <td class="py-2">

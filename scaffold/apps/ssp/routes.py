@@ -644,6 +644,7 @@ def add_poam_item(ssp_id: int):
             point_of_contact=form.point_of_contact.data or None,
             scheduled_completion=form.scheduled_completion.data,
             estimated_cost=form.estimated_cost.data or None,
+            jira_url=form.jira_url.data or None,
             status=POAMStatus(form.status.data),
         )
         db.session.add(item)
@@ -670,6 +671,7 @@ def edit_poam_item(ssp_id: int, item_id: int):
         item.point_of_contact = form.point_of_contact.data or None
         item.scheduled_completion = form.scheduled_completion.data
         item.estimated_cost = form.estimated_cost.data or None
+        item.jira_url = form.jira_url.data or None
         item.status = POAMStatus(form.status.data)
         db.session.commit()
         log_event("poam_item_updated", entity_type="SSPlan", entity_id=ssp.id)
