@@ -1,6 +1,6 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: implemented
+status: planned
 created: 2026-11-18
 decisions:
   - 20261118-0750-risk-sync-components-from-assigned-assets
@@ -17,6 +17,11 @@ decisions:
   - 20261118-1048-risk-approval-dashboard-entry
   - 20261118-1057-risk-approval-reset-before-flush
   - 20261118-1058-risk-approval-checklist-gap-resolutions
+  - 20261118-1200-risk-workspace-hides-closed-risks
+  - 20261118-1201-risk-overview-table
+  - 20261118-1202-risk-cards-collapsible
+  - 20261118-1203-risk-reopen-from-edit-page
+  - 20261118-1210-risk-workspace-overview-checklist-resolutions
 ---
 
 # Risk Workspace: Targeted Component Sync, BIA Filter and Actual Risk Score
@@ -397,3 +402,159 @@ after the upgrade, and that the migration's downgrade drops the approval data.
 
 None. The comment length (2000 characters) and the checklist gaps are settled
 in `20261118-1058-risk-approval-checklist-gap-resolutions`.
+
+---
+
+# Part 3: Open-Only Workspace, Risk Overview and Collapsible Cards
+
+> Added 2026-11-18 on the same branch. Parts 1 and 2 are implemented. Part 3
+> is designed but not yet built.
+
+## Overview
+
+The risk workspace (`/risk/`) shows open risks only. Any risk with
+`closed_at` set leaves it: closed by hand, or closed by the threat sync
+because its scenario is Accepted or Closed or isn't treated by Mitigate. A
+new overview page (`/risk/overview`) lists every risk, open and closed, in a
+compact table. On the workspace the risk cards start collapsed, to a single
+summary row, and open on click.
+
+## User Stories
+
+- As a risk manager, I want closed risks to leave the workspace, so that the
+  cards, metrics and matrix show only live risks.
+- As a risk manager, I want an overview of every risk, including closed
+  ones, so that I can find and review any risk in one place.
+- As a risk manager, I want to reopen a closed manual risk, so that I can
+  undo a close.
+- As a workspace user, I want risk cards collapsed to one line, so that I
+  can scan many risks without scrolling.
+
+## Components
+
+### 15. Open-only workspace (`risk/routes.py::dashboard`, `dashboard.html`)
+- The base query adds `Risk.closed_at.is_(None)`. The BIA and approval
+  filters apply on top, and the cards, metrics, matrix and `mine_count` all
+  follow it.
+- Remove the workspace's closed-only UI: the Reopen form on cards and the
+  "Closed on" status branch. The Close action on cards stays.
+- This amends decision 0830: the matrix no longer shows closed risks, and a
+  filtered view no longer shows archived ones.
+- **Empty state:** with no filter set and only closed risks in the
+  database, the workspace shows "No open risks." with a link to the
+  overview. "No risks recorded yet" stays for an empty database.
+- **Closing a risk from a card:** the flash message becomes
+  'Risk "{title}" closed. You can find it on the Risk overview.' (the
+  `risk.flash.archived` key, new text).
+
+### 16. Overview page (`risk/routes.py::overview`, new `templates/risk/overview.html`)
+- `GET /risk/overview`, with `@login_required` and `_require_risk_access()`.
+- Filters: `status=open|closed|all` (default `all`, unknown values mean
+  `all`) and `bia=<id>` (repeatable). Parse the BIA ids the same way the
+  workspace does, and share a small helper if it avoids duplicating code.
+- Columns:
+  - severity pill (actual);
+  - title, which links to `risk.edit`;
+  - actual score;
+  - treatment;
+  - owner, or "–";
+  - approval pill;
+  - BIA names, deduplicated;
+  - status: Open, Mitigated, or "Closed on D".
+- Order: open first, then closed. Within each group, highest actual score
+  first (risks with no score last), then by title, case-insensitive. The
+  sort runs in Python.
+- Status precedence: closed wins. A closed and mitigated risk shows "Closed
+  on D". Dates use `'%d %b %Y'`.
+- Empty cells:
+  - owner: "–", including when the owner was deleted;
+  - BIA: "–";
+  - severity: "Severity pending".
+- Source: the title cell shows a muted "Threat" or "PASTA" label, and
+  nothing for a manual risk.
+- Pills: the same severity classes and `approval_pills` mapping and labels
+  as the workspace.
+- Narrow screens: the table sits in an `overflow-x-auto` wrapper.
+- Empty state: "No risks match the filter."
+- Links: the workspace header gets a "Risk overview" link, and the overview
+  links back to the workspace.
+
+### 17. Collapsible cards (`dashboard.html`)
+- `<article class="risk-card">` becomes `<details class="risk-card">`. Its
+  `<summary>` row shows:
+  - the severity pill;
+  - the title;
+  - the actual score;
+  - the approval pill;
+  - the due status pill;
+  - the Mitigated pill, when the risk is mitigated.
+- The body is the current card content, unchanged.
+- Cards start collapsed. "Expand all" and "Collapse all" buttons sit above
+  the grid. The page's existing nonce'd script toggles `open` on every card,
+  and on load opens the card named by a `#risk-<id>` fragment.
+- Without JS, each card still toggles on its own.
+- The summary row is one line on wide screens, with the title truncated with
+  an ellipsis, and it wraps on narrow screens. The treatment pill, the
+  description and the PASTA badge stay in the body. The grid aligns cards to
+  the top.
+- Expand all and Collapse all only render when there are cards. They are
+  `<button type="button">`s with `aria-controls` set to the grid's id.
+  `<summary>` gets a `:focus-visible` outline.
+- A `#risk-<id>` with no matching card (closed or filtered out) does
+  nothing.
+
+### 18. Reopen from the edit page (`form.html`, `risk/routes.py::edit`)
+- A closed risk's edit page shows a "Closed on D" banner.
+  - **Manual and PASTA risks:** the banner has a Reopen button that posts to
+    the existing `risk.reopen` route.
+  - **Threat-linked risks** (`linked_scenario` set): no button, and the note
+    "Reopens when its threat scenario is reopened."
+- The edit route passes `action_form` (`RiskActionForm`) for the CSRF token.
+- The banner is the first card on the form, above the approval panel and the
+  threat-managed note.
+- PASTA risks have no revalidation guard. Republishing also reopens them,
+  which already happens.
+- A threat-linked risk whose scenario was reopened is re-synced open before
+  the page renders, so no banner shows.
+
+## Data Model
+
+No changes. "Closed" stays `risk_items.closed_at IS NOT NULL`.
+
+## API/Interface
+
+- `GET /risk/` now lists open risks only.
+- `GET /risk/overview?status=open|closed|all&bia=<id>[&bia=...]` is new.
+- The `/api/risks` responses don't change.
+
+## Out of Scope
+
+- Column sorting and per-row actions on the overview.
+- Remembering which cards are open across page loads.
+- Changing which scenario statuses close a risk (Accepted still closes).
+- Pagination of the overview.
+- Approval filtering on the overview. Approval is a column only.
+
+## Rollout
+
+Release notes must say that closed and archived risks no longer appear on
+the risk workspace, its metrics or its matrix, and can be found on the new
+Risk overview page.
+
+## Validation
+
+- pytest: the workspace hides closed risks, both manual and threat-closed.
+  The metrics and matrix ignore them. `?bia=` and `?approval=` still work.
+- pytest: the overview's `status` filter (open, closed, all, invalid), the
+  `bia` filter, the row order and the columns.
+- pytest: the edit page of a closed manual risk shows Reopen, and a closed
+  threat-linked risk shows the note without the button.
+- pytest: the workspace renders `<details class="risk-card">` without `open`,
+  plus the Expand all and Collapse all controls.
+- Translations: new keys in `en.json` and `nl.json`.
+- The checklist resolutions are in decision 1210
+  (`checklists/workspace-overview.md`).
+
+## Open Questions
+
+None.

@@ -1,10 +1,10 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: implemented
+status: planned
 created: 2026-11-18
 chunk_size: adaptive
-total_tasks: 16
-estimated_lines: 1380
+total_tasks: 21
+estimated_lines: 1790
 ---
 
 # Risk Workspace: Targeted Component Sync, BIA Filter and Actual Risk Score Tasks
@@ -284,8 +284,8 @@ Tests are bundled into each task. No sync tests exist yet, so Task 1 creates
   builds the same risk summary as the SSP view.
 - Follow-up: the SSP risk summary counts a risk once per linked component in
   the BIA, so it can count the same risk twice. This was already the case.
-- Run `graphify update .` after code changes (CLAUDE.md). The `graphify` CLI is
-  not installed in this environment.
+- Run `graphify update .` after code changes (CLAUDE.md). The CLI is
+  installed (`uv tool install graphifyy`).
 
 ---
 
@@ -507,6 +507,237 @@ which resolves the design's open question.
 - Deferred: notifications, approving through the API, admin override,
   approval history in the UI.
 
+
+---
+
+# Part 3: Open-Only Workspace, Risk Overview and Collapsible Cards Tasks
+
+Implements Part 3 of [design.md](design.md) (decisions 20261118-1200 to
+-1203, the amendment to 0830, and the checklist resolutions in 1210). No schema changes. Tests are bundled into
+each task: workspace and overview tests go in `tests/test_risk_routes.py`,
+and the edit-page banner tests in `tests/test_risk_actions.py`. Every test
+signs in through the session, as the `login` fixture does.
+
+### Foundation
+
+#### Task 17: Workspace lists open risks only
+- **Estimate:** ~50 lines
+- **Files:**
+  - `scaffold/apps/risk/routes.py` (`dashboard`)
+  - `scaffold/apps/risk/templates/risk/dashboard.html`
+  - `scaffold/translations/{en,nl}.json`
+  - `tests/test_risk_routes.py`
+  - `tests/test_risk_approval.py`
+- **Description:**
+  - Add `Risk.closed_at.is_(None)` to the base dashboard query.
+  - Drop the now-redundant `closed_at` filter on the approval branch.
+    `mine_count` already filters on it.
+  - Remove the card's Reopen form and the "Closed on" status branch. Keep
+    Close and Delete.
+  - Update the `dashboard` docstring: it now lists open risks only.
+  - Update `tests/test_risk_approval.py::test_approval_filter`. Its `""` and
+    `?approval=bogus` cases expect every risk, including `mine_closed`;
+    they now expect every risk except `mine_closed`.
+  - The route passes `has_closed_risks`, an `EXISTS` query on
+    `closed_at IS NOT NULL`, so the template can tell "all closed" apart
+    from "no risks at all".
+  - Empty state: when no filter is set and closed risks exist, show
+    `risk.dashboard.no_open_risks` and `no_open_risks_hint` (EN and NL).
+    Task 19 adds the link to `url_for('risk.overview')`, because the route
+    doesn't exist yet.
+  - Change the text of `risk.flash.archived` in EN and NL to 'Risk "{title}"
+    closed. You can find it on the Risk overview.'
+  - Extract `_bia_filter_args()` → `(bia_options, selected_bia_ids,
+    bia_filter)` from `dashboard`, so the overview (Task 19) can reuse it.
+    It is about 10 lines and has two callers, which the design asks for.
+- **Depends on:** None
+- **Acceptance:**
+  - A closed manual risk and a threat-closed risk (scenario Accepted) don't
+    appear on `/risk/`.
+  - With only closed risks, the page shows "No open risks." and not "No
+    risks recorded yet".
+  - They aren't counted in the metrics or the matrix.
+  - `?bia=` and `?approval=` still filter the open risks.
+  - The page has no Reopen button.
+- **Evidence:** new and existing `tests/test_risk_routes.py` tests pass
+  (apart from the known password-login failures).
+
+### Core Implementation
+
+#### Task 18: Collapsible cards
+- **Estimate:** ~90 lines
+- **Files:** `scaffold/apps/risk/templates/risk/dashboard.html`,
+  `scaffold/translations/{en,nl}.json`, `tests/test_risk_routes.py`
+- **Description:**
+  - Change `<article class="risk-card">` to `<details class="risk-card"
+    id="risk-<id>">`, with no `open` attribute.
+  - Move the header into a `<summary>` row:
+    - the severity pill;
+    - the title;
+    - the actual score;
+    - the approval pill;
+    - the due status pill;
+    - the Mitigated pill, when set.
+  - Leave the body unchanged.
+  - Add CSS in the page's nonce'd `<style>` block, using existing tokens
+    only, because `app.css` is only rebuilt by Docker:
+    - a summary cursor and marker;
+    - a compact collapsed height;
+    - the grid aligning collapsed cards to the top.
+  - Add "Expand all" and "Collapse all" buttons (`data-risk-expand`,
+    `data-risk-collapse`, `type="button"`, `aria-controls` set to the grid's
+    id) above the grid, only when there are cards.
+  - The summary is one line, with the title truncated with an ellipsis, and
+    wraps on narrow screens. The treatment pill, the description and the
+    PASTA badge stay in the body. `<summary>` gets a `:focus-visible`
+    outline, and the grid has `align-items: start`.
+  - A hash that doesn't match a card does nothing.
+  - Extend the existing nonce'd script: the buttons set `open` on every
+    `details.risk-card`, and on load the card named by `location.hash`
+    (`#risk-<id>`) opens.
+  - Translations: `risk.dashboard.expand_all` and `collapse_all` in EN and
+    NL.
+- **Depends on:** Task 17 (same template block)
+- **Acceptance:**
+  - Cards render as `<details class="risk-card">` without `open`.
+  - The summary contains the title and the score.
+  - Both buttons are present.
+  - Each card still toggles on its own without JS.
+- **Evidence:** the template tests pass, and the EN and NL key check shows no
+  new gaps.
+
+#### Task 19: Risk overview page [P]
+- **Estimate:** ~180 lines (adaptive: the route and template only make sense
+  together)
+- **Files:**
+  - `scaffold/apps/risk/routes.py` (new `overview` route)
+  - new `scaffold/apps/risk/templates/risk/overview.html`
+  - `scaffold/apps/risk/templates/risk/dashboard.html` (header link)
+  - `scaffold/translations/{en,nl}.json`
+  - `tests/test_risk_routes.py`
+- **Description:**
+  - `GET /risk/overview`, with `@login_required` and
+    `_require_risk_access()`.
+  - The `status` filter: `open|closed|all`. The default is `all`, and an
+    unknown value also means `all`. BIA uses `_bia_filter_args()`.
+  - Load the risks with `_risk_query()`. Sort in Python by:
+    1. open first;
+    2. actual score, highest first, with no score last;
+    3. title, case-insensitive.
+  - Build each row inline in the route:
+    - the actual severity and score;
+    - the treatment;
+    - the owner's name, or "–";
+    - `approval_state`;
+    - the BIA names, deduplicated and sorted;
+    - the status: Open, Mitigated, or "Closed on D". Closed wins, and dates
+      use `'%d %b %Y'`;
+    - the source: "Threat", "PASTA" or nothing;
+    - "–" for an empty owner or BIA, and "Severity pending" for a missing
+      severity.
+  - The template is a filter form (status select, BIA multi-select, Clear)
+    plus a table in an `overflow-x-auto` wrapper. It reuses the dashboard's
+    severity classes, and the `approval_pills` mapping and labels (copied,
+    about six lines), and Tailwind classes already in `app.css`.
+  - Each title links to `risk.edit`.
+  - The empty state is "No risks match the filter.".
+  - Navigation:
+    - a "Risk overview" link in the workspace header;
+    - a "Risk workspace" link back from the overview.
+  - Translations: `risk.overview.*` (title, intro, the status filter labels,
+    the column headers, empty, back link, `source_threat`, `source_pasta`)
+    and `risk.dashboard.overview_link` in EN and NL.
+  - Add the overview link to the Task 17 empty state.
+- **Depends on:** Task 17 (`_bia_filter_args`). It can run alongside Task 18
+  if the header link is added after it.
+- **Acceptance:**
+  - `status=open`, `closed`, `all` and an invalid value each list the right
+    risks.
+  - `bia` narrows the list.
+  - Open rows come before closed ones, with the highest score first, then
+    by title.
+  - A closed and mitigated risk shows "Closed on".
+  - The source labels and the "–" cells render.
+  - The approval pill and the "Closed on" text render.
+  - A user without risk access gets a 403.
+  - Both links exist.
+- **Evidence:** the new overview tests in `tests/test_risk_routes.py` pass.
+
+#### Task 20: Closed banner with Reopen on the edit page [P]
+- **Estimate:** ~50 lines
+- **Files:** `scaffold/apps/risk/routes.py` (`edit` passes `action_form`),
+  `scaffold/apps/risk/templates/risk/form.html`,
+  `scaffold/translations/{en,nl}.json`, `tests/test_risk_actions.py`
+- **Description:**
+  - When `risk.is_closed`, show a "Closed on D" banner as the first card on
+    the form, above the approval panel and the threat-managed note.
+  - **No `linked_scenario`:** a POST form to `risk.reopen` with the
+    `action_form` CSRF token. `reopen` already redirects to the referrer,
+    which is the edit page.
+  - **Threat-linked:** the note "Reopens when its threat scenario is
+    reopened." and no button.
+  - Translations: `risk.closed_banner.title` and `threat_note` in EN and NL.
+    Reuse `risk.status.closed_on` and `risk.actions.reopen`.
+- **Depends on:** None. It only touches the edit route and template, so it
+  can run in parallel with Tasks 17–19.
+- **Acceptance:**
+  - The edit page of a closed manual risk shows the banner and the Reopen
+    form.
+  - Posting the form reopens the risk.
+  - A closed threat-linked risk shows the note without the button.
+  - An open risk shows no banner.
+- **Evidence:** the new tests in `tests/test_risk_actions.py` pass.
+
+### Integration & Polish
+
+#### Task 21: Final validation, release notes and docs
+- **Estimate:** ~40 lines (docs only)
+- **Files:**
+  - `specs/20261118-074624-risk-workspace-sync-bia-filter/release-notes.md`
+  - `docs/risk.md`
+- **Description:**
+  - Run `pytest tests/test_risk_*.py tests/test_threat_*.py` and the admin
+    tests. Compare the results with the known failures.
+  - Check the EN and NL keys for new gaps.
+  - Run `graphify update .`.
+  - Release notes, as a Part 3 section on top. The behaviour change: closed
+    and archived risks leave the workspace, its metrics and its matrix, and
+    are found on the Risk overview page.
+  - `docs/risk.md`:
+    - new text says "risk workspace (`/risk`)" the first time it's used,
+      and existing sections keep "dashboard";
+    - a "Risk Overview" section;
+    - the workspace now open-only, with collapsible cards;
+    - reopening from the edit page.
+- **Depends on:** Tasks 17–20
+- **Acceptance:** no new test failures, no new translation gaps, and the
+  release notes and docs are updated.
+- **Evidence:** test output and graphify output.
+
+## Parallel Groups (Part 3)
+- Task 20 is independent and can run any time.
+- Task 17 comes first among the workspace tasks.
+- Tasks 18 and 19 both follow Task 17. Both touch `dashboard.html`: 18
+  changes the card markup and 19 adds the header link. Run them in sequence,
+  or merge carefully.
+- Task 21 comes last.
+
+## Notes (Part 3)
+- Task 17 removes the card Reopen form. After that, the only way to reopen a
+  risk from the UI is Task 20, so ship them together.
+- The `#risk-<id>` hash-open handling only helps bookmarks. The matrix
+  doesn't link to cards (decision 1202).
+- Opening a closed threat-linked risk's edit page re-syncs it, which would
+  close it again immediately. That's why Task 20 shows no Reopen button for
+  it (decision 1203).
+- The overview loads every risk without pagination (out of scope). That's
+  fine at current volumes.
+- Deferred:
+  - column sorting and row actions on the overview;
+  - remembering the open state of cards;
+  - an approval filter on the overview;
+  - changing which scenario statuses close a risk.
+
 ## Progress
 - [x] Task 1: Component resolution uses threatened assets only
 - [x] Task 2: Risk residual columns, helpers and migration
@@ -524,3 +755,8 @@ which resolves the design's open question.
 - [x] Task 14: Dashboard pill and ?approval= filter
 - [x] Task 15: Approval fields in the API
 - [x] Task 16: Final validation and release notes
+- [x] Task 17: Workspace lists open risks only
+- [x] Task 18: Collapsible cards
+- [x] Task 19: Risk overview page
+- [x] Task 20: Closed banner with Reopen on the edit page
+- [ ] Task 21: Final validation, release notes and docs

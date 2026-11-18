@@ -115,3 +115,10 @@ Decision by the engineer:
 - **Still editable:** impact areas, treatment plan, owner, due date, ticket
   links and discovered on.
 - This matches the PASTA rule: the risk row is a projection of its source.
+
+## Amendments
+
+- 2026-11-18, `20261118-1200-risk-workspace-hides-closed-risks`: the
+  workspace now shows open risks only. "The matrix keeps showing closed
+  risks" and "archived risks under a filter are still shown" no longer apply
+  to the workspace. Closed risks are listed on `/risk/overview`.
