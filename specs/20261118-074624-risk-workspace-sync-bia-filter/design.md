@@ -1,6 +1,6 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: implemented
+status: planned
 created: 2026-11-18
 decisions:
   - 20261118-0750-risk-sync-components-from-assigned-assets
@@ -9,6 +9,14 @@ decisions:
   - 20261118-0801-risk-workspace-bia-multi-filter
   - 20261118-0802-risk-actual-score-display
   - 20261118-0830-risk-residual-checklist-gap-resolutions
+  - 20261118-1038-risk-approval-by-treatment-owner
+  - 20261118-1039-risk-approval-scope-and-reset
+  - 20261118-1045-risk-approval-columns-and-states
+  - 20261118-1046-risk-approval-owner-only
+  - 20261118-1047-risk-approval-reset-listener
+  - 20261118-1048-risk-approval-dashboard-entry
+  - 20261118-1057-risk-approval-reset-before-flush
+  - 20261118-1058-risk-approval-checklist-gap-resolutions
 ---
 
 # Risk Workspace: Targeted Component Sync, BIA Filter and Actual Risk Score
@@ -209,3 +217,183 @@ None. Both earlier questions are settled in
 `20261118-0830-risk-residual-checklist-gap-resolutions`:
 - Synced fields are read-only for linked risks.
 - Archived risks are shown when a filter is active.
+
+---
+
+# Part 2: Risk Owner Approval
+
+> Added 2026-11-18 on the same branch. Part 1 above is implemented. Part 2 is
+> designed but not yet built.
+
+## Overview
+
+The risk's owner (`treatment_owner`) approves or rejects the risk's
+assessment. That covers chance, impact and treatment, plus the residual score
+and mitigated state when they are set. The approval stays valid until one of
+those material fields changes or the owner is reassigned. When that happens,
+the risk goes back to "awaiting approval", whichever path made the change:
+form, admin, API, threat sync or PASTA. Owners find their pending risks through
+an "Awaiting my approval" filter on the risk dashboard.
+
+## User Stories
+
+- As a risk owner, I want to see the risks waiting for my approval, so that I
+  can work through them.
+- As a risk owner, I want to approve a risk's score and treatment, so that
+  there's a record that I accept it.
+- As a risk owner, I want to reject a risk with a comment, so that the risk
+  manager knows what to revise.
+- As a risk manager, I want to see each risk's approval state on the
+  dashboard, so that I know which risks still need sign-off.
+- As an auditor, I want approvals, rejections and resets in the audit trail,
+  so that sign-off is traceable.
+
+## Components
+
+### 9. Approval model and migration (`risk/models.py`, `migrations/versions/`)
+- `RiskApprovalStatus` enum: `APPROVED`, `REJECTED`. NULL means awaiting
+  approval.
+- New nullable columns: `approval_status`, `approval_decided_at`,
+  `approval_decided_by_id` (FK users, SET NULL) and `approval_comment`.
+- Relationship `approval_decided_by`. Helper `approval_state` returns
+  `"no_owner" | "awaiting" | "approved" | "rejected"`.
+- Helper `approval_fingerprint()` returns a short hash of the material fields,
+  used by the stale-view guard.
+- Existing rows are left NULL, so every risk starts as awaiting approval.
+
+### 10. Reset listener (`risk/models.py`)
+- A session `before_flush` listener, registered with `insert=True` so that it
+  runs ahead of the generic audit (decision 1057, which supersedes 1047). For
+  each dirty Risk: if `chance`, `impact`, `treatment`,
+  `residual_chance`, `residual_impact` or `treatment_owner_id` changed value,
+  or whether the risk is mitigated flipped, it clears the four approval
+  columns.
+- A new `mitigated_at` timestamp alone, with the risk mitigated before and
+  after, does **not** reset.
+- Add the four approval fields to the Risk entry in `core/audit.py`'s model
+  registry, so resets and decisions are audited automatically.
+- The material fields are one constant, `APPROVAL_MATERIAL_FIELDS`, which the
+  fingerprint shares.
+- `risk_synced_from_threat` details gain `approval_reset: bool`.
+- Closing or reopening a risk doesn't reset the approval. A user deletion that
+  sets the owner to NULL at the DB level shows as "No owner". Assigning a new
+  owner resets the decision.
+
+### 11. Approve and reject routes (`risk/routes.py`)
+- `POST /risk/<id>/approve` and `POST /risk/<id>/reject`, protected by CSRF.
+- 404 for an unknown id. Otherwise 403 unless
+  `current_user.id == risk.treatment_owner_id`. Admins are not exempt.
+- The owner can decide at any time, including flipping an earlier decision or
+  re-approving. Each decision is new: it gets a new timestamp and an audit
+  event. Self-approval after the owner's own edit is allowed (decision 1058).
+- Form fields: `fingerprint` (hidden) and `comment`, which is required for
+  reject and has a length limit. If the fingerprint doesn't match, nothing
+  changes and the user sees a "risk changed since you opened it" flash and is
+  redirected to the edit page.
+- Sets the status, `decided_at = now`, `decided_by = current_user` and the
+  comment. Logs `risk_approved` or `risk_rejected` through `log_event` with
+  the decision, the comment, chance, impact, treatment, residual chance and
+  impact, mitigated, actual score and severity, and the fingerprint.
+- Comment: up to 2000 characters. On a stale fingerprint the typed comment is
+  lost, and the flash says so.
+- Closed risks can still be decided. The filter just doesn't list them.
+
+### 12. Edit-page approval panel (`risk/templates/risk/form.html`)
+- A panel at the top shows the state pill, who decided and when, and the
+  comment.
+- When the viewer is the owner, it shows Approve and Reject, each a separate
+  small form posting to the routes above. It's shown for manual and
+  threat-linked risks alike.
+- With no owner: "Assign an owner to request approval."
+- With no current decision but an earlier rejection in the audit log (the
+  latest `risk_rejected` AuditLog for this risk), show "Previously rejected by
+  X on D: comment". A deleted decider shows as "Unknown user".
+
+### 13. Dashboard (`risk/routes.py::dashboard`, `dashboard.html`)
+- `?approval=` takes one of these values, and only lists open risks:
+  - `mine`: owner = me, and the status is NULL or `rejected`.
+  - `awaiting`: there's an owner, and the status is NULL.
+  - `rejected`: the status is `rejected`.
+
+  `awaiting` and `rejected` are for every user. An invalid value is ignored.
+  The filter combines with `?bia=`, and the metrics and matrix follow it.
+- An approval select (All / Awaiting my approval / Awaiting / Rejected) sits
+  next to the BIA filter. The "mine" count follows the active BIA filter.
+- Empty state: "No risks match the approval filter."
+- Card pill: Awaiting approval / Approved / Rejected / No owner.
+
+### 14. API (`risk/services.py::serialize_risk`)
+- Additive, read-only fields: `approval_status`, `approval_decided_at`,
+  `approval_decided_by` and `approval_comment`. The API has no approve
+  endpoint (see Out of Scope).
+
+## Data Model
+
+```
+risk_items
+  + approval_status          VARCHAR (risk_approval_status: approved|rejected) NULL
+  + approval_decided_at      TIMESTAMPTZ NULL
+  + approval_decided_by_id   INTEGER NULL  FK users.id ON DELETE SET NULL
+  + approval_comment         TEXT NULL
+```
+
+State machine:
+
+```
+          assign owner / material change / owner change
+   ┌──────────────────────────────────────────────┐
+   ▼                                              │
+awaiting ──approve──► approved ───────────────────┤
+   │                                              │
+   └──reject(comment)──► rejected ────────────────┘
+(no owner: no decision possible)
+```
+
+## API/Interface
+
+- `POST /risk/<id>/approve` with form `fingerprint`, `comment?`.
+- `POST /risk/<id>/reject` with form `fingerprint`, `comment` (required).
+- `GET /risk/?approval=mine|awaiting|rejected[&bia=...]`.
+- `Risk.approval_state -> str` and `Risk.approval_fingerprint() -> str`.
+- `serialize_risk()`: the additive approval fields.
+
+## Out of Scope
+
+- Notifications (email or in-app) to owners.
+- Approving or rejecting through the REST API.
+- A separate accountable owner distinct from the treatment owner.
+- Using the BIA's free-text `risk_owner`.
+- Approval history in the UI. It's in the audit log only.
+- Admin override or delegation.
+- Approval state in the admin risk register (a follow-up).
+- Blocking self-approval.
+- Bulk approval of the existing backlog at rollout.
+
+## Rollout
+
+Release notes must say that every existing risk starts as "awaiting approval"
+after the upgrade, and that the migration's downgrade drops the approval data.
+
+## Validation
+
+- pytest: the listener resets on each material field, on an owner change and
+  on a mitigated flip. It doesn't reset on a text, ticket or component edit,
+  or on a new `mitigated_at` timestamp alone.
+- pytest: a reset happens through each write path: form edit, admin edit,
+  `apply_payload_to_risk` and `sync_scenario_to_risk`.
+- pytest: the audit row of a reset contains the cleared approval fields
+  (listener order). There's a PASTA publish write-path reset test.
+- pytest: flip and re-approve each create a new decision. Close and reopen
+  keep the approval. Unknown ids return 404.
+- pytest: approve and reject return 403 for a non-owner and for an admin who
+  isn't the owner. Reject needs a comment. A stale fingerprint is refused.
+  Audit events are written.
+- pytest: `?approval=mine|awaiting|rejected` filtering, alone and combined
+  with `?bia=`. The panel shows the earlier rejection reason.
+- Migration upgrade and downgrade on the dev DB.
+- Translations: new keys in `en.json` and `nl.json`.
+
+## Open Questions
+
+None. The comment length (2000 characters) and the checklist gaps are settled
+in `20261118-1058-risk-approval-checklist-gap-resolutions`.
