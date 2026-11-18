@@ -272,3 +272,84 @@ def test_upload_form_explains_what_can_be_uploaded(app, client):
     page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
     assert 'accept=".png,.jpg,.jpeg,.pdf"' in page
     assert "PNG, JPEG or PDF, max 10 MB" in page
+
+
+def _version_numbers(app, ssp_id):
+    with app.app_context():
+        return [
+            v.version_number
+            for v in SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id)
+            .order_by(SSPArchitectureOverview.version_number)
+            .all()
+        ]
+
+
+def _version_id(app, ssp_id, number):
+    with app.app_context():
+        return SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id, version_number=number).one().id
+
+
+def test_delete_current_version_makes_previous_current(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id)
+    _upload(client, ssp_id, filename="second.png")
+
+    response = client.post(f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 2)}/delete")
+    assert response.status_code == 302
+    assert _version_numbers(app, ssp_id) == [1]
+
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/image" in page
+
+    # Next upload uses max(remaining) + 1, so the deleted number 2 is reused.
+    _upload(client, ssp_id, filename="third.png")
+    assert _version_numbers(app, ssp_id) == [1, 2]
+
+
+def test_delete_only_version_shows_none_uploaded(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id)
+
+    client.post(f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/delete")
+    assert _version_numbers(app, ssp_id) == []
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert "No architecture overview has been uploaded yet." in page
+
+
+def test_delete_version_of_other_ssp_returns_404(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id)
+    with app.app_context():
+        scope = ContextScope(name="Other Scope")
+        db.session.add(scope)
+        db.session.flush()
+        other = SSPlan(context_scope_id=scope.id)
+        db.session.add(other)
+        db.session.commit()
+        other_id = other.id
+
+    response = client.post(f"/ssp/{other_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/delete")
+    assert response.status_code == 404
+    assert _version_numbers(app, ssp_id) == [1]
+
+
+def test_delete_version_writes_audit_log(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id, filename="overview.png")
+    version_id = _version_id(app, ssp_id, 1)
+
+    client.post(f"/ssp/{ssp_id}/architecture-overview/{version_id}/delete")
+    with app.app_context():
+        entry = AuditLog.query.filter_by(
+            event_type="ssp_architecture_overview_deleted", target_type="ssp_architecture_overview"
+        ).one()
+        assert entry.payload.get("version_number") == 1
+        assert entry.payload.get("original_filename") == "overview.png"

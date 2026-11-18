@@ -195,6 +195,14 @@
   {% else %}
   <p class="text-[var(--color-muted)] italic text-sm mb-4">{{ _('ssp.architecture_overview.none_uploaded') }}</p>
   {% endif %}
+  {% if current_overview %}
+  <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=current_overview.id) }}" class="mb-4" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', version=current_overview.version_number) }}')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="inline-flex items-center gap-1.5 text-xs text-red-400 hover:underline">
+      <i class="fas fa-trash text-[10px]" aria-hidden="true"></i> {{ _('ssp.architecture_overview.delete.current') }}
+    </button>
+  </form>
+  {% endif %}
 
   <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     {{ architecture_overview_form.hidden_tag() }}
@@ -217,10 +225,16 @@
         <span class="text-[var(--color-muted)]">
           {{ _('ssp.architecture_overview.history.entry', version=version.version_number, uploader=(version.uploaded_by.email if version.uploaded_by else "—"), date=version.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}
         </span>
-        <form method="POST" action="{{ url_for('ssp.restore_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('ssp.architecture_overview.history.restore') }}</button>
-        </form>
+        <span class="flex items-center gap-3 shrink-0">
+          <form method="POST" action="{{ url_for('ssp.restore_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('ssp.architecture_overview.history.restore') }}</button>
+          </form>
+          <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', version=version.version_number) }}')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('ssp.architecture_overview.delete.history') }}</button>
+          </form>
+        </span>
       </li>
       {% endfor %}
     </ul>

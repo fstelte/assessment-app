@@ -3854,6 +3854,12 @@
       "pdf": {
         "meta": "PDF · {size} MB · uploaded by {uploader} on {date}",
         "download": "Download PDF"
+      },
+      "delete": {
+        "current": "Delete this version",
+        "history": "Delete",
+        "confirm": "Delete version {version} of the architecture overview? This cannot be undone.",
+        "flash": "Architecture overview version deleted."
       }
     }
   }

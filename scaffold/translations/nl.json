@@ -3924,6 +3924,12 @@
       "pdf": {
         "meta": "PDF · {size} MB · geüpload door {uploader} op {date}",
         "download": "PDF downloaden"
+      },
+      "delete": {
+        "current": "Deze versie verwijderen",
+        "history": "Verwijderen",
+        "confirm": "Versie {version} van het architectuuroverzicht verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "flash": "Versie van het architectuuroverzicht verwijderd."
       }
     }
   }

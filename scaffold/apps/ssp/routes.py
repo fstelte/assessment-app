@@ -11,6 +11,7 @@ from flask import abort, current_app, flash, redirect, render_template, request,
 from flask_login import current_user, login_required
 
 from ...core.audit import log_event
+from ...core.i18n import gettext as _
 from ...extensions import db
 from ..bia.models import ContextScope
 from . import bp
@@ -985,4 +986,31 @@ def restore_architecture_overview(ssp_id: int, version_id: int):
     )
     db.session.commit()
     flash("Architecture overview restored.", "success")
+    return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+
+@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/delete", methods=["POST"])
+@login_required
+def delete_architecture_overview(ssp_id: int, version_id: int):
+    """Delete one architecture overview version (decision 20261118-1505).
+
+    The highest remaining version becomes current again; the next upload uses
+    max(remaining) + 1, so a deleted top number may be reused.
+    """
+    ssp = _get_ssp_or_404(ssp_id)
+    version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
+
+    log_event(
+        "ssp_architecture_overview_deleted",
+        entity_type="ssp_architecture_overview",
+        entity_id=version.id,
+        details={
+            "ssp_id": ssp.id,
+            "version_number": version.version_number,
+            "original_filename": version.original_filename,
+        },
+    )
+    db.session.delete(version)
+    db.session.commit()
+    flash(_("ssp.architecture_overview.delete.flash"), "success")
     return redirect(url_for("ssp.view", ssp_id=ssp.id))
