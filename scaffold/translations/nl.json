@@ -3748,7 +3748,18 @@
       "add_section": "Koppeling toevoegen",
       "edit": "Bewerken",
       "remove": "Verwijderen",
-      "remove_confirm": "Deze koppeling verwijderen?"
+      "remove_confirm": "Deze koppeling verwijderen?",
+      "bia_intro": "Gekoppelde systemen komen uit de interfaces die in de BIA zijn vastgelegd en worden hier automatisch toegevoegd. Leg per systeem de overeenkomst, gegevensrichting en beveiligingscontactpersoon vast. U kunt ook systemen toevoegen die niet in de BIA staan.",
+      "badge": {
+        "bia": "BIA",
+        "stale": "Niet meer in BIA"
+      },
+      "print_stale_suffix": "(niet meer in BIA)",
+      "remove_live_bia_hint": "Verwijder het eerst uit de interfaces in de BIA.",
+      "name_from_bia_hint": "De naam komt uit de interfaces in de BIA; wijzig hem daar.",
+      "flash": {
+        "delete_live_bia": "\"{name}\" staat nog in de interfaces van de BIA. Verwijder het eerst uit de BIA."
+      }
     },
     "edit_interconnection": {
       "title": "Koppeling bewerken",

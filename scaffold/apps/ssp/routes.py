@@ -30,6 +30,7 @@ from .models import (
     ADRRecord,
     ADRStatus,
     ArchitecturePrinciple,
+    InterconnectionSource,
     POAMItem,
     POAMMilestone,
     POAMStatus,
@@ -44,7 +45,7 @@ from .services import (
     build_environment_summary,
     configure_adr_form,
     seed_controls,
-    seed_interconnections,
+    reconcile_interconnections,
     sync_scenario_controls_to_ssp,
 )
 
@@ -67,6 +68,14 @@ def _safe_upload_filename(filename: str | None) -> str:
 
 def _get_ssp_or_404(ssp_id: int) -> SSPlan:
     ssp = SSPlan.query.get_or_404(ssp_id)
+    return ssp
+
+
+def _get_ssp_reconciled(ssp_id: int) -> SSPlan:
+    """Load an SSP and reconcile its interconnections with the BIA (decision 20261118-1455)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    if reconcile_interconnections(ssp):
+        db.session.commit()
     return ssp
 
 
@@ -185,7 +194,7 @@ def create(context_scope_id: int):
     db.session.add(ssp)
     db.session.flush()  # Get ssp.id before seeding
 
-    seed_interconnections(ssp)
+    reconcile_interconnections(ssp)
     seed_controls(ssp)
 
     log_event(
@@ -208,7 +217,7 @@ def create(context_scope_id: int):
 @login_required
 def view(ssp_id: int):
     """Full NIST SP 800-18 SSP view."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     context = ssp.context_scope
 
     # Derive C/I/A impact ratings from BIA consequences
@@ -275,7 +284,7 @@ def view(ssp_id: int):
 @login_required
 def edit(ssp_id: int):
     """Edit SSP metadata."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     form = SSPEditForm(obj=ssp)
 
     # Build auto-retrieved boundary items from the related BIA
@@ -328,7 +337,7 @@ def edit(ssp_id: int):
 @login_required
 def interconnections(ssp_id: int):
     """Manage system interconnection entries."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     form = SSPInterconnectionForm()
 
     if form.validate_on_submit():
@@ -357,9 +366,15 @@ def edit_interconnection(ssp_id: int, entry_id: int):
     ssp = _get_ssp_or_404(ssp_id)
     entry = SSPInterconnection.query.filter_by(id=entry_id, ssp_id=ssp.id).first_or_404()
     form = SSPInterconnectionForm(obj=entry)
+    name_from_bia = entry.source is InterconnectionSource.BIA
+    if name_from_bia:
+        # The BIA owns the name of a BIA-sourced row; ignore any submitted value.
+        form.system_name.data = entry.system_name
+        form.system_name.render_kw = {"readonly": True}
 
     if form.validate_on_submit():
-        entry.system_name = form.system_name.data
+        if not name_from_bia:
+            entry.system_name = form.system_name.data
         entry.owning_organization = form.owning_organization.data
         entry.agreement_type = form.agreement_type.data
         entry.data_direction = form.data_direction.data
@@ -373,15 +388,20 @@ def edit_interconnection(ssp_id: int, entry_id: int):
         form.agreement_type.data = entry.agreement_type.value if entry.agreement_type else "none"
         form.data_direction.data = entry.data_direction.value if entry.data_direction else "bidirectional"
 
-    return render_template("ssp/edit_interconnection.html", ssp=ssp, entry=entry, form=form)
+    return render_template(
+        "ssp/edit_interconnection.html", ssp=ssp, entry=entry, form=form, name_from_bia=name_from_bia
+    )
 
 
 @bp.route("/<int:ssp_id>/interconnections/<int:entry_id>/delete", methods=["POST"])
 @login_required
 def delete_interconnection(ssp_id: int, entry_id: int):
-    """Delete a single interconnection entry."""
+    """Delete a single interconnection entry; live BIA rows are refused (CHK003)."""
     ssp = _get_ssp_or_404(ssp_id)
     entry = SSPInterconnection.query.filter_by(id=entry_id, ssp_id=ssp.id).first_or_404()
+    if not entry.is_deletable:
+        flash(_("ssp.interconnections.flash.delete_live_bia", name=entry.system_name), "danger")
+        return redirect(url_for("ssp.interconnections", ssp_id=ssp.id))
     db.session.delete(entry)
     db.session.commit()
     flash("Interconnection removed.", "success")
@@ -523,7 +543,7 @@ def sync_controls_from_threats(ssp_id: int):
 @login_required
 def export_pdf(ssp_id: int):
     """Stream SSP as a PDF download."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     context = ssp.context_scope
 
     all_consequences = []

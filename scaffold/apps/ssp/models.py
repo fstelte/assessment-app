@@ -246,6 +246,25 @@ class SSPInterconnection(db.Model):
 
     ssp = db.relationship("SSPlan", back_populates="interconnections")
 
+    @property
+    def in_bia(self) -> bool:
+        """True when the BIA's ``interfaces`` still lists this system (normalised match)."""
+        from .services import normalise_name, parse_interfaces
+
+        scope = self.ssp.context_scope if self.ssp else None
+        names = {normalise_name(n) for n in parse_interfaces(scope.interfaces if scope else None)}
+        return normalise_name(self.system_name) in names
+
+    @property
+    def is_stale(self) -> bool:
+        """A BIA-sourced row whose system was removed from the BIA (decision 20261118-1455)."""
+        return self.source is InterconnectionSource.BIA and not self.in_bia
+
+    @property
+    def is_deletable(self) -> bool:
+        """Live BIA rows cannot be deleted: reconcile would add them again (CHK003)."""
+        return not (self.source is InterconnectionSource.BIA and self.in_bia)
+
     def __repr__(self) -> str:  # pragma: no cover
         return f"<SSPInterconnection {self.system_name!r}>"
 

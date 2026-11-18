@@ -253,8 +253,8 @@ def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):
         assert ic.system_name == "External HR System"
 
 
-def test_seed_interconnections_from_interfaces(ssp_app, logged_in_user):
-    """Interconnections are seeded from ContextScope.interfaces on SSP creation."""
+def test_create_reconciles_interconnections_from_interfaces(ssp_app, logged_in_user):
+    """Creating an SSP adds a BIA-sourced row per interface (decision 20261118-1455)."""
     with ssp_app.app_context():
         scope = ContextScope(
             name="Iface System",
@@ -269,10 +269,139 @@ def test_seed_interconnections_from_interfaces(ssp_app, logged_in_user):
     with ssp_app.app_context():
         ssp = SSPlan.query.filter_by(context_scope_id=scope_id).first()
         assert ssp is not None
-        names = {ic.system_name for ic in ssp.interconnections}
-        assert "System A" in names
-        assert "System B" in names
-        assert "System C" in names
+        assert {(ic.system_name, ic.source.value) for ic in ssp.interconnections} == {
+            ("System A", "bia"),
+            ("System B", "bia"),
+            ("System C", "bia"),
+        }
+
+
+# --- Interconnection reconcile (Task 3; decisions 20261118-1455, -1530) -------
+
+
+def _ssp_with_interfaces(ssp_app, logged_in_user, interfaces, manual=()):
+    """Create a scope + SSP (via the route) and optional manual rows; return (scope_id, ssp_id)."""
+    with ssp_app.app_context():
+        scope = ContextScope(name="Reconcile System", interfaces=interfaces)
+        db.session.add(scope)
+        db.session.commit()
+        scope_id = scope.id
+    logged_in_user.post(f"/ssp/create/{scope_id}")
+    with ssp_app.app_context():
+        ssp = SSPlan.query.filter_by(context_scope_id=scope_id).one()
+        for name in manual:
+            db.session.add(SSPInterconnection(ssp_id=ssp.id, system_name=name, sort_order=99))
+        db.session.commit()
+        return scope_id, ssp.id
+
+
+def _rows(ssp_app, ssp_id):
+    with ssp_app.app_context():
+        return sorted(
+            (ic.system_name, ic.source.value)
+            for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id).all()
+        )
+
+
+def _set_interfaces(ssp_app, scope_id, interfaces):
+    with ssp_app.app_context():
+        db.session.get(ContextScope, scope_id).interfaces = interfaces
+        db.session.commit()
+
+
+def test_view_adds_new_bia_interfaces_without_duplicates(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B")
+    _set_interfaces(ssp_app, scope_id, "A; B\nC")
+
+    assert logged_in_user.get(f"/ssp/{ssp_id}").status_code == 200
+    assert logged_in_user.get(f"/ssp/{ssp_id}").status_code == 200
+
+    assert _rows(ssp_app, ssp_id) == [("A", "bia"), ("B", "bia"), ("C", "bia")]
+
+
+def test_normalised_names_match(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A B")
+    _set_interfaces(ssp_app, scope_id, "  a   b ;A B")
+
+    logged_in_user.get(f"/ssp/{ssp_id}/interconnections")
+
+    assert _rows(ssp_app, ssp_id) == [("A B", "bia")]
+
+
+def test_removed_interface_is_flagged_stale_not_deleted(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B", manual=["Manual X"])
+    _set_interfaces(ssp_app, scope_id, "B")
+
+    page = logged_in_user.get(f"/ssp/{ssp_id}/interconnections").get_data(as_text=True)
+
+    assert _rows(ssp_app, ssp_id) == [("A", "bia"), ("B", "bia"), ("Manual X", "manual")]
+    with ssp_app.app_context():
+        stale = {ic.system_name: ic.is_stale for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id)}
+    assert stale == {"A": True, "B": False, "Manual X": False}
+    assert page.count("No longer in BIA") == 1
+    assert "(no longer in BIA)" in logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+
+
+def test_matching_manual_row_is_adopted_with_its_details(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "", manual=["Bank API"])
+    with ssp_app.app_context():
+        row = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one()
+        row.security_contact = "soc@example.com"
+        db.session.commit()
+    _set_interfaces(ssp_app, scope_id, "bank  api")
+
+    logged_in_user.get(f"/ssp/{ssp_id}")
+
+    with ssp_app.app_context():
+        row = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one()
+        assert (row.system_name, row.source.value, row.security_contact) == ("Bank API", "bia", "soc@example.com")
+
+
+def test_bia_row_name_cannot_be_changed(ssp_app, logged_in_user):
+    _scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "HR System")
+    with ssp_app.app_context():
+        entry_id = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one().id
+
+    page = logged_in_user.get(f"/ssp/{ssp_id}/interconnections/{entry_id}/edit").get_data(as_text=True)
+    assert "readonly" in page
+    logged_in_user.post(
+        f"/ssp/{ssp_id}/interconnections/{entry_id}/edit",
+        data={"system_name": "Renamed", "agreement_type": "isa", "data_direction": "incoming", "notes": "n"},
+    )
+
+    with ssp_app.app_context():
+        entry = db.session.get(SSPInterconnection, entry_id)
+        assert entry.system_name == "HR System"
+        assert entry.agreement_type.value == "isa"
+
+
+def test_live_bia_row_cannot_be_deleted_but_stale_and_manual_can(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B", manual=["M"])
+    with ssp_app.app_context():
+        ids = {ic.system_name: ic.id for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id)}
+
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['A']}/delete")
+    assert ("A", "bia") in _rows(ssp_app, ssp_id)
+
+    _set_interfaces(ssp_app, scope_id, "B")
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['A']}/delete")
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['M']}/delete")
+    assert _rows(ssp_app, ssp_id) == [("B", "bia")]
+
+
+def test_reconcile_writes_audit_event(ssp_app, logged_in_user):
+    from scaffold.models import AuditLog
+
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "", manual=["Kept"])
+    _set_interfaces(ssp_app, scope_id, "kept; New")
+
+    logged_in_user.get(f"/ssp/{ssp_id}")
+    logged_in_user.get(f"/ssp/{ssp_id}")
+
+    with ssp_app.app_context():
+        events = AuditLog.query.filter_by(event_type="ssp_interconnections_reconciled").all()
+        assert len(events) == 1
+        assert events[0].payload == {"added": ["New"], "adopted": ["Kept"]}
 
 
 def test_seed_controls_from_risks(ssp_app, logged_in_user):

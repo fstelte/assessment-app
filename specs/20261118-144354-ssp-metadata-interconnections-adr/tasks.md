@@ -233,7 +233,7 @@ completeness.
 ## Progress
 - [x] Task 1: Fix SSP metadata save
 - [x] Task 2: Models and single migration
-- [ ] Task 3: Interconnection reconcile from BIA
+- [x] Task 3: Interconnection reconcile from BIA
 - [ ] Task 4: Admin SSP option lists page
 - [ ] Task 5: SSP edit/view/print, list selection, ADR register URL, monitoring wording
 - [x] Task 6: Architecture overview, PDF support, upload guidance and gateway limit

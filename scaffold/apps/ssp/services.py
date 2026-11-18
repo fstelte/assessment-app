@@ -104,19 +104,72 @@ def parse_interfaces(raw: str | None) -> list[str]:
     return names
 
 
-def seed_interconnections(ssp: "SSPlan") -> None:
-    """Parse ContextScope.interfaces into SSPInterconnection rows."""
-    from .models import InterconnectionSource, SSPInterconnection
+def reconcile_interconnections(ssp: "SSPlan") -> bool:
+    """Bring the SSP's interconnections in line with the BIA's ``interfaces`` (decision 20261118-1455).
 
-    entries = parse_interfaces(ssp.context_scope.interfaces)
-    for idx, entry in enumerate(entries):
-        interconnection = SSPInterconnection(
-            ssp_id=ssp.id,
-            system_name=entry[:255],
-            sort_order=idx,
-            source=InterconnectionSource.BIA,
+    The BIA owns which systems are interconnected; the SSP owns the details.
+    Idempotent and never deletes:
+
+    - adds a ``bia`` row for every BIA interface without a matching row
+      (names compared with :func:`normalise_name`);
+    - adopts a matching ``manual`` row as ``bia``, keeping its details;
+    - leaves ``bia`` rows that are no longer in the BIA for the user to remove
+      (they show as stale).
+
+    Before writing, the SSP row is locked (``SELECT ... FOR UPDATE``; a no-op
+    on SQLite) and the work is recomputed, so concurrent first views cannot
+    add duplicates (decision 20261118-1530, CHK025). Returns True when rows
+    changed; the caller commits.
+    """
+    from ...core.audit import log_event
+    from .models import InterconnectionSource, SSPInterconnection, SSPlan
+
+    wanted = parse_interfaces(ssp.context_scope.interfaces if ssp.context_scope else None)
+    if not wanted:
+        return False
+
+    def _pending(rows):
+        by_key = {}
+        for row in rows:
+            by_key.setdefault(normalise_name(row.system_name), []).append(row)
+        missing, adopt = [], []
+        for name in wanted:
+            matches = by_key.get(normalise_name(name))
+            if not matches:
+                missing.append(name)
+            elif not any(r.source is InterconnectionSource.BIA for r in matches):
+                adopt.append(matches[0])
+        return missing, adopt
+
+    missing, adopt = _pending(ssp.interconnections)
+    if not missing and not adopt:
+        return False
+
+    db.session.query(SSPlan.id).filter(SSPlan.id == ssp.id).with_for_update().one()
+    rows = SSPInterconnection.query.filter_by(ssp_id=ssp.id).all()
+    missing, adopt = _pending(rows)
+    if not missing and not adopt:
+        return False
+
+    for row in adopt:
+        row.source = InterconnectionSource.BIA
+    next_order = max((r.sort_order for r in rows), default=-1) + 1
+    for offset, name in enumerate(missing):
+        ssp.interconnections.append(
+            SSPInterconnection(
+                system_name=name[:255],
+                sort_order=next_order + offset,
+                source=InterconnectionSource.BIA,
+            )
         )
-        db.session.add(interconnection)
+    db.session.flush()
+    log_event(
+        action="ssp_interconnections_reconciled",
+        entity_type="ssp_plan",
+        entity_id=ssp.id,
+        details={"added": missing, "adopted": [row.system_name for row in adopt]},
+    )
+    return True
 
 
 # ---------------------------------------------------------------------------

@@ -257,7 +257,7 @@
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for ic in ssp.interconnections %}
         <tr>
-          <td class="py-2 pr-3">{{ ic.system_name }}</td>
+          <td class="py-2 pr-3">{{ ic.system_name }}{% if ic.is_stale %}<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/20">{{ _('ssp.interconnections.badge.stale') }}</span>{% endif %}</td>
           <td class="py-2 pr-3 text-[var(--color-muted)]">{{ ic.owning_organization or "—" }}</td>
           <td class="py-2 pr-3">{{ ic.agreement_type.value | upper }}</td>
           <td class="py-2 pr-3 capitalize">{{ ic.data_direction.value | replace("_", " ") }}</td>

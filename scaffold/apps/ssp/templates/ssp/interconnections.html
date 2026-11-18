@@ -16,6 +16,8 @@
     {% endfor %}
   {% endwith %}
 
+  <p class="mb-4 text-sm text-[var(--color-muted)]">{{ _('ssp.interconnections.bia_intro') }}</p>
+
   {# Existing entries #}
   {% if ssp.interconnections %}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-8">
@@ -33,7 +35,7 @@
         <tbody class="divide-y divide-[var(--color-border)]">
           {% for ic in ssp.interconnections %}
           <tr>
-            <td class="px-5 py-3">{{ ic.system_name }}</td>
+            <td class="px-5 py-3">{{ ic.system_name }}{% if ic.source.value == 'bia' %}<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20">{{ _('ssp.interconnections.badge.bia') }}</span>{% endif %}{% if ic.is_stale %}<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/20">{{ _('ssp.interconnections.badge.stale') }}</span>{% endif %}</td>
             <td class="px-3 py-3 text-[var(--color-muted)]">{{ ic.owning_organization or "—" }}</td>
             <td class="px-3 py-3">{{ ic.agreement_type.value | upper }}</td>
             <td class="px-3 py-3 capitalize">{{ ic.data_direction.value | replace("_", " ") }}</td>
@@ -41,10 +43,15 @@
             <td class="px-3 py-3">
               <div class="flex gap-2">
                 <a href="{{ url_for('ssp.edit_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" class="text-xs text-primary-500 hover:underline">{{ _('ssp.interconnections.edit') }}</a>
+                {% if ic.is_deletable %}
                 <form method="POST" action="{{ url_for('ssp.delete_interconnection', ssp_id=ssp.id, entry_id=ic.id) }}" onsubmit="return confirm('{{ _('ssp.interconnections.remove_confirm') }}')">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('ssp.interconnections.remove') }}</button>
                 </form>
+                {% else %}
+                <button type="button" disabled class="text-xs text-[var(--color-muted)] cursor-not-allowed" title="{{ _('ssp.interconnections.remove_live_bia_hint') }}" aria-describedby="ic-live-{{ ic.id }}">{{ _('ssp.interconnections.remove') }}</button>
+                <span id="ic-live-{{ ic.id }}" class="sr-only">{{ _('ssp.interconnections.remove_live_bia_hint') }}</span>
+                {% endif %}
               </div>
             </td>
           </tr>

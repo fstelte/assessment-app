@@ -3678,7 +3678,18 @@
       "add_section": "Add Interconnection",
       "edit": "Edit",
       "remove": "Remove",
-      "remove_confirm": "Remove this interconnection?"
+      "remove_confirm": "Remove this interconnection?",
+      "bia_intro": "Interconnected systems come from the interfaces recorded in the BIA and are added here automatically. Record the agreement, data direction and security contact for each one. You can also add systems that are not in the BIA.",
+      "badge": {
+        "bia": "BIA",
+        "stale": "No longer in BIA"
+      },
+      "print_stale_suffix": "(no longer in BIA)",
+      "remove_live_bia_hint": "Remove it from the BIA interfaces first.",
+      "name_from_bia_hint": "The name comes from the BIA interfaces; change it there.",
+      "flash": {
+        "delete_live_bia": "\"{name}\" is still listed in the BIA interfaces. Remove it from the BIA first."
+      }
     },
     "edit_interconnection": {
       "title": "Edit Interconnection",

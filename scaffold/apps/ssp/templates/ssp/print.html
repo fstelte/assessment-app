@@ -198,7 +198,7 @@
         <tbody class="divide-y divide-slate-800">
           {% for ic in ssp.interconnections %}
           <tr>
-            <td class="px-6 py-2 text-white align-top">{{ ic.system_name }}</td>
+            <td class="px-6 py-2 text-white align-top">{{ ic.system_name }}{% if ic.is_stale %} {{ _('ssp.interconnections.print_stale_suffix') }}{% endif %}</td>
             <td class="px-4 py-2 text-slate-400 align-top">{{ ic.owning_organization or "—" }}</td>
             <td class="px-4 py-2 text-slate-300 uppercase align-top">{{ ic.agreement_type.value }}</td>
             <td class="px-4 py-2 text-slate-300 capitalize align-top">{{ ic.data_direction.value | replace("_", " ") }}</td>
