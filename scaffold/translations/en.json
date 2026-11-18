@@ -3702,7 +3702,8 @@
       "section_laws": "Laws, Regulations & Policies",
       "section_dates": "Plan Dates",
       "section_monitoring": "Continuous Monitoring",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "no_law_options": "No laws, regulations or policies have been set up yet. Ask an administrator to add them under SSP lists."
     },
     "controls": {
       "page_title": "Section 14 — Security Controls",
@@ -3815,14 +3816,14 @@
       "add_milestone_btn": "Add Milestone",
       "help": {
         "authorization_boundary": "Describe the system boundary: which components, networks, and data stores are included in the authorization scope.",
-        "laws_regulations": "List applicable laws, regulations, and standards (e.g. GDPR, NIS2, ISO 27001, BIO). Include article references where relevant.",
+        "laws_regulations": "Select the laws, regulations and policies that apply to this system. Hold Ctrl (Cmd on Mac) to select several. Administrators maintain this list under Administration → SSP lists.",
         "plan_completion_date": "Target date for completing all sections of this SSP.",
         "plan_approval_date": "Date on which this SSP was formally reviewed and approved.",
         "monitoring_kpis_kris": "Key performance indicators (KPIs) and key risk indicators (KRIs) that measure the security posture of this system.",
         "monitoring_what": "Specify the controls, log sources, metrics, and events that are continuously monitored.",
         "monitoring_who": "Name the roles, teams, or individuals responsible for carrying out monitoring activities.",
         "monitoring_tools": "List the platforms, tools, or services used for monitoring (e.g. SIEM, IDS, vulnerability scanners).",
-        "monitoring_frequency": "How often is monitoring performed? (e.g. Continuously, Daily, Monthly, Quarterly)",
+        "monitoring_frequency": "How often progress on this SSP is reviewed. Administrators maintain the choices under Administration → SSP lists.",
         "system_name": "Name of the external or third-party system connected to this system.",
         "owning_organization": "Organization that owns or operates the connected system.",
         "agreement_type": "The formal agreement type that governs this interconnection (e.g. MOU, ISA).",
@@ -3837,12 +3838,15 @@
         "point_of_contact": "Name or role of the person accountable for completing this remediation.",
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
         "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
-        "status": "Current remediation status of this POA&M item."
+        "status": "Current remediation status of this POA&M item.",
+        "adr_register_url": "Optional link to the page where this system's security architecture decisions are documented (for example a Confluence page). Must start with http:// or https://."
       },
       "errors": {
         "url_invalid": "Enter a full web address starting with http:// or https://.",
         "url_too_long": "The web address may be at most 500 characters."
-      }
+      },
+      "adr_register_url": "ADR register (link)",
+      "option_inactive": "{name} (inactive)"
     },
     "adr": {
       "forms": {
@@ -3898,6 +3902,9 @@
         "context": "Context",
         "decision": "Decision",
         "consequences": "Consequences"
+      },
+      "register": {
+        "label": "ADR register"
       }
     },
     "architecture_overview": {
@@ -3933,6 +3940,9 @@
         "confirm": "Delete version {version} of the architecture overview? This cannot be undone.",
         "flash": "Architecture overview version deleted."
       }
+    },
+    "monitoring": {
+      "intro": "Continuous monitoring describes how progress on this System Security Plan is tracked: which KPIs and KRIs are measured, what is monitored, who does it, with which tools and how often."
     }
   }
 }

@@ -274,8 +274,12 @@
 
   {# ── §12 Laws / Regulations ── #}
   {{ section_card("12", _('ssp.sections.laws')) }}
-  {% if ssp.laws_regulations %}
-  <p class="text-sm whitespace-pre-wrap">{{ ssp.laws_regulations }}</p>
+  {% if ssp.laws_regulations_options %}
+  <ul class="flex flex-wrap gap-1.5 text-sm">
+    {% for option in ssp.laws_regulations_options %}
+    <li class="inline-flex items-center px-2 py-0.5 rounded-md bg-white/5 border border-[var(--color-border)]"{% if option.description %} title="{{ option.description }}"{% endif %}>{{ option.name }}</li>
+    {% endfor %}
+  </ul>
   {% else %}
   <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.not_specified') }}</p>
   {% endif %}
@@ -436,6 +440,7 @@
 
   {# ── Continuous Monitoring ── #}
   {{ section_card("CM", _('ssp.sections.monitoring')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('ssp.monitoring.intro') }}</p>
   <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
     <div class="sm:col-span-2">
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.kpis_kris') }}</dt>
@@ -517,6 +522,10 @@
 
   {# ── Architecture Decision Records Summary ── #}
   {{ section_card("ADR", _('ssp.sections.adrs')) }}
+  {% if ssp.adr_register_url %}
+  <p class="text-sm mb-3"><span class="text-[var(--color-muted)]">{{ _('ssp.adrs.register.label') }}:</span>
+    <a href="{{ ssp.adr_register_url }}" target="_blank" rel="noopener noreferrer" class="text-primary-500 hover:underline break-all">{{ ssp.adr_register_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a></p>
+  {% endif %}
   {% if ssp.adr_records %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">

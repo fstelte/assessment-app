@@ -219,8 +219,10 @@
         <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.laws') }}</h2>
       </div>
       <div class="p-6 text-sm">
-        {% if ssp.laws_regulations %}
-        <p class="whitespace-pre-wrap text-white">{{ ssp.laws_regulations }}</p>
+        {% if ssp.laws_regulations_options %}
+        <ul class="list-disc pl-5 text-white space-y-0.5">
+          {% for option in ssp.laws_regulations_options %}<li>{{ option.name }}</li>{% endfor %}
+        </ul>
         {% else %}
         <p class="text-slate-500 italic">{{ _('ssp.labels.not_specified') }}</p>
         {% endif %}
@@ -356,6 +358,7 @@
         <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.monitoring') }}</h2>
       </div>
       <div class="p-6 space-y-4 text-sm">
+        <p class="text-slate-400">{{ _('ssp.monitoring.intro') }}</p>
         <div>
           <p class="text-xs font-bold uppercase text-slate-400 mb-1">{{ _('ssp.labels.kpis_kris') }}</p>
           <p class="whitespace-pre-wrap text-white">{{ ssp.monitoring_kpis_kris or "—" }}</p>
@@ -439,6 +442,9 @@
         <span class="text-xs font-bold px-2 py-0.5 rounded bg-primary-600/20 text-primary-400">§ADR</span>
         <h2 class="font-bold text-sm uppercase tracking-wide text-slate-300">{{ _('ssp.sections.adrs') }}</h2>
       </div>
+      {% if ssp.adr_register_url %}
+      <p class="px-6 pt-4 text-sm text-slate-300">{{ _('ssp.adrs.register.label') }}: <span class="text-white break-all">{{ ssp.adr_register_url }}</span></p>
+      {% endif %}
       {% if ssp.adr_records %}
       <table class="w-full text-sm">
         <thead>

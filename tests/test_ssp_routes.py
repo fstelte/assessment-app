@@ -215,11 +215,11 @@ def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
     resp = logged_in_user.post(
         f"/ssp/{ssp_id}/edit",
         data={
-            "laws_regulations": "GDPR, NIS2",
             "authorization_boundary": "Internal network only",
             "plan_completion_date": "2026-12-31",
             "plan_approval_date": "",
             "monitoring_kpis_kris": "Patch latency",
+            "monitoring_frequency_id": "0",
         },
         follow_redirects=False,
     )
@@ -227,9 +227,128 @@ def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
     assert resp.headers["Location"].endswith(f"/ssp/{ssp_id}")
     with ssp_app.app_context():
         ssp = db.session.get(SSPlan, ssp_id)
-        assert ssp.laws_regulations == "GDPR, NIS2"
         assert ssp.authorization_boundary == "Internal network only"
         assert ssp.monitoring_kpis_kris == "Patch latency"
+
+
+# --- Option lists, ADR register and monitoring wording (Task 5) --------------
+
+
+def _options(ssp_app, *specs):
+    """Create SSPOption rows from (kind, name, is_active) tuples; return {name: id}."""
+    from scaffold.apps.ssp.models import SSPOption, SSPOptionKind
+
+    with ssp_app.app_context():
+        rows = [SSPOption(kind=SSPOptionKind(kind), name=name, is_active=active) for kind, name, active in specs]
+        db.session.add_all(rows)
+        db.session.commit()
+        return {row.name: row.id for row in rows}
+
+
+def _edit(client, ssp_id, **data):
+    payload = {"authorization_boundary": "", "monitoring_frequency_id": "0"}
+    payload.update(data)
+    return client.post(f"/ssp/{ssp_id}/edit", data=payload)
+
+
+def test_laws_and_frequency_are_selected_from_lists(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+    ids = _options(
+        ssp_app,
+        ("law_regulation", "NIS2", True),
+        ("law_regulation", "AVG", True),
+        ("monitoring_frequency", "Monthly", True),
+    )
+
+    resp = _edit(
+        logged_in_user, ssp_id,
+        laws_option_ids=[str(ids["NIS2"]), str(ids["AVG"])],
+        monitoring_frequency_id=str(ids["Monthly"]),
+    )
+    assert resp.status_code == 302
+
+    with ssp_app.app_context():
+        ssp = db.session.get(SSPlan, ssp_id)
+        assert [o.name for o in ssp.laws_regulations_options] == ["AVG", "NIS2"]
+        assert ssp.monitoring_frequency_option.name == "Monthly"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert ">AVG</li>" in view and ">NIS2</li>" in view and "<dd>Monthly</dd>" in view
+    export = logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+    assert "<li>AVG</li>" in export and "Monthly" in export
+
+
+def test_inactive_linked_option_survives_save_and_is_marked_in_form(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import SSPOption
+
+    _, ssp_id = scope_with_ssp
+    ids = _options(
+        ssp_app,
+        ("law_regulation", "Old law", True),
+        ("law_regulation", "Retired law", False),
+        ("monitoring_frequency", "Yearly", True),
+    )
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Old law"])], monitoring_frequency_id=str(ids["Yearly"]))
+    with ssp_app.app_context():
+        for name in ("Old law", "Yearly"):
+            SSPOption.query.filter_by(name=name).one().is_active = False
+        db.session.commit()
+
+    form_page = logged_in_user.get(f"/ssp/{ssp_id}/edit").get_data(as_text=True)
+    assert "Old law (inactive)" in form_page and "Yearly (inactive)" in form_page
+    assert "Retired law" not in form_page
+
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Old law"])], monitoring_frequency_id=str(ids["Yearly"]))
+    with ssp_app.app_context():
+        ssp = db.session.get(SSPlan, ssp_id)
+        assert [o.name for o in ssp.laws_regulations_options] == ["Old law"]
+        assert ssp.monitoring_frequency_option.name == "Yearly"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert "(inactive)" not in view
+
+    # An inactive option that this SSP does not use cannot be submitted.
+    resp = _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Retired law"])])
+    assert resp.status_code == 200
+
+
+def test_adr_register_url_is_validated_and_rendered(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+
+    resp = _edit(logged_in_user, ssp_id, adr_register_url="javascript:alert(1)")
+    assert resp.status_code == 200
+    assert b"Enter a full web address" in resp.data
+
+    _edit(logged_in_user, ssp_id, adr_register_url="https://wiki.example.com/adr")
+    with ssp_app.app_context():
+        assert db.session.get(SSPlan, ssp_id).adr_register_url == "https://wiki.example.com/adr"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert 'href="https://wiki.example.com/adr" target="_blank" rel="noopener noreferrer"' in view
+
+
+def test_ssp_updated_audit_contains_selection(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.models import AuditLog
+
+    _, ssp_id = scope_with_ssp
+    ids = _options(ssp_app, ("law_regulation", "BIO", True), ("monitoring_frequency", "Weekly", True))
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["BIO"])], monitoring_frequency_id=str(ids["Weekly"]))
+
+    with ssp_app.app_context():
+        event = AuditLog.query.filter_by(event_type="ssp_updated").order_by(AuditLog.id.desc()).first()
+        assert event.payload["law_option_ids"] == [ids["BIO"]]
+        assert event.payload["monitoring_frequency_id"] == ids["Weekly"]
+
+
+@pytest.mark.parametrize(
+    ("locale", "text"),
+    [
+        ("en", "Continuous monitoring describes how progress on this System Security Plan is tracked"),
+        ("nl", "Continue monitoring beschrijft hoe de voortgang van dit System Security Plan wordt gevolgd"),
+    ],
+)
+def test_monitoring_intro_on_edit_view_and_export(ssp_app, scope_with_ssp, logged_in_user, locale, text):
+    _, ssp_id = scope_with_ssp
+
+    for url in (f"/ssp/{ssp_id}/edit", f"/ssp/{ssp_id}", f"/ssp/{ssp_id}/export/pdf"):
+        assert text in logged_in_user.get(url, query_string={"lang": locale}).get_data(as_text=True), url
 
 
 def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):

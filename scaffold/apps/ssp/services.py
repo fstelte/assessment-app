@@ -425,3 +425,32 @@ def configure_adr_form(form, *, ssp: "SSPlan", editing_adr: ADRRecord | None = N
         form.supersedes_id.choices = [(0, "—")] + [
             (adr.id, adr.title) for adr in candidates.order_by(ADRRecord.title.asc()).all()
         ]
+
+
+def configure_ssp_edit_form(form, ssp: "SSPlan") -> None:
+    """Fill the option-list choices on the SSP edit form (decisions 20261118-1500, -1530).
+
+    Choices are the active options, sorted by name, plus any inactive option the
+    SSP already uses, labelled "(inactive)" so saving never drops it.
+    """
+    from ...core.i18n import gettext as _
+    from .models import SSPOption, SSPOptionKind
+
+    def _choices(kind: SSPOptionKind, in_use_ids: set[int]) -> list[tuple[int, str]]:
+        options = (
+            SSPOption.query.filter(
+                SSPOption.kind == kind,
+                db.or_(SSPOption.is_active.is_(True), SSPOption.id.in_(in_use_ids or {-1})),
+            )
+            .order_by(db.func.lower(SSPOption.name))
+            .all()
+        )
+        return [
+            (o.id, o.name if o.is_active else _("ssp.forms.option_inactive", name=o.name))
+            for o in options
+        ]
+
+    law_ids = {o.id for o in ssp.laws_regulations_options}
+    form.laws_option_ids.choices = _choices(SSPOptionKind.LAW_REGULATION, law_ids)
+    frequency_ids = {ssp.monitoring_frequency_id} if ssp.monitoring_frequency_id else set()
+    form.monitoring_frequency_id.choices = [(0, "—")] + _choices(SSPOptionKind.MONITORING_FREQUENCY, frequency_ids)

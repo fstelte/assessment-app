@@ -94,11 +94,13 @@ def validate_external_url(form, field):
 class SSPEditForm(FlaskForm):
     """Edit SSP-specific metadata fields."""
 
-    laws_regulations = TextAreaField(
+    laws_option_ids = SelectMultipleField(
         _l("ssp.forms.laws_regulations"),
         validators=[Optional()],
+        choices=[],
+        coerce=int,
         description=_l("ssp.forms.help.laws_regulations"),
-        render_kw={"rows": 6},
+        render_kw={"size": 8},
     )
     authorization_boundary = TextAreaField(
         _l("ssp.forms.authorization_boundary"),
@@ -135,6 +137,18 @@ class SSPEditForm(FlaskForm):
         validators=[Optional()],
         description=_l("ssp.forms.help.monitoring_who"),
         render_kw={"rows": 3},
+    )
+    monitoring_frequency_id = SelectField(
+        _l("ssp.forms.monitoring_frequency"),
+        choices=[],
+        coerce=int,
+        description=_l("ssp.forms.help.monitoring_frequency"),
+    )
+    adr_register_url = StringField(
+        _l("ssp.forms.adr_register_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.forms.help.adr_register_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
     )
     monitoring_tools = TextAreaField(
         _l("ssp.forms.monitoring_tools"),

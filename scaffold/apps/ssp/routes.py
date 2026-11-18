@@ -38,12 +38,14 @@ from .models import (
     SSPControlEntry,
     SSPInterconnection,
     SSPlan,
+    SSPOption,
 )
 from ..bia.utils import get_cia_impact
 from ..bia.routes import _load_export_css, _send_export_response
 from .services import (
     build_environment_summary,
     configure_adr_form,
+    configure_ssp_edit_form,
     seed_controls,
     reconcile_interconnections,
     sync_scenario_controls_to_ssp,
@@ -286,6 +288,7 @@ def edit(ssp_id: int):
     """Edit SSP metadata."""
     ssp = _get_ssp_reconciled(ssp_id)
     form = SSPEditForm(obj=ssp)
+    configure_ssp_edit_form(form, ssp)
 
     # Build auto-retrieved boundary items from the related BIA
     context = ssp.context_scope
@@ -293,7 +296,13 @@ def edit(ssp_id: int):
     auto_interconnections = [i.system_name for i in ssp.interconnections if i.system_name]
 
     if form.validate_on_submit():
-        ssp.laws_regulations = form.laws_regulations.data
+        ssp.laws_regulations_options = (
+            SSPOption.query.filter(SSPOption.id.in_(form.laws_option_ids.data)).all()
+            if form.laws_option_ids.data
+            else []
+        )
+        ssp.monitoring_frequency_id = form.monitoring_frequency_id.data or None
+        ssp.adr_register_url = form.adr_register_url.data or None
         ssp.authorization_boundary = form.authorization_boundary.data
         ssp.plan_completion_date = form.plan_completion_date.data
         ssp.plan_approval_date = form.plan_approval_date.data
@@ -306,7 +315,11 @@ def edit(ssp_id: int):
             action="ssp_updated",
             entity_type="ssp_plan",
             entity_id=ssp.id,
-            details={"context_scope_id": ssp.context_scope_id},
+            details={
+                "context_scope_id": ssp.context_scope_id,
+                "law_option_ids": sorted(o.id for o in ssp.laws_regulations_options),
+                "monitoring_frequency_id": ssp.monitoring_frequency_id,
+            },
         )
         db.session.commit()
         flash("SSP updated.", "success")
@@ -314,6 +327,8 @@ def edit(ssp_id: int):
 
     # Auto-populate the boundary from the BIA when empty
     if request.method == "GET":
+        form.laws_option_ids.data = [o.id for o in ssp.laws_regulations_options]
+        form.monitoring_frequency_id.data = ssp.monitoring_frequency_id or 0
         if not ssp.authorization_boundary:
             all_auto = auto_components + auto_interconnections
             if all_auto:

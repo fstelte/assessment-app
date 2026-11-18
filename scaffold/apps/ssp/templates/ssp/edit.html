@@ -98,7 +98,8 @@
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
       <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_laws') }}</div>
       <div class="px-5 py-4">
-        {{ render_field_with_help(form.laws_regulations) }}
+        {{ render_field_with_help(form.laws_option_ids) }}
+        {% if not form.laws_option_ids.choices %}<p class="text-xs text-[var(--color-muted)] italic">{{ _('ssp.edit.no_law_options') }}</p>{% endif %}
       </div>
     </div>
 
@@ -113,12 +114,21 @@
     <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
       <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.edit.section_monitoring') }}</div>
       <div class="px-5 py-4">
+        <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('ssp.monitoring.intro') }}</p>
         {{ render_field_with_help(form.monitoring_kpis_kris) }}
         {{ render_field_with_help(form.monitoring_what) }}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {{ render_field_with_help(form.monitoring_who) }}
+          {{ render_field_with_help(form.monitoring_frequency_id) }}
         </div>
         {{ render_field_with_help(form.monitoring_tools) }}
+      </div>
+    </div>
+
+    <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card mb-6">
+      <div class="px-5 py-3 border-b border-[var(--color-border)] text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.sections.adrs') }}</div>
+      <div class="px-5 py-4">
+        {{ render_field_with_help(form.adr_register_url) }}
       </div>
     </div>
 
