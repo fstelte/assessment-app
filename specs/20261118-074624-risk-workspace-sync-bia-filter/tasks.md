@@ -517,7 +517,7 @@ which resolves the design's open question.
 - [x] Task 10: Approval columns, enum, helpers and migration
 - [x] Task 11: Reset listener on material change
 - [x] Task 12: Approve and reject routes
-- [ ] Task 13: Approval panel on the edit page
+- [x] Task 13: Approval panel on the edit page
 - [ ] Task 14: Dashboard pill and ?approval= filter
 - [ ] Task 15: Approval fields in the API
 - [ ] Task 16: Final validation and release notes

@@ -189,6 +189,54 @@ body[data-theme="dark"] .risk-control-preview {
   </div>
   {% endif %}
 
+  {% if approval %}
+  {% set approval_pills = {
+    'approved': 'risk-pill risk-pill--low',
+    'rejected': 'risk-pill risk-pill--critical',
+    'awaiting': 'risk-pill risk-pill--moderate',
+    'no_owner': 'risk-pill risk-pill--muted'
+  } %}
+  <section class="risk-form-card" aria-labelledby="risk-approval-heading" data-approval-state="{{ approval.state }}">
+    <div class="flex flex-wrap items-center gap-3">
+      <h2 id="risk-approval-heading" class="text-lg font-semibold">{{ _('risk.approval.title') }}</h2>
+      <span class="{{ approval_pills[approval.state] }}">{{ _('risk.approval.state.' + approval.state) }}</span>
+    </div>
+
+    {% if approval.state == 'no_owner' %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">{{ _('risk.approval.no_owner_hint') }}</p>
+    {% elif approval.decided_by %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">
+      {{ _('risk.approval.decided_by').format(name=approval.decided_by, date=risk.approval_decided_at.strftime('%d %b %Y')) }}
+    </p>
+    {% if risk.approval_comment %}
+    <p class="mt-1 text-sm whitespace-pre-wrap break-words">{{ risk.approval_comment }}</p>
+    {% endif %}
+    {% elif approval.previous_rejection %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">
+      {{ _('risk.approval.previously_rejected').format(name=approval.previous_rejection.by, date=approval.previous_rejection.at.strftime('%d %b %Y')) }}
+    </p>
+    {% if approval.previous_rejection.comment %}
+    <p class="mt-1 text-sm whitespace-pre-wrap break-words">{{ approval.previous_rejection.comment }}</p>
+    {% endif %}
+    {% endif %}
+
+    {% if approval.form %}
+    <form method="post" class="mt-4 flex flex-col gap-3" novalidate>
+      {{ approval.form.hidden_tag() }}
+      <label class="text-sm font-medium" for="approval-comment">{{ _('risk.approval.comment_label') }}</label>
+      {{ approval.form.comment(id='approval-comment', rows=3, maxlength=2000, class='w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30') }}
+      <p class="text-xs text-[var(--color-muted)]">{{ _('risk.approval.comment_help') }}</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" formaction="{{ url_for('risk.approve', risk_id=risk.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.approval.approve') }}</button>
+        <button type="submit" formaction="{{ url_for('risk.reject', risk_id=risk.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-red-400 text-red-400 hover:bg-red-400/10">{{ _('risk.approval.reject') }}</button>
+      </div>
+    </form>
+    {% elif approval.state != 'no_owner' %}
+    <p class="mt-2 text-xs text-[var(--color-muted)]">{{ _('risk.approval.owner_only_hint').format(name=risk.treatment_owner.full_name) }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
   {% if linked_scenario %}
   <div class="rounded-xl px-4 py-3 text-sm border bg-primary-500/10 border-primary-500/40 text-[var(--color-text)]" role="note">
     {{ _('risk.managed_by_threat.note') }}

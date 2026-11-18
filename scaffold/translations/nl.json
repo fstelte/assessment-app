@@ -259,6 +259,24 @@
     "help": {
       "impact_areas": "Selecteer elk domein dat verstoring ondervindt wanneer dit risico zich voordoet.",
       "component_ids": "Alleen componenten waarbij risicotracking is ingeschakeld in een BIA verschijnen hier."
+    },
+    "approval": {
+      "title": "Goedkeuring door eigenaar",
+      "state": {
+        "awaiting": "Wacht op goedkeuring",
+        "approved": "Goedgekeurd",
+        "rejected": "Afgewezen",
+        "no_owner": "Geen eigenaar"
+      },
+      "no_owner_hint": "Wijs een eigenaar toe om goedkeuring te vragen.",
+      "decided_by": "Door {name} op {date}",
+      "previously_rejected": "Eerder afgewezen door {name} op {date}:",
+      "unknown_user": "Onbekende gebruiker",
+      "comment_label": "Toelichting",
+      "comment_help": "Optioneel bij goedkeuren, verplicht bij afwijzen. Max. 2000 tekens.",
+      "approve": "Goedkeuren",
+      "reject": "Afwijzen",
+      "owner_only_hint": "Alleen de eigenaar ({name}) kan dit risico goedkeuren of afwijzen."
     }
   },
   "bia": {

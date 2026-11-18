@@ -438,7 +438,40 @@ def edit(risk_id: int):
         linked_scenario=linked_scenario,
         linked_scenario_url=linked_scenario_url,
         RiskTreatmentOption=RiskTreatmentOption,
+        approval=_approval_panel(risk),
     )
+
+
+def _approval_panel(risk: Risk) -> dict:
+    """Context for the approval panel on the edit page (decisions 20261118-1048, -1058)."""
+
+    from ...models.audit import AuditLog
+
+    is_owner = risk.treatment_owner_id is not None and risk.treatment_owner_id == current_user.id
+    panel = {
+        "state": risk.approval_state,
+        "is_owner": is_owner,
+        "decided_by": _display_name(risk.approval_decided_by) if risk.approval_status else None,
+        "form": RiskApprovalForm(formdata=None, fingerprint=risk.approval_fingerprint()) if is_owner else None,
+        "previous_rejection": None,
+    }
+    if risk.approval_status is None:
+        entry = (
+            AuditLog.query.filter_by(event_type="risk_rejected", target_type="risk", target_id=str(risk.id))
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        if entry is not None:
+            panel["previous_rejection"] = {
+                "by": _display_name(entry.actor) if entry.actor else (entry.actor_name or _display_name(None)),
+                "at": entry.created_at,
+                "comment": (entry.payload or {}).get("comment"),
+            }
+    return panel
+
+
+def _display_name(user) -> str:
+    return user.full_name if user is not None else _("risk.approval.unknown_user")
 
 
 @bp.route("/<int:risk_id>/close", methods=["POST"])

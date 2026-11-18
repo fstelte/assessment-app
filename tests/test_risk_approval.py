@@ -501,3 +501,79 @@ def test_anonymous_is_redirected_to_login(client):
     assert resp.status_code in (302, 401)
     db.session.refresh(risk)
     assert risk.approval_state == "awaiting"
+
+
+# ---------------------------------------------------------------------------
+# Task 13: approval panel on the edit page (decisions 20261118-1048, -1058)
+# ---------------------------------------------------------------------------
+
+
+def _edit_page(client, risk: Risk) -> str:
+    resp = client.get(f"/risk/{risk.id}/edit")
+    assert resp.status_code == 200
+    return resp.get_data(as_text=True)
+
+
+def test_owner_sees_decision_buttons_with_current_fingerprint(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+
+    html = _edit_page(client, risk)
+
+    assert 'data-approval-state="awaiting"' in html
+    assert f'formaction="/risk/{risk.id}/approve"' in html
+    assert f'formaction="/risk/{risk.id}/reject"' in html
+    assert f'value="{risk.approval_fingerprint()}"' in html
+
+
+def test_non_owner_sees_state_but_no_buttons(client):
+    owner = _user()
+    risk = _approved_risk(owner)
+    _sign_in(client, _user("someone@example.com"))
+
+    html = _edit_page(client, risk)
+
+    assert 'data-approval-state="approved"' in html
+    assert "/approve" not in html
+    assert "ok" in html  # the decision's comment
+    assert owner.full_name in html
+
+
+def test_no_owner_shows_hint(client):
+    owner = _user()
+    risk = _undecided_risk(owner)
+    risk.treatment_owner_id = None
+    db.session.commit()
+    _sign_in(client, owner)
+
+    html = _edit_page(client, risk)
+
+    assert 'data-approval-state="no_owner"' in html
+    assert "Assign an owner to request approval." in html
+    assert "/approve" not in html
+
+
+def test_previous_rejection_reason_shown_after_reset(client):
+    owner = _user()
+    owner.first_name, owner.last_name = "Olive", "Owner"
+    risk = _undecided_risk(owner)
+    _sign_in(client, owner)
+    client.post(f"/risk/{risk.id}/reject", data={"fingerprint": risk.approval_fingerprint(), "comment": "Impact is understated"})
+    risk.impact = RiskImpact.CATASTROPHIC  # manager revises -> reset
+    db.session.commit()
+    db.session.refresh(risk)
+    assert risk.approval_state == "awaiting"
+
+    html = _edit_page(client, risk)
+
+    assert "Previously rejected by Olive Owner on" in html
+    assert "Impact is understated" in html
+
+
+def test_new_risk_page_has_no_approval_panel(client):
+    _sign_in(client, _user())
+
+    html = client.get("/risk/new").get_data(as_text=True)
+
+    assert "data-approval-state" not in html

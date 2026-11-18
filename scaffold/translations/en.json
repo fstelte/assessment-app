@@ -2195,6 +2195,24 @@
     "help": {
       "impact_areas": "Select every domain that experiences disruption when this risk materialises.",
       "component_ids": "Only components with risk tracking enabled inside a BIA appear here."
+    },
+    "approval": {
+      "title": "Owner approval",
+      "state": {
+        "awaiting": "Awaiting approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "no_owner": "No owner"
+      },
+      "no_owner_hint": "Assign an owner to request approval.",
+      "decided_by": "By {name} on {date}",
+      "previously_rejected": "Previously rejected by {name} on {date}:",
+      "unknown_user": "Unknown user",
+      "comment_label": "Comment",
+      "comment_help": "Optional when approving, required when rejecting. Max. 2000 characters.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "owner_only_hint": "Only the owner ({name}) can approve or reject this risk."
     }
   },
   "assessments": {
