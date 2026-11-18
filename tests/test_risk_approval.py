@@ -337,7 +337,12 @@ def test_pasta_republish_resets_on_material_change():
         likelihood_score=1,  # rare, was likely
         impact_score=4,
         treatment="mitigate",
-        finding=SimpleNamespace(title=risk.title, description=risk.description),
+        finding=SimpleNamespace(
+            title=risk.title,
+            description=risk.description,
+            # Same owner as the risk, so only the chance change resets the decision.
+            stage_record=SimpleNamespace(threat_model=SimpleNamespace(owner_id=risk.treatment_owner_id)),
+        ),
         published_risk_id=risk.id,
     )
 

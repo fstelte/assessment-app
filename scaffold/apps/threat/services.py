@@ -309,6 +309,7 @@ def _risk_sync_snapshot(risk) -> dict:
         "chance": risk.chance.value if risk.chance else None,
         "impact": risk.impact.value if risk.impact else None,
         "closed": risk.is_closed,
+        "treatment_owner_id": risk.treatment_owner_id,
     }
 
 
@@ -333,6 +334,18 @@ def _log_risk_sync(risk, scenario: ThreatScenario, before: dict, approval_reset:
             entity_id=risk.id,
             details={"scenario_id": scenario.id, "changes": changes, "approval_reset": approval_reset},
         )
+
+
+def _threat_owner_id(scenario: ThreatScenario) -> int | None:
+    """The risk owner for a synced scenario: its own owner, else the threat model's.
+
+    Decision 20261118-1545. Returns None when neither is set, so sync clears the
+    risk owner.
+    """
+    if scenario.owner_id:
+        return scenario.owner_id
+    model = scenario.threat_model
+    return model.owner_id if model is not None else None
 
 
 def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
@@ -375,6 +388,7 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
             RiskImpact(_IMPACT_MAP[max(1, min(5, scenario.residual_impact))])
             if has_residual else None
         ),
+        "treatment_owner_id": _threat_owner_id(scenario),
     }
     is_mitigated = scenario.status is ScenarioStatus.MITIGATED
 
@@ -662,12 +676,18 @@ def publish_pasta_conclusion_to_risk(conclusion, published_by_user) -> None:
     title = finding.title if finding else "PASTA Risk Conclusion"
     description = (finding.description or title).strip()
 
+    # PASTA conclusions have no owner; the threat model's owner owns the risk
+    # (decision 20261118-1545).
+    stage_record = finding.stage_record if finding else None
+    model = stage_record.threat_model if stage_record else None
+
     fields = {
         "title": title,
         "description": description,
         "chance": RiskChance(_CHANCE_MAP[likelihood]),
         "impact": RiskImpact(_IMPACT_MAP[impact]),
         "treatment": treatment,
+        "treatment_owner_id": model.owner_id if model is not None else None,
     }
 
     if conclusion.published_risk_id is None:

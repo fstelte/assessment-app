@@ -206,6 +206,7 @@ completeness.
   - the hint appearing only for threat-linked risks.
 - **Note:** adding `treatment_owner_id` to `_risk_sync_snapshot` changes the audit `changes` diff. Update any existing assertions in `tests/test_threat_risk_sync.py` that compare the snapshot exactly.
 - **Evidence:** `pytest tests/test_threat_risk_sync.py tests/test_risk_approval.py` is green.
+- **Implementation note:** the hint is on `risk/form.html` only. `GET /admin/risks/<id>` already returns 500 before this work: `admin/_risk_form.html` renders `form.category`, `form.owner_id`, `form.probability` and `form.status`, none of which exist on `RiskForm`. Repairing that page is out of scope here and is reported as a follow-up.
 
 ### Integration & Polish
 
@@ -240,5 +241,5 @@ completeness.
 - [ ] Task 8: POA&M Jira-first
 - [ ] Task 9: ADR external link, either/or rule, "Security ADRs" wording
 - [ ] Task 10: ADR delete with unlink and restore
-- [ ] Task 12: Risk owner from threat owner
+- [x] Task 12: Risk owner from threat owner
 - [ ] Task 11: Translations, docs, release notes, graph update

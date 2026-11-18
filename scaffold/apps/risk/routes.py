@@ -428,6 +428,17 @@ def create():
     )
 
 
+def _owner_from_threat(risk: Risk, linked_scenario) -> bool:
+    """True when threat sync sets this risk's owner (decision 20261118-1545)."""
+    if linked_scenario is not None:
+        return True
+    from ..threat.models import PastaRiskConclusion
+
+    return db.session.query(
+        PastaRiskConclusion.query.filter_by(published_risk_id=risk.id).exists()
+    ).scalar()
+
+
 @bp.route("/<int:risk_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(risk_id: int):
@@ -543,6 +554,7 @@ def edit(risk_id: int):
         severity=severity,
         linked_scenario=linked_scenario,
         linked_scenario_url=linked_scenario_url,
+        owner_from_threat=_owner_from_threat(risk, linked_scenario),
         RiskTreatmentOption=RiskTreatmentOption,
         approval=_approval_panel(risk),
         action_form=RiskActionForm(),

@@ -185,8 +185,9 @@
       "not_set_hint": "Gemitigeerd – restrisico niet ingevuld"
     },
     "managed_by_threat": {
-      "note": "Dit risico wordt beheerd door een dreigingsscenario. Titel, beschrijving, scoring, behandeling, restrisico, componenten en maatregelen worden vanuit het scenario gesynchroniseerd en kunnen alleen daar worden aangepast.",
-      "link": "Open scenario “{title}”"
+      "note": "Dit risico wordt beheerd door een dreigingsscenario. Titel, beschrijving, scoring, behandeling, restrisico, componenten en maatregelen worden vanuit het scenario gesynchroniseerd en kunnen alleen daar worden aangepast. Ook de eigenaar wordt uit het scenario (of het dreigingsmodel) overgenomen.",
+      "link": "Open scenario “{title}”",
+      "owner_hint": "Overgenomen van de eigenaar van de dreiging; de volgende synchronisatie met de dreiging overschrijft dit."
     },
     "chance": {
       "rare": "Zeldzaam",

@@ -441,7 +441,8 @@ def test_ssp_risk_summary_uses_actual_severity(app, client, login, suffix, templ
 # --- Owner approval reset through the sync (decisions 20261118-1057, -1058) ---
 
 
-def _approve(risk):
+def _approve(risk, scenario):
+    """Approve *risk* by its owner; the owner comes from the scenario (decision 20261118-1545)."""
     from scaffold.apps.identity.models import User, UserStatus
     from scaffold.apps.risk.models import RiskApprovalStatus
 
@@ -451,6 +452,7 @@ def _approve(risk):
     owner.set_password("Password123!")
     db.session.add(owner)
     db.session.flush()
+    scenario.owner_id = owner.id
     risk.treatment_owner_id = owner.id
     risk.approval_status = RiskApprovalStatus.APPROVED
     risk.approval_decided_by_id = owner.id
@@ -460,7 +462,7 @@ def _approve(risk):
 
 def test_sync_material_change_resets_approval_and_says_so(app):
     scenario, risk = _synced_scenario()
-    _approve(risk)
+    _approve(risk, scenario)
 
     scenario.likelihood = 1
     sync_scenario_to_risk(scenario)
@@ -474,7 +476,7 @@ def test_sync_material_change_resets_approval_and_says_so(app):
 
 def test_noop_resync_keeps_approval(app):
     scenario, risk = _synced_scenario()
-    _approve(risk)
+    _approve(risk, scenario)
 
     sync_scenario_to_risk(scenario)
     db.session.commit()
@@ -482,3 +484,131 @@ def test_noop_resync_keeps_approval(app):
     db.session.refresh(risk)
     assert risk.approval_state == "approved"
     assert _sync_events(risk) == []
+
+
+# --- Risk owner from threat owner (decision 20261118-1545) -------------------
+
+
+def _user(email):
+    from scaffold.apps.identity.models import User, UserStatus
+
+    user = User()
+    user.email = email
+    user.status = UserStatus.ACTIVE
+    user.set_password("Password123!")
+    db.session.add(user)
+    db.session.flush()
+    return user
+
+
+def _owned_scenario(scenario_owner=None, model_owner=None):
+    scope, _ = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["App"])
+    model.owner_id = model_owner.id if model_owner else None
+    scenario = _scenario(model, assigned=assets)
+    scenario.owner_id = scenario_owner.id if scenario_owner else None
+    scenario.status = ScenarioStatus.ANALYSED
+    scenario.treatment = TreatmentOption.MITIGATE
+    scenario.likelihood = 4
+    scenario.impact_score = 4
+    sync_scenario_to_risk(scenario)
+    db.session.flush()
+    return scenario, db.session.get(Risk, scenario.risk_id)
+
+
+def test_scenario_owner_becomes_risk_owner(app):
+    alice, bob = _user("alice@example.com"), _user("bob@example.com")
+    _scenario_obj, risk = _owned_scenario(scenario_owner=alice, model_owner=bob)
+
+    assert risk.treatment_owner_id == alice.id
+
+
+def test_model_owner_used_when_scenario_has_no_owner(app):
+    bob = _user("bob@example.com")
+    _scenario_obj, risk = _owned_scenario(model_owner=bob)
+
+    assert risk.treatment_owner_id == bob.id
+
+
+def test_risk_owner_cleared_when_threat_has_no_owner(app):
+    alice = _user("alice@example.com")
+    scenario, risk = _owned_scenario(scenario_owner=alice)
+
+    scenario.owner_id = None
+    sync_scenario_to_risk(scenario)
+
+    assert risk.treatment_owner_id is None
+
+
+def test_manual_owner_change_is_overwritten_by_next_sync(app):
+    alice, carol = _user("alice@example.com"), _user("carol@example.com")
+    scenario, risk = _owned_scenario(scenario_owner=alice)
+
+    risk.treatment_owner_id = carol.id
+    db.session.flush()
+    sync_scenario_to_risk(scenario)
+
+    assert risk.treatment_owner_id == alice.id
+
+
+def test_owner_change_by_sync_is_audited_and_resets_approval(app):
+    from scaffold.apps.risk.models import RiskApprovalStatus
+
+    alice, dave = _user("alice@example.com"), _user("dave@example.com")
+    scenario, risk = _owned_scenario(scenario_owner=alice)
+    risk.approval_status = RiskApprovalStatus.APPROVED
+    risk.approval_decided_by_id = alice.id
+    risk.approval_decided_at = datetime.now(UTC)
+    db.session.commit()
+
+    scenario.owner_id = dave.id
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+
+    db.session.refresh(risk)
+    assert risk.treatment_owner_id == dave.id
+    assert risk.approval_state == "awaiting"
+    (event,) = _sync_events(risk)
+    assert event.payload["changes"]["treatment_owner_id"] == {"before": alice.id, "after": dave.id}
+    assert event.payload["approval_reset"] is True
+
+
+def test_pasta_published_risk_gets_threat_model_owner(app):
+    from types import SimpleNamespace
+
+    from scaffold.apps.threat.services import publish_pasta_conclusion_to_risk
+
+    bob = _user("bob@example.com")
+    model = SimpleNamespace(owner_id=bob.id)
+    conclusion = SimpleNamespace(
+        is_publishable=True,
+        likelihood_score=3,
+        impact_score=3,
+        treatment="mitigate",
+        finding=SimpleNamespace(title="PASTA risk", description="d", stage_record=SimpleNamespace(threat_model=model)),
+        published_risk_id=None,
+        publication_state=None,
+        last_published_at=None,
+        last_published_by_id=None,
+    )
+
+    publish_pasta_conclusion_to_risk(conclusion, None)
+
+    risk = db.session.get(Risk, conclusion.published_risk_id)
+    assert risk.treatment_owner_id == bob.id
+
+
+def test_owner_hint_only_shown_for_threat_linked_risks(app, client, login):
+    _scenario_obj, linked = _owned_scenario(scenario_owner=login)
+    manual = Risk(
+        title="Manual",
+        description="Manual risk",
+        chance=RiskChance.POSSIBLE,
+        impact=RiskImpact.MODERATE,
+    )
+    db.session.add(manual)
+    db.session.commit()
+    hint = b"Set from the threat owner; the next threat sync overwrites this."
+
+    assert hint in client.get(f"/risk/{linked.id}/edit").data
+    assert hint not in client.get(f"/risk/{manual.id}/edit").data

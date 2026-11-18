@@ -342,6 +342,9 @@ body[data-theme="dark"] .risk-control-preview {
         <div class="mb-4">
           <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.treatment_owner_id.id }}">{{ form.treatment_owner_id.label.text }}</label>
           {{ form.treatment_owner_id(class_="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+          {% if owner_from_threat %}
+          <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.managed_by_threat.owner_hint') }}</p>
+          {% endif %}
           {{ field_errors(form.treatment_owner_id) }}
         </div>
         <div>

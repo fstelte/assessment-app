@@ -2121,8 +2121,9 @@
       "not_set_hint": "Mitigated – residual not set"
     },
     "managed_by_threat": {
-      "note": "This risk is managed by a threat scenario. Title, description, scoring, treatment, residual risk, components and controls are synchronised from the scenario and can only be changed there.",
-      "link": "Open scenario “{title}”"
+      "note": "This risk is managed by a threat scenario. Title, description, scoring, treatment, residual risk, components and controls are synchronised from the scenario and can only be changed there. The owner is also taken from the scenario (or its threat model).",
+      "link": "Open scenario “{title}”",
+      "owner_hint": "Set from the threat owner; the next threat sync overwrites this."
     },
     "chance": {
       "rare": "Rare",
