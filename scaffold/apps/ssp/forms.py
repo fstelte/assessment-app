@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
 from PIL import Image, UnidentifiedImageError
@@ -10,77 +12,101 @@ from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 from scaffold.core.i18n import lazy_gettext as _l
 
-MAX_ARCHITECTURE_OVERVIEW_BYTES = 5 * 1024 * 1024
+MAX_ARCHITECTURE_OVERVIEW_BYTES = 10 * 1024 * 1024
 MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX = 8000
+ARCHITECTURE_OVERVIEW_EXTENSIONS = ("png", "jpg", "jpeg", "pdf")
+_IMAGE_MIME_TYPES = {"PNG": "image/png", "JPEG": "image/jpeg"}
 
 
-def _validate_architecture_overview_image(form, field):
-    """Decode the upload to confirm it's a genuine PNG/JPEG within size limits.
+def detect_architecture_overview_mime(stream) -> str | None:
+    """Return the real MIME type of an upload (PNG, JPEG or PDF), or None.
 
-    FileAllowed only checks the filename extension; this reopens the actual
-    bytes with Pillow so a renamed non-image file is rejected too.
+    Looks at the bytes, not the browser-supplied type or the filename, and
+    rewinds the stream before returning.
+    """
+    stream.seek(0)
+    try:
+        if stream.read(5) == b"%PDF-":
+            return "application/pdf"
+        stream.seek(0)
+        try:
+            image = Image.open(stream)
+            return _IMAGE_MIME_TYPES.get(image.format)
+        except (UnidentifiedImageError, OSError):
+            return None
+    finally:
+        stream.seek(0)
+
+
+def _validate_architecture_overview_file(form, field):
+    """Check the upload's real content: a PDF header, or a genuine PNG/JPEG within limits.
+
+    FileAllowed only checks the extension; this inspects the bytes so a
+    renamed file is rejected with the specific reason (decision 20261118-1530).
     """
     file_storage = field.data
     if not file_storage:
         return
 
-    file_storage.stream.seek(0)
+    stream = file_storage.stream
+    extension = (file_storage.filename or "").rsplit(".", 1)[-1].lower()
+    if extension == "pdf":
+        if detect_architecture_overview_mime(stream) != "application/pdf":
+            raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_pdf"))
+        return
+
+    stream.seek(0)
     try:
-        image = Image.open(file_storage.stream)
+        image = Image.open(stream)
         image.verify()
-        file_storage.stream.seek(0)
-        image = Image.open(file_storage.stream)
-        if image.format not in {"PNG", "JPEG"}:
+        stream.seek(0)
+        image = Image.open(stream)
+        if image.format not in _IMAGE_MIME_TYPES:
             raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
         if image.width > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX or image.height > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX:
             raise ValidationError(_l("ssp.architecture_overview.upload.errors.dimensions_too_large"))
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
         raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
     finally:
-        file_storage.stream.seek(0)
+        stream.seek(0)
+
+
+EXTERNAL_URL_MAX_LENGTH = 500
+
+
+def validate_external_url(form, field):
+    """Accept only an absolute http(s) URL of at most 500 characters (decision 20261118-1530, CHK016).
+
+    Empty values pass (combine with Optional/DataRequired as needed). Blocks
+    ``javascript:`` and other schemes so the link is safe to render.
+    """
+    value = (field.data or "").strip()
+    field.data = value or None
+    if not value:
+        return
+    if len(value) > EXTERNAL_URL_MAX_LENGTH:
+        raise ValidationError(_l("ssp.forms.errors.url_too_long"))
+    parsed = urlsplit(value)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc or any(ch.isspace() for ch in value):
+        raise ValidationError(_l("ssp.forms.errors.url_invalid"))
 
 
 class SSPEditForm(FlaskForm):
     """Edit SSP-specific metadata fields."""
 
-    laws_regulations = TextAreaField(
+    laws_option_ids = SelectMultipleField(
         _l("ssp.forms.laws_regulations"),
         validators=[Optional()],
+        choices=[],
+        coerce=int,
         description=_l("ssp.forms.help.laws_regulations"),
-        render_kw={"rows": 6},
+        render_kw={"size": 8},
     )
     authorization_boundary = TextAreaField(
         _l("ssp.forms.authorization_boundary"),
         validators=[Optional()],
         description=_l("ssp.forms.help.authorization_boundary"),
         render_kw={"rows": 4},
-    )
-    fips_confidentiality = SelectField(
-        "Confidentiality Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
-    )
-    fips_integrity = SelectField(
-        "Integrity Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
-    )
-    fips_availability = SelectField(
-        "Availability Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
     )
     plan_completion_date = DateField(
         _l("ssp.forms.plan_completion_date"),
@@ -112,17 +138,23 @@ class SSPEditForm(FlaskForm):
         description=_l("ssp.forms.help.monitoring_who"),
         render_kw={"rows": 3},
     )
+    monitoring_frequency_id = SelectField(
+        _l("ssp.forms.monitoring_frequency"),
+        choices=[],
+        coerce=int,
+        description=_l("ssp.forms.help.monitoring_frequency"),
+    )
+    adr_register_url = StringField(
+        _l("ssp.forms.adr_register_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.forms.help.adr_register_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
     monitoring_tools = TextAreaField(
         _l("ssp.forms.monitoring_tools"),
         validators=[Optional()],
         description=_l("ssp.forms.help.monitoring_tools"),
         render_kw={"rows": 3},
-    )
-    monitoring_frequency = StringField(
-        _l("ssp.forms.monitoring_frequency"),
-        validators=[Optional(), Length(max=100)],
-        description=_l("ssp.forms.help.monitoring_frequency"),
-        render_kw={"placeholder": "e.g. Monthly, Quarterly, Annually"},
     )
     submit = SubmitField(_l("ssp.forms.save"))
 
@@ -232,6 +264,12 @@ class POAMItemForm(FlaskForm):
         validators=[Optional(), Length(max=100)],
         description=_l("ssp.forms.help.estimated_cost"),
     )
+    jira_url = StringField(
+        _l("ssp.forms.jira_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.forms.help.jira_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
     status = SelectField(
         _l("ssp.forms.status"),
         choices=[
@@ -256,7 +294,24 @@ _ADR_STATUS_CHOICES = [
 ]
 
 
-class ADRCreateForm(FlaskForm):
+class _ADRContentRule:
+    """Either an external link, or both context and decision (decision 20261118-1515, CHK017).
+
+    Shared by the create and update forms so the rule is identical in both.
+    """
+
+    def validate(self, extra_validators=None):
+        valid = super().validate(extra_validators=extra_validators)
+        if self.external_url.data:
+            return valid
+        for field in (self.context, self.decision):
+            if not (field.data or "").strip():
+                field.errors = list(field.errors) + [_l("ssp.adr.forms.errors.context_or_link")]
+                valid = False
+        return valid
+
+
+class ADRCreateForm(_ADRContentRule, FlaskForm):
     """Create an Architecture Decision Record (adr.github.io) on an SSP."""
 
     title = StringField(_l("ssp.adr.forms.title"), validators=[DataRequired(), Length(max=255)])
@@ -280,8 +335,14 @@ class ADRCreateForm(FlaskForm):
         choices=_ADR_STATUS_CHOICES,
         description=_l("ssp.adr.forms.help.status"),
     )
-    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
-    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    external_url = StringField(
+        _l("ssp.adr.forms.external_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.adr.forms.help.external_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[Optional()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[Optional()], render_kw={"rows": 4})
     consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
     supersedes_id = SelectField(
         _l("ssp.adr.forms.supersedes"),
@@ -293,7 +354,7 @@ class ADRCreateForm(FlaskForm):
     submit = SubmitField(_l("ssp.adr.forms.submit"))
 
 
-class ADRUpdateForm(FlaskForm):
+class ADRUpdateForm(_ADRContentRule, FlaskForm):
     """Update an existing ADR. No primary_principle_id or supersedes_id field:
 
     the primary principle is immutable after creation (FR-004), and supersession
@@ -315,8 +376,14 @@ class ADRUpdateForm(FlaskForm):
         choices=_ADR_STATUS_CHOICES,
         description=_l("ssp.adr.forms.help.status"),
     )
-    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
-    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    external_url = StringField(
+        _l("ssp.adr.forms.external_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.adr.forms.help.external_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[Optional()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[Optional()], render_kw={"rows": 4})
     consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
     submit = SubmitField(_l("ssp.adr.forms.update_submit"))
 
@@ -343,18 +410,23 @@ class POAMMilestoneForm(FlaskForm):
 
 
 class SSPArchitectureOverviewUploadForm(FlaskForm):
-    """Upload a new architecture overview image version for an SSP."""
+    """Upload a new architecture overview version (PNG, JPEG or PDF) for an SSP."""
 
     image = FileField(
         _l("ssp.architecture_overview.upload.field.label"),
+        description=_l("ssp.architecture_overview.upload.help"),
+        render_kw={"accept": ".png,.jpg,.jpeg,.pdf"},
         validators=[
             FileRequired(message=_l("ssp.architecture_overview.upload.errors.required")),
-            FileAllowed(["png", "jpg", "jpeg"], message=_l("ssp.architecture_overview.upload.errors.invalid_image")),
+            FileAllowed(
+                list(ARCHITECTURE_OVERVIEW_EXTENSIONS),
+                message=_l("ssp.architecture_overview.upload.errors.invalid_type"),
+            ),
             FileSize(
                 max_size=MAX_ARCHITECTURE_OVERVIEW_BYTES,
                 message=_l("ssp.architecture_overview.upload.errors.too_large"),
             ),
-            _validate_architecture_overview_image,
+            _validate_architecture_overview_file,
         ],
     )
     submit = SubmitField(_l("ssp.architecture_overview.upload.submit"))

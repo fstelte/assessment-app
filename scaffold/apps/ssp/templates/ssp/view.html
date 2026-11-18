@@ -173,7 +173,20 @@
   {{ section_card("—", _('ssp.sections.architecture_overview')) }}
   {% set overview_versions = ssp.architecture_overview_versions %}
   {% set current_overview = overview_versions[0] if overview_versions else none %}
-  {% if current_overview %}
+  {% if current_overview and current_overview.mime_type == 'application/pdf' %}
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-white/4 px-4 py-3 mb-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <i class="fas fa-file-pdf text-red-400 text-xl shrink-0" aria-hidden="true"></i>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ current_overview.original_filename }}</p>
+        <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.architecture_overview.pdf.meta', size="%.1f"|format(current_overview.file_size_bytes / 1048576), uploader=(current_overview.uploaded_by.email if current_overview.uploaded_by else "—"), date=current_overview.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}</p>
+      </div>
+    </div>
+    <a href="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap self-start sm:self-auto">
+      <i class="fas fa-download text-xs" aria-hidden="true"></i> {{ _('ssp.architecture_overview.pdf.download') }}
+    </a>
+  </div>
+  {% elif current_overview %}
   <img
     src="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}"
     alt="{{ _('ssp.architecture_overview.current_alt') }}"
@@ -182,11 +195,20 @@
   {% else %}
   <p class="text-[var(--color-muted)] italic text-sm mb-4">{{ _('ssp.architecture_overview.none_uploaded') }}</p>
   {% endif %}
+  {% if current_overview %}
+  <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=current_overview.id) }}" class="mb-4" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', version=current_overview.version_number) }}')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="inline-flex items-center gap-1.5 text-xs text-red-400 hover:underline">
+      <i class="fas fa-trash text-[10px]" aria-hidden="true"></i> {{ _('ssp.architecture_overview.delete.current') }}
+    </button>
+  </form>
+  {% endif %}
 
   <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     {{ architecture_overview_form.hidden_tag() }}
     <div>
-      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]") }}
+      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]", **{"aria-describedby": "architecture-overview-help"}) }}
+      <p id="architecture-overview-help" class="text-xs text-[var(--color-muted)] mt-1">{{ architecture_overview_form.image.description }}</p>
       {% for error in architecture_overview_form.image.errors %}
       <span class="block text-red-400 text-xs mt-1">{{ error }}</span>
       {% endfor %}
@@ -203,10 +225,16 @@
         <span class="text-[var(--color-muted)]">
           {{ _('ssp.architecture_overview.history.entry', version=version.version_number, uploader=(version.uploaded_by.email if version.uploaded_by else "—"), date=version.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}
         </span>
-        <form method="POST" action="{{ url_for('ssp.restore_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('ssp.architecture_overview.history.restore') }}</button>
-        </form>
+        <span class="flex items-center gap-3 shrink-0">
+          <form method="POST" action="{{ url_for('ssp.restore_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('ssp.architecture_overview.history.restore') }}</button>
+          </form>
+          <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=version.id) }}" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', version=version.version_number) }}')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('ssp.architecture_overview.delete.history') }}</button>
+          </form>
+        </span>
       </li>
       {% endfor %}
     </ul>
@@ -229,7 +257,7 @@
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for ic in ssp.interconnections %}
         <tr>
-          <td class="py-2 pr-3">{{ ic.system_name }}</td>
+          <td class="py-2 pr-3">{{ ic.system_name }}{% if ic.is_stale %}<span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/20">{{ _('ssp.interconnections.badge.stale') }}</span>{% endif %}</td>
           <td class="py-2 pr-3 text-[var(--color-muted)]">{{ ic.owning_organization or "—" }}</td>
           <td class="py-2 pr-3">{{ ic.agreement_type.value | upper }}</td>
           <td class="py-2 pr-3 capitalize">{{ ic.data_direction.value | replace("_", " ") }}</td>
@@ -246,8 +274,12 @@
 
   {# ── §12 Laws / Regulations ── #}
   {{ section_card("12", _('ssp.sections.laws')) }}
-  {% if ssp.laws_regulations %}
-  <p class="text-sm whitespace-pre-wrap">{{ ssp.laws_regulations }}</p>
+  {% if ssp.laws_regulations_options %}
+  <ul class="flex flex-wrap gap-1.5 text-sm">
+    {% for option in ssp.laws_regulations_options %}
+    <li class="inline-flex items-center px-2 py-0.5 rounded-md bg-white/5 border border-[var(--color-border)]"{% if option.description %} title="{{ option.description }}"{% endif %}>{{ option.name }}</li>
+    {% endfor %}
+  </ul>
   {% else %}
   <p class="text-[var(--color-muted)] italic text-sm">{{ _('ssp.labels.not_specified') }}</p>
   {% endif %}
@@ -408,6 +440,7 @@
 
   {# ── Continuous Monitoring ── #}
   {{ section_card("CM", _('ssp.sections.monitoring')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('ssp.monitoring.intro') }}</p>
   <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
     <div class="sm:col-span-2">
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.kpis_kris') }}</dt>
@@ -423,7 +456,7 @@
     </div>
     <div>
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.review_frequency') }}</dt>
-      <dd>{{ ssp.monitoring_frequency or "—" }}</dd>
+      <dd>{{ ssp.monitoring_frequency_option.name if ssp.monitoring_frequency_option else "—" }}</dd>
     </div>
     <div class="sm:col-span-2">
       <dt class="text-[var(--color-muted)] text-xs uppercase font-bold mb-1">{{ _('ssp.labels.tools_used') }}</dt>
@@ -434,6 +467,7 @@
 
   {# ── POA&M Summary ── #}
   {{ section_card("POA&M", _('ssp.sections.poam')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-4">{{ _('ssp.poam.intro') }}</p>
   {% if ssp.poam_items %}
   {% set open_items = ssp.poam_items | selectattr('status.value', 'in', ['open', 'in_progress', 'delayed']) | list %}
   {% set done_items = ssp.poam_items | selectattr('status.value', 'equalto', 'completed') | list %}
@@ -462,7 +496,7 @@
       <tbody class="divide-y divide-[var(--color-border)]">
         {% for item in ssp.poam_items %}
         <tr>
-          <td class="py-2 pr-4">{{ item.weakness_description | truncate(80) }}</td>
+          <td class="py-2 pr-4">{{ item.weakness_description | truncate(80) }}{% if item.jira_url %}<br>{% if item.jira_url %}<a href="{{ item.jira_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-primary-500 hover:underline mt-0.5"><i class="fab fa-jira" aria-hidden="true"></i>{{ _('ssp.poam.jira_link') }} <i class="fas fa-arrow-up-right-from-square text-[9px]" aria-hidden="true"></i></a>{% endif %}{% endif %}</td>
           <td class="py-2 pr-4 text-[var(--color-muted)]">{{ item.point_of_contact or "—" }}</td>
           <td class="py-2 pr-4 whitespace-nowrap text-[var(--color-muted)]">{{ item.scheduled_completion or "—" }}</td>
           <td class="py-2">
@@ -489,6 +523,11 @@
 
   {# ── Architecture Decision Records Summary ── #}
   {{ section_card("ADR", _('ssp.sections.adrs')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('ssp.adrs.intro') }}</p>
+  {% if ssp.adr_register_url %}
+  <p class="text-sm mb-3"><span class="text-[var(--color-muted)]">{{ _('ssp.adrs.register.label') }}:</span>
+    <a href="{{ ssp.adr_register_url }}" target="_blank" rel="noopener noreferrer" class="text-primary-500 hover:underline break-all">{{ ssp.adr_register_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a></p>
+  {% endif %}
   {% if ssp.adr_records %}
   <div class="overflow-x-auto">
     <table class="w-full text-sm">

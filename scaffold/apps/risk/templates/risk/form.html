@@ -146,6 +146,16 @@ body[data-theme="dark"] .risk-control-preview {
         {% if score is not none %}
         <div class="text-sm text-[var(--color-muted)]">{{ _('Score') }}</div>
         <div class="text-2xl font-bold">{{ score }}</div>
+        {% if risk and risk.is_mitigated %}
+        <div class="mt-1 flex flex-wrap justify-end items-center gap-2 text-xs text-[var(--color-muted)]">
+          <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
+          {% if risk.residual_score() is not none %}
+          <span>{{ _('risk.residual.initial_to_residual').format(initial=risk.score(), residual=risk.residual_score()) }}</span>
+          {% else %}
+          <span>{{ _('risk.residual.not_set_hint') }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
         {% else %}
         <div class="text-sm text-[var(--color-muted)]">{{ _('Score pending') }}</div>
         {% endif %}
@@ -176,6 +186,83 @@ body[data-theme="dark"] .risk-control-preview {
   {% if not component_choices_available %}
   <div class="rounded-xl px-4 py-3 text-sm border bg-yellow-400/10 border-yellow-400/40 text-yellow-200" role="alert">
     {{ _('No eligible BIA components found. Enable risk assessments for at least one component in a BIA context before saving.') }}
+  </div>
+  {% endif %}
+
+  {% if risk and risk.is_closed %}
+  {# Closed banner (decision 20261118-1203): reopen manual/PASTA risks here; threat-linked ones follow their scenario. #}
+  <section class="risk-form-card" aria-labelledby="risk-closed-heading" data-risk-closed-banner>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 id="risk-closed-heading" class="text-lg font-semibold">{{ _('risk.closed_banner.title') }}</h2>
+        <p class="mt-1 text-sm text-[var(--color-muted)]">{{ _('risk.status.closed_on').format(date=risk.closed_at.strftime('%d %b %Y')) }}</p>
+      </div>
+      {% if linked_scenario %}
+      <p class="text-sm text-[var(--color-muted)]" data-risk-closed-threat-note>{{ _('risk.closed_banner.threat_note') }}</p>
+      {% elif action_form %}
+      <form method="post" action="{{ url_for('risk.reopen', risk_id=risk.id) }}">
+        {{ action_form.csrf_token }}
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.actions.reopen') }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if approval %}
+  {% set approval_pills = {
+    'approved': 'risk-pill risk-pill--low',
+    'rejected': 'risk-pill risk-pill--critical',
+    'awaiting': 'risk-pill risk-pill--moderate',
+    'no_owner': 'risk-pill risk-pill--muted'
+  } %}
+  <section class="risk-form-card" aria-labelledby="risk-approval-heading" data-approval-state="{{ approval.state }}">
+    <div class="flex flex-wrap items-center gap-3">
+      <h2 id="risk-approval-heading" class="text-lg font-semibold">{{ _('risk.approval.title') }}</h2>
+      <span class="{{ approval_pills[approval.state] }}">{{ _('risk.approval.state.' + approval.state) }}</span>
+    </div>
+
+    {% if approval.state == 'no_owner' %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">{{ _('risk.approval.no_owner_hint') }}</p>
+    {% elif approval.decided_by %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">
+      {{ _('risk.approval.decided_by').format(name=approval.decided_by, date=risk.approval_decided_at.strftime('%d %b %Y')) }}
+    </p>
+    {% if risk.approval_comment %}
+    <p class="mt-1 text-sm whitespace-pre-wrap break-words">{{ risk.approval_comment }}</p>
+    {% endif %}
+    {% elif approval.previous_rejection %}
+    <p class="mt-2 text-sm text-[var(--color-muted)]">
+      {{ _('risk.approval.previously_rejected').format(name=approval.previous_rejection.by, date=approval.previous_rejection.at.strftime('%d %b %Y')) }}
+    </p>
+    {% if approval.previous_rejection.comment %}
+    <p class="mt-1 text-sm whitespace-pre-wrap break-words">{{ approval.previous_rejection.comment }}</p>
+    {% endif %}
+    {% endif %}
+
+    {% if approval.form %}
+    <form method="post" class="mt-4 flex flex-col gap-3" novalidate>
+      {{ approval.form.hidden_tag() }}
+      <label class="text-sm font-medium" for="approval-comment">{{ _('risk.approval.comment_label') }}</label>
+      {{ approval.form.comment(id='approval-comment', rows=3, maxlength=2000, class='w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30') }}
+      <p class="text-xs text-[var(--color-muted)]">{{ _('risk.approval.comment_help') }}</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" formaction="{{ url_for('risk.approve', risk_id=risk.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.approval.approve') }}</button>
+        <button type="submit" formaction="{{ url_for('risk.reject', risk_id=risk.id) }}" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-red-400 text-red-400 hover:bg-red-400/10">{{ _('risk.approval.reject') }}</button>
+      </div>
+    </form>
+    {% elif approval.state != 'no_owner' %}
+    <p class="mt-2 text-xs text-[var(--color-muted)]">{{ _('risk.approval.owner_only_hint').format(name=risk.treatment_owner.full_name) }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if linked_scenario %}
+  <div class="rounded-xl px-4 py-3 text-sm border bg-primary-500/10 border-primary-500/40 text-[var(--color-text)]" role="note">
+    {{ _('risk.managed_by_threat.note') }}
+    {% if linked_scenario_url %}
+    <a class="text-primary-600 hover:underline font-medium" href="{{ linked_scenario_url }}">{{ _('risk.managed_by_threat.link').format(title=linked_scenario.title) }}</a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -239,6 +326,13 @@ body[data-theme="dark"] .risk-control-preview {
         <h2 class="text-base font-semibold mb-4">{{ _('Impact & chance') }}</h2>
         {{ render_field_with_help(form.impact, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         {{ render_field_with_help(form.chance, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        <div class="mb-4 flex items-center gap-2">
+          {{ form.mitigated(class_="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500") }}
+          <label class="text-sm font-medium text-[var(--color-text)]" for="{{ form.mitigated.id }}">{{ form.mitigated.label.text }}</label>
+        </div>
+        {{ render_field_with_help(form.residual_impact, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        {{ render_field_with_help(form.residual_chance, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        <p class="text-xs text-[var(--color-muted)] -mt-2 mb-4">{{ _('risk.residual.help') }}</p>
         {{ render_field_with_help(form.impact_areas, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=True) }}
       </section>
 
@@ -248,6 +342,9 @@ body[data-theme="dark"] .risk-control-preview {
         <div class="mb-4">
           <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.treatment_owner_id.id }}">{{ form.treatment_owner_id.label.text }}</label>
           {{ form.treatment_owner_id(class_="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
+          {% if owner_from_threat %}
+          <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.managed_by_threat.owner_hint') }}</p>
+          {% endif %}
           {{ field_errors(form.treatment_owner_id) }}
         </div>
         <div>
@@ -288,6 +385,7 @@ body[data-theme="dark"] .risk-control-preview {
                        name="{{ form.csa_control_ids.name }}"
                        value="{{ value }}"
                        {% if value in (form.csa_control_ids.data or []) %}checked{% endif %}
+                       {% if form.managed_by_threat %}disabled{% endif %}
                        class="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500">
                 <span class="text-sm text-[var(--color-text)]">{{ label }}</span>
               </label>
@@ -348,6 +446,7 @@ body[data-theme="dark"] .risk-control-preview {
 <script nonce="{{ csp_nonce }}">
 (function () {
   const mitigateValue = "{{ RiskTreatmentOption.MITIGATE.value }}";
+  const controlsLocked = {{ 'true' if form.managed_by_threat else 'false' }};
   const treatmentField = document.getElementById("{{ form.treatment.id }}");
   const controlWrapper = document.querySelector('[data-control-wrapper]');
   const filterInput = document.getElementById('risk-controls-filter');
@@ -373,7 +472,7 @@ body[data-theme="dark"] .risk-control-preview {
     const shouldShow = treatmentField.value === mitigateValue;
     controlWrapper.style.display = shouldShow ? '' : 'none';
     getCheckboxes().forEach(function (cb) {
-      cb.disabled = !shouldShow;
+      cb.disabled = controlsLocked || !shouldShow;
       if (!shouldShow) cb.checked = false;
     });
     if (!shouldShow && filterInput) {

@@ -11,10 +11,12 @@ from flask import abort, current_app, flash, redirect, render_template, request,
 from flask_login import current_user, login_required
 
 from ...core.audit import log_event
+from ...core.i18n import gettext as _
 from ...extensions import db
 from ..bia.models import ContextScope
 from . import bp
 from .forms import (
+    detect_architecture_overview_mime,
     ADRCreateForm,
     ADRUpdateForm,
     POAMItemForm,
@@ -28,7 +30,7 @@ from .models import (
     ADRRecord,
     ADRStatus,
     ArchitecturePrinciple,
-    FipsRating,
+    InterconnectionSource,
     POAMItem,
     POAMMilestone,
     POAMStatus,
@@ -36,14 +38,16 @@ from .models import (
     SSPControlEntry,
     SSPInterconnection,
     SSPlan,
+    SSPOption,
 )
 from ..bia.utils import get_cia_impact
 from ..bia.routes import _load_export_css, _send_export_response
 from .services import (
     build_environment_summary,
     configure_adr_form,
+    configure_ssp_edit_form,
     seed_controls,
-    seed_interconnections,
+    reconcile_interconnections,
     sync_scenario_controls_to_ssp,
 )
 
@@ -54,8 +58,26 @@ def _safe_filename(name: str) -> str:
     return re.sub(r"[-\s]+", "_", name)
 
 
+def _safe_upload_filename(filename: str | None) -> str:
+    """Sanitise an uploaded filename but keep its extension (``my diagram.PDF`` -> ``my_diagram.pdf``)."""
+    stem, dot, extension = (filename or "").rpartition(".")
+    if not dot:
+        stem, extension = extension, ""
+    safe_stem = _safe_filename(stem) or "architecture_overview"
+    safe_extension = re.sub(r"[^a-z0-9]", "", extension.lower())
+    return f"{safe_stem}.{safe_extension}" if safe_extension else safe_stem
+
+
 def _get_ssp_or_404(ssp_id: int) -> SSPlan:
     ssp = SSPlan.query.get_or_404(ssp_id)
+    return ssp
+
+
+def _get_ssp_reconciled(ssp_id: int) -> SSPlan:
+    """Load an SSP and reconcile its interconnections with the BIA (decision 20261118-1455)."""
+    ssp = _get_ssp_or_404(ssp_id)
+    if reconcile_interconnections(ssp):
+        db.session.commit()
     return ssp
 
 
@@ -174,7 +196,7 @@ def create(context_scope_id: int):
     db.session.add(ssp)
     db.session.flush()  # Get ssp.id before seeding
 
-    seed_interconnections(ssp)
+    reconcile_interconnections(ssp)
     seed_controls(ssp)
 
     log_event(
@@ -197,7 +219,7 @@ def create(context_scope_id: int):
 @login_required
 def view(ssp_id: int):
     """Full NIST SP 800-18 SSP view."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     context = ssp.context_scope
 
     # Derive C/I/A impact ratings from BIA consequences
@@ -230,7 +252,8 @@ def view(ssp_id: int):
         for risk in component.risks:
             if risk.is_closed:
                 continue
-            sev = risk.determine_severity(thresholds)
+            # Actual severity, so mitigated (still open) risks count at their residual level.
+            sev = risk.determine_actual_severity(thresholds)
             key = sev.value if sev else "unknown"
             risk_summary[key] = risk_summary.get(key, 0) + 1
 
@@ -263,8 +286,9 @@ def view(ssp_id: int):
 @login_required
 def edit(ssp_id: int):
     """Edit SSP metadata."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     form = SSPEditForm(obj=ssp)
+    configure_ssp_edit_form(form, ssp)
 
     # Build auto-retrieved boundary items from the related BIA
     context = ssp.context_scope
@@ -272,35 +296,39 @@ def edit(ssp_id: int):
     auto_interconnections = [i.system_name for i in ssp.interconnections if i.system_name]
 
     if form.validate_on_submit():
-        ssp.laws_regulations = form.laws_regulations.data
+        ssp.laws_regulations_options = (
+            SSPOption.query.filter(SSPOption.id.in_(form.laws_option_ids.data)).all()
+            if form.laws_option_ids.data
+            else []
+        )
+        ssp.monitoring_frequency_id = form.monitoring_frequency_id.data or None
+        ssp.adr_register_url = form.adr_register_url.data or None
         ssp.authorization_boundary = form.authorization_boundary.data
-        ssp.fips_confidentiality = FipsRating(form.fips_confidentiality.data)
-        ssp.fips_integrity = FipsRating(form.fips_integrity.data)
-        ssp.fips_availability = FipsRating(form.fips_availability.data)
         ssp.plan_completion_date = form.plan_completion_date.data
         ssp.plan_approval_date = form.plan_approval_date.data
         ssp.monitoring_kpis_kris = form.monitoring_kpis_kris.data or None
         ssp.monitoring_what = form.monitoring_what.data or None
         ssp.monitoring_who = form.monitoring_who.data or None
         ssp.monitoring_tools = form.monitoring_tools.data or None
-        ssp.monitoring_frequency = form.monitoring_frequency.data or None
 
         log_event(
             action="ssp_updated",
             entity_type="ssp_plan",
             entity_id=ssp.id,
-            details={"context_scope_id": ssp.context_scope_id},
+            details={
+                "context_scope_id": ssp.context_scope_id,
+                "law_option_ids": sorted(o.id for o in ssp.laws_regulations_options),
+                "monitoring_frequency_id": ssp.monitoring_frequency_id,
+            },
         )
         db.session.commit()
         flash("SSP updated.", "success")
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
-    # Pre-fill enum select values; auto-populate boundary from BIA when empty
+    # Auto-populate the boundary from the BIA when empty
     if request.method == "GET":
-        form.fips_confidentiality.data = ssp.fips_confidentiality.value if ssp.fips_confidentiality else "not_set"
-        form.fips_integrity.data = ssp.fips_integrity.value if ssp.fips_integrity else "not_set"
-        form.fips_availability.data = ssp.fips_availability.value if ssp.fips_availability else "not_set"
-
+        form.laws_option_ids.data = [o.id for o in ssp.laws_regulations_options]
+        form.monitoring_frequency_id.data = ssp.monitoring_frequency_id or 0
         if not ssp.authorization_boundary:
             all_auto = auto_components + auto_interconnections
             if all_auto:
@@ -324,7 +352,7 @@ def edit(ssp_id: int):
 @login_required
 def interconnections(ssp_id: int):
     """Manage system interconnection entries."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     form = SSPInterconnectionForm()
 
     if form.validate_on_submit():
@@ -353,9 +381,15 @@ def edit_interconnection(ssp_id: int, entry_id: int):
     ssp = _get_ssp_or_404(ssp_id)
     entry = SSPInterconnection.query.filter_by(id=entry_id, ssp_id=ssp.id).first_or_404()
     form = SSPInterconnectionForm(obj=entry)
+    name_from_bia = entry.source is InterconnectionSource.BIA
+    if name_from_bia:
+        # The BIA owns the name of a BIA-sourced row; ignore any submitted value.
+        form.system_name.data = entry.system_name
+        form.system_name.render_kw = {"readonly": True}
 
     if form.validate_on_submit():
-        entry.system_name = form.system_name.data
+        if not name_from_bia:
+            entry.system_name = form.system_name.data
         entry.owning_organization = form.owning_organization.data
         entry.agreement_type = form.agreement_type.data
         entry.data_direction = form.data_direction.data
@@ -369,15 +403,20 @@ def edit_interconnection(ssp_id: int, entry_id: int):
         form.agreement_type.data = entry.agreement_type.value if entry.agreement_type else "none"
         form.data_direction.data = entry.data_direction.value if entry.data_direction else "bidirectional"
 
-    return render_template("ssp/edit_interconnection.html", ssp=ssp, entry=entry, form=form)
+    return render_template(
+        "ssp/edit_interconnection.html", ssp=ssp, entry=entry, form=form, name_from_bia=name_from_bia
+    )
 
 
 @bp.route("/<int:ssp_id>/interconnections/<int:entry_id>/delete", methods=["POST"])
 @login_required
 def delete_interconnection(ssp_id: int, entry_id: int):
-    """Delete a single interconnection entry."""
+    """Delete a single interconnection entry; live BIA rows are refused (CHK003)."""
     ssp = _get_ssp_or_404(ssp_id)
     entry = SSPInterconnection.query.filter_by(id=entry_id, ssp_id=ssp.id).first_or_404()
+    if not entry.is_deletable:
+        flash(_("ssp.interconnections.flash.delete_live_bia", name=entry.system_name), "danger")
+        return redirect(url_for("ssp.interconnections", ssp_id=ssp.id))
     db.session.delete(entry)
     db.session.commit()
     flash("Interconnection removed.", "success")
@@ -519,7 +558,7 @@ def sync_controls_from_threats(ssp_id: int):
 @login_required
 def export_pdf(ssp_id: int):
     """Stream SSP as a PDF download."""
-    ssp = _get_ssp_or_404(ssp_id)
+    ssp = _get_ssp_reconciled(ssp_id)
     context = ssp.context_scope
 
     all_consequences = []
@@ -548,7 +587,8 @@ def export_pdf(ssp_id: int):
         for risk in component.risks:
             if risk.is_closed:
                 continue
-            sev = risk.determine_severity(thresholds)
+            # Actual severity, so mitigated (still open) risks count at their residual level.
+            sev = risk.determine_actual_severity(thresholds)
             key = sev.value if sev else "unknown"
             risk_summary[key] = risk_summary.get(key, 0) + 1
 
@@ -604,6 +644,7 @@ def add_poam_item(ssp_id: int):
             point_of_contact=form.point_of_contact.data or None,
             scheduled_completion=form.scheduled_completion.data,
             estimated_cost=form.estimated_cost.data or None,
+            jira_url=form.jira_url.data or None,
             status=POAMStatus(form.status.data),
         )
         db.session.add(item)
@@ -630,6 +671,7 @@ def edit_poam_item(ssp_id: int, item_id: int):
         item.point_of_contact = form.point_of_contact.data or None
         item.scheduled_completion = form.scheduled_completion.data
         item.estimated_cost = form.estimated_cost.data or None
+        item.jira_url = form.jira_url.data or None
         item.status = POAMStatus(form.status.data)
         db.session.commit()
         log_event("poam_item_updated", entity_type="SSPlan", entity_id=ssp.id)
@@ -774,9 +816,10 @@ def add_adr(ssp_id: int):
             ssp_id=ssp.id,
             title=form.title.data.strip(),
             status=status,
-            context=form.context.data.strip(),
-            decision=form.decision.data.strip(),
+            context=(form.context.data or "").strip() or None,
+            decision=(form.decision.data or "").strip() or None,
             consequences=(form.consequences.data or "").strip() or None,
+            external_url=form.external_url.data or None,
             primary_principle_id=form.primary_principle_id.data,
             author_id=current_user.id,
             decided_on=date.today() if status in (ADRStatus.ACCEPTED, ADRStatus.REJECTED) else None,
@@ -789,6 +832,8 @@ def add_adr(ssp_id: int):
 
         if supersedes_adr is not None:
             adr.supersedes_id = supersedes_adr.id
+            # Remember the status so deleting this ADR can restore it (CHK001).
+            supersedes_adr.status_before_supersede = supersedes_adr.status
             supersedes_adr.status = ADRStatus.SUPERSEDED
             log_event(
                 "adr_superseded",
@@ -863,9 +908,10 @@ def edit_adr(ssp_id: int, adr_id: int):
             )
 
         adr.title = form.title.data.strip()
-        adr.context = form.context.data.strip()
-        adr.decision = form.decision.data.strip()
+        adr.context = (form.context.data or "").strip() or None
+        adr.decision = (form.decision.data or "").strip() or None
         adr.consequences = (form.consequences.data or "").strip() or None
+        adr.external_url = form.external_url.data or None
         adr.secondary_principles = ArchitecturePrinciple.query.filter(
             ArchitecturePrinciple.id.in_(form.secondary_principle_ids.data or [])
         ).all()
@@ -893,7 +939,7 @@ def _next_architecture_overview_version(ssp_id: int) -> int:
 @bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
 @login_required
 def upload_architecture_overview(ssp_id: int):
-    """Upload a new architecture overview image version (FR-002/FR-004)."""
+    """Upload a new architecture overview version: PNG, JPEG or PDF (decision 20261118-1505)."""
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPArchitectureOverviewUploadForm()
 
@@ -904,13 +950,15 @@ def upload_architecture_overview(ssp_id: int):
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
     file_storage = form.image.data
+    # Store the type detected from the bytes; browsers may send octet-stream.
+    mime_type = detect_architecture_overview_mime(file_storage.stream)
     image_bytes = file_storage.stream.read()
     version = SSPArchitectureOverview(
         ssp_id=ssp.id,
         version_number=_next_architecture_overview_version(ssp.id),
         image_data=image_bytes,
-        mime_type=file_storage.mimetype,
-        original_filename=_safe_filename(file_storage.filename or "architecture_overview"),
+        mime_type=mime_type,
+        original_filename=_safe_upload_filename(file_storage.filename),
         file_size_bytes=len(image_bytes),
         uploaded_by_id=current_user.id,
     )
@@ -931,12 +979,22 @@ def upload_architecture_overview(ssp_id: int):
 @bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/image", methods=["GET"])
 @login_required
 def architecture_overview_image(ssp_id: int, version_id: int):
-    """Stream a stored architecture overview image (current or historical)."""
+    """Stream a stored architecture overview version (current or historical).
+
+    Images are shown inline; PDFs are always downloaded so user-supplied PDFs
+    never render from the app's origin (decision 20261118-1530, CHK020).
+    """
     ssp = _get_ssp_or_404(ssp_id)
     version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
 
     response = current_app.response_class(version.image_data, mimetype=version.mime_type)
-    response.headers["Content-Disposition"] = "inline"
+    if version.mime_type == "application/pdf":
+        filename = version.original_filename or "architecture_overview"
+        if not filename.lower().endswith(".pdf"):
+            filename = f"{filename}.pdf"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    else:
+        response.headers["Content-Disposition"] = "inline"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
 
@@ -969,3 +1027,74 @@ def restore_architecture_overview(ssp_id: int, version_id: int):
     db.session.commit()
     flash("Architecture overview restored.", "success")
     return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+
+@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/delete", methods=["POST"])
+@login_required
+def delete_architecture_overview(ssp_id: int, version_id: int):
+    """Delete one architecture overview version (decision 20261118-1505).
+
+    The highest remaining version becomes current again; the next upload uses
+    max(remaining) + 1, so a deleted top number may be reused.
+    """
+    ssp = _get_ssp_or_404(ssp_id)
+    version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
+
+    log_event(
+        "ssp_architecture_overview_deleted",
+        entity_type="ssp_architecture_overview",
+        entity_id=version.id,
+        details={
+            "ssp_id": ssp.id,
+            "version_number": version.version_number,
+            "original_filename": version.original_filename,
+        },
+    )
+    db.session.delete(version)
+    db.session.commit()
+    flash(_("ssp.architecture_overview.delete.flash"), "success")
+    return redirect(url_for("ssp.view", ssp_id=ssp.id))
+
+
+@bp.route("/<int:ssp_id>/adrs/<int:adr_id>/delete", methods=["POST"])
+@login_required
+def delete_adr(ssp_id: int, adr_id: int):
+    """Delete an ADR and repair supersession links (decisions 20261118-1515, -1530).
+
+    - The ADR it superseded goes back to its status before supersession
+      (``accepted`` for rows from before that column existed).
+    - An ADR that superseded this one loses its ``supersedes`` link.
+    """
+    ssp = _get_ssp_or_404(ssp_id)
+    adr = ADRRecord.query.filter_by(id=adr_id, ssp_id=ssp.id).first_or_404()
+
+    predecessor = adr.supersedes
+    if predecessor is not None:
+        restored = predecessor.status_before_supersede or ADRStatus.ACCEPTED
+        predecessor.status = restored
+        predecessor.status_before_supersede = None
+        adr.supersedes_id = None
+        log_event(
+            "adr_unsuperseded",
+            entity_type="ADRRecord",
+            entity_id=predecessor.id,
+            details={"restored_status": restored.value, "deleted_successor_id": adr.id},
+        )
+
+    successor = adr.superseded_by
+    if successor is not None:
+        successor.supersedes_id = None
+
+    # Clear the self-FK links before the delete so no row points at a deleted ADR.
+    db.session.flush()
+    log_event(
+        "adr_deleted",
+        entity_type="ADRRecord",
+        entity_id=adr.id,
+        details={"title": adr.title, "status": adr.status.value, "ssp_id": ssp.id},
+    )
+    title = adr.title
+    db.session.delete(adr)
+    db.session.commit()
+    flash(_("ssp.adrs.delete.flash", title=title), "success")
+    return redirect(url_for("ssp.adrs", ssp_id=ssp.id))

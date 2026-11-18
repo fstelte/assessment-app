@@ -14,7 +14,10 @@
       <form method="POST" novalidate>
         {{ form.hidden_tag() }}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          {{ render_field_with_help(form.system_name) }}
+          <div>
+            {{ render_field_with_help(form.system_name) }}
+            {% if name_from_bia %}<p class="-mt-2 mb-2 text-xs text-[var(--color-muted)]">{{ _('ssp.interconnections.name_from_bia_hint') }}</p>{% endif %}
+          </div>
           {{ render_field_with_help(form.owning_organization) }}
           {{ render_field_with_help(form.agreement_type) }}
           {{ render_field_with_help(form.data_direction) }}

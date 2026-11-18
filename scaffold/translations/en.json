@@ -1505,7 +1505,8 @@
           "disable": "Disable MFA",
           "back_to_users": "Back to users"
         }
-      }
+      },
+      "link_ssp_options": "SSP lists"
     },
     "backup": {
       "nav_link": "Backup & Restore",
@@ -2074,6 +2075,61 @@
     "principle_edit": {
       "subtitle_edit": "Update the name or description for {name}.",
       "cancel": "Cancel"
+    },
+    "ssp_options": {
+      "page": {
+        "title": "SSP lists",
+        "heading": "SSP lists",
+        "subtitle": "Maintain the choices offered on every System Security Plan. Options that are in use are deactivated instead of deleted.",
+        "back": "← Back to administration"
+      },
+      "kind": {
+        "law_regulation": {
+          "heading": "Laws, regulations and policies",
+          "help": "SSP editors can select several of these per plan (for example AVG/GDPR, NIS2, BIO)."
+        },
+        "monitoring_frequency": {
+          "heading": "Monitoring frequencies",
+          "help": "SSP editors select one of these as the frequency of continuous monitoring."
+        }
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description (optional)",
+        "add": "Add",
+        "save": "Save"
+      },
+      "list": {
+        "name": "Name",
+        "description": "Description",
+        "status": "Status",
+        "usage": "Used by",
+        "usage_count": "{count} SSP(s)",
+        "actions": "Actions",
+        "empty": "No options yet."
+      },
+      "state": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "edit": "Edit",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "delete": "Delete",
+        "delete_confirm": "Delete \"{name}\"? If SSPs use it, it is deactivated instead."
+      },
+      "errors": {
+        "name_exists": "An option with this name already exists."
+      },
+      "flash": {
+        "created": "\"{name}\" added.",
+        "updated": "\"{name}\" updated.",
+        "activated": "\"{name}\" is active again.",
+        "deactivated": "\"{name}\" deactivated; it is no longer offered for new selections.",
+        "deactivated_instead": "\"{name}\" is used by {count} SSP(s), so it was deactivated instead of deleted.",
+        "deleted": "\"{name}\" deleted."
+      }
     }
   },
   "actions": {
@@ -2090,6 +2146,41 @@
     "filter": "Filter"
   },
   "risk": {
+    "dashboard": {
+      "bia_filter_label": "Filter by BIA",
+      "bia_filter_help": "Select one or more BIAs (Ctrl/Cmd-click). Shows risks with at least one component in a selected BIA.",
+      "bia_filter_apply": "Apply filter",
+      "bia_filter_clear": "Clear filter",
+      "bia_filter_active": "Showing risks for: {names}",
+      "metric_treatment_mitigate": "Treatment: mitigate",
+      "metric_treatment_mitigate_help": "Risks with the mitigate treatment option",
+      "matrix_intro": "Plot every recorded risk by its actual score (residual when mitigated, initial otherwise) to reveal concentration points before treatment review meetings.",
+      "matrix_footnote": "Positions and scores show the actual risk: residual impact and chance for mitigated risks, initial values otherwise. Severity colors respect the thresholds set in the risk workspace.",
+      "approval_filter_label": "Approval",
+      "approval_filter_all": "All",
+      "approval_filter_mine": "Awaiting my approval ({count})",
+      "approval_filter_empty": "No risks match the approval filter.",
+      "no_open_risks": "No open risks.",
+      "no_open_risks_hint": "Closed risks are listed on the Risk overview.",
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "overview_link": "Risk overview"
+    },
+    "residual": {
+      "mitigated": "Mitigated",
+      "impact": "Residual impact",
+      "chance": "Residual chance",
+      "not_set": "— Not set —",
+      "help": "Residual impact and chance describe the remaining risk after mitigation. They become the risk score once the risk is marked as mitigated.",
+      "mitigated_pill": "Mitigated",
+      "initial_to_residual": "Initial: {initial} → Residual: {residual}",
+      "not_set_hint": "Mitigated – residual not set"
+    },
+    "managed_by_threat": {
+      "note": "This risk is managed by a threat scenario. Title, description, scoring, treatment, residual risk, components and controls are synchronised from the scenario and can only be changed there. The owner is also taken from the scenario (or its threat model).",
+      "link": "Open scenario “{title}”",
+      "owner_hint": "Set from the threat owner; the next threat sync overwrites this."
+    },
     "chance": {
       "rare": "Rare",
       "unlikely": "Unlikely",
@@ -2155,17 +2246,69 @@
     },
     "flash": {
       "invalid_request": "Unable to validate the request.",
-      "archived": "Risk \"{title}\" archived.",
+      "archived": "Risk \"{title}\" closed. You can find it on the Risk overview.",
       "already_archived": "Risk already archived.",
       "reopened": "Risk \"{title}\" reopened.",
       "already_open": "Risk is already open.",
       "deleted": "Risk \"{title}\" deleted.",
       "synced_from_threats": "{count} threat scenario(s) synced to the risk workspace.",
-      "synced_from_threats_none": "No unlinked threat scenarios found that qualify (treatment=Mitigate, active status)."
+      "synced_from_threats_none": "No unlinked threat scenarios found that qualify (treatment=Mitigate, active status).",
+      "approved": "Risk \"{title}\" approved.",
+      "rejected": "Risk \"{title}\" rejected.",
+      "approval_comment_required": "A comment is required to reject a risk.",
+      "approval_stale": "This risk changed since you opened it. Review it again; your comment was not saved."
     },
     "help": {
       "impact_areas": "Select every domain that experiences disruption when this risk materialises.",
       "component_ids": "Only components with risk tracking enabled inside a BIA appear here."
+    },
+    "approval": {
+      "title": "Owner approval",
+      "state": {
+        "awaiting": "Awaiting approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "no_owner": "No owner"
+      },
+      "no_owner_hint": "Assign an owner to request approval.",
+      "decided_by": "By {name} on {date}",
+      "previously_rejected": "Previously rejected by {name} on {date}:",
+      "unknown_user": "Unknown user",
+      "comment_label": "Comment",
+      "comment_help": "Optional when approving, required when rejecting. Max. 2000 characters.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "owner_only_hint": "Only the owner ({name}) can approve or reject this risk."
+    },
+    "overview": {
+      "title": "Risk overview",
+      "intro": "Every risk, open and closed, in one table.",
+      "filter_label": "Filter risks",
+      "status_label": "Status",
+      "status_filter": {
+        "all": "All",
+        "open": "Open",
+        "closed": "Closed"
+      },
+      "columns": {
+        "severity": "Severity",
+        "title": "Risk",
+        "score": "Score",
+        "treatment": "Treatment",
+        "owner": "Owner",
+        "approval": "Approval",
+        "bia": "BIA",
+        "status": "Status"
+      },
+      "status_open": "Open",
+      "empty": "No risks match the filter.",
+      "back_link": "Risk workspace",
+      "source_threat": "Threat",
+      "source_pasta": "PASTA"
+    },
+    "closed_banner": {
+      "title": "This risk is closed",
+      "threat_note": "Reopens when its threat scenario is reopened."
     }
   },
   "assessments": {
@@ -3432,7 +3575,7 @@
       "export": "Export",
       "delete": "Delete SSP",
       "delete_confirm": "Delete the SSP for {name}? This cannot be undone.",
-      "adrs": "ADRs"
+      "adrs": "Security ADRs"
     },
     "sections": {
       "system_identification": "System Identification",
@@ -3448,7 +3591,7 @@
       "monitoring": "Continuous Monitoring",
       "poam": "Plan of Action & Milestones",
       "dates": "Plan Dates",
-      "adrs": "Architecture Decisions",
+      "adrs": "Security ADRs",
       "architecture_overview": "Architecture Overview"
     },
     "labels": {
@@ -3559,7 +3702,8 @@
       "section_laws": "Laws, Regulations & Policies",
       "section_dates": "Plan Dates",
       "section_monitoring": "Continuous Monitoring",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "no_law_options": "No laws, regulations or policies have been set up yet. Ask an administrator to add them under SSP lists."
     },
     "controls": {
       "page_title": "Section 14 — Security Controls",
@@ -3591,7 +3735,18 @@
       "add_section": "Add Interconnection",
       "edit": "Edit",
       "remove": "Remove",
-      "remove_confirm": "Remove this interconnection?"
+      "remove_confirm": "Remove this interconnection?",
+      "bia_intro": "Interconnected systems come from the interfaces recorded in the BIA and are added here automatically. Record the agreement, data direction and security contact for each one. You can also add systems that are not in the BIA.",
+      "badge": {
+        "bia": "BIA",
+        "stale": "No longer in BIA"
+      },
+      "print_stale_suffix": "(no longer in BIA)",
+      "remove_live_bia_hint": "Remove it from the BIA interfaces first.",
+      "name_from_bia_hint": "The name comes from the BIA interfaces; change it there.",
+      "flash": {
+        "delete_live_bia": "\"{name}\" is still listed in the BIA interfaces. Remove it from the BIA first."
+      }
     },
     "edit_interconnection": {
       "title": "Edit Interconnection",
@@ -3609,7 +3764,10 @@
       "add_first": "Add the first item →",
       "edit": "Edit",
       "delete": "Delete",
-      "delete_confirm": "Delete this POA&M item and its milestones?"
+      "delete_confirm": "Delete this POA&M item and its milestones?",
+      "intro": "The POA&M is used to steer and monitor improvements to the system described in this plan. Record each weakness here and track the detailed work in Jira.",
+      "jira_link": "Jira issue",
+      "jira_label": "Jira"
     },
     "poam_form": {
       "add_title": "Add POA&M Item",
@@ -3627,7 +3785,9 @@
       "completed_col": "Completed",
       "remove": "Remove",
       "remove_confirm": "Remove this milestone?",
-      "add_btn": "Add"
+      "add_btn": "Add",
+      "details_optional": "Details (optional)",
+      "milestones_section_optional": "Milestones (optional)"
     },
     "forms": {
       "laws_regulations": "Laws, Regulations & Policies",
@@ -3661,14 +3821,14 @@
       "add_milestone_btn": "Add Milestone",
       "help": {
         "authorization_boundary": "Describe the system boundary: which components, networks, and data stores are included in the authorization scope.",
-        "laws_regulations": "List applicable laws, regulations, and standards (e.g. GDPR, NIS2, ISO 27001, BIO). Include article references where relevant.",
+        "laws_regulations": "Select the laws, regulations and policies that apply to this system. Hold Ctrl (Cmd on Mac) to select several. Administrators maintain this list under Administration → SSP lists.",
         "plan_completion_date": "Target date for completing all sections of this SSP.",
         "plan_approval_date": "Date on which this SSP was formally reviewed and approved.",
         "monitoring_kpis_kris": "Key performance indicators (KPIs) and key risk indicators (KRIs) that measure the security posture of this system.",
         "monitoring_what": "Specify the controls, log sources, metrics, and events that are continuously monitored.",
         "monitoring_who": "Name the roles, teams, or individuals responsible for carrying out monitoring activities.",
         "monitoring_tools": "List the platforms, tools, or services used for monitoring (e.g. SIEM, IDS, vulnerability scanners).",
-        "monitoring_frequency": "How often is monitoring performed? (e.g. Continuously, Daily, Monthly, Quarterly)",
+        "monitoring_frequency": "How often progress on this SSP is reviewed. Administrators maintain the choices under Administration → SSP lists.",
         "system_name": "Name of the external or third-party system connected to this system.",
         "owning_organization": "Organization that owns or operates the connected system.",
         "agreement_type": "The formal agreement type that governs this interconnection (e.g. MOU, ISA).",
@@ -3683,8 +3843,17 @@
         "point_of_contact": "Name or role of the person accountable for completing this remediation.",
         "scheduled_completion": "Target date for completing the remediation of this weakness.",
         "estimated_cost": "Estimated cost or effort (e.g. 3 person-days, €5,000).",
-        "status": "Current remediation status of this POA&M item."
-      }
+        "status": "Current remediation status of this POA&M item.",
+        "adr_register_url": "Optional link to the page where this system's security architecture decisions are documented (for example a Confluence page). Must start with http:// or https://.",
+        "jira_url": "Link to the Jira issue (or epic) where the work for this weakness is tracked. Must start with http:// or https://."
+      },
+      "errors": {
+        "url_invalid": "Enter a full web address starting with http:// or https://.",
+        "url_too_long": "The web address may be at most 500 characters."
+      },
+      "adr_register_url": "ADR register (link)",
+      "option_inactive": "{name} (inactive)",
+      "jira_url": "Jira link"
     },
     "adr": {
       "forms": {
@@ -3702,14 +3871,19 @@
           "primary_principle": "Required — the architecture principle this decision is anchored to. Cannot be changed after the ADR is created.",
           "secondary_principles": "Optional — other principles this decision also touches.",
           "status": "Proposed, Accepted, Rejected, or Deprecated. \"Superseded\" is only set automatically when another ADR supersedes this one.",
-          "supersedes": "Optional — if this decision replaces an earlier one in this SSP, select it here. The prior ADR's status will automatically become Superseded."
+          "supersedes": "Optional — if this decision replaces an earlier one in this SSP, select it here. The prior ADR's status will automatically become Superseded.",
+          "external_url": "Optional. When the decision is described elsewhere (for example Confluence), paste the link here; Context and Decision then become optional."
+        },
+        "external_url": "Link to ADR description",
+        "errors": {
+          "context_or_link": "Fill this in, or add a link to where the decision is described."
         }
       }
     },
     "adrs": {
-      "page_title": "Architecture Decision Records",
+      "page_title": "Security ADRs",
       "back": "← Back to SSP",
-      "new": "New ADR",
+      "new": "New security ADR",
       "edit": "Edit",
       "cancel": "Cancel",
       "edit_principle_fixed": "Primary principle (fixed at creation):",
@@ -3728,7 +3902,8 @@
         "status": "Status",
         "principle": "Principle",
         "date": "Date",
-        "empty": "No ADRs recorded yet."
+        "empty": "No ADRs recorded yet.",
+        "actions": "Actions"
       },
       "detail": {
         "created": "Created",
@@ -3739,29 +3914,59 @@
         "secondary_principles": "Also touches:",
         "context": "Context",
         "decision": "Decision",
-        "consequences": "Consequences"
+        "consequences": "Consequences",
+        "external": "Described externally"
+      },
+      "register": {
+        "label": "ADR register"
+      },
+      "intro": "Record only security-relevant architecture decisions for this system, for example authentication, encryption, network segmentation or logging. Link to your ADR page instead of copying it when the decision is documented elsewhere.",
+      "print": {
+        "described_externally": "Described externally"
+      },
+      "edit_title": "Edit security ADR",
+      "delete": {
+        "button": "Delete",
+        "confirm": "Delete the ADR \"{title}\"? This cannot be undone. If it replaced another ADR, that ADR gets its previous status back.",
+        "flash": "ADR \"{title}\" deleted."
       }
     },
     "architecture_overview": {
       "current_alt": "Current architecture overview diagram",
-      "none_uploaded": "No architecture overview image has been uploaded yet.",
+      "none_uploaded": "No architecture overview has been uploaded yet.",
       "upload": {
         "field": {
-          "label": "Upload image (PNG or JPEG)"
+          "label": "Upload architecture overview (PNG, JPEG or PDF)"
         },
         "submit": "Upload",
         "errors": {
-          "required": "Please choose an image to upload.",
-          "invalid_image": "File must be a genuine PNG or JPEG image.",
-          "too_large": "Image must be 5 MB or smaller.",
-          "dimensions_too_large": "Image dimensions are too large."
-        }
+          "required": "Please choose a file to upload.",
+          "invalid_image": "The file is not a valid PNG or JPEG image.",
+          "too_large": "The file must be 10 MB or smaller.",
+          "dimensions_too_large": "The image may be at most 8000×8000 pixels.",
+          "invalid_type": "Only PNG, JPEG or PDF files can be uploaded. Export other formats (such as SVG, Visio or draw.io) to PNG or PDF first.",
+          "invalid_pdf": "The file is not a valid PDF."
+        },
+        "help": "PNG, JPEG or PDF, max 10 MB; images max 8000×8000 px. Export Visio, draw.io or SVG diagrams as PNG or PDF first."
       },
       "history": {
         "heading": "Version history",
         "entry": "Version {version} — uploaded by {uploader} on {date}",
         "restore": "Restore"
+      },
+      "pdf": {
+        "meta": "PDF · {size} MB · uploaded by {uploader} on {date}",
+        "download": "Download PDF"
+      },
+      "delete": {
+        "current": "Delete this version",
+        "history": "Delete",
+        "confirm": "Delete version {version} of the architecture overview? This cannot be undone.",
+        "flash": "Architecture overview version deleted."
       }
+    },
+    "monitoring": {
+      "intro": "Continuous monitoring describes how progress on this System Security Plan is tracked: which KPIs and KRIs are measured, what is monitored, who does it, with which tools and how often."
     }
   }
 }

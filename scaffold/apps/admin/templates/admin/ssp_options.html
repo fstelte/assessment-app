@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('admin.ssp_options.page.title') }}{% endblock %}
+
+{% block content %}
+{% set input_class = "w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50" %}
+<div class="mb-4">
+  <a href="{{ url_for('admin.list_users') }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('admin.ssp_options.page.back') }}</a>
+  <h1 class="text-2xl font-bold mt-1 mb-1">{{ _('admin.ssp_options.page.heading') }}</h1>
+  <p class="text-[var(--color-muted)] mb-0">{{ _('admin.ssp_options.page.subtitle') }}</p>
+</div>
+
+{% for section in sections %}
+{% set kind = section.kind.value %}
+<section class="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-5 mb-6" aria-labelledby="ssp-options-{{ kind }}">
+  <h2 id="ssp-options-{{ kind }}" class="text-lg font-semibold mb-1">{{ _('admin.ssp_options.kind.' ~ kind ~ '.heading') }}</h2>
+  <p class="text-[var(--color-muted)] text-sm mb-4">{{ _('admin.ssp_options.kind.' ~ kind ~ '.help') }}</p>
+
+  {% set create_form = section.create_form %}
+  <form method="post" action="{{ url_for('admin.ssp_options') }}" class="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-3 items-end mb-5">
+    {{ create_form.hidden_tag() }}
+    <div>
+      <label for="new-{{ kind }}-name" class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ create_form.name.label.text }}</label>
+      {{ create_form.name(id="new-" ~ kind ~ "-name", class=input_class, required=True, maxlength=255) }}
+    </div>
+    <div>
+      <label for="new-{{ kind }}-description" class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ create_form.description.label.text }}</label>
+      {{ create_form.description(id="new-" ~ kind ~ "-description", class=input_class, rows=1) }}
+    </div>
+    {{ create_form.submit(class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors bg-primary-600 text-white hover:bg-primary-700 cursor-pointer") }}
+  </form>
+
+  {% if section.options %}
+  <div class="overflow-x-auto w-full rounded-md border border-[var(--color-border)]">
+    <table class="w-full text-sm text-left border-collapse">
+      <thead class="bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+        <tr>
+          <th scope="col" class="px-4 py-2 font-semibold">{{ _('admin.ssp_options.list.name') }}</th>
+          <th scope="col" class="px-4 py-2 font-semibold">{{ _('admin.ssp_options.list.description') }}</th>
+          <th scope="col" class="px-4 py-2 font-semibold">{{ _('admin.ssp_options.list.status') }}</th>
+          <th scope="col" class="px-4 py-2 font-semibold">{{ _('admin.ssp_options.list.usage') }}</th>
+          <th scope="col" class="px-4 py-2 font-semibold text-right">{{ _('admin.ssp_options.list.actions') }}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-[var(--color-border)]">
+        {% for option in section.options %}
+        {% set edit_form = section.edit_forms[option.id] %}
+        <tr class="align-top {% if not option.is_active %}opacity-70{% endif %}">
+          <td class="px-4 py-2 font-medium">{{ option.name }}</td>
+          <td class="px-4 py-2 text-[var(--color-muted)] whitespace-pre-wrap">{{ option.description or "—" }}</td>
+          <td class="px-4 py-2">
+            {% if option.is_active %}
+            <span class="inline-flex px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-400 border border-green-500/20">{{ _('admin.ssp_options.state.active') }}</span>
+            {% else %}
+            <span class="inline-flex px-2 py-0.5 rounded text-xs bg-white/5 text-[var(--color-muted)] border border-[var(--color-border)]">{{ _('admin.ssp_options.state.inactive') }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 text-[var(--color-muted)]">{{ _('admin.ssp_options.list.usage_count', count=section.usage[option.id]) }}</td>
+          <td class="px-4 py-2">
+            <div class="flex flex-wrap justify-end gap-3">
+              <details class="w-full sm:w-auto">
+                <summary class="cursor-pointer text-xs text-primary-500 hover:underline text-right">{{ _('admin.ssp_options.actions.edit') }}</summary>
+                <form method="post" action="{{ url_for('admin.update_ssp_option', option_id=option.id) }}" class="mt-2 flex flex-col gap-2 min-w-[16rem]">
+                  {{ edit_form.hidden_tag() }}
+                  <label for="opt-{{ option.id }}-name" class="text-xs font-medium">{{ edit_form.name.label.text }}</label>
+                  {{ edit_form.name(id="opt-" ~ option.id ~ "-name", class=input_class, required=True, maxlength=255) }}
+                  <label for="opt-{{ option.id }}-description" class="text-xs font-medium">{{ edit_form.description.label.text }}</label>
+                  {{ edit_form.description(id="opt-" ~ option.id ~ "-description", class=input_class, rows=2) }}
+                  <button type="submit" class="self-end inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700">{{ _('admin.ssp_options.form.save') }}</button>
+                </form>
+              </details>
+              <form method="post" action="{{ url_for('admin.toggle_ssp_option', option_id=option.id) }}">
+                {{ action_form.hidden_tag() }}
+                <button type="submit" class="text-xs text-primary-500 hover:underline">{{ _('admin.ssp_options.actions.deactivate') if option.is_active else _('admin.ssp_options.actions.activate') }}</button>
+              </form>
+              <form method="post" action="{{ url_for('admin.delete_ssp_option', option_id=option.id) }}" data-confirm="{{ _('admin.ssp_options.actions.delete_confirm', name=option.name) }}" onsubmit="return confirm(this.dataset.confirm)">
+                {{ action_form.hidden_tag() }}
+                <button type="submit" class="text-xs text-red-400 hover:underline">{{ _('admin.ssp_options.actions.delete') }}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-sm italic text-[var(--color-muted)]">{{ _('admin.ssp_options.list.empty') }}</p>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

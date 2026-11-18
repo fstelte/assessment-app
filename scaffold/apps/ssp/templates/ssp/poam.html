@@ -10,6 +10,7 @@
       <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">← SSP: {{ context.name }}</a>
       <h1 class="text-2xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.poam.title') }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ context.name }}{% if context.abbreviation %} ({{ context.abbreviation }}){% endif %}</p>
+      <p class="text-[var(--color-muted)] text-sm mt-2 max-w-3xl">{{ _('ssp.poam.intro') }}</p>
     </div>
     <a href="{{ url_for('ssp.add_poam_item', ssp_id=ssp.id) }}"
        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">
@@ -76,6 +77,7 @@
             <td class="px-5 py-3 text-[var(--color-muted)]">{{ loop.index }}</td>
             <td class="px-5 py-3 max-w-xs">
               <p class="font-medium text-[var(--color-text)] line-clamp-2">{{ item.weakness_description }}</p>
+              {% if item.jira_url %}<a href="{{ item.jira_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-primary-500 hover:underline mt-0.5"><i class="fab fa-jira" aria-hidden="true"></i>{{ _('ssp.poam.jira_link') }} <i class="fas fa-arrow-up-right-from-square text-[9px]" aria-hidden="true"></i></a>{% endif %}
               {% if item.resources_required %}
               <p class="text-xs text-[var(--color-muted)] mt-0.5 line-clamp-1">{{ _('ssp.labels.resources_prefix') }} {{ item.resources_required }}</p>
               {% endif %}

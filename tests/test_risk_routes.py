@@ -360,3 +360,561 @@ def test_ticket_link_label_max_length_validation(client, app, admin_user):
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "80" in html or "label" in html.lower()
+
+
+# ---------------------------------------------------------------------------
+# Mitigated marker and residual assessment on the manual form (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def _manual_form(component_id: int, **overrides) -> dict:
+    data = {
+        "title": "Backup leak",
+        "description": "Backups stored unencrypted",
+        "impact": RiskImpact.MAJOR.value,  # 4
+        "chance": RiskChance.LIKELY.value,  # 4
+        "impact_areas": [RiskImpactArea.OPERATIONAL.value],
+        "component_ids": [str(component_id)],
+        "treatment": RiskTreatmentOption.ACCEPT.value,
+        "mitigated": "y",
+        "residual_impact": RiskImpact.MINOR.value,  # 2
+        "residual_chance": RiskChance.POSSIBLE.value,  # 3
+    }
+    data.update(overrides)
+    return {key: value for key, value in data.items() if value is not None}
+
+
+def test_manual_risk_can_be_mitigated_with_residual(client, app, login):
+    component_id = _seed_component(app)
+    _seed_thresholds(app)
+
+    response = client.post("/risk/new", data=_manual_form(component_id))
+    assert response.status_code == 302
+
+    risk = Risk.query.one()
+    assert risk.is_mitigated
+    assert (risk.residual_impact, risk.residual_chance) == (RiskImpact.MINOR, RiskChance.POSSIBLE)
+
+    page = client.get(f"/risk/{risk.id}/edit").get_data(as_text=True)
+    assert "Initial: 16 → Residual: 6" in page
+
+
+def test_unchecking_mitigated_clears_marker(client, app, login):
+    component_id = _seed_component(app)
+    client.post("/risk/new", data=_manual_form(component_id))
+    risk_id = Risk.query.one().id
+    assert Risk.query.one().is_mitigated
+
+    response = client.post(f"/risk/{risk_id}/edit", data=_manual_form(component_id, mitigated=None))
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    assert db.session.get(Risk, risk_id).mitigated_at is None
+
+
+def test_manual_risk_without_components_is_rejected(client, app, login):
+    component_id = _seed_component(app)
+    client.post("/risk/new", data=_manual_form(component_id))
+    risk_id = Risk.query.one().id
+
+    response = client.post(f"/risk/{risk_id}/edit", data=_manual_form(component_id, component_ids=[]))
+
+    assert response.status_code == 200  # re-rendered with errors
+    db.session.expire_all()
+    assert [c.id for c in db.session.get(Risk, risk_id).components] == [component_id]
+
+
+# ---------------------------------------------------------------------------
+# Dashboard shows the actual score (Task 5)
+# ---------------------------------------------------------------------------
+
+
+def _seed_mitigated_and_open_risk(app) -> tuple[Risk, Risk]:
+    from datetime import UTC, datetime
+
+    component = db.session.get(Component, _seed_component(app))
+    mitigated = Risk(
+        title="Mitigated leak",
+        description="d",
+        impact=RiskImpact.MAJOR,  # 4
+        chance=RiskChance.LIKELY,  # 4
+        treatment=RiskTreatmentOption.MITIGATE,
+        mitigated_at=datetime.now(UTC),
+        residual_impact=RiskImpact.MINOR,  # 2
+        residual_chance=RiskChance.POSSIBLE,  # 3
+    )
+    open_risk = Risk(
+        title="Open leak",
+        description="d",
+        impact=RiskImpact.MAJOR,
+        chance=RiskChance.LIKELY,
+        treatment=RiskTreatmentOption.ACCEPT,
+    )
+    mitigated.components = [component]
+    open_risk.components = [component]
+    db.session.add_all([mitigated, open_risk])
+    db.session.commit()
+    return mitigated, open_risk
+
+
+def test_dashboard_cards_matrix_and_metrics_use_actual_score(app):
+    from scaffold.apps.risk.routes import _build_dashboard_cards, _build_risk_matrix, _dashboard_metrics
+    from scaffold.apps.risk.services import load_thresholds
+
+    _seed_thresholds(app)
+    mitigated, open_risk = _seed_mitigated_and_open_risk(app)
+    thresholds = load_thresholds()
+
+    with app.test_request_context():
+        cards = {card["id"]: card for card in _build_dashboard_cards([mitigated, open_risk], thresholds)}
+        matrix = _build_risk_matrix([mitigated, open_risk], thresholds)
+
+    assert cards[mitigated.id]["score"] == 6
+    assert cards[mitigated.id]["severity"] is RiskSeverity.MODERATE
+    assert (cards[mitigated.id]["initial_score"], cards[mitigated.id]["residual_score"]) == (16, 6)
+    assert cards[open_risk.id]["score"] == 16
+    assert cards[open_risk.id]["severity"] is RiskSeverity.CRITICAL
+    assert _dashboard_metrics(list(cards.values()))["high"] == 1
+
+    placed = {
+        (row["chance"], cell["impact"]): [entry["id"] for entry in cell["risks"]]
+        for row in matrix["rows"]
+        for cell in row["cells"]
+    }
+    assert placed[(RiskChance.POSSIBLE, RiskImpact.MINOR)] == [mitigated.id]
+    assert placed[(RiskChance.LIKELY, RiskImpact.MAJOR)] == [open_risk.id]
+
+
+def test_dashboard_card_shows_mitigated_pill_and_initial_hint(client, app, login):
+    _seed_thresholds(app)
+    _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "Initial: 16 → Residual: 6" in page
+    assert "Treatment: mitigate" in page
+    assert page.count('risk-pill risk-pill--low">Mitigated<') == 1
+
+
+# ---------------------------------------------------------------------------
+# BIA multi-filter on the dashboard (Task 7)
+# ---------------------------------------------------------------------------
+
+
+def _seed_bia_risks(app) -> dict[str, object]:
+    scopes, risks = {}, {}
+    for name in ("Alpha BIA", "Beta BIA", "Gamma BIA"):
+        scope = ContextScope(name=name, risk_assessment_human=True)
+        db.session.add(scope)
+        scopes[name] = scope
+    a1 = Component(name="A1", context_scope=scopes["Alpha BIA"])
+    a2 = Component(name="A2", context_scope=scopes["Alpha BIA"])
+    b1 = Component(name="B1", context_scope=scopes["Beta BIA"])
+    g1 = Component(name="G1", context_scope=scopes["Gamma BIA"])
+    db.session.add_all([a1, a2, b1, g1])
+    for title, components in (
+        ("Alpha risk", [a1, a2]),
+        ("Beta risk", [b1]),
+        ("Gamma risk", [g1]),
+        ("Shared risk", [a1, g1]),
+        ("Orphan risk", []),
+    ):
+        risk = Risk(title=title, description="d", impact=RiskImpact.MINOR, chance=RiskChance.RARE)
+        risk.components = components
+        db.session.add(risk)
+        risks[title] = risk
+    db.session.commit()
+    return {"scopes": scopes, "risks": risks}
+
+
+def _dashboard_context(client, query: str = "") -> dict:
+    from flask import template_rendered
+
+    captured: dict = {}
+
+    def _record(sender, template, context, **extra):
+        if template.name == "risk/dashboard.html":
+            captured.update(context)
+
+    template_rendered.connect(_record)
+    try:
+        assert client.get(f"/risk/{query}").status_code == 200
+    finally:
+        template_rendered.disconnect(_record)
+    return captured
+
+
+def _titles(context) -> set[str]:
+    return {card["title"] for card in context["risk_cards"]}
+
+
+def test_bia_filter_single_shows_only_matching_risks(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha = seed["scopes"]["Alpha BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}")
+
+    assert _titles(context) == {"Alpha risk", "Shared risk"}
+    assert context["selected_bia_ids"] == [alpha]
+
+
+def test_bia_filter_multiple_shows_union(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha, beta = seed["scopes"]["Alpha BIA"].id, seed["scopes"]["Beta BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}&bia={beta}")
+
+    assert _titles(context) == {"Alpha risk", "Beta risk", "Shared risk"}
+
+
+@pytest.mark.parametrize("query", ["", "?bia=x", "?bia=999", "?bia="])
+def test_no_or_invalid_bia_filter_shows_all_risks(client, app, login, query):
+    _seed_bia_risks(app)
+
+    context = _dashboard_context(client, query)
+
+    assert _titles(context) == {"Alpha risk", "Beta risk", "Gamma risk", "Shared risk", "Orphan risk"}
+    assert context["selected_bia_ids"] == []
+
+
+def test_bia_filter_scopes_metrics_matrix_and_component_count(client, app, login):
+    seed = _seed_bia_risks(app)
+    alpha = seed["scopes"]["Alpha BIA"].id
+
+    context = _dashboard_context(client, f"?bia={alpha}")
+
+    visible = len(context["risk_cards"])
+    matrix_count = sum(len(cell["risks"]) for row in context["risk_matrix"]["rows"] for cell in row["cells"])
+    assert context["metrics"]["total"] == visible == matrix_count == 2
+    # Shared risk also links G1 (Gamma), which must not count under the Alpha filter.
+    assert context["metrics"]["components"] == 2
+
+
+def test_bia_filter_options_and_active_summary_render(client, app, login):
+    seed = _seed_bia_risks(app)
+    beta = seed["scopes"]["Beta BIA"].id
+
+    page = client.get(f"/risk/?bia={beta}").get_data(as_text=True)
+
+    assert f'<option value="{beta}" selected>Beta BIA</option>' in page
+    assert "Showing risks for: Beta BIA" in page
+    assert "Clear filter" in page
+
+
+def _seed_open_and_closed_risks(app) -> dict[str, Risk]:
+    """A manual open risk, a manual closed risk and a threat-closed risk, all in Alpha BIA."""
+
+    from datetime import UTC, datetime
+
+    scope = ContextScope(name="Alpha BIA", risk_assessment_human=True)
+    component = Component(name="A1", context_scope=scope)
+    risks = {}
+    for title, closed in (("Open risk", False), ("Closed manual risk", True), ("Threat closed risk", True)):
+        risk = Risk(
+            title=title,
+            description="d",
+            impact=RiskImpact.CATASTROPHIC,
+            chance=RiskChance.ALMOST_CERTAIN,
+            closed_at=datetime.now(UTC) if closed else None,
+        )
+        risk.components = [component]
+        risks[title] = risk
+    db.session.add_all([scope, component, *risks.values()])
+    db.session.commit()
+    return risks
+
+
+def test_workspace_hides_closed_risks_from_cards_metrics_and_matrix(client, app, login):
+    _seed_thresholds(app)
+    _seed_open_and_closed_risks(app)
+
+    context = _dashboard_context(client)
+
+    assert _titles(context) == {"Open risk"}
+    matrix_count = sum(len(cell["risks"]) for row in context["risk_matrix"]["rows"] for cell in row["cells"])
+    assert context["metrics"]["total"] == matrix_count == 1
+    assert context["metrics"]["high"] == 1
+
+
+def test_workspace_bia_filter_still_hides_closed_risks(client, app, login):
+    _seed_open_and_closed_risks(app)
+    scope_id = ContextScope.query.filter_by(name="Alpha BIA").one().id
+
+    context = _dashboard_context(client, f"?bia={scope_id}")
+
+    assert _titles(context) == {"Open risk"}
+
+
+def test_threat_closed_risk_leaves_the_workspace(client, app, login):
+    from scaffold.apps.threat.models import (
+        AssetType,
+        ScenarioStatus,
+        StrideCategory,
+        ThreatModel,
+        ThreatModelAsset,
+        ThreatScenario,
+        TreatmentOption,
+    )
+    from scaffold.apps.threat.services import sync_scenario_to_risk
+
+    scope = ContextScope(name="Threat BIA")
+    db.session.add(scope)
+    db.session.flush()
+    db.session.add(Component(name="App", context_scope_id=scope.id))
+    model = ThreatModel(title="TM", context_scope_id=scope.id)
+    db.session.add(model)
+    db.session.flush()
+    asset = ThreatModelAsset(threat_model_id=model.id, name="App", asset_type=AssetType.COMPONENT, order=0)
+    db.session.add(asset)
+    db.session.flush()
+    scenario = ThreatScenario(
+        threat_model_id=model.id,
+        title="Spoofed login",
+        stride_category=StrideCategory.SPOOFING,
+        status=ScenarioStatus.ANALYSED,
+        treatment=TreatmentOption.MITIGATE,
+        likelihood=4,
+        impact_score=4,
+    )
+    scenario.assigned_assets = [asset]
+    db.session.add(scenario)
+    db.session.flush()
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+    risk_title = db.session.get(Risk, scenario.risk_id).title
+    assert risk_title in _titles(_dashboard_context(client))
+
+    scenario.status = ScenarioStatus.ACCEPTED
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+
+    assert db.session.get(Risk, scenario.risk_id).is_closed
+    assert risk_title not in _titles(_dashboard_context(client))
+
+
+def test_workspace_has_no_reopen_button(client, app, login):
+    _seed_open_and_closed_risks(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "Reopen risk" not in page
+    assert "Close &amp; archive" in page
+
+
+def test_workspace_with_only_closed_risks_shows_no_open_risks(client, app, login):
+    from datetime import UTC, datetime
+
+    for risk in _seed_open_and_closed_risks(app).values():
+        risk.closed_at = risk.closed_at or datetime.now(UTC)
+    db.session.commit()
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "data-no-open-risks" in page
+    assert "No open risks." in page
+    assert "No risks recorded yet." not in page
+
+
+def test_empty_workspace_still_shows_first_risk_prompt(client, app, login):
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "No risks recorded yet." in page
+    assert "data-no-open-risks" not in page
+
+
+# ---------------------------------------------------------------------------
+# Collapsible cards (Task 18)
+# ---------------------------------------------------------------------------
+
+
+def test_workspace_cards_are_collapsed_details_with_summary(client, app, login):
+    import re
+
+    _seed_thresholds(app)
+    _mitigated, open_risk = _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    cards = re.findall(r'<details class="risk-card"[^>]*>', page)
+    assert len(cards) == 2
+    assert all(" open" not in card for card in cards)
+    assert f'<details class="risk-card" id="risk-{open_risk.id}">' in page
+    summary = page.split(f'id="risk-{open_risk.id}">', 1)[1].split("</summary>", 1)[0]
+    assert "Open leak" in summary
+    assert 'class="risk-card__summary-score"' in summary and ">16<" in summary
+    assert "data-approval-state=" in summary
+
+
+def test_workspace_has_expand_and_collapse_controls(client, app, login):
+    _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert 'data-risk-expand aria-controls="risk-card-grid"' in page
+    assert 'data-risk-collapse aria-controls="risk-card-grid"' in page
+    assert "Expand all" in page and "Collapse all" in page
+
+
+def test_empty_workspace_has_no_expand_controls(client, app, login):
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "data-risk-expand aria-controls" not in page
+    assert 'id="risk-card-grid"' not in page
+
+
+# ---------------------------------------------------------------------------
+# Risk overview (Task 19)
+# ---------------------------------------------------------------------------
+
+
+def _overview_rows(client, query: str = "") -> list[dict]:
+    from flask import template_rendered
+
+    captured: dict = {}
+
+    def _record(sender, template, context, **extra):
+        if template.name == "risk/overview.html":
+            captured.update(context)
+
+    template_rendered.connect(_record)
+    try:
+        assert client.get(f"/risk/overview{query}").status_code == 200
+    finally:
+        template_rendered.disconnect(_record)
+    return captured["rows"]
+
+
+def _seed_overview_risks(app) -> dict[str, Risk]:
+    from datetime import UTC, datetime
+
+    scope = ContextScope(name="Alpha BIA", risk_assessment_human=True)
+    other = ContextScope(name="Beta BIA", risk_assessment_human=True)
+    a1 = Component(name="A1", context_scope=scope)
+    b1 = Component(name="B1", context_scope=other)
+    now = datetime.now(UTC)
+    specs = {
+        # title: (impact, chance, closed, mitigated, components)
+        "b open low": (RiskImpact.MINOR, RiskChance.RARE, False, False, [a1]),  # 2
+        "A open low": (RiskImpact.MINOR, RiskChance.RARE, False, False, [b1]),  # 2, sorts before "b" by title
+        "Open high": (RiskImpact.CATASTROPHIC, RiskChance.ALMOST_CERTAIN, False, False, [a1]),  # 25
+        "Closed high": (RiskImpact.CATASTROPHIC, RiskChance.ALMOST_CERTAIN, True, True, [a1]),  # 25
+        "Closed low": (RiskImpact.MINOR, RiskChance.RARE, True, False, []),
+    }
+    risks = {}
+    for title, (impact, chance, closed, mitigated, components) in specs.items():
+        risk = Risk(
+            title=title,
+            description="d",
+            impact=impact,
+            chance=chance,
+            closed_at=now if closed else None,
+            mitigated_at=now if mitigated else None,
+        )
+        risk.components = components
+        risks[title] = risk
+    db.session.add_all([scope, other, a1, b1, *risks.values()])
+    db.session.commit()
+    return risks
+
+
+def test_overview_lists_open_first_then_score_then_title(client, app, login):
+    _seed_overview_risks(app)
+
+    rows = _overview_rows(client)
+
+    assert [row["title"] for row in rows] == ["Open high", "A open low", "b open low", "Closed high", "Closed low"]
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("?status=open", {"Open high", "A open low", "b open low"}),
+        ("?status=closed", {"Closed high", "Closed low"}),
+        ("?status=all", {"Open high", "A open low", "b open low", "Closed high", "Closed low"}),
+        ("?status=bogus", {"Open high", "A open low", "b open low", "Closed high", "Closed low"}),
+    ],
+)
+def test_overview_status_filter(client, app, login, query, expected):
+    _seed_overview_risks(app)
+
+    assert {row["title"] for row in _overview_rows(client, query)} == expected
+
+
+def test_overview_bia_filter(client, app, login):
+    _seed_overview_risks(app)
+    beta = ContextScope.query.filter_by(name="Beta BIA").one().id
+
+    assert [row["title"] for row in _overview_rows(client, f"?bia={beta}")] == ["A open low"]
+
+
+def test_overview_renders_status_cells_dashes_and_approval(client, app, login):
+    risks = _seed_overview_risks(app)
+
+    page = client.get("/risk/overview").get_data(as_text=True)
+
+    closed_high = page.split(f'data-risk-row="{risks["Closed high"].id}"', 1)[1].split("</tr>", 1)[0]
+    assert 'data-risk-status="closed"' in page
+    assert "Closed on" in closed_high  # closed wins over mitigated
+    assert "Mitigated" not in closed_high
+    closed_low = page.split(f'data-risk-row="{risks["Closed low"].id}"', 1)[1].split("</tr>", 1)[0]
+    assert closed_low.count("<td>–</td>") == 2  # no owner, no BIA
+    assert 'data-approval-state="no_owner"' in closed_low
+    assert f'href="/risk/{risks["Closed low"].id}/edit"' in closed_low
+
+
+def test_overview_shows_threat_source_label(client, app, login):
+    from scaffold.apps.threat.models import StrideCategory, ThreatModel, ThreatScenario
+
+    risks = _seed_overview_risks(app)
+    model = ThreatModel(title="TM")
+    db.session.add(model)
+    db.session.flush()
+    db.session.add(
+        ThreatScenario(
+            threat_model_id=model.id,
+            title="S",
+            stride_category=StrideCategory.SPOOFING,
+            risk_id=risks["Open high"].id,
+        )
+    )
+    db.session.commit()
+
+    rows = {row["title"]: row for row in _overview_rows(client)}
+
+    assert rows["Open high"]["source"] == "threat"
+    assert rows["A open low"]["source"] is None
+    assert 'data-risk-source="threat">Threat<' in client.get("/risk/overview").get_data(as_text=True)
+
+
+def test_overview_empty_state(client, app, login):
+    page = client.get("/risk/overview?status=closed").get_data(as_text=True)
+
+    assert "No risks match the filter." in page
+
+
+def test_overview_requires_login(client, app):
+    response = client.get("/risk/overview")
+
+    assert response.status_code in (302, 401, 403)
+
+
+def test_workspace_and_overview_link_to_each_other(client, app, login):
+    _seed_open_and_closed_risks(app)
+
+    workspace = client.get("/risk/").get_data(as_text=True)
+    overview = client.get("/risk/overview").get_data(as_text=True)
+
+    assert 'href="/risk/overview" data-overview-link' in workspace
+    assert 'href="/risk/" data-workspace-link' in overview
+
+
+def test_no_open_risks_state_links_to_closed_overview(client, app, login):
+    from datetime import UTC, datetime
+
+    for risk in _seed_open_and_closed_risks(app).values():
+        risk.closed_at = risk.closed_at or datetime.now(UTC)
+    db.session.commit()
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert 'href="/risk/overview?status=closed"' in page

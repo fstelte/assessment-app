@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from scaffold.apps.bia.models import Component, ContextScope, Consequences
@@ -39,6 +41,7 @@ def ssp_app():
             "scaffold.apps.risk.api",
             "scaffold.apps.risk.routes",
             "scaffold.apps.threat",
+            "scaffold.apps.template",
             "scaffold.apps.ssp",
         ],
         password_login_enabled=True,
@@ -68,11 +71,14 @@ def logged_in_user(ssp_app, ssp_client):
         db.session.add(user)
         db.session.commit()
 
-    ssp_client.post(
-        "/auth/login",
-        data={"email": "ssp-user@example.com", "password": _PASSWORD},
-        follow_redirects=True,
-    )
+        token = user.get_id()
+
+    # Password login forces MFA enrolment, so authenticate the session directly
+    # (same approach as the ``login`` fixture in conftest.py).
+    with ssp_client.session_transaction() as sess:
+        sess["_user_id"] = token
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
     return ssp_client
 
 
@@ -84,7 +90,6 @@ def scope_with_ssp(ssp_app, logged_in_user):
             name="Test System",
             abbreviation="TST",
             operational_status="operational",
-            system_type="major_application",
         )
         db.session.add(scope)
         db.session.commit()
@@ -189,7 +194,7 @@ def test_ssp_view_renders_sections(ssp_app, scope_with_ssp, logged_in_user):
     resp = logged_in_user.get(f"/ssp/{ssp_id}")
     assert resp.status_code == 200
     # Key section headings should be present
-    for heading in [b"System Identification", b"System Owner", b"FIPS 199", b"Security Controls"]:
+    for heading in [b"System Identification", b"System Owner", b"Impact Categorization", b"Security Controls"]:
         assert heading in resp.data, f"Expected section heading '{heading}' not found in SSP view"
 
 
@@ -197,30 +202,153 @@ def test_ssp_edit_get(ssp_app, scope_with_ssp, logged_in_user):
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.get(f"/ssp/{ssp_id}/edit")
     assert resp.status_code == 200
-    assert b"FIPS 199" in resp.data
+    assert b'name="authorization_boundary"' in resp.data
 
 
 def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
+    """Regression: the edit page renders no FIPS override fields, and saving must still persist.
+
+    The form used to declare three unrendered FIPS selects, so every real POST failed
+    validation silently (decision 20261118-1450).
+    """
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.post(
         f"/ssp/{ssp_id}/edit",
         data={
-            "laws_regulations": "GDPR, NIS2",
             "authorization_boundary": "Internal network only",
-            "fips_confidentiality": "moderate",
-            "fips_integrity": "low",
-            "fips_availability": "high",
             "plan_completion_date": "2026-12-31",
             "plan_approval_date": "",
+            "monitoring_kpis_kris": "Patch latency",
+            "monitoring_frequency_id": "0",
         },
-        follow_redirects=True,
+        follow_redirects=False,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith(f"/ssp/{ssp_id}")
     with ssp_app.app_context():
-        ssp = SSPlan.query.get(ssp_id)
-        assert ssp.laws_regulations == "GDPR, NIS2"
-        assert ssp.fips_confidentiality.value == "moderate"
-        assert ssp.fips_availability.value == "high"
+        ssp = db.session.get(SSPlan, ssp_id)
+        assert ssp.authorization_boundary == "Internal network only"
+        assert ssp.monitoring_kpis_kris == "Patch latency"
+
+
+# --- Option lists, ADR register and monitoring wording (Task 5) --------------
+
+
+def _options(ssp_app, *specs):
+    """Create SSPOption rows from (kind, name, is_active) tuples; return {name: id}."""
+    from scaffold.apps.ssp.models import SSPOption, SSPOptionKind
+
+    with ssp_app.app_context():
+        rows = [SSPOption(kind=SSPOptionKind(kind), name=name, is_active=active) for kind, name, active in specs]
+        db.session.add_all(rows)
+        db.session.commit()
+        return {row.name: row.id for row in rows}
+
+
+def _edit(client, ssp_id, **data):
+    payload = {"authorization_boundary": "", "monitoring_frequency_id": "0"}
+    payload.update(data)
+    return client.post(f"/ssp/{ssp_id}/edit", data=payload)
+
+
+def test_laws_and_frequency_are_selected_from_lists(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+    ids = _options(
+        ssp_app,
+        ("law_regulation", "NIS2", True),
+        ("law_regulation", "AVG", True),
+        ("monitoring_frequency", "Monthly", True),
+    )
+
+    resp = _edit(
+        logged_in_user, ssp_id,
+        laws_option_ids=[str(ids["NIS2"]), str(ids["AVG"])],
+        monitoring_frequency_id=str(ids["Monthly"]),
+    )
+    assert resp.status_code == 302
+
+    with ssp_app.app_context():
+        ssp = db.session.get(SSPlan, ssp_id)
+        assert [o.name for o in ssp.laws_regulations_options] == ["AVG", "NIS2"]
+        assert ssp.monitoring_frequency_option.name == "Monthly"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert ">AVG</li>" in view and ">NIS2</li>" in view and "<dd>Monthly</dd>" in view
+    export = logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+    assert "<li>AVG</li>" in export and "Monthly" in export
+
+
+def test_inactive_linked_option_survives_save_and_is_marked_in_form(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import SSPOption
+
+    _, ssp_id = scope_with_ssp
+    ids = _options(
+        ssp_app,
+        ("law_regulation", "Old law", True),
+        ("law_regulation", "Retired law", False),
+        ("monitoring_frequency", "Yearly", True),
+    )
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Old law"])], monitoring_frequency_id=str(ids["Yearly"]))
+    with ssp_app.app_context():
+        for name in ("Old law", "Yearly"):
+            SSPOption.query.filter_by(name=name).one().is_active = False
+        db.session.commit()
+
+    form_page = logged_in_user.get(f"/ssp/{ssp_id}/edit").get_data(as_text=True)
+    assert "Old law (inactive)" in form_page and "Yearly (inactive)" in form_page
+    assert "Retired law" not in form_page
+
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Old law"])], monitoring_frequency_id=str(ids["Yearly"]))
+    with ssp_app.app_context():
+        ssp = db.session.get(SSPlan, ssp_id)
+        assert [o.name for o in ssp.laws_regulations_options] == ["Old law"]
+        assert ssp.monitoring_frequency_option.name == "Yearly"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert "(inactive)" not in view
+
+    # An inactive option that this SSP does not use cannot be submitted.
+    resp = _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["Retired law"])])
+    assert resp.status_code == 200
+
+
+def test_adr_register_url_is_validated_and_rendered(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+
+    resp = _edit(logged_in_user, ssp_id, adr_register_url="javascript:alert(1)")
+    assert resp.status_code == 200
+    assert b"Enter a full web address" in resp.data
+
+    _edit(logged_in_user, ssp_id, adr_register_url="https://wiki.example.com/adr")
+    with ssp_app.app_context():
+        assert db.session.get(SSPlan, ssp_id).adr_register_url == "https://wiki.example.com/adr"
+    view = logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert 'href="https://wiki.example.com/adr" target="_blank" rel="noopener noreferrer"' in view
+
+
+def test_ssp_updated_audit_contains_selection(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.models import AuditLog
+
+    _, ssp_id = scope_with_ssp
+    ids = _options(ssp_app, ("law_regulation", "BIO", True), ("monitoring_frequency", "Weekly", True))
+    _edit(logged_in_user, ssp_id, laws_option_ids=[str(ids["BIO"])], monitoring_frequency_id=str(ids["Weekly"]))
+
+    with ssp_app.app_context():
+        event = AuditLog.query.filter_by(event_type="ssp_updated").order_by(AuditLog.id.desc()).first()
+        assert event.payload["law_option_ids"] == [ids["BIO"]]
+        assert event.payload["monitoring_frequency_id"] == ids["Weekly"]
+
+
+@pytest.mark.parametrize(
+    ("locale", "text"),
+    [
+        ("en", "Continuous monitoring describes how progress on this System Security Plan is tracked"),
+        ("nl", "Continue monitoring beschrijft hoe de voortgang van dit System Security Plan wordt gevolgd"),
+    ],
+)
+def test_monitoring_intro_on_edit_view_and_export(ssp_app, scope_with_ssp, logged_in_user, locale, text):
+    _, ssp_id = scope_with_ssp
+
+    for url in (f"/ssp/{ssp_id}/edit", f"/ssp/{ssp_id}", f"/ssp/{ssp_id}/export/pdf"):
+        assert text in logged_in_user.get(url, query_string={"lang": locale}).get_data(as_text=True), url
 
 
 def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):
@@ -244,8 +372,8 @@ def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):
         assert ic.system_name == "External HR System"
 
 
-def test_seed_interconnections_from_interfaces(ssp_app, logged_in_user):
-    """Interconnections are seeded from ContextScope.interfaces on SSP creation."""
+def test_create_reconciles_interconnections_from_interfaces(ssp_app, logged_in_user):
+    """Creating an SSP adds a BIA-sourced row per interface (decision 20261118-1455)."""
     with ssp_app.app_context():
         scope = ContextScope(
             name="Iface System",
@@ -260,10 +388,139 @@ def test_seed_interconnections_from_interfaces(ssp_app, logged_in_user):
     with ssp_app.app_context():
         ssp = SSPlan.query.filter_by(context_scope_id=scope_id).first()
         assert ssp is not None
-        names = {ic.system_name for ic in ssp.interconnections}
-        assert "System A" in names
-        assert "System B" in names
-        assert "System C" in names
+        assert {(ic.system_name, ic.source.value) for ic in ssp.interconnections} == {
+            ("System A", "bia"),
+            ("System B", "bia"),
+            ("System C", "bia"),
+        }
+
+
+# --- Interconnection reconcile (Task 3; decisions 20261118-1455, -1530) -------
+
+
+def _ssp_with_interfaces(ssp_app, logged_in_user, interfaces, manual=()):
+    """Create a scope + SSP (via the route) and optional manual rows; return (scope_id, ssp_id)."""
+    with ssp_app.app_context():
+        scope = ContextScope(name="Reconcile System", interfaces=interfaces)
+        db.session.add(scope)
+        db.session.commit()
+        scope_id = scope.id
+    logged_in_user.post(f"/ssp/create/{scope_id}")
+    with ssp_app.app_context():
+        ssp = SSPlan.query.filter_by(context_scope_id=scope_id).one()
+        for name in manual:
+            db.session.add(SSPInterconnection(ssp_id=ssp.id, system_name=name, sort_order=99))
+        db.session.commit()
+        return scope_id, ssp.id
+
+
+def _rows(ssp_app, ssp_id):
+    with ssp_app.app_context():
+        return sorted(
+            (ic.system_name, ic.source.value)
+            for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id).all()
+        )
+
+
+def _set_interfaces(ssp_app, scope_id, interfaces):
+    with ssp_app.app_context():
+        db.session.get(ContextScope, scope_id).interfaces = interfaces
+        db.session.commit()
+
+
+def test_view_adds_new_bia_interfaces_without_duplicates(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B")
+    _set_interfaces(ssp_app, scope_id, "A; B\nC")
+
+    assert logged_in_user.get(f"/ssp/{ssp_id}").status_code == 200
+    assert logged_in_user.get(f"/ssp/{ssp_id}").status_code == 200
+
+    assert _rows(ssp_app, ssp_id) == [("A", "bia"), ("B", "bia"), ("C", "bia")]
+
+
+def test_normalised_names_match(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A B")
+    _set_interfaces(ssp_app, scope_id, "  a   b ;A B")
+
+    logged_in_user.get(f"/ssp/{ssp_id}/interconnections")
+
+    assert _rows(ssp_app, ssp_id) == [("A B", "bia")]
+
+
+def test_removed_interface_is_flagged_stale_not_deleted(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B", manual=["Manual X"])
+    _set_interfaces(ssp_app, scope_id, "B")
+
+    page = logged_in_user.get(f"/ssp/{ssp_id}/interconnections").get_data(as_text=True)
+
+    assert _rows(ssp_app, ssp_id) == [("A", "bia"), ("B", "bia"), ("Manual X", "manual")]
+    with ssp_app.app_context():
+        stale = {ic.system_name: ic.is_stale for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id)}
+    assert stale == {"A": True, "B": False, "Manual X": False}
+    assert page.count("No longer in BIA") == 1
+    assert "(no longer in BIA)" in logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+
+
+def test_matching_manual_row_is_adopted_with_its_details(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "", manual=["Bank API"])
+    with ssp_app.app_context():
+        row = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one()
+        row.security_contact = "soc@example.com"
+        db.session.commit()
+    _set_interfaces(ssp_app, scope_id, "bank  api")
+
+    logged_in_user.get(f"/ssp/{ssp_id}")
+
+    with ssp_app.app_context():
+        row = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one()
+        assert (row.system_name, row.source.value, row.security_contact) == ("Bank API", "bia", "soc@example.com")
+
+
+def test_bia_row_name_cannot_be_changed(ssp_app, logged_in_user):
+    _scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "HR System")
+    with ssp_app.app_context():
+        entry_id = SSPInterconnection.query.filter_by(ssp_id=ssp_id).one().id
+
+    page = logged_in_user.get(f"/ssp/{ssp_id}/interconnections/{entry_id}/edit").get_data(as_text=True)
+    assert "readonly" in page
+    logged_in_user.post(
+        f"/ssp/{ssp_id}/interconnections/{entry_id}/edit",
+        data={"system_name": "Renamed", "agreement_type": "isa", "data_direction": "incoming", "notes": "n"},
+    )
+
+    with ssp_app.app_context():
+        entry = db.session.get(SSPInterconnection, entry_id)
+        assert entry.system_name == "HR System"
+        assert entry.agreement_type.value == "isa"
+
+
+def test_live_bia_row_cannot_be_deleted_but_stale_and_manual_can(ssp_app, logged_in_user):
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "A; B", manual=["M"])
+    with ssp_app.app_context():
+        ids = {ic.system_name: ic.id for ic in SSPInterconnection.query.filter_by(ssp_id=ssp_id)}
+
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['A']}/delete")
+    assert ("A", "bia") in _rows(ssp_app, ssp_id)
+
+    _set_interfaces(ssp_app, scope_id, "B")
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['A']}/delete")
+    logged_in_user.post(f"/ssp/{ssp_id}/interconnections/{ids['M']}/delete")
+    assert _rows(ssp_app, ssp_id) == [("B", "bia")]
+
+
+def test_reconcile_writes_audit_event(ssp_app, logged_in_user):
+    from scaffold.models import AuditLog
+
+    scope_id, ssp_id = _ssp_with_interfaces(ssp_app, logged_in_user, "", manual=["Kept"])
+    _set_interfaces(ssp_app, scope_id, "kept; New")
+
+    logged_in_user.get(f"/ssp/{ssp_id}")
+    logged_in_user.get(f"/ssp/{ssp_id}")
+
+    with ssp_app.app_context():
+        events = AuditLog.query.filter_by(event_type="ssp_interconnections_reconciled").all()
+        assert len(events) == 1
+        assert events[0].payload == {"added": ["New"], "adopted": ["Kept"]}
 
 
 def test_seed_controls_from_risks(ssp_app, logged_in_user):
@@ -277,8 +534,8 @@ def test_seed_controls_from_risks(ssp_app, logged_in_user):
         risk = Risk(
             title="Unauthorized Access",
             description="Risk of unauthorized access",
-            impact=RiskImpact.MEDIUM,
-            chance=RiskChance.MEDIUM,
+            impact=RiskImpact.MODERATE,
+            chance=RiskChance.POSSIBLE,
             treatment=RiskTreatmentOption.MITIGATE,
         )
         risk.components.append(component)
@@ -297,8 +554,74 @@ def test_seed_controls_from_risks(ssp_app, logged_in_user):
 
 
 def test_ssp_pdf_export(ssp_app, scope_with_ssp, logged_in_user):
-    """PDF export route returns a PDF content type."""
+    """The export route renders the print view; the default format is HTML (``?format=pdf`` converts)."""
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.get(f"/ssp/{ssp_id}/export/pdf")
     assert resp.status_code == 200
-    assert "pdf" in resp.content_type
+    assert "html" in resp.content_type
+
+
+# --- POA&M Jira-first (Task 8; decision 20261118-1510) -------------------------
+
+
+def _poam_payload(**data):
+    payload = {"weakness_description": "Missing MFA on admin portal", "status": "open", "save_item": "1"}
+    payload.update(data)
+    return payload
+
+
+def test_poam_item_with_only_weakness_status_and_jira_link(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import POAMItem
+
+    _, ssp_id = scope_with_ssp
+    jira = "https://jira.example.com/browse/SEC-42"
+    resp = logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload(jira_url=jira))
+    assert resp.status_code == 302
+
+    with ssp_app.app_context():
+        item = POAMItem.query.filter_by(ssp_id=ssp_id).one()
+        assert (item.jira_url, item.point_of_contact, item.scheduled_completion) == (jira, None, None)
+
+    link = f'href="{jira}" target="_blank" rel="noopener noreferrer"'
+    assert link in logged_in_user.get(f"/ssp/{ssp_id}/poam").get_data(as_text=True)
+    assert link in logged_in_user.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert jira in logged_in_user.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
+
+
+@pytest.mark.parametrize("bad", ["ftp://jira.example.com/SEC-1", "javascript:alert(1)", "jira/SEC-1"])
+def test_poam_jira_link_must_be_http(ssp_app, scope_with_ssp, logged_in_user, bad):
+    from scaffold.apps.ssp.models import POAMItem
+
+    _, ssp_id = scope_with_ssp
+    resp = logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload(jira_url=bad))
+
+    assert resp.status_code == 200
+    with ssp_app.app_context():
+        assert POAMItem.query.filter_by(ssp_id=ssp_id).count() == 0
+
+
+def test_poam_details_open_only_when_used(ssp_app, scope_with_ssp, logged_in_user):
+    from scaffold.apps.ssp.models import POAMItem, POAMMilestone
+
+    _, ssp_id = scope_with_ssp
+    logged_in_user.post(f"/ssp/{ssp_id}/poam/add", data=_poam_payload())
+    with ssp_app.app_context():
+        item_id = POAMItem.query.filter_by(ssp_id=ssp_id).one().id
+    url = f"/ssp/{ssp_id}/poam/{item_id}/edit"
+
+    page = logged_in_user.get(url).get_data(as_text=True)
+    assert 'id="poam-details" class="rounded-lg border border-[var(--color-border)] px-4 py-3">' in page
+
+    logged_in_user.post(url, data={"ms-description": "Enable MFA", "add_milestone": "1"})
+    with ssp_app.app_context():
+        assert POAMMilestone.query.filter_by(item_id=item_id).count() == 1
+    page = logged_in_user.get(url).get_data(as_text=True)
+    assert 'id="poam-details" class="rounded-lg border border-[var(--color-border)] px-4 py-3" open>' in page
+
+
+def test_poam_purpose_intro_shown(ssp_app, scope_with_ssp, logged_in_user):
+    _, ssp_id = scope_with_ssp
+    intro = "The POA&amp;M is used to steer and monitor improvements to the system described in this plan."
+
+    for url in (f"/ssp/{ssp_id}/poam", f"/ssp/{ssp_id}/poam/add", f"/ssp/{ssp_id}"):
+        assert intro in logged_in_user.get(url).get_data(as_text=True), url

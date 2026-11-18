@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Sequence
 
 import sqlalchemy as sa
@@ -13,14 +13,15 @@ from flask_login import current_user, login_required
 from ...core.audit import log_event
 from ...core.i18n import gettext as _
 from ...extensions import db
-from ..bia.models import Component
+from ..bia.models import Component, ContextScope
 from ..csa.models import Control
 from ..identity.models import ROLE_ADMIN, ROLE_ASSESSMENT_MANAGER
-from .forms import RiskForm, RiskActionForm
+from .forms import RiskApprovalForm, RiskForm, RiskActionForm
 from .models import (
     CHANCE_WEIGHTS,
     IMPACT_WEIGHTS,
     Risk,
+    RiskApprovalStatus,
     RiskChance,
     RiskImpact,
     RiskSeverity,
@@ -143,22 +144,40 @@ def _resolve_controls(form: RiskForm) -> list[Control] | None:
         return None
 
 
+def _apply_residual_fields(form: RiskForm, risk: Risk) -> None:
+    """Copy the mitigated marker and residual assessment from the form (decision 20261118-0800)."""
+
+    if form.mitigated.data:
+        risk.mitigated_at = risk.mitigated_at or datetime.now(UTC)
+    else:
+        risk.mitigated_at = None
+    risk.residual_impact = RiskImpact(form.residual_impact.data) if form.residual_impact.data else None
+    risk.residual_chance = RiskChance(form.residual_chance.data) if form.residual_chance.data else None
+
+
+def _residual_audit_details(risk: Risk) -> dict[str, object]:
+    return {
+        "mitigated": risk.is_mitigated,
+        "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+        "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+    }
+
+
 @bp.route("/sync-from-threats", methods=["POST"])
 @login_required
 def sync_from_threats():
     """Sync all eligible threat scenarios into the risk workspace (create or update)."""
     _require_risk_access()
-    from ..threat.models import ScenarioStatus, ThreatScenario, TreatmentOption
-    from ..threat.services import sync_scenario_to_risk
+    from ..threat.models import ThreatScenario, TreatmentOption
+    from ..threat.services import _CLOSING_STATUSES, sync_scenario_to_risk
 
-    _EXCLUDED = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
     scenarios = ThreatScenario.query.filter_by(is_archived=False).all()
     created = 0
     updated = 0
     for scenario in scenarios:
         if scenario.treatment is not TreatmentOption.MITIGATE:
             continue
-        if scenario.status in _EXCLUDED:
+        if scenario.status in _CLOSING_STATUSES:
             continue
         was_new = scenario.risk_id is None
         sync_scenario_to_risk(scenario)
@@ -175,16 +194,45 @@ def sync_from_threats():
     return redirect(url_for("risk.dashboard"))
 
 
+def _bia_filter_args():
+    """Parse ``?bia=<id>&bia=<id>`` (decision 20261118-0801); unknown ids are ignored.
+
+    Returns the BIA options, the selected ids and the SQL filter for them.
+    """
+
+    bia_options = (
+        ContextScope.query.filter(ContextScope.components.any())
+        .order_by(ContextScope.name)
+        .all()
+    )
+    known_bia_ids = {scope.id for scope in bia_options}
+    selected_bia_ids = sorted(
+        {int(value) for value in request.args.getlist("bia") if value.isdigit()} & known_bia_ids
+    )
+    bia_filter = Risk.components.any(Component.context_scope_id.in_(selected_bia_ids)) if selected_bia_ids else sa.true()
+    return bia_options, selected_bia_ids, bia_filter
+
+
 @bp.route("/")
 @login_required
 def dashboard():
-    """Show a human-friendly overview of every registered risk."""
+    """Show the workspace of open risks; closed ones are on the overview (decision 20261118-1200)."""
 
     _require_risk_access()
     thresholds = load_thresholds()
-    risks = _risk_query().order_by(Risk.created_at.desc()).all()
+    bia_options, selected_bia_ids, bia_filter = _bia_filter_args()
+    # Approval filter (decisions 20261118-1048, -1058); unknown values are ignored.
+    selected_approval = request.args.get("approval")
+    if selected_approval not in _APPROVAL_FILTERS:
+        selected_approval = None
+    query = _risk_query().filter(bia_filter, Risk.closed_at.is_(None))
+    if selected_approval:
+        query = query.filter(_APPROVAL_FILTERS[selected_approval]())
+    risks = query.order_by(Risk.created_at.desc()).all()
+    has_closed_risks = db.session.query(Risk.query.filter(Risk.closed_at.isnot(None)).exists()).scalar()
+    mine_count = Risk.query.filter(bia_filter, Risk.closed_at.is_(None), _APPROVAL_FILTERS["mine"]()).count()
     cards = _build_dashboard_cards(risks, thresholds)
-    metrics = _dashboard_metrics(cards)
+    metrics = _dashboard_metrics(cards, selected_bia_ids)
     matrix = _build_risk_matrix(risks, thresholds)
     severity_scale = _severity_scale(thresholds)
     action_form = RiskActionForm()
@@ -197,7 +245,99 @@ def dashboard():
         api_endpoint_available="risk_api.get_risk" in current_app.view_functions,
         RiskTreatmentOption=RiskTreatmentOption,
         action_form=action_form,
+        bia_options=bia_options,
+        selected_bia_ids=selected_bia_ids,
+        selected_approval=selected_approval,
+        mine_count=mine_count,
+        has_closed_risks=has_closed_risks,
     )
+
+
+_OVERVIEW_STATUSES = ("open", "closed", "all")
+
+
+@bp.route("/overview")
+@login_required
+def overview():
+    """List every risk, open and closed, in a compact table (decisions 20261118-1201, -1210)."""
+
+    from ..threat.models import PastaRiskConclusion, ThreatScenario
+
+    _require_risk_access()
+    thresholds = load_thresholds()
+    bia_options, selected_bia_ids, bia_filter = _bia_filter_args()
+    selected_status = request.args.get("status")
+    if selected_status not in _OVERVIEW_STATUSES:
+        selected_status = "all"
+    query = _risk_query().filter(bia_filter)
+    if selected_status == "open":
+        query = query.filter(Risk.closed_at.is_(None))
+    elif selected_status == "closed":
+        query = query.filter(Risk.closed_at.isnot(None))
+    risks = query.all()
+
+    risk_ids = [risk.id for risk in risks]
+    threat_ids = {
+        risk_id for (risk_id,) in db.session.query(ThreatScenario.risk_id).filter(ThreatScenario.risk_id.in_(risk_ids))
+    }
+    pasta_ids = {
+        risk_id
+        for (risk_id,) in db.session.query(PastaRiskConclusion.published_risk_id).filter(
+            PastaRiskConclusion.published_risk_id.in_(risk_ids)
+        )
+    }
+    rows = []
+    for risk in risks:
+        score = risk.actual_score()
+        severity = determine_severity(score, thresholds)
+        if risk.is_closed:
+            status = "closed"
+        elif risk.is_mitigated:
+            status = "mitigated"
+        else:
+            status = "open"
+        rows.append(
+            {
+                "id": risk.id,
+                "title": risk.title,
+                "source": "threat" if risk.id in threat_ids else "pasta" if risk.id in pasta_ids else None,
+                "score": score,
+                "severity": severity,
+                "severity_class": _SEVERITY_BADGES.get(severity, _DEFAULT_PILL),
+                "treatment": risk.treatment,
+                "owner": risk.treatment_owner,
+                "approval_state": risk.approval_state,
+                "bia_names": sorted({c.context_scope.name for c in risk.components if c.context_scope}),
+                "status": status,
+                "closed_at": risk.closed_at,
+            }
+        )
+    # Open first, then highest actual score (no score last), then title.
+    rows.sort(
+        key=lambda row: (
+            row["status"] == "closed",
+            row["score"] is None,
+            -(row["score"] or 0),
+            row["title"].lower(),
+        )
+    )
+    return render_template(
+        "risk/overview.html",
+        rows=rows,
+        bia_options=bia_options,
+        selected_bia_ids=selected_bia_ids,
+        selected_status=selected_status,
+    )
+
+
+_APPROVAL_FILTERS = {
+    "mine": lambda: sa.and_(
+        Risk.treatment_owner_id == current_user.id,
+        sa.or_(Risk.approval_status.is_(None), Risk.approval_status == RiskApprovalStatus.REJECTED),
+    ),
+    "awaiting": lambda: sa.and_(Risk.treatment_owner_id.isnot(None), Risk.approval_status.is_(None)),
+    "rejected": lambda: Risk.approval_status == RiskApprovalStatus.REJECTED,
+}
 
 
 def _parse_ticket_links_from_form(form_data) -> list[dict]:
@@ -246,6 +386,7 @@ def create():
                 risk.discovered_on = date.today()
             risk.components = components
             risk.controls = controls or []
+            _apply_residual_fields(form, risk)
             set_impact_areas(risk, form.impact_areas.data or [])
             db.session.add(risk)
             db.session.flush()
@@ -265,6 +406,7 @@ def create():
                     "impact": risk.impact.value,
                     "chance": risk.chance.value,
                     "treatment": risk.treatment.value,
+                    **_residual_audit_details(risk),
                 },
             )
             db.session.commit()
@@ -286,6 +428,17 @@ def create():
     )
 
 
+def _owner_from_threat(risk: Risk, linked_scenario) -> bool:
+    """True when threat sync sets this risk's owner (decision 20261118-1545)."""
+    if linked_scenario is not None:
+        return True
+    from ..threat.models import PastaRiskConclusion
+
+    return db.session.query(
+        PastaRiskConclusion.query.filter_by(published_risk_id=risk.id).exists()
+    ).scalar()
+
+
 @bp.route("/<int:risk_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(risk_id: int):
@@ -296,46 +449,22 @@ def edit(risk_id: int):
     if risk is None:
         abort(404)
 
-    # If this risk was synced from a threat scenario, keep chance/impact/components
-    # aligned with the latest scenario values.
+    # Threat-linked risks are a projection of their scenario: re-sync on every
+    # visit and keep the sync-owned fields read-only (decision 20261118-0830).
     from ..threat.models import ThreatScenario
-    from ..threat.services import _CHANCE_MAP, _IMPACT_MAP, _components_for_scenario
+    from ..threat.services import sync_scenario_to_risk
     linked_scenario = ThreatScenario.query.filter_by(risk_id=risk_id).first()
     if linked_scenario:
-        dirty = False
-        expected_chance = RiskChance(_CHANCE_MAP.get(linked_scenario.likelihood, "possible"))
-        expected_impact = RiskImpact(_IMPACT_MAP.get(linked_scenario.impact_score, "moderate"))
-        if risk.chance != expected_chance:
-            risk.chance = expected_chance
-            dirty = True
-        if risk.impact != expected_impact:
-            risk.impact = expected_impact
-            dirty = True
-        if not risk.components:
-            components_to_link = _components_for_scenario(linked_scenario)
-            if components_to_link:
-                risk.components = components_to_link
-                dirty = True
-        else:
-            # Re-sync components to match current threat model assets.
-            refreshed = _components_for_scenario(linked_scenario)
-            if refreshed and set(c.id for c in refreshed) != set(c.id for c in risk.components):
-                risk.components = refreshed
-                dirty = True
-        # Re-sync controls from the linked threat scenario.
-        scenario_control_ids = {c.id for c in linked_scenario.controls}
-        risk_control_ids = {c.id for c in risk.controls}
-        if scenario_control_ids != risk_control_ids:
-            risk.controls = list(linked_scenario.controls)
-            dirty = True
-        if dirty:
-            db.session.commit()
+        sync_scenario_to_risk(linked_scenario)
+        db.session.commit()
 
     form = RiskForm(obj=risk)
     _threat_scope_id = linked_scenario.threat_model.context_scope_id if linked_scenario and linked_scenario.threat_model else None
     configure_risk_form(form, extra_components=list(risk.components), context_scope_id=_threat_scope_id)
     form.submit.label.text = _("Save changes")
-    component_choices_available = bool(form.component_ids.choices)
+    if linked_scenario:
+        form.mark_managed_by_threat()
+    component_choices_available = bool(form.component_ids.choices) or linked_scenario is not None
 
     if request.method == "GET":
         form.component_ids.data = [str(component.id) for component in risk.components]
@@ -345,26 +474,35 @@ def edit(risk_id: int):
         form.impact.data = risk.impact.value
         form.chance.data = risk.chance.value
         form.treatment.data = risk.treatment.value
+        form.mitigated.data = risk.is_mitigated
+        form.residual_impact.data = risk.residual_impact.value if risk.residual_impact else ""
+        form.residual_chance.data = risk.residual_chance.value if risk.residual_chance else ""
         form.ticket_url.data = risk.ticket_url or ""
         # Pre-fill template context variable for existing ticket links
         # (rendered by the Jinja template using risk.ticket_links)
 
     if form.validate_on_submit():
-        components = _resolve_components_for_edit(form)
-        controls = _resolve_controls(form)
-        if components and controls is not None:
-            risk.title = (form.title.data or "").strip()
-            risk.description = form.description.data
+        if linked_scenario:
+            # Sync-owned fields are ignored; the scenario stays the source of truth.
+            components, controls = list(risk.components), list(risk.controls)
+        else:
+            components = _resolve_components_for_edit(form)
+            controls = _resolve_controls(form)
+        if components is not None and controls is not None:
+            if not linked_scenario:
+                risk.title = (form.title.data or "").strip()
+                risk.description = form.description.data
+                risk.impact = RiskImpact(form.impact.data)
+                risk.chance = RiskChance(form.chance.data)
+                risk.treatment = RiskTreatmentOption(form.treatment.data)
+                risk.components = components
+                risk.controls = controls or []
+                _apply_residual_fields(form, risk)
             risk.discovered_on = form.discovered_on.data or risk.discovered_on
-            risk.impact = RiskImpact(form.impact.data)
-            risk.chance = RiskChance(form.chance.data)
-            risk.treatment = RiskTreatmentOption(form.treatment.data)
             risk.treatment_plan = form.treatment_plan.data
             risk.treatment_due_date = form.treatment_due_date.data
             risk.treatment_owner_id = optional_int(form.treatment_owner_id.data)
             risk.ticket_url = (form.ticket_url.data or "").strip() or None
-            risk.components = components
-            risk.controls = controls or []
             set_impact_areas(risk, form.impact_areas.data or [])
             # Persist plural ticket links (US4)
             links_data = _parse_ticket_links_from_form(request.form)
@@ -383,6 +521,7 @@ def edit(risk_id: int):
                     "impact": risk.impact.value,
                     "chance": risk.chance.value,
                     "treatment": risk.treatment.value,
+                    **_residual_audit_details(risk),
                 },
             )
             db.session.commit()
@@ -393,8 +532,17 @@ def edit(risk_id: int):
         _flash_form_errors(form)
 
     thresholds = load_thresholds()
-    score = risk.score()
+    score = risk.actual_score()
     severity = determine_severity(score, thresholds)
+    linked_scenario_url = (
+        url_for(
+            "threat.scenario_detail",
+            model_id=linked_scenario.threat_model_id,
+            scenario_id=linked_scenario.id,
+        )
+        if linked_scenario and "threat.scenario_detail" in current_app.view_functions
+        else None
+    )
 
     return render_template(
         "risk/form.html",
@@ -404,8 +552,45 @@ def edit(risk_id: int):
         form_mode="edit",
         score=score,
         severity=severity,
+        linked_scenario=linked_scenario,
+        linked_scenario_url=linked_scenario_url,
+        owner_from_threat=_owner_from_threat(risk, linked_scenario),
         RiskTreatmentOption=RiskTreatmentOption,
+        approval=_approval_panel(risk),
+        action_form=RiskActionForm(),
     )
+
+
+def _approval_panel(risk: Risk) -> dict:
+    """Context for the approval panel on the edit page (decisions 20261118-1048, -1058)."""
+
+    from ...models.audit import AuditLog
+
+    is_owner = risk.treatment_owner_id is not None and risk.treatment_owner_id == current_user.id
+    panel = {
+        "state": risk.approval_state,
+        "is_owner": is_owner,
+        "decided_by": _display_name(risk.approval_decided_by) if risk.approval_status else None,
+        "form": RiskApprovalForm(formdata=None, fingerprint=risk.approval_fingerprint()) if is_owner else None,
+        "previous_rejection": None,
+    }
+    if risk.approval_status is None:
+        entry = (
+            AuditLog.query.filter_by(event_type="risk_rejected", target_type="risk", target_id=str(risk.id))
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        if entry is not None:
+            panel["previous_rejection"] = {
+                "by": _display_name(entry.actor) if entry.actor else (entry.actor_name or _display_name(None)),
+                "at": entry.created_at,
+                "comment": (entry.payload or {}).get("comment"),
+            }
+    return panel
+
+
+def _display_name(user) -> str:
+    return user.full_name if user is not None else _("risk.approval.unknown_user")
 
 
 @bp.route("/<int:risk_id>/close", methods=["POST"])
@@ -472,6 +657,79 @@ def reopen(risk_id: int):
     return redirect(request.referrer or url_for("risk.dashboard"))
 
 
+@bp.route("/<int:risk_id>/approve", methods=["POST"])
+@login_required
+def approve(risk_id: int):
+    """Record the owner's approval of the risk and its treatment."""
+
+    return _decide(risk_id, RiskApprovalStatus.APPROVED)
+
+
+@bp.route("/<int:risk_id>/reject", methods=["POST"])
+@login_required
+def reject(risk_id: int):
+    """Record the owner's rejection; a comment is required."""
+
+    return _decide(risk_id, RiskApprovalStatus.REJECTED)
+
+
+def _decide(risk_id: int, status: RiskApprovalStatus):
+    """Owner decision (decisions 20261118-1046, -1058).
+
+    404 for an unknown risk, then 403 unless the current user is the risk's
+    owner (admins are not exempt). Any state can be decided, so a decision can
+    be flipped or repeated; each one is a new decision and audit event.
+    """
+
+    _require_risk_access()
+    risk = db.session.get(Risk, risk_id)
+    if risk is None:
+        abort(404)
+    if risk.treatment_owner_id is None or risk.treatment_owner_id != current_user.id:
+        abort(403)
+
+    edit_url = url_for("risk.edit", risk_id=risk.id)
+    form = RiskApprovalForm()
+    if not form.validate_on_submit():
+        flash(_("risk.flash.invalid_request"), "danger")
+        return redirect(edit_url)
+    if form.fingerprint.data != risk.approval_fingerprint():
+        flash(_("risk.flash.approval_stale"), "warning")
+        return redirect(edit_url)
+    comment = (form.comment.data or "").strip() or None
+    if status is RiskApprovalStatus.REJECTED and comment is None:
+        flash(_("risk.flash.approval_comment_required"), "danger")
+        return redirect(edit_url)
+
+    risk.approval_status = status
+    risk.approval_decided_at = datetime.now(UTC)
+    risk.approval_decided_by_id = current_user.id
+    risk.approval_comment = comment
+    severity = risk.determine_actual_severity()
+    log_event(
+        action=f"risk_{status.value}",
+        entity_type="risk",
+        entity_id=risk.id,
+        details={
+            "decision": status.value,
+            "comment": comment,
+            "chance": risk.chance.value,
+            "impact": risk.impact.value,
+            "treatment": risk.treatment.value,
+            "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+            "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+            "mitigated": risk.is_mitigated,
+            "actual_score": risk.actual_score(),
+            "actual_severity": severity.value if severity else None,
+            "fingerprint": risk.approval_fingerprint(),
+        },
+    )
+    db.session.commit()
+    message = _("risk.flash.approved") if status is RiskApprovalStatus.APPROVED else _("risk.flash.rejected")
+    flash(message.format(title=risk.title), "success")
+    return redirect(edit_url)
+
+
 @bp.route("/<int:risk_id>/delete", methods=["POST"])
 @login_required
 def delete(risk_id: int):
@@ -520,7 +778,8 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
         pasta_by_risk_id = {}
 
     for risk in risks:
-        score = risk.score()
+        # Actual score: residual when mitigated, initial otherwise (decision 20261118-0802).
+        score = risk.actual_score()
         severity = determine_severity(score, thresholds)
         due_date = risk.treatment_due_date
         status = _risk_status(risk, today)
@@ -558,10 +817,14 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
                 "score": score,
                 "severity": severity,
                 "severity_class": _SEVERITY_BADGES.get(severity, _DEFAULT_PILL),
-                "impact": risk.impact,
-                "impact_weight": IMPACT_WEIGHTS[risk.impact],
-                "chance": risk.chance,
-                "chance_weight": CHANCE_WEIGHTS[risk.chance],
+                "initial_score": risk.score(),
+                "residual_score": risk.residual_score(),
+                "is_mitigated": risk.is_mitigated,
+                "approval_state": risk.approval_state,
+                "impact": risk.actual_impact,
+                "impact_weight": IMPACT_WEIGHTS[risk.actual_impact],
+                "chance": risk.actual_chance,
+                "chance_weight": CHANCE_WEIGHTS[risk.actual_chance],
                 "treatment": risk.treatment,
                 "treatment_plan": risk.treatment_plan,
                 "treatment_due_date": due_date,
@@ -590,6 +853,7 @@ def _build_dashboard_cards(risks: list[Risk], thresholds) -> list[dict[str, obje
 def _component_snapshot(component: Component) -> dict[str, object]:
     return {
         "id": component.id,
+        "context_scope_id": component.context_scope_id,
         "name": component.name or _("Untitled component"),
         "context": component.context_scope.name if component.context_scope else None,
     }
@@ -606,12 +870,17 @@ def _risk_status(risk: Risk, today: date) -> str:
     return "scheduled"
 
 
-def _dashboard_metrics(cards: list[dict[str, object]]) -> dict[str, object]:
+def _dashboard_metrics(
+    cards: list[dict[str, object]],
+    bia_ids: Sequence[int] = (),
+) -> dict[str, object]:
+    # Under a BIA filter, only components of the selected BIAs count as impacted.
     component_ids = {
         component["id"]
         for card in cards
         for component in card["components"]
         if component.get("id") is not None
+        and (not bia_ids or component.get("context_scope_id") in bia_ids)
     }
     return {
         "total": len(cards),
@@ -726,14 +995,14 @@ def _build_risk_matrix(
             )
 
     for risk in risks:
-        cell = lookup[(risk.chance, risk.impact)]
-        severity = determine_severity(risk.score(), thresholds)
+        cell = lookup[(risk.actual_chance, risk.actual_impact)]
+        severity = determine_severity(risk.actual_score(), thresholds)
         cell.risks.append(
             MatrixRisk(
                 id=risk.id,
                 title=risk.title,
                 severity=severity,
-                score=risk.score(),
+                score=risk.actual_score(),
                 url=url_for("risk.edit", risk_id=risk.id),
             )
         )

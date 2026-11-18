@@ -154,6 +154,41 @@
     }
   },
   "risk": {
+    "dashboard": {
+      "bia_filter_label": "Filteren op BIA",
+      "bia_filter_help": "Selecteer één of meer BIA's (Ctrl/Cmd-klik). Toont risico's met minstens één component in een geselecteerde BIA.",
+      "bia_filter_apply": "Filter toepassen",
+      "bia_filter_clear": "Filter wissen",
+      "bia_filter_active": "Risico's voor: {names}",
+      "metric_treatment_mitigate": "Behandeling: mitigeren",
+      "metric_treatment_mitigate_help": "Risico's met de behandeloptie mitigeren",
+      "matrix_intro": "Toont elk geregistreerd risico op basis van de actuele score (restrisico wanneer gemitigeerd, anders het initiële risico) om concentraties zichtbaar te maken vóór behandeloverleggen.",
+      "matrix_footnote": "Posities en scores tonen het actuele risico: restimpact en restkans voor gemitigeerde risico's, anders de initiële waarden. Ernstkleuren volgen de drempels die in de risicowerkruimte zijn ingesteld.",
+      "approval_filter_label": "Goedkeuring",
+      "approval_filter_all": "Alle",
+      "approval_filter_mine": "Wacht op mijn goedkeuring ({count})",
+      "approval_filter_empty": "Geen risico's voldoen aan het goedkeuringsfilter.",
+      "no_open_risks": "Geen open risico's.",
+      "no_open_risks_hint": "Afgesloten risico's staan in het risico-overzicht.",
+      "expand_all": "Alles uitklappen",
+      "collapse_all": "Alles inklappen",
+      "overview_link": "Risico-overzicht"
+    },
+    "residual": {
+      "mitigated": "Gemitigeerd",
+      "impact": "Restimpact",
+      "chance": "Restkans",
+      "not_set": "— Niet ingevuld —",
+      "help": "Restimpact en restkans beschrijven het risico dat na mitigatie overblijft. Zodra het risico als gemitigeerd is gemarkeerd, bepalen ze de risicoscore.",
+      "mitigated_pill": "Gemitigeerd",
+      "initial_to_residual": "Initieel: {initial} → Rest: {residual}",
+      "not_set_hint": "Gemitigeerd – restrisico niet ingevuld"
+    },
+    "managed_by_threat": {
+      "note": "Dit risico wordt beheerd door een dreigingsscenario. Titel, beschrijving, scoring, behandeling, restrisico, componenten en maatregelen worden vanuit het scenario gesynchroniseerd en kunnen alleen daar worden aangepast. Ook de eigenaar wordt uit het scenario (of het dreigingsmodel) overgenomen.",
+      "link": "Open scenario “{title}”",
+      "owner_hint": "Overgenomen van de eigenaar van de dreiging; de volgende synchronisatie met de dreiging overschrijft dit."
+    },
     "chance": {
       "rare": "Zeldzaam",
       "unlikely": "Onwaarschijnlijk",
@@ -219,17 +254,69 @@
     },
     "flash": {
       "invalid_request": "Kan het verzoek niet valideren.",
-      "archived": "Risico \"{title}\" is gearchiveerd.",
+      "archived": "Risico \"{title}\" is afgesloten. Je vindt het in het risico-overzicht.",
       "already_archived": "Risico is al gearchiveerd.",
       "reopened": "Risico \"{title}\" is heropend.",
       "already_open": "Risico is al actief.",
       "deleted": "Risico \"{title}\" is verwijderd.",
       "synced_from_threats": "{count} dreigingsscenario('s) gesynchroniseerd naar het risicoregister.",
-      "synced_from_threats_none": "Geen niet-gekoppelde dreigingsscenario's gevonden die kwalificeren (behandeling=Mitigeren, actieve status)."
+      "synced_from_threats_none": "Geen niet-gekoppelde dreigingsscenario's gevonden die kwalificeren (behandeling=Mitigeren, actieve status).",
+      "approved": "Risico \"{title}\" goedgekeurd.",
+      "rejected": "Risico \"{title}\" afgewezen.",
+      "approval_comment_required": "Een toelichting is verplicht om een risico af te wijzen.",
+      "approval_stale": "Dit risico is gewijzigd sinds je het opende. Beoordeel het opnieuw; je toelichting is niet opgeslagen."
     },
     "help": {
       "impact_areas": "Selecteer elk domein dat verstoring ondervindt wanneer dit risico zich voordoet.",
       "component_ids": "Alleen componenten waarbij risicotracking is ingeschakeld in een BIA verschijnen hier."
+    },
+    "approval": {
+      "title": "Goedkeuring door eigenaar",
+      "state": {
+        "awaiting": "Wacht op goedkeuring",
+        "approved": "Goedgekeurd",
+        "rejected": "Afgewezen",
+        "no_owner": "Geen eigenaar"
+      },
+      "no_owner_hint": "Wijs een eigenaar toe om goedkeuring te vragen.",
+      "decided_by": "Door {name} op {date}",
+      "previously_rejected": "Eerder afgewezen door {name} op {date}:",
+      "unknown_user": "Onbekende gebruiker",
+      "comment_label": "Toelichting",
+      "comment_help": "Optioneel bij goedkeuren, verplicht bij afwijzen. Max. 2000 tekens.",
+      "approve": "Goedkeuren",
+      "reject": "Afwijzen",
+      "owner_only_hint": "Alleen de eigenaar ({name}) kan dit risico goedkeuren of afwijzen."
+    },
+    "overview": {
+      "title": "Risico-overzicht",
+      "intro": "Alle risico's, open en afgesloten, in één tabel.",
+      "filter_label": "Risico's filteren",
+      "status_label": "Status",
+      "status_filter": {
+        "all": "Alle",
+        "open": "Open",
+        "closed": "Afgesloten"
+      },
+      "columns": {
+        "severity": "Ernst",
+        "title": "Risico",
+        "score": "Score",
+        "treatment": "Behandeling",
+        "owner": "Eigenaar",
+        "approval": "Goedkeuring",
+        "bia": "BIA",
+        "status": "Status"
+      },
+      "status_open": "Open",
+      "empty": "Geen risico's gevonden voor dit filter.",
+      "back_link": "Risicowerkruimte",
+      "source_threat": "Dreiging",
+      "source_pasta": "PASTA"
+    },
+    "closed_banner": {
+      "title": "Dit risico is afgesloten",
+      "threat_note": "Wordt heropend zodra het dreigingsscenario wordt heropend."
     }
   },
   "bia": {
@@ -1775,7 +1862,8 @@
           "back_to_users": "Terug naar gebruikers"
         }
       },
-      "link_risk_management": "Risicobeheer"
+      "link_risk_management": "Risicobeheer",
+      "link_ssp_options": "SSP-lijsten"
     },
     "backup": {
       "nav_link": "Back-up & herstel",
@@ -2332,6 +2420,61 @@
     "principle_edit": {
       "subtitle_edit": "Werk de naam of omschrijving van {name} bij.",
       "cancel": "Annuleren"
+    },
+    "ssp_options": {
+      "page": {
+        "title": "SSP-lijsten",
+        "heading": "SSP-lijsten",
+        "subtitle": "Beheer de keuzes die op elk System Security Plan worden aangeboden. Opties die in gebruik zijn worden gedeactiveerd in plaats van verwijderd.",
+        "back": "← Terug naar beheer"
+      },
+      "kind": {
+        "law_regulation": {
+          "heading": "Wetten, regelgeving en beleid",
+          "help": "SSP-bewerkers kunnen er per plan meerdere selecteren (bijvoorbeeld AVG, NIS2, BIO)."
+        },
+        "monitoring_frequency": {
+          "heading": "Monitoringfrequenties",
+          "help": "SSP-bewerkers kiezen hier één van als frequentie van de continue monitoring."
+        }
+      },
+      "form": {
+        "name": "Naam",
+        "description": "Omschrijving (optioneel)",
+        "add": "Toevoegen",
+        "save": "Opslaan"
+      },
+      "list": {
+        "name": "Naam",
+        "description": "Omschrijving",
+        "status": "Status",
+        "usage": "Gebruikt door",
+        "usage_count": "{count} SSP('s)",
+        "actions": "Acties",
+        "empty": "Nog geen opties."
+      },
+      "state": {
+        "active": "Actief",
+        "inactive": "Inactief"
+      },
+      "actions": {
+        "edit": "Bewerken",
+        "activate": "Activeren",
+        "deactivate": "Deactiveren",
+        "delete": "Verwijderen",
+        "delete_confirm": "\"{name}\" verwijderen? Als SSP's het gebruiken, wordt het in plaats daarvan gedeactiveerd."
+      },
+      "errors": {
+        "name_exists": "Er bestaat al een optie met deze naam."
+      },
+      "flash": {
+        "created": "\"{name}\" toegevoegd.",
+        "updated": "\"{name}\" bijgewerkt.",
+        "activated": "\"{name}\" is weer actief.",
+        "deactivated": "\"{name}\" gedeactiveerd; het wordt niet meer aangeboden voor nieuwe selecties.",
+        "deactivated_instead": "\"{name}\" wordt door {count} SSP('s) gebruikt en is daarom gedeactiveerd in plaats van verwijderd.",
+        "deleted": "\"{name}\" verwijderd."
+      }
     }
   },
   "roles": {
@@ -3502,7 +3645,7 @@
       "export": "Exporteren",
       "delete": "SSP verwijderen",
       "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-      "adrs": "ADR's"
+      "adrs": "Beveiligings-ADR's"
     },
     "sections": {
       "system_identification": "Systeemidentificatie",
@@ -3518,7 +3661,7 @@
       "monitoring": "Continue Monitoring",
       "poam": "Plan van Aanpak & Mijlpalen",
       "dates": "Plandatums",
-      "adrs": "Architectuurbeslissingen",
+      "adrs": "Beveiligings-ADR's",
       "architecture_overview": "Architectuuroverzicht"
     },
     "labels": {
@@ -3629,7 +3772,8 @@
       "section_laws": "Wet- en regelgeving & Beleid",
       "section_dates": "Plandatums",
       "section_monitoring": "Continue Monitoring",
-      "cancel": "Annuleren"
+      "cancel": "Annuleren",
+      "no_law_options": "Er zijn nog geen wetten, regelgeving of beleid ingericht. Vraag een beheerder ze toe te voegen onder SSP-lijsten."
     },
     "controls": {
       "page_title": "Sectie 14 — Beveiligingsmaatregelen",
@@ -3661,7 +3805,18 @@
       "add_section": "Koppeling toevoegen",
       "edit": "Bewerken",
       "remove": "Verwijderen",
-      "remove_confirm": "Deze koppeling verwijderen?"
+      "remove_confirm": "Deze koppeling verwijderen?",
+      "bia_intro": "Gekoppelde systemen komen uit de interfaces die in de BIA zijn vastgelegd en worden hier automatisch toegevoegd. Leg per systeem de overeenkomst, gegevensrichting en beveiligingscontactpersoon vast. U kunt ook systemen toevoegen die niet in de BIA staan.",
+      "badge": {
+        "bia": "BIA",
+        "stale": "Niet meer in BIA"
+      },
+      "print_stale_suffix": "(niet meer in BIA)",
+      "remove_live_bia_hint": "Verwijder het eerst uit de interfaces in de BIA.",
+      "name_from_bia_hint": "De naam komt uit de interfaces in de BIA; wijzig hem daar.",
+      "flash": {
+        "delete_live_bia": "\"{name}\" staat nog in de interfaces van de BIA. Verwijder het eerst uit de BIA."
+      }
     },
     "edit_interconnection": {
       "title": "Koppeling bewerken",
@@ -3679,7 +3834,10 @@
       "add_first": "Voeg het eerste item toe →",
       "edit": "Bewerken",
       "delete": "Verwijderen",
-      "delete_confirm": "Dit PvA-item en zijn mijlpalen verwijderen?"
+      "delete_confirm": "Dit PvA-item en zijn mijlpalen verwijderen?",
+      "intro": "Het POA&M wordt gebruikt om verbeteringen aan het systeem dat in dit plan is beschreven te sturen en te monitoren. Leg hier elke zwakke plek vast en volg het gedetailleerde werk in Jira.",
+      "jira_link": "Jira-issue",
+      "jira_label": "Jira"
     },
     "poam_form": {
       "add_title": "PvA-item toevoegen",
@@ -3697,7 +3855,9 @@
       "completed_col": "Voltooid",
       "remove": "Verwijderen",
       "remove_confirm": "Deze mijlpaal verwijderen?",
-      "add_btn": "Toevoegen"
+      "add_btn": "Toevoegen",
+      "details_optional": "Details (optioneel)",
+      "milestones_section_optional": "Mijlpalen (optioneel)"
     },
     "forms": {
       "laws_regulations": "Wet- en regelgeving & Beleid",
@@ -3731,14 +3891,14 @@
       "add_milestone_btn": "Mijlpaal toevoegen",
       "help": {
         "authorization_boundary": "Beschrijf de systeemgrens: welke componenten, netwerken en gegevensopslag vallen binnen de autorisatieperimeter.",
-        "laws_regulations": "Vermeld van toepassing zijnde wet- en regelgeving en normen (bijv. AVG, NIS2, ISO 27001, BIO). Voeg artikelverwijzingen toe waar relevant.",
+        "laws_regulations": "Selecteer de wetten, regelgeving en beleid die op dit systeem van toepassing zijn. Houd Ctrl (Cmd op Mac) ingedrukt om er meerdere te kiezen. Beheerders onderhouden deze lijst onder Beheer → SSP-lijsten.",
         "plan_completion_date": "Beoogde datum waarop alle secties van dit SSP zijn afgerond.",
         "plan_approval_date": "Datum waarop dit SSP formeel is beoordeeld en goedgekeurd.",
         "monitoring_kpis_kris": "Kritieke prestatie-indicatoren (KPI's) en risico-indicatoren (KRI's) die de beveiligingsstatus van dit systeem meten.",
         "monitoring_what": "Geef aan welke maatregelen, logbronnen, metrieken en gebeurtenissen continu worden gemonitord.",
         "monitoring_who": "Vermeld de rollen, teams of personen die verantwoordelijk zijn voor de monitoringactiviteiten.",
         "monitoring_tools": "Geef de platforms, tools of diensten op die worden gebruikt voor monitoring (bijv. SIEM, IDS, kwetsbaarhedenscanners).",
-        "monitoring_frequency": "Hoe vaak wordt monitoring uitgevoerd? (bijv. Continu, Dagelijks, Maandelijks, Kwartaal)",
+        "monitoring_frequency": "Hoe vaak de voortgang van dit SSP wordt beoordeeld. Beheerders onderhouden de keuzes onder Beheer → SSP-lijsten.",
         "system_name": "Naam van het externe of derde systeem dat is verbonden met dit systeem.",
         "owning_organization": "Organisatie die het verbonden systeem beheert of eigenaar is.",
         "agreement_type": "Het formele type overeenkomst dat deze koppeling regelt (bijv. MOU, ISA).",
@@ -3753,8 +3913,17 @@
         "point_of_contact": "Naam of rol van de persoon die verantwoordelijk is voor de uitvoering van deze herstelactie.",
         "scheduled_completion": "Beoogde datum voor het afronden van de herstelactie.",
         "estimated_cost": "Geschatte kosten of inspanning (bijv. 3 persoonsdagen, €5.000).",
-        "status": "Huidige herstelstatus van dit POA&M-item."
-      }
+        "status": "Huidige herstelstatus van dit POA&M-item.",
+        "adr_register_url": "Optionele link naar de pagina waar de beveiligingsarchitectuurbesluiten van dit systeem zijn vastgelegd (bijvoorbeeld een Confluence-pagina). Moet beginnen met http:// of https://.",
+        "jira_url": "Link naar het Jira-issue (of epic) waarin het werk voor deze zwakke plek wordt gevolgd. Moet beginnen met http:// of https://."
+      },
+      "errors": {
+        "url_invalid": "Voer een volledig webadres in dat begint met http:// of https://.",
+        "url_too_long": "Het webadres mag maximaal 500 tekens lang zijn."
+      },
+      "adr_register_url": "ADR-register (link)",
+      "option_inactive": "{name} (inactief)",
+      "jira_url": "Jira-link"
     },
     "adr": {
       "forms": {
@@ -3772,14 +3941,19 @@
           "primary_principle": "Verplicht — het architectuurprincipe waarop deze beslissing is gebaseerd. Kan na aanmaken niet meer worden gewijzigd.",
           "secondary_principles": "Optioneel — andere principes waar deze beslissing ook betrekking op heeft.",
           "status": "Voorgesteld, Geaccepteerd, Afgewezen of Verouderd. \"Vervangen\" wordt alleen automatisch ingesteld wanneer een andere ADR deze vervangt.",
-          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\"."
+          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\".",
+          "external_url": "Optioneel. Als het besluit elders is beschreven (bijvoorbeeld in Confluence), plak dan hier de link; Context en Besluit worden dan optioneel."
+        },
+        "external_url": "Link naar ADR-beschrijving",
+        "errors": {
+          "context_or_link": "Vul dit in, of voeg een link toe naar de plek waar het besluit is beschreven."
         }
       }
     },
     "adrs": {
-      "page_title": "Architectuurbeslissingen (ADR's)",
+      "page_title": "Beveiligings-ADR's",
       "back": "← Terug naar SSP",
-      "new": "Nieuwe ADR",
+      "new": "Nieuwe beveiligings-ADR",
       "edit": "Bewerken",
       "cancel": "Annuleren",
       "edit_principle_fixed": "Primair principe (vastgelegd bij aanmaken):",
@@ -3798,7 +3972,8 @@
         "status": "Status",
         "principle": "Principe",
         "date": "Datum",
-        "empty": "Nog geen ADR's vastgelegd."
+        "empty": "Nog geen ADR's vastgelegd.",
+        "actions": "Acties"
       },
       "detail": {
         "created": "Aangemaakt",
@@ -3809,29 +3984,59 @@
         "secondary_principles": "Ook van toepassing op:",
         "context": "Context",
         "decision": "Beslissing",
-        "consequences": "Gevolgen"
+        "consequences": "Gevolgen",
+        "external": "Extern beschreven"
+      },
+      "register": {
+        "label": "ADR-register"
+      },
+      "intro": "Leg alleen beveiligingsrelevante architectuurbesluiten voor dit systeem vast, bijvoorbeeld over authenticatie, versleuteling, netwerksegmentatie of logging. Verwijs naar je ADR-pagina in plaats van het besluit te kopiëren als het elders is vastgelegd.",
+      "print": {
+        "described_externally": "Extern beschreven"
+      },
+      "edit_title": "Beveiligings-ADR bewerken",
+      "delete": {
+        "button": "Verwijderen",
+        "confirm": "De ADR \"{title}\" verwijderen? Dit kan niet ongedaan worden gemaakt. Als deze een andere ADR verving, krijgt die ADR zijn vorige status terug.",
+        "flash": "ADR \"{title}\" verwijderd."
       }
     },
     "architecture_overview": {
       "current_alt": "Huidig architectuuroverzicht diagram",
-      "none_uploaded": "Er is nog geen architectuuroverzicht geupload.",
+      "none_uploaded": "Er is nog geen architectuuroverzicht geüpload.",
       "upload": {
         "field": {
-          "label": "Afbeelding uploaden (PNG of JPEG)"
+          "label": "Architectuuroverzicht uploaden (PNG, JPEG of PDF)"
         },
         "submit": "Uploaden",
         "errors": {
-          "required": "Kies een afbeelding om te uploaden.",
-          "invalid_image": "Bestand moet een geldige PNG- of JPEG-afbeelding zijn.",
-          "too_large": "Afbeelding mag maximaal 5 MB zijn.",
-          "dimensions_too_large": "Afbeeldingsafmetingen zijn te groot."
-        }
+          "required": "Kies een bestand om te uploaden.",
+          "invalid_image": "Het bestand is geen geldige PNG- of JPEG-afbeelding.",
+          "too_large": "Het bestand mag maximaal 10 MB zijn.",
+          "dimensions_too_large": "De afbeelding mag maximaal 8000×8000 pixels zijn.",
+          "invalid_type": "Alleen PNG-, JPEG- of PDF-bestanden kunnen worden geüpload. Exporteer andere formaten (zoals SVG, Visio of draw.io) eerst naar PNG of PDF.",
+          "invalid_pdf": "Het bestand is geen geldige PDF."
+        },
+        "help": "PNG, JPEG of PDF, max. 10 MB; afbeeldingen max. 8000×8000 px. Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF."
       },
       "history": {
         "heading": "Versiegeschiedenis",
         "entry": "Versie {version} — geupload door {uploader} op {date}",
         "restore": "Herstellen"
+      },
+      "pdf": {
+        "meta": "PDF · {size} MB · geüpload door {uploader} op {date}",
+        "download": "PDF downloaden"
+      },
+      "delete": {
+        "current": "Deze versie verwijderen",
+        "history": "Verwijderen",
+        "confirm": "Versie {version} van het architectuuroverzicht verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "flash": "Versie van het architectuuroverzicht verwijderd."
       }
+    },
+    "monitoring": {
+      "intro": "Continue monitoring beschrijft hoe de voortgang van dit System Security Plan wordt gevolgd: welke KPI's en KRI's worden gemeten, wat wordt gemonitord, wie dat doet, met welke tools en hoe vaak."
     }
   }
 }

@@ -234,7 +234,9 @@ def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
 # Risk workspace synchronisation
 # ---------------------------------------------------------------------------
 
-_EXCLUDED_STATUSES = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
+# Statuses that close the linked risk. Mitigated keeps it open so the residual
+# score is shown (decision 20261118-0751).
+_CLOSING_STATUSES = {ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
 
 _CHANCE_MAP = {
     1: "rare",
@@ -263,12 +265,14 @@ _TREATMENT_MAP = {
 def _components_for_scenario(scenario: ThreatScenario) -> list:
     """Return BIA components to link when syncing to the risk workspace.
 
-    Resolves the single BIA component whose name matches the scenario's linked
-    asset.  Falls back to all eligible components in the threat model's context
-    scope only when no asset is linked to the scenario or no name match is found.
+    Only the scenario's threatened assets (``assigned_assets``, falling back to
+    the legacy scalar ``asset``) are matched, by case-insensitive trimmed name,
+    against components in the threat model's BIA.  No match yields ``[]``
+    (decisions 20261118-0750 and 20261118-0830).
     """
+    import sqlalchemy as sa
+
     from ..bia.models import Component
-    from ..risk.services import eligible_component_query
 
     context_scope_id = (
         scenario.threat_model.context_scope_id
@@ -278,64 +282,97 @@ def _components_for_scenario(scenario: ThreatScenario) -> list:
     if not context_scope_id:
         return []
 
-    # Use the asset that is directly linked to this specific scenario.
-    asset_name = scenario.asset.name if scenario.asset else None
-    if asset_name:
-        matched = (
-            eligible_component_query()
-            .filter(
-                Component.context_scope_id == context_scope_id,
-                Component.name == asset_name,
-            )
-            .all()
-        )
-        if matched:
-            return matched
+    assets = list(scenario.assigned_assets) or ([scenario.asset] if scenario.asset else [])
+    names = {(asset.name or "").strip().lower() for asset in assets} - {""}
+    if not names:
+        return []
 
-        # Try without the eligibility filter so ineligible components are also accepted.
-        matched_all = (
-            Component.query
-            .filter(
-                Component.context_scope_id == context_scope_id,
-                Component.name == asset_name,
-            )
-            .all()
+    return (
+        Component.query
+        .filter(
+            Component.context_scope_id == context_scope_id,
+            sa.func.lower(sa.func.trim(Component.name)).in_(names),
         )
-        if matched_all:
-            return matched_all
-
-    # Fallback: all eligible components in the scope (no asset linked to the scenario).
-    eligible = (
-        eligible_component_query()
-        .filter(Component.context_scope_id == context_scope_id)
+        .order_by(Component.id)
         .all()
     )
-    if eligible:
-        return eligible
 
-    return Component.query.filter_by(context_scope_id=context_scope_id).all()
+
+def _risk_sync_snapshot(risk) -> dict:
+    """Return the audited, sync-managed fields of a risk (decision 20261118-0830)."""
+
+    return {
+        "components": sorted(component.id for component in risk.components),
+        "mitigated": risk.is_mitigated,
+        "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+        "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+        "chance": risk.chance.value if risk.chance else None,
+        "impact": risk.impact.value if risk.impact else None,
+        "closed": risk.is_closed,
+        "treatment_owner_id": risk.treatment_owner_id,
+    }
+
+
+def _log_risk_sync(risk, scenario: ThreatScenario, before: dict, approval_reset: bool = False) -> None:
+    """Write one audit event listing only the sync-managed fields that changed.
+
+    ``approval_reset`` records that the change voids the owner's decision
+    (decision 20261118-1058, CHK018); the risk model's flush listener clears it.
+    """
+    from ...core.audit import log_event
+
+    after = _risk_sync_snapshot(risk)
+    changes = {
+        key: {"before": before[key], "after": after[key]}
+        for key in after
+        if before[key] != after[key]
+    }
+    if changes:
+        log_event(
+            action="risk_synced_from_threat",
+            entity_type="risk",
+            entity_id=risk.id,
+            details={"scenario_id": scenario.id, "changes": changes, "approval_reset": approval_reset},
+        )
+
+
+def _threat_owner_id(scenario: ThreatScenario) -> int | None:
+    """The risk owner for a synced scenario: its own owner, else the threat model's.
+
+    Decision 20261118-1545. Returns None when neither is set, so sync clears the
+    risk owner.
+    """
+    if scenario.owner_id:
+        return scenario.owner_id
+    model = scenario.threat_model
+    return model.owner_id if model is not None else None
 
 
 def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
     """Create, update, or close the linked Risk entry based on the scenario state.
 
-    When the scenario status is mitigated, accepted, or closed the linked risk
-    (if any) is closed.  For all other statuses the risk is created or kept in
-    sync with the scenario's inherent risk fields.
+    Accepted or closed scenarios, and scenarios not treated by mitigation,
+    close the linked risk (if any).  All other scenarios create or update it,
+    including the mitigated marker and residual assessment; a mitigated
+    scenario keeps its risk open.  Changes are audited (decision 20261118-0830).
     """
+    from ...core.audit import log_event
     from ...extensions import db
     from ..risk.models import Risk, RiskChance, RiskImpact, RiskTreatmentOption
 
-    if scenario.status in _EXCLUDED_STATUSES or scenario.treatment is not TreatmentOption.MITIGATE:
+    if scenario.status in _CLOSING_STATUSES or scenario.treatment is not TreatmentOption.MITIGATE:
         if scenario.risk_id:
             risk = db.session.get(Risk, scenario.risk_id)
             if risk and not risk.is_closed:
+                before = _risk_sync_snapshot(risk)
                 risk.closed_at = datetime.now(UTC)
+                _log_risk_sync(risk, scenario, before)
         return
 
     likelihood = max(1, min(5, scenario.likelihood or 1))
     impact = max(1, min(5, scenario.impact_score or 1))
     treatment_str = _TREATMENT_MAP.get(scenario.treatment, "mitigate") if scenario.treatment else "mitigate"
+    has_residual = scenario.residual_likelihood and scenario.residual_impact
 
     fields: dict = {
         "title": scenario.title,
@@ -343,26 +380,51 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
         "chance": RiskChance(str(_CHANCE_MAP[likelihood])),
         "impact": RiskImpact(str(_IMPACT_MAP[impact])),
         "treatment": RiskTreatmentOption(treatment_str),
+        "residual_chance": (
+            RiskChance(_CHANCE_MAP[max(1, min(5, scenario.residual_likelihood))])
+            if has_residual else None
+        ),
+        "residual_impact": (
+            RiskImpact(_IMPACT_MAP[max(1, min(5, scenario.residual_impact))])
+            if has_residual else None
+        ),
+        "treatment_owner_id": _threat_owner_id(scenario),
     }
+    is_mitigated = scenario.status is ScenarioStatus.MITIGATED
 
     if scenario.risk_id is None:
         risk = Risk(discovered_on=date.today(), **fields)
+        risk.mitigated_at = datetime.now(UTC) if is_mitigated else None
         risk.components = _components_for_scenario(scenario)
         risk.controls = list(scenario.controls)
         db.session.add(risk)
         db.session.flush()
         scenario.risk_id = risk.id
+        log_event(
+            action="risk_created_from_threat",
+            entity_type="risk",
+            entity_id=risk.id,
+            details={"scenario_id": scenario.id, **_risk_sync_snapshot(risk)},
+        )
     else:
         risk = db.session.get(Risk, scenario.risk_id)
         if risk:
+            before = _risk_sync_snapshot(risk)
+            decided_fingerprint = risk.approval_fingerprint() if risk.approval_status else None
             for key, value in fields.items():
                 setattr(risk, key, value)
             if risk.is_closed:
                 risk.closed_at = None
+            if not is_mitigated:
+                risk.mitigated_at = None
+            elif risk.mitigated_at is None:
+                risk.mitigated_at = datetime.now(UTC)
             # Always keep components in sync with the threat model's assets.
             risk.components = _components_for_scenario(scenario)
             # Keep controls in sync with the linked threat scenario.
             risk.controls = list(scenario.controls)
+            approval_reset = decided_fingerprint is not None and decided_fingerprint != risk.approval_fingerprint()
+            _log_risk_sync(risk, scenario, before, approval_reset)
 
 
 # ---------------------------------------------------------------------------
@@ -614,12 +676,18 @@ def publish_pasta_conclusion_to_risk(conclusion, published_by_user) -> None:
     title = finding.title if finding else "PASTA Risk Conclusion"
     description = (finding.description or title).strip()
 
+    # PASTA conclusions have no owner; the threat model's owner owns the risk
+    # (decision 20261118-1545).
+    stage_record = finding.stage_record if finding else None
+    model = stage_record.threat_model if stage_record else None
+
     fields = {
         "title": title,
         "description": description,
         "chance": RiskChance(_CHANCE_MAP[likelihood]),
         "impact": RiskImpact(_IMPACT_MAP[impact]),
         "treatment": treatment,
+        "treatment_owner_id": model.owner_id if model is not None else None,
     }
 
     if conclusion.published_risk_id is None:

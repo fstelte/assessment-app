@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 from scaffold.apps.bia.models import Component, ContextScope
 from scaffold.apps.csa.models import Control
@@ -240,3 +240,149 @@ def test_risk_api_ticket_link_label_too_long(client, app):
     assert resp.status_code == 400
     body = resp.get_json()
     assert "ticket_links" in body["errors"]
+
+
+# ---------------------------------------------------------------------------
+# Residual assessment and mitigated marker (Task 6)
+# ---------------------------------------------------------------------------
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture
+def api_admin(login):
+    role = Role.query.filter_by(name="admin").first() or Role(name="admin")
+    login.roles.append(role)
+    db.session.commit()
+    return login
+
+
+def _residual_payload(component_id: int, **extra) -> dict:
+    payload = {
+        "title": "Backup leak",
+        "description": "Backups stored unencrypted",
+        "impact": 4,
+        "chance": "likely",
+        "impact_areas": ["operational"],
+        "component_ids": [component_id],
+        "treatment": "accept",
+    }
+    payload.update(extra)
+    return payload
+
+
+def test_risk_api_stores_and_serializes_residual(client, app, api_admin):
+    component = _provision_component(app)
+
+    response = client.post(
+        "/api/risks",
+        json=_residual_payload(component["id"], residual_impact=2, residual_chance="possible", mitigated=True),
+    )
+
+    assert response.status_code == 201
+    data = response.get_json()["data"]
+    assert data["score"] == 16  # initial, unchanged meaning
+    assert data["residual_impact"] == {"value": "minor", "weight": 2}
+    assert data["residual_chance"] == {"value": "possible", "weight": 3}
+    assert data["residual_score"] == 6
+    assert data["actual_score"] == 6
+    assert data["mitigated_at"] is not None
+
+
+def test_risk_api_put_omitted_keeps_and_null_clears_residual(client, app, api_admin):
+    component = _provision_component(app)
+    created = client.post(
+        "/api/risks",
+        json=_residual_payload(component["id"], residual_impact=2, residual_chance=3, mitigated=True),
+    ).get_json()["data"]
+
+    kept = client.put(f"/api/risks/{created['id']}", json=_residual_payload(component["id"])).get_json()["data"]
+    assert kept["residual_score"] == 6
+    assert kept["mitigated_at"] == created["mitigated_at"]
+
+    cleared = client.put(
+        f"/api/risks/{created['id']}",
+        json=_residual_payload(component["id"], residual_impact=None, mitigated=False),
+    ).get_json()["data"]
+    assert cleared["residual_impact"] is None
+    assert cleared["residual_chance"] == {"value": "possible", "weight": 3}
+    assert cleared["mitigated_at"] is None
+    assert cleared["actual_score"] == 16
+
+
+@pytest.mark.parametrize(
+    ("extra", "field"),
+    [({"residual_impact": 9}, "residual_impact"), ({"mitigated": "yes"}, "mitigated")],
+)
+def test_risk_api_rejects_invalid_residual_input(client, app, api_admin, extra, field):
+    component = _provision_component(app)
+
+    response = client.post("/api/risks", json=_residual_payload(component["id"], **extra))
+
+    assert response.status_code == 400
+    assert field in response.get_json()["errors"]
+
+
+def test_risk_api_put_keeping_impact_areas_succeeds(client, app, api_admin):
+    """Regression: PUT re-sending an existing impact area hit uq_risk_impact_area."""
+    component = _provision_component(app)
+    created = client.post("/api/risks", json=_residual_payload(component["id"])).get_json()["data"]
+
+    response = client.put(
+        f"/api/risks/{created['id']}",
+        json=_residual_payload(component["id"], impact_areas=["operational", "privacy"]),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["data"]["impact_areas"] == ["operational", "privacy"]
+
+
+def test_risk_api_serializes_approval_fields(client, app, api_admin):
+    from scaffold.apps.risk.models import Risk, RiskApprovalStatus
+
+    component = _provision_component(app)
+    created = client.post(
+        "/api/risks", json=_residual_payload(component["id"], treatment_owner_id=api_admin.id)
+    ).get_json()["data"]
+    assert created["approval_status"] is None
+    assert created["approval_state"] == "awaiting"
+    assert created["approval_decided_at"] is None
+    assert created["approval_decided_by"] is None
+
+    risk = db.session.get(Risk, created["id"])
+    risk.approval_status = RiskApprovalStatus.APPROVED
+    risk.approval_decided_by_id = api_admin.id
+    risk.approval_decided_at = datetime.now(UTC)
+    risk.approval_comment = "Fine"
+    db.session.commit()
+
+    data = client.get(f"/api/risks/{risk.id}").get_json()["data"]
+    assert data["approval_status"] == "approved"
+    assert data["approval_state"] == "approved"
+    assert data["approval_decided_by"]["id"] == api_admin.id
+    assert data["approval_decided_at"] is not None
+    assert data["approval_comment"] == "Fine"
+
+
+def test_risk_api_put_cannot_change_approval(client, app, api_admin):
+    from scaffold.apps.risk.models import Risk
+
+    component = _provision_component(app)
+    payload = _residual_payload(component["id"], treatment_owner_id=api_admin.id)
+    created = client.post("/api/risks", json=payload).get_json()["data"]
+
+    response = client.put(
+        f"/api/risks/{created['id']}",
+        json={
+            **payload,
+            "approval_status": "approved",
+            "approval_decided_by_id": api_admin.id,
+            "approval_comment": "self-approved via API",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["data"]["approval_state"] == "awaiting"
+    risk = db.session.get(Risk, created["id"])
+    assert risk.approval_status is None
+    assert risk.approval_comment is None

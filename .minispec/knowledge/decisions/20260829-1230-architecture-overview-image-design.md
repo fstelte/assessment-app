@@ -2,9 +2,9 @@
 type: decision
 id: 20260829-1230-architecture-overview-image-design
 date: 2026-08-29
-status: accepted
+status: superseded
 supersedes: null
-superseded_by: null
+superseded_by: 20261118-1505-architecture-overview-pdf-and-delete
 impacts:
   - scaffold/apps/ssp/models.py
   - scaffold/apps/ssp/routes.py

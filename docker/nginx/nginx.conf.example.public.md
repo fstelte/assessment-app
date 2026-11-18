@@ -54,6 +54,10 @@ http {
   sendfile on;
   keepalive_timeout 65;
 
+  # Uploads: the architecture overview accepts files up to 10 MB; allow
+  # multipart overhead. nginx defaults to 1 MB (docs/deployment.md).
+  client_max_body_size 12m;
+
   upstream app_backend {
     server web:8000;
     keepalive 16;

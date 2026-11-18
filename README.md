@@ -30,6 +30,12 @@ Unified scaffold that layers the existing `bia_app` and `csa_app` domains into a
 - `/api/risks` keeps automation in sync with the UI, returning the same serialized payloads (score, severity, linked components, and CSA control metadata).
 - See `docs/risk.md` for prerequisites, best practices when selecting CSA controls, and a troubleshooting checklist.
 
+## System Security Plan
+
+- `/ssp` holds one NIST SP 800-18 System Security Plan per BIA context. Interconnections follow the BIA interfaces, and laws/regulations/policies and monitoring frequencies come from admin-managed lists at `/admin/ssp-options`.
+- The architecture overview accepts PNG, JPEG or PDF up to 10 MB. The POA&M links each weakness to its Jira issue, and Security ADRs can link to their external description.
+- See `docs/ssp.md` for the user guide and audit events.
+
 ## Threat Modeling
 
 The threat module supports two methodologies selectable at model-creation time:

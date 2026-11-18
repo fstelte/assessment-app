@@ -70,10 +70,7 @@ body[data-theme="dark"] .risk-hero {
   border-radius: 1.25rem;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  padding: 1rem 1.25rem;
   box-shadow: 0 1.5rem 3rem rgba(15, 23, 42, 0.12);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -85,6 +82,55 @@ body[data-theme="dark"] .risk-card {
 .risk-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 2rem 3.25rem rgba(15, 23, 42, 0.18);
+}
+/* Collapsible cards (decisions 20261118-1202, -1210). */
+.risk-card__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 0.75rem;
+}
+.risk-card__summary::-webkit-details-marker {
+  display: none;
+}
+.risk-card__summary::before {
+  content: "\25B8";
+  color: var(--color-muted);
+  transition: transform 0.15s ease;
+}
+.risk-card[open] > .risk-card__summary::before {
+  transform: rotate(90deg);
+}
+.risk-card__summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+.risk-card__title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.risk-card__summary-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.risk-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+@media (max-width: 640px) {
+  .risk-card__title {
+    white-space: normal;
+  }
 }
 .risk-card__header {
   display: flex;
@@ -224,6 +270,7 @@ body[data-theme="dark"] .risk-control-card {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr));
   gap: 1.5rem;
+  align-items: start;
 }
 .risk-matrix {
   display: flex;
@@ -542,9 +589,9 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             <small>{{ _('Severity-driven follow ups') }}</small>
           </article>
           <article class="risk-hero__metric">
-            <p class="uppercase text-sm mb-1">{{ _('Mitigation tracks') }}</p>
+            <p class="uppercase text-sm mb-1">{{ _('risk.dashboard.metric_treatment_mitigate') }}</p>
             <strong>{{ metrics.mitigate or 0 }}</strong>
-            <small>{{ _('Risks in mitigate treatment') }}</small>
+            <small>{{ _('risk.dashboard.metric_treatment_mitigate_help') }}</small>
           </article>
           <article class="risk-hero__metric">
             <p class="uppercase text-sm mb-1">{{ _('Overdue plans') }}</p>
@@ -556,12 +603,48 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     </div>
   </section>
 
+  <section class="risk-form-card mb-4" aria-label="{{ _('risk.dashboard.bia_filter_label') }}">
+    <form method="get" action="{{ url_for('risk.dashboard') }}" class="flex flex-col md:flex-row md:items-end gap-3">
+      <div class="grow">
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="bia-filter">{{ _('risk.dashboard.bia_filter_label') }}</label>
+        <select id="bia-filter" name="bia" multiple size="{{ [bia_options|length, 5]|min or 1 }}"
+                class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          {% for scope in bia_options %}
+          <option value="{{ scope.id }}" {% if scope.id in selected_bia_ids %}selected{% endif %}>{{ scope.name }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-[var(--color-muted)] mt-1">{{ _('risk.dashboard.bia_filter_help') }}</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="approval-filter">{{ _('risk.dashboard.approval_filter_label') }}</label>
+        <select id="approval-filter" name="approval"
+                class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30">
+          <option value="" {% if not selected_approval %}selected{% endif %}>{{ _('risk.dashboard.approval_filter_all') }}</option>
+          <option value="mine" {% if selected_approval == 'mine' %}selected{% endif %}>{{ _('risk.dashboard.approval_filter_mine').format(count=mine_count) }}</option>
+          <option value="awaiting" {% if selected_approval == 'awaiting' %}selected{% endif %}>{{ _('risk.approval.state.awaiting') }}</option>
+          <option value="rejected" {% if selected_approval == 'rejected' %}selected{% endif %}>{{ _('risk.approval.state.rejected') }}</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.dashboard.bia_filter_apply') }}</button>
+        {% if selected_bia_ids or selected_approval %}
+        <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}">{{ _('risk.dashboard.bia_filter_clear') }}</a>
+        {% endif %}
+      </div>
+    </form>
+    {% if selected_bia_ids %}
+    <p class="text-sm text-[var(--color-muted)] mt-2 mb-0" data-bia-filter-active>
+      {{ _('risk.dashboard.bia_filter_active').format(names=bia_options|selectattr('id', 'in', selected_bia_ids)|map(attribute='name')|join(', ')) }}
+    </p>
+    {% endif %}
+  </section>
+
   <section class="risk-matrix">
     <div class="risk-matrix__card">
       <div class="grow">
         <p class="uppercase text-sm mb-2">{{ _('Likelihood vs impact matrix') }}</p>
         <h2 class="h4 mb-2">{{ _('Risk heatmap') }}</h2>
-        <p class="text-[var(--color-muted)] mb-0">{{ _('Plot every recorded risk across the configured severity spectrum to reveal concentration points before treatment review meetings.') }}</p>
+        <p class="text-[var(--color-muted)] mb-0">{{ _('risk.dashboard.matrix_intro') }}</p>
       </div>
       <div>
         <p class="uppercase text-sm text-[var(--color-muted)] mb-2">{{ _('Severity scale') }}</p>
@@ -632,7 +715,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
         </div>
         {% endfor %}
       </div>
-      <p class="risk-matrix__footnote text-[var(--color-muted)] text-sm mb-0">{{ _('Scores reflect the configured impact and chance weights; severity colors respect the thresholds set in the risk workspace.') }}</p>
+      <p class="risk-matrix__footnote text-[var(--color-muted)] text-sm mb-0">{{ _('risk.dashboard.matrix_footnote') }}</p>
     </div>
   </section>
 
@@ -643,6 +726,7 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
     </div>
     <div class="risk-actions__buttons">
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700" href="{{ url_for('risk.create') }}">{{ _('New risk') }}</a>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.overview') }}" data-overview-link>{{ _('risk.dashboard.overview_link') }}</a>
       <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.dashboard') }}#risk-list">{{ _('Refresh view') }}</a>
       {% if current_user.has_role('admin') or current_user.has_role('assessment_manager') %}
       <form method="post" action="{{ url_for('risk.sync_from_threats') }}" class="inline">
@@ -657,25 +741,43 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
   </section>
 
   <section id="risk-list">
+    {% set approval_pills = {
+      'approved': 'risk-pill--low',
+      'rejected': 'risk-pill--critical',
+      'awaiting': 'risk-pill--moderate',
+      'no_owner': 'risk-pill--muted'
+    } %}
     {% if risk_cards %}
-    <div class="risk-card-grid">
+    <div class="flex flex-wrap gap-2 mb-3">
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-risk-expand aria-controls="risk-card-grid">{{ _('risk.dashboard.expand_all') }}</button>
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-risk-collapse aria-controls="risk-card-grid">{{ _('risk.dashboard.collapse_all') }}</button>
+    </div>
+    <div class="risk-card-grid" id="risk-card-grid">
       {% for card in risk_cards %}
-      <article class="risk-card" id="risk-{{ card.id }}">
+      <details class="risk-card" id="risk-{{ card.id }}">
+        <summary class="risk-card__summary">
+          <span class="risk-pill {{ card.severity_class }}">
+            {% if card.severity %}
+            {{ _('risk.severity.' + card.severity.value) }}
+            {% else %}
+            {{ _('Severity pending') }}
+            {% endif %}
+          </span>
+          <h3 class="h5 risk-card__title" title="{{ card.title }}">{{ card.title }}</h3>
+          <span class="risk-card__summary-score" aria-label="{{ _('Score') }} {{ card.score }}">{{ card.score }}</span>
+          <span class="risk-pill {{ approval_pills[card.approval_state] }}" data-approval-state="{{ card.approval_state }}">{{ _('risk.approval.state.' + card.approval_state) }}</span>
+          <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
+          {% if card.is_mitigated %}
+          <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
+          {% endif %}
+        </summary>
+        <div class="risk-card__body">
         <header class="risk-card__header">
           <div>
-            <div class="risk-pill {{ card.severity_class }}">
-              {% if card.severity %}
-              {{ _('risk.severity.' + card.severity.value) }}
-              {% else %}
-              {{ _('Severity pending') }}
-              {% endif %}
-            </div>
-            <div class="flex flex-wrap gap-2 mt-2">
+            <div class="flex flex-wrap gap-2">
               <span class="risk-pill risk-pill--muted">{{ _('risk.treatment.' + card.treatment.value) }}</span>
-              <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
             </div>
-            <h3 class="h5 mt-3 mb-1">{{ card.title }}</h3>
-            <p class="text-[var(--color-muted)] text-sm mb-0">{{ card.description }}</p>
+            <p class="text-[var(--color-muted)] text-sm mt-2 mb-0">{{ card.description }}</p>
             {% if card.pasta_origin %}
             <div class="mt-2">
               <a href="{{ url_for('threat.pasta_risk_conclusion_edit', model_id=card.pasta_origin.finding.stage_record.threat_model_id, finding_id=card.pasta_origin.finding_id) }}"
@@ -685,19 +787,19 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
               </a>
             </div>
             {% endif %}
-            {% if card.is_closed %}
-            <div class="text-[var(--color-muted)] text-sm mt-2">
-              {% if card.closed_at %}
-              {{ _('risk.status.closed_on').format(date=card.closed_at.strftime('%d %b %Y')) }}
-              {% else %}
-              {{ _('risk.status.archived') }}
-              {% endif %}
-            </div>
-            {% endif %}
           </div>
           <div class="risk-card__score">
             <small class="text-[var(--color-muted)] block">{{ _('Score') }}</small>
             <strong>{{ card.score }}</strong>
+            {% if card.is_mitigated %}
+            <div class="text-xs text-[var(--color-muted)]">
+              {% if card.residual_score is not none %}
+              {{ _('risk.residual.initial_to_residual').format(initial=card.initial_score, residual=card.residual_score) }}
+              {% else %}
+              {{ _('risk.residual.not_set_hint') }}
+              {% endif %}
+            </div>
+            {% endif %}
             {% if card.discovered_on %}
             <div class="text-sm text-[var(--color-muted)]">{{ _('Logged {date}').format(date=card.discovered_on.strftime('%d %b %Y')) }}</div>
             {% endif %}
@@ -833,24 +935,28 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
           {% if api_endpoint_available %}
           <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk_api.get_risk', risk_id=card.id) }}" target="_blank" rel="noopener">{{ _('Open API record') }}</a>
           {% endif %}
-          {% if card.is_closed %}
-          <form method="post" action="{{ url_for('risk.reopen', risk_id=card.id) }}">
-            {{ action_form.csrf_token }}
-            <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-primary-500 text-primary-400 hover:bg-primary-500/10" type="submit">{{ _('risk.actions.reopen') }}</button>
-          </form>
-          {% else %}
           <form method="post" action="{{ url_for('risk.close', risk_id=card.id) }}">
             {{ action_form.csrf_token }}
             <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-yellow-400 text-yellow-400 hover:bg-yellow-400/10" type="submit">{{ _('risk.actions.close_archive') }}</button>
           </form>
-          {% endif %}
           <form method="post" action="{{ url_for('risk.delete', risk_id=card.id) }}" data-risk-delete-form data-confirm="{{ _('risk.actions.delete_confirm') }}">
             {{ action_form.csrf_token }}
             <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10" type="submit">{{ _('risk.actions.delete') }}</button>
           </form>
         </div>
-      </article>
+        </div>
+      </details>
       {% endfor %}
+    </div>
+    {% elif selected_approval %}
+    <div class="risk-empty" data-approval-empty>
+      <h3 class="h5">{{ _('risk.dashboard.approval_filter_empty') }}</h3>
+    </div>
+    {% elif has_closed_risks and not selected_bia_ids %}
+    <div class="risk-empty" data-no-open-risks>
+      <h3 class="h5">{{ _('risk.dashboard.no_open_risks') }}</h3>
+      <p class="text-[var(--color-muted)]">{{ _('risk.dashboard.no_open_risks_hint') }}</p>
+      <a class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" href="{{ url_for('risk.overview', status='closed') }}">{{ _('risk.dashboard.overview_link') }}</a>
     </div>
     {% else %}
     <div class="risk-empty">
@@ -875,6 +981,29 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
       event.preventDefault();
     }
   });
+
+  // Expand all / Collapse all (decision 20261118-1202).
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-risk-expand], [data-risk-collapse]');
+    if (!button) {
+      return;
+    }
+    const open = button.hasAttribute('data-risk-expand');
+    document.querySelectorAll('details.risk-card').forEach(function (card) {
+      card.open = open;
+    });
+  });
+
+  // Open the card named by a #risk-<id> fragment; an unknown id does nothing.
+  function openCardFromHash() {
+    const match = /^#risk-(\d+)$/.exec(window.location.hash);
+    const card = match && document.getElementById('risk-' + match[1]);
+    if (card && card.tagName === 'DETAILS') {
+      card.open = true;
+    }
+  }
+  openCardFromHash();
+  window.addEventListener('hashchange', openCardFromHash);
 })();
 </script>
 {% endblock %}

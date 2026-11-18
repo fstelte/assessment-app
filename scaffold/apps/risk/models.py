@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import enum
+import hashlib
 from datetime import date
 from typing import Sequence
 
@@ -60,6 +61,25 @@ class RiskTreatmentOption(enum.Enum):
     AVOID = "avoid"
     MITIGATE = "mitigate"
     TRANSFER = "transfer"
+
+
+class RiskApprovalStatus(enum.Enum):
+    """Owner decision on a risk. NULL in the column means awaiting approval."""
+
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+# Fields whose change invalidates an owner decision (decisions 20261118-1039,
+# -1057). The mitigated flag (mitigated_at set or not) also counts.
+APPROVAL_MATERIAL_FIELDS = (
+    "chance",
+    "impact",
+    "treatment",
+    "residual_chance",
+    "residual_impact",
+    "treatment_owner_id",
+)
 
 
 class RiskSeverity(enum.Enum):
@@ -126,8 +146,19 @@ class Risk(TimestampMixin, db.Model):
     treatment_owner_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
     ticket_url = db.Column(db.String(500))
     closed_at = db.Column(sa.DateTime(timezone=True))
+    # Residual assessment (decision 20261118-0800). Only used for the actual
+    # score when the risk is mitigated and both residual values are set.
+    mitigated_at = db.Column(sa.DateTime(timezone=True))
+    residual_impact = db.Column(_enum_column(RiskImpact, name="risk_impact"))
+    residual_chance = db.Column(_enum_column(RiskChance, name="risk_chance"))
+    # Owner approval (decision 20261118-1045). All NULL means awaiting approval.
+    approval_status = db.Column(_enum_column(RiskApprovalStatus, name="risk_approval_status"))
+    approval_decided_at = db.Column(sa.DateTime(timezone=True))
+    approval_decided_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    approval_comment = db.Column(db.Text)
 
-    treatment_owner = db.relationship(User, foreign_keys=[treatment_owner_id])
+    treatment_owner =db.relationship(User, foreign_keys=[treatment_owner_id])
+    approval_decided_by = db.relationship(User, foreign_keys=[approval_decided_by_id])
     components = db.relationship(
         "Component",
         secondary="risk_component_links",
@@ -159,17 +190,27 @@ class Risk(TimestampMixin, db.Model):
         self,
         thresholds: Sequence["RiskSeverityThreshold"] | None = None,
     ) -> RiskSeverity | None:
-        """Return the configured severity that matches the current score."""
+        """Return the configured severity that matches the initial score."""
 
-        resolved_thresholds: Sequence["RiskSeverityThreshold"]
+        return self._severity_for(self.score(), thresholds)
+
+    def determine_actual_severity(
+        self,
+        thresholds: Sequence["RiskSeverityThreshold"] | None = None,
+    ) -> RiskSeverity | None:
+        """Return the configured severity that matches the actual score."""
+
+        return self._severity_for(self.actual_score(), thresholds)
+
+    @staticmethod
+    def _severity_for(
+        score: int,
+        thresholds: Sequence["RiskSeverityThreshold"] | None,
+    ) -> RiskSeverity | None:
         if thresholds is None:
-            resolved_thresholds = RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score).all()
-        else:
-            resolved_thresholds = thresholds
-
-        current_score = self.score()
-        for threshold in resolved_thresholds:
-            if threshold.min_score <= current_score <= threshold.max_score:
+            thresholds = RiskSeverityThreshold.query.order_by(RiskSeverityThreshold.min_score).all()
+        for threshold in thresholds:
+            if threshold.min_score <= score <= threshold.max_score:
                 return threshold.severity
         return None
 
@@ -178,6 +219,109 @@ class Risk(TimestampMixin, db.Model):
         """Return True when the risk has been archived."""
 
         return self.closed_at is not None
+
+    @property
+    def is_mitigated(self) -> bool:
+        """Return True when the risk has been marked as mitigated."""
+
+        return self.mitigated_at is not None
+
+    def residual_score(self) -> int | None:
+        """Return residual impact * chance, or None when either value is missing."""
+
+        if self.residual_impact is None or self.residual_chance is None:
+            return None
+        return IMPACT_WEIGHTS[self.residual_impact] * CHANCE_WEIGHTS[self.residual_chance]
+
+    @property
+    def _uses_residual(self) -> bool:
+        return self.is_mitigated and self.residual_score() is not None
+
+    @property
+    def actual_impact(self) -> RiskImpact:
+        """Residual impact when mitigated with residual values, otherwise initial."""
+
+        return self.residual_impact if self._uses_residual else self.impact
+
+    @property
+    def actual_chance(self) -> RiskChance:
+        """Residual chance when mitigated with residual values, otherwise initial."""
+
+        return self.residual_chance if self._uses_residual else self.chance
+
+    def actual_score(self) -> int:
+        """Return the residual score when mitigated, otherwise the initial score."""
+
+        return IMPACT_WEIGHTS[self.actual_impact] * CHANCE_WEIGHTS[self.actual_chance]
+
+    @property
+    def approval_state(self) -> str:
+        """Return "no_owner", "awaiting", "approved" or "rejected"."""
+
+        if self.treatment_owner_id is None:
+            return "no_owner"
+        if self.approval_status is None:
+            return "awaiting"
+        return self.approval_status.value
+
+    def approval_fingerprint(self) -> str:
+        """Short hash of the material fields, used to refuse decisions on a stale view."""
+
+        parts = [getattr(self, name) for name in APPROVAL_MATERIAL_FIELDS]
+        parts.append(self.is_mitigated)
+        raw = "|".join(str(part.value if isinstance(part, enum.Enum) else part) for part in parts)
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def _load_old_value_on_set(target, value, oldvalue, initiator):
+    return value
+
+
+# active_history makes SQLAlchemy load the current value before an assignment,
+# even on an expired instance, so the history always holds the old value and an
+# equal assignment is not a change. Without it, a set after commit only records
+# the new value and the reset below could not compare.
+for _name in (*APPROVAL_MATERIAL_FIELDS, "mitigated_at"):
+    sa.event.listen(getattr(Risk, _name), "set", _load_old_value_on_set, active_history=True, retval=True)
+
+
+def _material_change(risk: "Risk") -> bool:
+    attrs = sa.inspect(risk).attrs
+    if any(attrs[name].history.has_changes() for name in APPROVAL_MATERIAL_FIELDS):
+        return True
+    history = attrs.mitigated_at.history
+    if not history.has_changes():
+        return False
+    old = history.deleted[0] if history.deleted else None
+    new = history.added[0] if history.added else None
+    return (old is not None) != (new is not None)
+
+
+def _reset_risk_approvals(session, flush_context, instances) -> None:
+    """Clear the owner decision of every dirty Risk whose material fields changed.
+
+    Runs in the session's before_flush, registered ahead of the generic audit
+    listener, so the audit records the cleared approval fields (decision
+    20261118-1057). Covers every ORM write path: form, admin, API, threat
+    sync and PASTA publish. Bulk ``query.update()`` bypasses it.
+
+    A decision recorded in the same flush is newer than the change and is kept.
+    """
+
+    for obj in session.dirty:
+        if not isinstance(obj, Risk) or obj.approval_status is None:
+            continue
+        if sa.inspect(obj).attrs.approval_status.history.has_changes():
+            continue
+        if _material_change(obj):
+            obj.approval_status = None
+            obj.approval_decided_at = None
+            obj.approval_decided_by_id = None
+            obj.approval_comment = None
+
+
+if not sa.event.contains(db.session, "before_flush", _reset_risk_approvals):
+    sa.event.listen(db.session, "before_flush", _reset_risk_approvals, insert=True)
 
 
 class RiskImpactAreaLink(db.Model):

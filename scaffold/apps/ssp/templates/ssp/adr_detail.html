@@ -9,7 +9,13 @@
       <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ adr.title }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
     </div>
+    <div class="flex gap-2 shrink-0">
     <a href="{{ url_for('ssp.edit_adr', ssp_id=ssp.id, adr_id=adr.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors shrink-0">{{ _('ssp.adrs.edit') }}</a>
+    <form method="POST" action="{{ url_for('ssp.delete_adr', ssp_id=ssp.id, adr_id=adr.id) }}" data-confirm="{{ _('ssp.adrs.delete.confirm', title=adr.title) }}" onsubmit="return confirm(this.dataset.confirm)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors">{{ _('ssp.adrs.delete.button') }}</button>
+    </form>
+    </div>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -51,15 +57,26 @@
         {% endif %}
     </div>
 
+    {% if adr.external_url %}
+    <div>
+        <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.external') }}</h2>
+        <a href="{{ adr.external_url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-500 hover:underline break-all">{{ adr.external_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a>
+    </div>
+    {% endif %}
+
+    {% if adr.context %}
     <div>
         <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.context') }}</h2>
         <p class="text-sm whitespace-pre-wrap">{{ adr.context }}</p>
     </div>
+    {% endif %}
 
+    {% if adr.decision %}
     <div>
         <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.decision') }}</h2>
         <p class="text-sm whitespace-pre-wrap">{{ adr.decision }}</p>
     </div>
+    {% endif %}
 
     {% if adr.consequences %}
     <div>

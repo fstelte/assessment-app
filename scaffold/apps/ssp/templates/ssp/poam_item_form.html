@@ -25,6 +25,11 @@
   {% endfor %}
   {% endwith %}
 
+  <p class="mb-4 text-sm text-[var(--color-muted)]">{{ _('ssp.poam.intro') }}</p>
+
+  {# Details open when any optional field has a value or milestones exist (decision 20261118-1530, CHK011). #}
+  {% set details_open = form.point_of_contact.data or form.scheduled_completion.data or form.resources_required.data or form.estimated_cost.data or (item and item.milestones) %}
+
   {# ── Item form ── #}
   <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card p-6 mb-6">
     <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)] mb-4">{{ _('ssp.poam_form.task_details') }}</h2>
@@ -34,17 +39,23 @@
       <div class="flex flex-col gap-4">
 
         {{ render_field_with_help(form.weakness_description) }}
-        {{ render_field_with_help(form.resources_required) }}
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {{ render_field_with_help(form.point_of_contact) }}
-          {{ render_field_with_help(form.estimated_cost) }}
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {{ render_field_with_help(form.scheduled_completion) }}
           {{ render_field_with_help(form.status) }}
+          {{ render_field_with_help(form.jira_url) }}
         </div>
+
+        <details id="poam-details" class="rounded-lg border border-[var(--color-border)] px-4 py-3"{% if details_open %} open{% endif %}>
+          <summary class="cursor-pointer text-sm font-medium text-[var(--color-text)]">{{ _('ssp.poam_form.details_optional') }}</summary>
+          <div class="flex flex-col gap-4 mt-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {{ render_field_with_help(form.point_of_contact) }}
+              {{ render_field_with_help(form.scheduled_completion) }}
+            </div>
+            {{ render_field_with_help(form.resources_required) }}
+            {{ render_field_with_help(form.estimated_cost) }}
+          </div>
+        </details>
 
         <div class="flex justify-end gap-3 pt-2">
           <a href="{{ url_for('ssp.poam', ssp_id=ssp.id) }}"
@@ -59,13 +70,13 @@
     </form>
   </div>
 
-  {# ── Milestones (only shown when editing an existing item) ── #}
+  {# ── Milestones (only shown when editing an existing item; optional, collapsed when empty) ── #}
   {% if item %}
-  <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden">
-    <div class="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
-      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.poam_form.milestones_section') }}</h2>
+  <details id="poam-milestones" class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-card overflow-hidden"{% if details_open %} open{% endif %}>
+    <summary class="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between cursor-pointer">
+      <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--color-muted)]">{{ _('ssp.poam_form.milestones_section_optional') }}</h2>
       <span class="text-xs text-[var(--color-muted)]">{{ _('ssp.poam_form.milestone_count', count=(item.milestones | length)) }}</span>
-    </div>
+    </summary>
 
     {% if item.milestones %}
     <div class="overflow-x-auto">
@@ -134,7 +145,7 @@
         {% endif %}
       </form>
     </div>
-  </div>
+  </details>
   {% endif %}
 
 </div>

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, HiddenField, IntegerField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, DateField, HiddenField, IntegerField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, URL, ValidationError
 
 from .models import RiskTreatmentOption
@@ -28,6 +28,9 @@ class RiskForm(FlaskForm):
     )
     impact = SelectField("Impact", validators=[DataRequired()], choices=[])
     chance = SelectField("Chance", validators=[DataRequired()], choices=[])
+    mitigated = BooleanField(_l("risk.residual.mitigated"), validators=[Optional()])
+    residual_impact = SelectField(_l("risk.residual.impact"), validators=[Optional()], choices=[])
+    residual_chance = SelectField(_l("risk.residual.chance"), validators=[Optional()], choices=[])
     impact_areas = SelectMultipleField(
         "Impact areas",
         validators=[DataRequired()],
@@ -54,14 +57,42 @@ class RiskForm(FlaskForm):
     )
     submit = SubmitField("Save risk")
 
+    # Fields owned by the threat scenario sync for threat-linked risks
+    # (decision 20261118-0830, amendment).
+    SYNC_MANAGED_FIELDS = (
+        "title",
+        "description",
+        "impact",
+        "chance",
+        "treatment",
+        "mitigated",
+        "residual_impact",
+        "residual_chance",
+        "component_ids",
+        "csa_control_ids",
+    )
+    managed_by_threat = False
+
+    def mark_managed_by_threat(self) -> None:
+        """Render sync-owned fields disabled and stop validating them."""
+
+        self.managed_by_threat = True
+        for name in self.SYNC_MANAGED_FIELDS:
+            field = self[name]
+            field.validators = [Optional()]
+            field.flags.required = False
+            field.render_kw = {**(field.render_kw or {}), "disabled": True}
+
     def validate_component_ids(self, field: SelectMultipleField) -> None:  # type: ignore[override]
-        if not field.data:
+        if not field.data and not self.managed_by_threat:
             raise ValidationError(_("admin.risks.errors.invalid_components"))
 
     def validate(self, extra_validators=None):  # type: ignore[override]
         valid = super().validate(extra_validators=extra_validators)
         if not valid:
             return False
+        if self.managed_by_threat:
+            return True
         requires_control = self.treatment.data == RiskTreatmentOption.MITIGATE.value
         selected_controls: list[str] = []
         seen: set[str] = set()
@@ -99,3 +130,14 @@ class RiskActionForm(FlaskForm):
     """Lightweight form used for close/delete buttons."""
 
     submit = SubmitField("Confirm")
+
+
+class RiskApprovalForm(FlaskForm):
+    """Owner decision on a risk (decisions 20261118-1046, -1058).
+
+    ``fingerprint`` is the risk's approval_fingerprint() when the page was
+    rendered; a mismatch means the risk changed and the decision is refused.
+    """
+
+    fingerprint = HiddenField(validators=[DataRequired()])
+    comment = TextAreaField(validators=[Optional(), Length(max=2000)])
