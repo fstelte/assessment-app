@@ -263,12 +263,14 @@ _TREATMENT_MAP = {
 def _components_for_scenario(scenario: ThreatScenario) -> list:
     """Return BIA components to link when syncing to the risk workspace.
 
-    Resolves the single BIA component whose name matches the scenario's linked
-    asset.  Falls back to all eligible components in the threat model's context
-    scope only when no asset is linked to the scenario or no name match is found.
+    Only the scenario's threatened assets (``assigned_assets``, falling back to
+    the legacy scalar ``asset``) are matched, by case-insensitive trimmed name,
+    against components in the threat model's BIA.  No match yields ``[]``
+    (decisions 20261118-0750 and 20261118-0830).
     """
+    import sqlalchemy as sa
+
     from ..bia.models import Component
-    from ..risk.services import eligible_component_query
 
     context_scope_id = (
         scenario.threat_model.context_scope_id
@@ -278,42 +280,20 @@ def _components_for_scenario(scenario: ThreatScenario) -> list:
     if not context_scope_id:
         return []
 
-    # Use the asset that is directly linked to this specific scenario.
-    asset_name = scenario.asset.name if scenario.asset else None
-    if asset_name:
-        matched = (
-            eligible_component_query()
-            .filter(
-                Component.context_scope_id == context_scope_id,
-                Component.name == asset_name,
-            )
-            .all()
-        )
-        if matched:
-            return matched
+    assets = list(scenario.assigned_assets) or ([scenario.asset] if scenario.asset else [])
+    names = {(asset.name or "").strip().lower() for asset in assets} - {""}
+    if not names:
+        return []
 
-        # Try without the eligibility filter so ineligible components are also accepted.
-        matched_all = (
-            Component.query
-            .filter(
-                Component.context_scope_id == context_scope_id,
-                Component.name == asset_name,
-            )
-            .all()
+    return (
+        Component.query
+        .filter(
+            Component.context_scope_id == context_scope_id,
+            sa.func.lower(sa.func.trim(Component.name)).in_(names),
         )
-        if matched_all:
-            return matched_all
-
-    # Fallback: all eligible components in the scope (no asset linked to the scenario).
-    eligible = (
-        eligible_component_query()
-        .filter(Component.context_scope_id == context_scope_id)
+        .order_by(Component.id)
         .all()
     )
-    if eligible:
-        return eligible
-
-    return Component.query.filter_by(context_scope_id=context_scope_id).all()
 
 
 def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
