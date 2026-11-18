@@ -1,10 +1,10 @@
 ---
 feature: 20261118-074624-risk-workspace-sync-bia-filter
-status: implemented
+status: planned
 created: 2026-11-18
 chunk_size: adaptive
-total_tasks: 9
-estimated_lines: 780
+total_tasks: 16
+estimated_lines: 1380
 ---
 
 # Risk Workspace: Targeted Component Sync, BIA Filter and Actual Risk Score Tasks
@@ -287,6 +287,214 @@ Tests are bundled into each task. No sync tests exist yet, so Task 1 creates
 - Run `graphify update .` after code changes (CLAUDE.md). The `graphify` CLI is
   not installed in this environment.
 
+---
+
+# Part 2: Risk Owner Approval Tasks
+
+Implements Part 2 of [design.md](design.md) (decisions 20261118-1038 to
+-1058, where 1057 supersedes 1047). Tests are bundled into each task, mostly in a new
+`tests/test_risk_approval.py`. The comment max length is 2000 characters,
+which resolves the design's open question.
+
+### Foundation
+
+#### Task 10: Approval columns, enum, helpers and migration
+- **Estimate:** ~90 lines
+- **Files:** `scaffold/apps/risk/models.py`,
+  `migrations/versions/20261118_0002_risk_owner_approval.py` (new, follows
+  `20261118_0001_risk_residual_mitigated.py`), `scaffold/core/audit.py`,
+  `tests/test_risk_approval.py` (new)
+- **Description:**
+  - `RiskApprovalStatus` enum (`APPROVED`, `REJECTED`), stored with
+    `_enum_column(..., name="risk_approval_status")`.
+  - Nullable columns `approval_status`, `approval_decided_at` (tz),
+    `approval_decided_by_id` (FK users, SET NULL) and `approval_comment`
+    (Text), plus the `approval_decided_by` relationship.
+  - `approval_state` property: `no_owner` when there's no
+    `treatment_owner_id`, otherwise `awaiting`, `approved` or `rejected`.
+  - The constant `APPROVAL_MATERIAL_FIELDS = ("chance", "impact",
+    "treatment", "residual_chance", "residual_impact",
+    "treatment_owner_id")`.
+  - `approval_fingerprint()`: a short sha256 of those fields plus
+    `is_mitigated`.
+  - Add the 4 fields to the `scaffold.apps.risk.models.Risk` entry in the
+    audit registry.
+  - The migration creates the enum type and columns. The downgrade drops them
+    and the type.
+- **Depends on:** None
+- **Acceptance:** Every state of `approval_state` is covered. The fingerprint
+  changes when any material field changes and stays the same for text edits.
+- **Evidence:** `pytest tests/test_risk_approval.py` passes. Alembic upgrade
+  and downgrade run cleanly on the dev DB.
+
+#### Task 11: Reset listener on material change
+- **Estimate:** ~130 lines
+- **Files:** `scaffold/apps/risk/models.py`,
+  `scaffold/apps/threat/services.py` (`approval_reset` in sync audit
+  details), `tests/test_risk_approval.py`
+- **Description:**
+  - `_reset_risk_approvals(session, flush_context, instances)`, registered
+    with `event.listen(db.session, "before_flush", ..., insert=True)` so it
+    runs ahead of the audit listener (decision 1057). It's registered once,
+    with a guard, and iterates the dirty Risk instances.
+  - It compares old and new values through `sa.inspect(risk).attrs`
+    history for `APPROVAL_MATERIAL_FIELDS`. For mitigated it compares
+    `bool(old mitigated_at)` with `bool(new)`.
+  - When any of them changed, it sets the 4 approval columns to None.
+  - Tests:
+    - Reset: each material field, an owner change, and a mitigated flip both
+      ways.
+    - No reset: title, description, tickets, components, due date, a new
+      `mitigated_at` with the risk still mitigated, and assigning the same
+      value.
+    - Write paths: the `risk.edit` POST, the admin register edit,
+      `apply_payload_to_risk`, `sync_scenario_to_risk` changing the
+      likelihood, and `publish_pasta_conclusion_to_risk`.
+    - The generic audit row of the update contains the cleared approval
+      fields (guards the listener order).
+    - The `risk_synced_from_threat` details include `approval_reset`.
+    - Closing and reopening a risk keep the approval.
+- **Depends on:** Task 10
+- **Acceptance:** An approved risk becomes awaiting through every write path
+  when a material field changes, and through none of them otherwise.
+- **Evidence:** `pytest tests/test_risk_approval.py tests/test_threat_risk_sync.py`
+  passes.
+
+### Core Implementation
+
+#### Task 12: Approve and reject routes
+- **Estimate:** ~130 lines
+- **Files:** `scaffold/apps/risk/forms.py`, `scaffold/apps/risk/routes.py`,
+  `scaffold/translations/en.json`, `scaffold/translations/nl.json`,
+  `tests/test_risk_approval.py`
+- **Description:**
+  - `RiskApprovalForm` (FlaskForm): a hidden `fingerprint` and a `comment`
+    TextAreaField with `Length(max=2000)`.
+  - `POST /risk/<id>/approve` and `/reject`, protected by `@login_required`
+    and CSRF.
+  - Return 404 for an unknown id, then 403 unless
+    `current_user.id == risk.treatment_owner_id`. Admins are not exempt.
+  - Any state can be decided, including a flip or a re-approve. Each decision
+    overwrites the columns with a new timestamp.
+  - Reject without a comment shows a flash error and changes nothing. A
+    fingerprint mismatch shows the "risk changed" flash and changes nothing.
+  - Sets the status, `decided_at = now(utc)`, `decided_by_id` and the comment
+    (stripped, None if empty). Then `log_event("risk_approved" |
+    "risk_rejected", "risk", ...)` with the details from decision 1058
+    (CHK019). The stale flash text says the comment wasn't saved. Commit, then redirect to `risk.edit`.
+- **Depends on:** Task 10
+- **Acceptance:** The owner can approve, reject, flip and re-approve, and
+  each one creates its own audit event. A non-owner and an admin
+  who isn't the owner get 403. A risk with no owner returns 403. The
+  stale-page and missing-comment cases change nothing.
+- **Evidence:** the route tests in `tests/test_risk_approval.py` pass.
+
+#### Task 13: Approval panel on the edit page
+- **Estimate:** ~100 lines
+- **Files:** `scaffold/apps/risk/templates/risk/form.html`,
+  `scaffold/apps/risk/routes.py` (`edit`), translations,
+  `tests/test_risk_approval.py`
+- **Description:**
+  - `risk.edit` GET passes `approval_form` with the fingerprint pre-filled.
+  - Panel at the top, using the Tailwind style already on the page:
+    - A state pill, who decided and when, and the comment.
+    - When the viewer is the owner: an Approve form (optional comment) and a
+      Reject form (required comment), posting to the Task 12 routes.
+    - No owner: "Assign an owner to request approval."
+    - No current decision but an earlier `risk_rejected` AuditLog: "Previously
+      rejected by X on D: comment". A deleted decider shows as "Unknown user".
+  - Shown for manual and threat-linked risks alike. Not shown on `risk.new`.
+- **Depends on:** Task 12
+- **Acceptance:** The owner sees the buttons. A non-owner sees only the state.
+  The no-owner message and the earlier rejection reason render when they
+  apply.
+- **Evidence:** the pytest render tests pass. A browser check is optional,
+  not the evidence.
+
+#### Task 14: Dashboard pill and `?approval=` filter [P]
+- **Estimate:** ~100 lines
+- **Parallel:** Can run with Tasks 12 and 13 (a different function in
+  `routes.py`) and with Task 15.
+- **Files:** `scaffold/apps/risk/routes.py` (`dashboard`,
+  `_build_dashboard_cards`), `scaffold/apps/risk/templates/risk/dashboard.html`,
+  translations, `tests/test_risk_approval.py`
+- **Description:**
+  - `approval=` filters open risks:
+    - `mine`: owner = me, and the status is NULL or `rejected`.
+    - `awaiting`: there's an owner, and the status is NULL.
+    - `rejected`: the status is `rejected`.
+
+    An invalid value is ignored. It combines with `bia`, and the cards, metrics
+    and matrix all come from the filtered list.
+  - An approval select in the existing filter form, with the "mine" count
+    following the BIA filter. Apply and Clear cover both filters. Empty-state
+    text.
+  - Each card's dict gets `approval_state`. The template shows the pill
+    (Awaiting / Approved / Rejected / No owner).
+- **Depends on:** Task 10
+- **Acceptance:** Each `approval` value lists the right open risks, combines
+  with `bia`, and the pills are correct.
+- **Evidence:** the dashboard filter tests pass, alone and combined with
+  `?bia=`.
+
+#### Task 15: Approval fields in the API [P]
+- **Estimate:** ~30 lines
+- **Parallel:** Can run with Tasks 12, 13 and 14.
+- **Files:** `scaffold/apps/risk/services.py` (`serialize_risk`),
+  `scaffold/apps/risk/api.py` (selectinload `approval_decided_by`, if
+  needed), `tests/test_risk_api.py`
+- **Description:** Additive, read-only fields: `approval_status` (value or
+  null), `approval_state`, `approval_decided_at` (ISO),
+  `approval_decided_by` (via `_serialize_owner`) and `approval_comment`.
+  `apply_payload_to_risk` ignores them.
+- **Depends on:** Task 10
+- **Acceptance:** GET returns the fields. A PUT that includes them doesn't
+  change the approval.
+- **Evidence:** `pytest tests/test_risk_api.py` passes.
+
+### Integration & Polish
+
+#### Task 16: Final validation and release notes
+- **Estimate:** ~10 lines
+- **Files:** none, or small fixes only.
+  `specs/20261118-074624-risk-workspace-sync-bia-filter/release-notes.md`
+- **Description:**
+  - Alembic upgrade and downgrade.
+  - Run `pytest tests/test_risk_*.py tests/test_threat_*.py` and the admin
+    tests.
+  - Check that EN and NL have the same keys.
+  - `graphify update .` (not installed here; note it as skipped).
+  - Release notes:
+    - Every existing risk starts as "awaiting approval".
+    - Only the assigned owner can approve. Admins can't.
+    - A material change or an owner change resets the approval.
+    - The downgrade drops the approval data.
+- **Depends on:** Tasks 10–15
+- **Acceptance:** Everything passes. No missing translation keys. The release
+  notes are updated.
+- **Evidence:** test output and migration log.
+
+## Parallel Groups (Part 2)
+- Task 10 comes first. Task 11 follows it.
+- Tasks 12, 14 and 15 can run together after Task 10. Task 13 follows
+  Task 12.
+- Task 11 can also run alongside 12, 14 and 15. It only touches the models
+  and tests.
+- Task 16 comes last.
+
+## Notes (Part 2)
+- The reset is a session `before_flush` listener with `insert=True`. The
+  audit captures diffs in its own `before_flush`, so a mapper `before_update`
+  hook would be invisible to it (found by `/minispec.analyze`, decision 1057).
+- The listener uses value comparison. With `has_changes()` alone, assigning
+  the same enum (the sync does this on every run) would wrongly reset.
+- Bulk `query.update()` bypasses the listener. No code path uses it on these
+  fields today. Keep it that way.
+- The fingerprint includes `treatment_owner_id`. An owner change during an
+  open page makes the old owner's decision stale and gets a 403 anyway.
+- Deferred: notifications, approving through the API, admin override,
+  approval history in the UI.
+
 ## Progress
 - [x] Task 1: Component resolution uses threatened assets only
 - [x] Task 2: Risk residual columns, helpers and migration
@@ -297,3 +505,10 @@ Tests are bundled into each task. No sync tests exist yet, so Task 1 creates
 - [x] Task 7: BIA multi-filter on the risk dashboard
 - [x] Task 8: Admin risk register and SSP summary use the actual score
 - [x] Task 9: Final validation and release notes
+- [x] Task 10: Approval columns, enum, helpers and migration
+- [ ] Task 11: Reset listener on material change
+- [ ] Task 12: Approve and reject routes
+- [ ] Task 13: Approval panel on the edit page
+- [ ] Task 14: Dashboard pill and ?approval= filter
+- [ ] Task 15: Approval fields in the API
+- [ ] Task 16: Final validation and release notes

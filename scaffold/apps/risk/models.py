@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import enum
+import hashlib
 from datetime import date
 from typing import Sequence
 
@@ -60,6 +61,25 @@ class RiskTreatmentOption(enum.Enum):
     AVOID = "avoid"
     MITIGATE = "mitigate"
     TRANSFER = "transfer"
+
+
+class RiskApprovalStatus(enum.Enum):
+    """Owner decision on a risk. NULL in the column means awaiting approval."""
+
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+# Fields whose change invalidates an owner decision (decisions 20261118-1039,
+# -1057). The mitigated flag (mitigated_at set or not) also counts.
+APPROVAL_MATERIAL_FIELDS = (
+    "chance",
+    "impact",
+    "treatment",
+    "residual_chance",
+    "residual_impact",
+    "treatment_owner_id",
+)
 
 
 class RiskSeverity(enum.Enum):
@@ -131,8 +151,14 @@ class Risk(TimestampMixin, db.Model):
     mitigated_at = db.Column(sa.DateTime(timezone=True))
     residual_impact = db.Column(_enum_column(RiskImpact, name="risk_impact"))
     residual_chance = db.Column(_enum_column(RiskChance, name="risk_chance"))
+    # Owner approval (decision 20261118-1045). All NULL means awaiting approval.
+    approval_status = db.Column(_enum_column(RiskApprovalStatus, name="risk_approval_status"))
+    approval_decided_at = db.Column(sa.DateTime(timezone=True))
+    approval_decided_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"))
+    approval_comment = db.Column(db.Text)
 
     treatment_owner =db.relationship(User, foreign_keys=[treatment_owner_id])
+    approval_decided_by = db.relationship(User, foreign_keys=[approval_decided_by_id])
     components = db.relationship(
         "Component",
         secondary="risk_component_links",
@@ -227,6 +253,24 @@ class Risk(TimestampMixin, db.Model):
         """Return the residual score when mitigated, otherwise the initial score."""
 
         return IMPACT_WEIGHTS[self.actual_impact] * CHANCE_WEIGHTS[self.actual_chance]
+
+    @property
+    def approval_state(self) -> str:
+        """Return "no_owner", "awaiting", "approved" or "rejected"."""
+
+        if self.treatment_owner_id is None:
+            return "no_owner"
+        if self.approval_status is None:
+            return "awaiting"
+        return self.approval_status.value
+
+    def approval_fingerprint(self) -> str:
+        """Short hash of the material fields, used to refuse decisions on a stale view."""
+
+        parts = [getattr(self, name) for name in APPROVAL_MATERIAL_FIELDS]
+        parts.append(self.is_mitigated)
+        raw = "|".join(str(part.value if isinstance(part, enum.Enum) else part) for part in parts)
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
 class RiskImpactAreaLink(db.Model):
