@@ -483,6 +483,15 @@ which resolves the design's open question.
 - Task 16 comes last.
 
 ## Notes (Part 2)
+- Task 11: the 7 watched attributes get `active_history=True` (through a
+  no-op "set" listener), so an assignment on an expired instance still knows
+  the old value and an equal assignment isn't a change. A decision recorded
+  in the same flush as a material change is kept, because it's the newer
+  event.
+- Task 11 tests sign in through the session (as the `login` fixture does).
+  17 older risk route, API and action tests still sign in with a password,
+  which now forces MFA enrolment, so they fail on HEAD. That's a separate
+  cleanup.
 - The reset is a session `before_flush` listener with `insert=True`. The
   audit captures diffs in its own `before_flush`, so a mapper `before_update`
   hook would be invisible to it (found by `/minispec.analyze`, decision 1057).
@@ -506,7 +515,7 @@ which resolves the design's open question.
 - [x] Task 8: Admin risk register and SSP summary use the actual score
 - [x] Task 9: Final validation and release notes
 - [x] Task 10: Approval columns, enum, helpers and migration
-- [ ] Task 11: Reset listener on material change
+- [x] Task 11: Reset listener on material change
 - [ ] Task 12: Approve and reject routes
 - [ ] Task 13: Approval panel on the edit page
 - [ ] Task 14: Dashboard pill and ?approval= filter

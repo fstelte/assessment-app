@@ -72,3 +72,290 @@ def test_fingerprint_ignores_mitigated_timestamp_value():
     later = _risk(mitigated_at=datetime(2026, 6, 1, tzinfo=UTC))
 
     assert earlier.approval_fingerprint() == later.approval_fingerprint()
+
+
+# ---------------------------------------------------------------------------
+# Task 11: reset on material change (decisions 20261118-1039, -1057)
+# ---------------------------------------------------------------------------
+
+from datetime import date, timedelta  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
+
+from scaffold.apps.bia.models import Component, ContextScope  # noqa: E402
+from scaffold.apps.csa.models import Control  # noqa: E402
+from scaffold.apps.identity.models import ROLE_ADMIN, Role, User, UserStatus  # noqa: E402
+from scaffold.apps.risk.models import RiskImpactArea  # noqa: E402
+from scaffold.apps.risk.services import apply_payload_to_risk  # noqa: E402
+from scaffold.apps.threat.services import publish_pasta_conclusion_to_risk  # noqa: E402
+from scaffold.extensions import db  # noqa: E402
+from scaffold.models.audit import AuditLog  # noqa: E402
+
+
+def _user(email: str = "owner@example.com", *, admin: bool = False) -> User:
+    user = User()
+    user.email = email
+    user.status = UserStatus.ACTIVE
+    user.set_password("Password123!")
+    if admin:
+        role = Role.query.filter_by(name=ROLE_ADMIN).first() or Role(name=ROLE_ADMIN)
+        user.roles.append(role)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def _sign_in(client, user: User) -> None:
+    """Session login; the password login forces MFA enrolment."""
+    with client.session_transaction() as sess:
+        sess["_user_id"] = user.get_id()
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
+
+
+def _approved_risk(owner: User, **kwargs) -> Risk:
+    scope = ContextScope(name="Core Service", risk_assessment_human=True)
+    component = Component(name="Payroll Portal", context_scope=scope)
+    control = Control()
+    control.domain = "ISO-27002-5.7"
+    control.section = "5"
+    control.description = "Encrypt backups"
+    risk = _risk(treatment_owner_id=owner.id, discovered_on=date.today(), **kwargs)
+    risk.components = [component]
+    risk.controls = [control]
+    risk.approval_status = RiskApprovalStatus.APPROVED
+    risk.approval_decided_at = datetime.now(UTC)
+    risk.approval_decided_by_id = owner.id
+    risk.approval_comment = "ok"
+    db.session.add_all([scope, component, control, risk])
+    db.session.commit()
+    return risk
+
+
+def _assert_reset(risk: Risk) -> None:
+    db.session.refresh(risk)
+    assert (
+        risk.approval_status,
+        risk.approval_decided_at,
+        risk.approval_decided_by_id,
+        risk.approval_comment,
+    ) == (None, None, None, None)
+
+
+def _assert_kept(risk: Risk) -> None:
+    db.session.refresh(risk)
+    assert risk.approval_status is RiskApprovalStatus.APPROVED
+    assert risk.approval_comment == "ok"
+
+
+def _form_payload(risk: Risk, **overrides) -> dict:
+    payload = {
+        "title": risk.title,
+        "description": risk.description,
+        "discovered_on": risk.discovered_on.isoformat(),
+        "impact": risk.impact.value,
+        "chance": risk.chance.value,
+        "impact_areas": [RiskImpactArea.OPERATIONAL.value],
+        "component_ids": [str(c.id) for c in risk.components],
+        "treatment": risk.treatment.value,
+        "treatment_plan": "Fix it",
+        "treatment_owner_id": str(risk.treatment_owner_id),
+        "csa_control_ids": [str(c.id) for c in risk.controls],
+    }
+    payload.update(overrides)
+    return payload
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"chance": RiskChance.RARE},
+        {"impact": RiskImpact.MINOR},
+        {"treatment": RiskTreatmentOption.ACCEPT},
+        {"residual_chance": RiskChance.RARE},
+        {"residual_impact": RiskImpact.MINOR},
+    ],
+)
+def test_material_change_resets_approval(change):
+    risk = _approved_risk(_user())
+    for key, value in change.items():
+        setattr(risk, key, value)
+    db.session.commit()
+
+    _assert_reset(risk)
+
+
+def test_owner_change_resets_approval():
+    risk = _approved_risk(_user())
+    risk.treatment_owner_id = _user("other@example.com").id
+    db.session.commit()
+
+    _assert_reset(risk)
+
+
+def test_mitigated_flip_resets_approval_both_ways():
+    owner = _user()
+    risk = _approved_risk(owner)
+    risk.mitigated_at = datetime.now(UTC)
+    db.session.commit()
+    _assert_reset(risk)
+
+    risk.approval_status = RiskApprovalStatus.APPROVED
+    db.session.commit()
+    risk.mitigated_at = None
+    db.session.commit()
+    _assert_reset(risk)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"title": "Renamed"},
+        {"description": "Reworded"},
+        {"ticket_url": "https://jira.example.com/browse/X-1"},
+        {"treatment_plan": "New plan"},
+        {"treatment_due_date": date.today() + timedelta(days=30)},
+        {"closed_at": datetime.now(UTC)},
+        # Assigning the current value is not a change (the sync does this on every run).
+        {"chance": RiskChance.LIKELY, "impact": RiskImpact.MAJOR},
+    ],
+)
+def test_non_material_change_keeps_approval(change):
+    risk = _approved_risk(_user())
+    for key, value in change.items():
+        setattr(risk, key, value)
+    db.session.commit()
+
+    _assert_kept(risk)
+
+
+def test_new_mitigated_timestamp_keeps_approval():
+    risk = _approved_risk(_user(), mitigated_at=datetime(2026, 1, 1, tzinfo=UTC))
+    risk.mitigated_at = datetime(2026, 6, 1, tzinfo=UTC)
+    db.session.commit()
+
+    _assert_kept(risk)
+
+
+def test_close_and_reopen_keep_approval():
+    risk = _approved_risk(_user())
+    risk.closed_at = datetime.now(UTC)
+    db.session.commit()
+    risk.closed_at = None
+    db.session.commit()
+
+    _assert_kept(risk)
+
+
+def test_component_change_keeps_approval():
+    risk = _approved_risk(_user())
+    risk.components = [Component(name="Other", context_scope=risk.components[0].context_scope)]
+    db.session.commit()
+
+    _assert_kept(risk)
+
+
+def test_reset_is_in_the_generic_audit_row():
+    """Guards the listener order: the reset must run before the audit captures the diff."""
+    risk = _approved_risk(_user())
+    risk.chance = RiskChance.RARE
+    db.session.commit()
+
+    event = (
+        AuditLog.query.filter_by(event_type="risk.updated", target_id=str(risk.id))
+        .order_by(AuditLog.id.desc())
+        .first()
+    )
+    changes = event.payload["changes"]
+    assert changes["chance"]["new"] == "rare"
+    assert changes["approval_status"] == {"old": "approved", "new": None}
+    assert changes["approval_comment"]["new"] is None
+
+
+# --- write paths -----------------------------------------------------------
+
+
+def test_risk_form_edit_resets_on_material_change(client):
+    owner = _user()
+    risk = _approved_risk(owner)
+    _sign_in(client, owner)
+
+    client.post(f"/risk/{risk.id}/edit", data=_form_payload(risk, chance=RiskChance.RARE.value))
+
+    db.session.refresh(risk)
+    assert risk.chance is RiskChance.RARE
+    _assert_reset(risk)
+
+
+def test_risk_form_edit_of_text_keeps_approval(client):
+    owner = _user()
+    risk = _approved_risk(owner)
+    _sign_in(client, owner)
+
+    client.post(f"/risk/{risk.id}/edit", data=_form_payload(risk, title="Renamed"))
+
+    db.session.refresh(risk)
+    assert risk.title == "Renamed"
+    _assert_kept(risk)
+
+
+def test_admin_edit_resets_on_material_change(client):
+    admin = _user("admin@example.com", admin=True)
+    risk = _approved_risk(_user())
+    _sign_in(client, admin)
+
+    client.post(f"/admin/risks/{risk.id}", data=_form_payload(risk, impact=RiskImpact.MINOR.value))
+
+    db.session.refresh(risk)
+    assert risk.impact is RiskImpact.MINOR
+    _assert_reset(risk)
+
+
+def test_api_payload_resets_on_material_change():
+    risk = _approved_risk(_user())
+    payload = {
+        "title": risk.title,
+        "description": risk.description,
+        "impact": risk.impact.value,
+        "chance": RiskChance.RARE.value,
+        "treatment": risk.treatment.value,
+        "component_ids": [c.id for c in risk.components],
+        "csa_control_ids": [c.id for c in risk.controls],
+        "impact_areas": [RiskImpactArea.OPERATIONAL.value],
+        "treatment_owner_id": risk.treatment_owner_id,
+    }
+
+    apply_payload_to_risk(risk, payload)
+    db.session.commit()
+
+    _assert_reset(risk)
+
+
+def test_pasta_republish_resets_on_material_change():
+    risk = _approved_risk(_user())
+    conclusion = SimpleNamespace(
+        is_publishable=True,
+        likelihood_score=1,  # rare, was likely
+        impact_score=4,
+        treatment="mitigate",
+        finding=SimpleNamespace(title=risk.title, description=risk.description),
+        published_risk_id=risk.id,
+    )
+
+    publish_pasta_conclusion_to_risk(conclusion, None)
+    db.session.commit()
+
+    _assert_reset(risk)
+
+
+def test_decision_in_same_flush_as_material_change_is_kept():
+    owner = _user()
+    risk = _approved_risk(owner)
+    risk.approval_status = None
+    db.session.commit()
+
+    risk.treatment_owner_id = _user("new-owner@example.com").id
+    risk.approval_status = RiskApprovalStatus.REJECTED
+    db.session.commit()
+
+    db.session.refresh(risk)
+    assert risk.approval_status is RiskApprovalStatus.REJECTED

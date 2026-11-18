@@ -312,8 +312,12 @@ def _risk_sync_snapshot(risk) -> dict:
     }
 
 
-def _log_risk_sync(risk, scenario: ThreatScenario, before: dict) -> None:
-    """Write one audit event listing only the sync-managed fields that changed."""
+def _log_risk_sync(risk, scenario: ThreatScenario, before: dict, approval_reset: bool = False) -> None:
+    """Write one audit event listing only the sync-managed fields that changed.
+
+    ``approval_reset`` records that the change voids the owner's decision
+    (decision 20261118-1058, CHK018); the risk model's flush listener clears it.
+    """
     from ...core.audit import log_event
 
     after = _risk_sync_snapshot(risk)
@@ -327,7 +331,7 @@ def _log_risk_sync(risk, scenario: ThreatScenario, before: dict) -> None:
             action="risk_synced_from_threat",
             entity_type="risk",
             entity_id=risk.id,
-            details={"scenario_id": scenario.id, "changes": changes},
+            details={"scenario_id": scenario.id, "changes": changes, "approval_reset": approval_reset},
         )
 
 
@@ -392,6 +396,7 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
         risk = db.session.get(Risk, scenario.risk_id)
         if risk:
             before = _risk_sync_snapshot(risk)
+            decided_fingerprint = risk.approval_fingerprint() if risk.approval_status else None
             for key, value in fields.items():
                 setattr(risk, key, value)
             if risk.is_closed:
@@ -404,7 +409,8 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
             risk.components = _components_for_scenario(scenario)
             # Keep controls in sync with the linked threat scenario.
             risk.controls = list(scenario.controls)
-            _log_risk_sync(risk, scenario, before)
+            approval_reset = decided_fingerprint is not None and decided_fingerprint != risk.approval_fingerprint()
+            _log_risk_sync(risk, scenario, before, approval_reset)
 
 
 # ---------------------------------------------------------------------------

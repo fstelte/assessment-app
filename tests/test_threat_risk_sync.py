@@ -436,3 +436,49 @@ def test_ssp_risk_summary_uses_actual_severity(app, client, login, suffix, templ
 
     # Mitigated 16 -> 6 counts as moderate; the closed risk is excluded.
     assert context["risk_summary"] == {"moderate": 1}
+
+
+# --- Owner approval reset through the sync (decisions 20261118-1057, -1058) ---
+
+
+def _approve(risk):
+    from scaffold.apps.identity.models import User, UserStatus
+    from scaffold.apps.risk.models import RiskApprovalStatus
+
+    owner = User()
+    owner.email = "owner@example.com"
+    owner.status = UserStatus.ACTIVE
+    owner.set_password("Password123!")
+    db.session.add(owner)
+    db.session.flush()
+    risk.treatment_owner_id = owner.id
+    risk.approval_status = RiskApprovalStatus.APPROVED
+    risk.approval_decided_by_id = owner.id
+    risk.approval_decided_at = datetime.now(UTC)
+    db.session.commit()
+
+
+def test_sync_material_change_resets_approval_and_says_so(app):
+    scenario, risk = _synced_scenario()
+    _approve(risk)
+
+    scenario.likelihood = 1
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+
+    db.session.refresh(risk)
+    assert risk.approval_status is None
+    (event,) = _sync_events(risk)
+    assert event.payload["approval_reset"] is True
+
+
+def test_noop_resync_keeps_approval(app):
+    scenario, risk = _synced_scenario()
+    _approve(risk)
+
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+
+    db.session.refresh(risk)
+    assert risk.approval_state == "approved"
+    assert _sync_events(risk) == []

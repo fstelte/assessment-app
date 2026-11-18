@@ -273,6 +273,57 @@ class Risk(TimestampMixin, db.Model):
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
+def _load_old_value_on_set(target, value, oldvalue, initiator):
+    return value
+
+
+# active_history makes SQLAlchemy load the current value before an assignment,
+# even on an expired instance, so the history always holds the old value and an
+# equal assignment is not a change. Without it, a set after commit only records
+# the new value and the reset below could not compare.
+for _name in (*APPROVAL_MATERIAL_FIELDS, "mitigated_at"):
+    sa.event.listen(getattr(Risk, _name), "set", _load_old_value_on_set, active_history=True, retval=True)
+
+
+def _material_change(risk: "Risk") -> bool:
+    attrs = sa.inspect(risk).attrs
+    if any(attrs[name].history.has_changes() for name in APPROVAL_MATERIAL_FIELDS):
+        return True
+    history = attrs.mitigated_at.history
+    if not history.has_changes():
+        return False
+    old = history.deleted[0] if history.deleted else None
+    new = history.added[0] if history.added else None
+    return (old is not None) != (new is not None)
+
+
+def _reset_risk_approvals(session, flush_context, instances) -> None:
+    """Clear the owner decision of every dirty Risk whose material fields changed.
+
+    Runs in the session's before_flush, registered ahead of the generic audit
+    listener, so the audit records the cleared approval fields (decision
+    20261118-1057). Covers every ORM write path: form, admin, API, threat
+    sync and PASTA publish. Bulk ``query.update()`` bypasses it.
+
+    A decision recorded in the same flush is newer than the change and is kept.
+    """
+
+    for obj in session.dirty:
+        if not isinstance(obj, Risk) or obj.approval_status is None:
+            continue
+        if sa.inspect(obj).attrs.approval_status.history.has_changes():
+            continue
+        if _material_change(obj):
+            obj.approval_status = None
+            obj.approval_decided_at = None
+            obj.approval_decided_by_id = None
+            obj.approval_comment = None
+
+
+if not sa.event.contains(db.session, "before_flush", _reset_risk_approvals):
+    sa.event.listen(db.session, "before_flush", _reset_risk_approvals, insert=True)
+
+
 class RiskImpactAreaLink(db.Model):
     """Association table storing selected impact areas per risk."""
 
