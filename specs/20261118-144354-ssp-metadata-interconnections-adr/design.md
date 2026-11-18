@@ -1,7 +1,7 @@
 ---
 feature: ssp-metadata-interconnections-adr
 branch: 20261118-074624-risk-workspace-sync-bia-filter
-status: planned
+status: implemented
 created: 2026-11-18
 decisions:
   - 20261118-1450-ssp-edit-drop-fips-overrides

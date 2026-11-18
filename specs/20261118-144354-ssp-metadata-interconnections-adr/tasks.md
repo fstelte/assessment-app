@@ -1,7 +1,7 @@
 ---
 feature: 20261118-144354-ssp-metadata-interconnections-adr
 branch: 20261118-074624-risk-workspace-sync-bia-filter
-status: planned
+status: implemented
 created: 2026-11-18
 chunk_size: adaptive
 total_tasks: 12
@@ -242,4 +242,4 @@ completeness.
 - [x] Task 9: ADR external link, either/or rule, "Security ADRs" wording
 - [x] Task 10: ADR delete with unlink and restore
 - [x] Task 12: Risk owner from threat owner
-- [ ] Task 11: Translations, docs, release notes, graph update
+- [x] Task 11: Translations, docs, release notes, graph update
