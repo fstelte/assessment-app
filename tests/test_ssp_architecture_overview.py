@@ -1,4 +1,5 @@
 import io
+from datetime import UTC, datetime
 
 from PIL import Image
 
@@ -20,7 +21,13 @@ def _make_user(app, email="author@example.com"):
 
 
 def _login(client, email="author@example.com", password="Password123!"):
-    client.post("/auth/login", data={"email": email, "password": password}, follow_redirects=True)
+    """Authenticate the test client directly; the password login now forces MFA enrolment."""
+    with client.application.app_context():
+        token = User.query.filter_by(email=email).one().get_id()
+    with client.session_transaction() as sess:
+        sess["_user_id"] = token
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
 
 
 def _make_ssp(app):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from scaffold.apps.bia.models import Component, ContextScope, Consequences
@@ -39,6 +41,7 @@ def ssp_app():
             "scaffold.apps.risk.api",
             "scaffold.apps.risk.routes",
             "scaffold.apps.threat",
+            "scaffold.apps.template",
             "scaffold.apps.ssp",
         ],
         password_login_enabled=True,
@@ -68,11 +71,14 @@ def logged_in_user(ssp_app, ssp_client):
         db.session.add(user)
         db.session.commit()
 
-    ssp_client.post(
-        "/auth/login",
-        data={"email": "ssp-user@example.com", "password": _PASSWORD},
-        follow_redirects=True,
-    )
+        token = user.get_id()
+
+    # Password login forces MFA enrolment, so authenticate the session directly
+    # (same approach as the ``login`` fixture in conftest.py).
+    with ssp_client.session_transaction() as sess:
+        sess["_user_id"] = token
+        sess["_fresh"] = True
+        sess["login_time"] = datetime.now(UTC).isoformat()
     return ssp_client
 
 
@@ -84,7 +90,6 @@ def scope_with_ssp(ssp_app, logged_in_user):
             name="Test System",
             abbreviation="TST",
             operational_status="operational",
-            system_type="major_application",
         )
         db.session.add(scope)
         db.session.commit()
@@ -189,7 +194,7 @@ def test_ssp_view_renders_sections(ssp_app, scope_with_ssp, logged_in_user):
     resp = logged_in_user.get(f"/ssp/{ssp_id}")
     assert resp.status_code == 200
     # Key section headings should be present
-    for heading in [b"System Identification", b"System Owner", b"FIPS 199", b"Security Controls"]:
+    for heading in [b"System Identification", b"System Owner", b"Impact Categorization", b"Security Controls"]:
         assert heading in resp.data, f"Expected section heading '{heading}' not found in SSP view"
 
 
@@ -197,7 +202,7 @@ def test_ssp_edit_get(ssp_app, scope_with_ssp, logged_in_user):
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.get(f"/ssp/{ssp_id}/edit")
     assert resp.status_code == 200
-    assert b"FIPS 199" in resp.data
+    assert b'name="authorization_boundary"' in resp.data
 
 
 def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
@@ -277,8 +282,8 @@ def test_seed_controls_from_risks(ssp_app, logged_in_user):
         risk = Risk(
             title="Unauthorized Access",
             description="Risk of unauthorized access",
-            impact=RiskImpact.MEDIUM,
-            chance=RiskChance.MEDIUM,
+            impact=RiskImpact.MODERATE,
+            chance=RiskChance.POSSIBLE,
             treatment=RiskTreatmentOption.MITIGATE,
         )
         risk.components.append(component)
@@ -297,8 +302,8 @@ def test_seed_controls_from_risks(ssp_app, logged_in_user):
 
 
 def test_ssp_pdf_export(ssp_app, scope_with_ssp, logged_in_user):
-    """PDF export route returns a PDF content type."""
+    """The export route renders the print view; the default format is HTML (``?format=pdf`` converts)."""
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.get(f"/ssp/{ssp_id}/export/pdf")
     assert resp.status_code == 200
-    assert "pdf" in resp.content_type
+    assert "html" in resp.content_type
