@@ -21,7 +21,38 @@ The risk module provides a single workspace for tracking identified risks across
 4. Choose one or more impact areas (`Operational`, `Financial`, `Regulatory`, `Human & Safety`, `Privacy`). These drive the chips rendered on the dashboard and provide context for downstream reporting.
 5. Link every affected component. Only risk-enabled BIA components are listed. If no options appear, update the BIA context to enable one of the risk flags.
 6. Choose a treatment strategy. When selecting **Mitigate**, the form and API both require at least one CSA control reference. Accept/Avoid/Transfer strategies can omit the control.
-7. Optionally assign a treatment owner, due date, and supporting plan text before saving.
+7. Optionally assign a treatment owner, due date, and supporting plan text before saving. The owner is also the person who approves the risk (see below).
+
+## Owner Approval
+
+The risk's owner (the **Owner** field, `treatment_owner_id`) signs off on the risk's assessment and treatment.
+
+- **What is approved:** chance, impact and treatment, plus the residual chance, residual impact and **Mitigated** marker when they are set.
+- **Who can decide:** only the owner, from the **Owner approval** panel at the top of `/risk/<id>/edit`. Admins and managers cannot decide on the owner's behalf; they can reassign the owner instead. A risk without an owner shows **No owner** and cannot be approved.
+- **Approve or reject:** a comment is optional when approving and required when rejecting (max. 2000 characters). The owner can change a decision at any time; each decision is recorded separately.
+- **Reset:** changing the chance, impact, treatment, residual values, Mitigated marker or owner puts the risk back to **Awaiting approval**, whether the change comes from the risk form, the admin register, the API, the threat-scenario sync or a PASTA publish. Edits to the title, description, tickets, components, controls, impact areas, due date or treatment plan, and closing or reopening the risk, keep the decision.
+- **After a reset** the panel shows the last rejection ("Previously rejected by … on …") so whoever revises the risk can see why. This reason comes from the audit log.
+- **Changed while open:** if a material field changes while the owner has the page open, the decision is refused with "This risk changed since you opened it" and the owner reviews it again.
+
+### Finding Risks to Decide
+
+The dashboard's **Approval** filter lists open risks only and combines with the BIA filter (for example `/risk/?approval=mine&bia=3`):
+
+| Filter | Shows |
+|---|---|
+| `mine` – Awaiting my approval (n) | Risks you own with no decision or a rejection |
+| `awaiting` – Awaiting approval | Risks that have an owner but no decision |
+| `rejected` – Rejected | Rejected risks |
+
+Every card shows its approval state: **Awaiting approval**, **Approved**, **Rejected** or **No owner**.
+
+### Audit Events
+
+| Event | When |
+|---|---|
+| `risk_approved` / `risk_rejected` | The owner decides; includes the comment and the approved chance, impact, treatment, residual values and actual score |
+| `risk.updated` | Generic field audit; a reset shows `approval_*` fields changing to empty |
+| `risk_synced_from_threat` | Threat sync; `approval_reset: true` when the sync voided a decision |
 
 ## Selecting CSA Controls for Mitigation
 
@@ -42,6 +73,8 @@ The risk module provides a single workspace for tracking identified risks across
 - `GET /api/risks` returns an array of serialized risks including derived `score`, `severity`, component snapshots, and CSA control metadata. Responses now expose a `controls` array plus a legacy `control` key for backwards compatibility.
 - `POST /api/risks` and `PUT /api/risks/<id>` enforce the same validation rules as the UI, including the mandatory CSA control when `treatment` equals `mitigate`. Provide the list under `csa_control_ids`; the legacy `csa_control_id` field remains accepted for single-value clients.
 - `DELETE /api/risks/<id>` removes the record and cascades component links/impact areas.
+- Approval fields are read-only: responses include `approval_status`, `approval_state` (`no_owner`, `awaiting`, `approved`, `rejected`), `approval_decided_at`, `approval_decided_by` and `approval_comment`. `POST` and `PUT` ignore them; there is no API to approve or reject.
+- A `PUT` without `treatment_owner_id` clears the owner, which also resets the approval. Always send the owner when updating a risk.
 
 ## Troubleshooting
 
@@ -49,6 +82,8 @@ The risk module provides a single workspace for tracking identified risks across
 - **CSA control required errors** – select at least one control whenever the treatment is `mitigate`. The error string is `Select at least one CSA control when the treatment strategy is Mitigate.`
 - **Overlapping severity ranges** – update the surrounding ranges so `max_score` for one severity is strictly less than the `min_score` of the next severity.
 - **403 errors on `/risk`** – confirm the signed-in user has either the admin or assessment manager role.
+- **403 when approving or rejecting** – only the user set as the risk's owner can decide, and admins are not exempt. Assign the right owner first.
+- **Approval went back to "Awaiting approval"** – a material field (chance, impact, treatment, residual values, Mitigated, owner) changed. The audit log shows which change and who made it; threat-linked risks can be reset by the scenario sync.
 
 ## PASTA Risk Publication
 
