@@ -1505,7 +1505,8 @@
           "disable": "Disable MFA",
           "back_to_users": "Back to users"
         }
-      }
+      },
+      "link_ssp_options": "SSP lists"
     },
     "backup": {
       "nav_link": "Backup & Restore",
@@ -2074,6 +2075,61 @@
     "principle_edit": {
       "subtitle_edit": "Update the name or description for {name}.",
       "cancel": "Cancel"
+    },
+    "ssp_options": {
+      "page": {
+        "title": "SSP lists",
+        "heading": "SSP lists",
+        "subtitle": "Maintain the choices offered on every System Security Plan. Options that are in use are deactivated instead of deleted.",
+        "back": "← Back to administration"
+      },
+      "kind": {
+        "law_regulation": {
+          "heading": "Laws, regulations and policies",
+          "help": "SSP editors can select several of these per plan (for example AVG/GDPR, NIS2, BIO)."
+        },
+        "monitoring_frequency": {
+          "heading": "Monitoring frequencies",
+          "help": "SSP editors select one of these as the frequency of continuous monitoring."
+        }
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description (optional)",
+        "add": "Add",
+        "save": "Save"
+      },
+      "list": {
+        "name": "Name",
+        "description": "Description",
+        "status": "Status",
+        "usage": "Used by",
+        "usage_count": "{count} SSP(s)",
+        "actions": "Actions",
+        "empty": "No options yet."
+      },
+      "state": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "edit": "Edit",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "delete": "Delete",
+        "delete_confirm": "Delete \"{name}\"? If SSPs use it, it is deactivated instead."
+      },
+      "errors": {
+        "name_exists": "An option with this name already exists."
+      },
+      "flash": {
+        "created": "\"{name}\" added.",
+        "updated": "\"{name}\" updated.",
+        "activated": "\"{name}\" is active again.",
+        "deactivated": "\"{name}\" deactivated; it is no longer offered for new selections.",
+        "deactivated_instead": "\"{name}\" is used by {count} SSP(s), so it was deactivated instead of deleted.",
+        "deleted": "\"{name}\" deleted."
+      }
     }
   },
   "actions": {

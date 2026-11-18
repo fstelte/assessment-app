@@ -1862,7 +1862,8 @@
           "back_to_users": "Terug naar gebruikers"
         }
       },
-      "link_risk_management": "Risicobeheer"
+      "link_risk_management": "Risicobeheer",
+      "link_ssp_options": "SSP-lijsten"
     },
     "backup": {
       "nav_link": "Back-up & herstel",
@@ -2419,6 +2420,61 @@
     "principle_edit": {
       "subtitle_edit": "Werk de naam of omschrijving van {name} bij.",
       "cancel": "Annuleren"
+    },
+    "ssp_options": {
+      "page": {
+        "title": "SSP-lijsten",
+        "heading": "SSP-lijsten",
+        "subtitle": "Beheer de keuzes die op elk System Security Plan worden aangeboden. Opties die in gebruik zijn worden gedeactiveerd in plaats van verwijderd.",
+        "back": "← Terug naar beheer"
+      },
+      "kind": {
+        "law_regulation": {
+          "heading": "Wetten, regelgeving en beleid",
+          "help": "SSP-bewerkers kunnen er per plan meerdere selecteren (bijvoorbeeld AVG, NIS2, BIO)."
+        },
+        "monitoring_frequency": {
+          "heading": "Monitoringfrequenties",
+          "help": "SSP-bewerkers kiezen hier één van als frequentie van de continue monitoring."
+        }
+      },
+      "form": {
+        "name": "Naam",
+        "description": "Omschrijving (optioneel)",
+        "add": "Toevoegen",
+        "save": "Opslaan"
+      },
+      "list": {
+        "name": "Naam",
+        "description": "Omschrijving",
+        "status": "Status",
+        "usage": "Gebruikt door",
+        "usage_count": "{count} SSP('s)",
+        "actions": "Acties",
+        "empty": "Nog geen opties."
+      },
+      "state": {
+        "active": "Actief",
+        "inactive": "Inactief"
+      },
+      "actions": {
+        "edit": "Bewerken",
+        "activate": "Activeren",
+        "deactivate": "Deactiveren",
+        "delete": "Verwijderen",
+        "delete_confirm": "\"{name}\" verwijderen? Als SSP's het gebruiken, wordt het in plaats daarvan gedeactiveerd."
+      },
+      "errors": {
+        "name_exists": "Er bestaat al een optie met deze naam."
+      },
+      "flash": {
+        "created": "\"{name}\" toegevoegd.",
+        "updated": "\"{name}\" bijgewerkt.",
+        "activated": "\"{name}\" is weer actief.",
+        "deactivated": "\"{name}\" gedeactiveerd; het wordt niet meer aangeboden voor nieuwe selecties.",
+        "deactivated_instead": "\"{name}\" wordt door {count} SSP('s) gebruikt en is daarom gedeactiveerd in plaats van verwijderd.",
+        "deleted": "\"{name}\" verwijderd."
+      }
     }
   },
   "roles": {

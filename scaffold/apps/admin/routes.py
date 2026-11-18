@@ -39,7 +39,7 @@ from ..csa.services import (
     parse_nist_text,
     upsert_control,
 )
-from ..ssp.models import ADRRecord, ArchitecturePrinciple
+from ..ssp.models import ADRRecord, ArchitecturePrinciple, SSPlan, SSPOption, SSPOptionKind, ssp_plan_laws
 from ..ssp.principle_importer import import_principles_from_mapping
 from ...models import AuditLog
 from ..identity.models import MFASetting, PasskeyCredential, Role, User, UserStatus, ROLE_CONTROL_OWNER
@@ -89,6 +89,8 @@ from .forms import (
     PrincipleImportForm,
     PrincipleUpdateForm,
     SetPasswordForm,
+    SSPOptionActionForm,
+    SSPOptionForm,
 )
 from .backup_crypto import InvalidBackupKey, try_decrypt
 from .backup_utils import (
@@ -953,6 +955,165 @@ def list_authentication_methods():
         method_display_names=method_display_names,
         active_locale=active_locale,
     )
+
+
+# ---------------------------------------------------------------------------
+# SSP option lists (decision 20261118-1500)
+# ---------------------------------------------------------------------------
+
+
+def _ssp_option_usage(option: SSPOption) -> int:
+    """Number of SSPs that use *option* (law selection or monitoring frequency)."""
+    if option.kind is SSPOptionKind.LAW_REGULATION:
+        return db.session.scalar(
+            sa.select(sa.func.count()).select_from(ssp_plan_laws).where(ssp_plan_laws.c.option_id == option.id)
+        )
+    return SSPlan.query.filter_by(monitoring_frequency_id=option.id).count()
+
+
+def _ssp_option_name_taken(kind: SSPOptionKind, name: str, exclude_id: int | None = None) -> bool:
+    query = SSPOption.query.filter(SSPOption.kind == kind, sa.func.lower(SSPOption.name) == name.lower())
+    if exclude_id is not None:
+        query = query.filter(SSPOption.id != exclude_id)
+    return db.session.query(query.exists()).scalar()
+
+
+@bp.route("/ssp-options", methods=["GET", "POST"])
+@login_required
+@require_fresh_login()
+def ssp_options():
+    """List and create the admin-managed SSP options (laws/regulations/policies, frequencies)."""
+    _require_admin()
+
+    create_form = SSPOptionForm()
+    if create_form.validate_on_submit():
+        try:
+            kind = SSPOptionKind(create_form.kind.data)
+        except ValueError:
+            abort(400)
+        name = " ".join(create_form.name.data.split())
+        if _ssp_option_name_taken(kind, name):
+            create_form.name.errors.append(_("admin.ssp_options.errors.name_exists"))
+            flash(_("admin.ssp_options.errors.name_exists"), "danger")
+        else:
+            option = SSPOption(kind=kind, name=name, description=(create_form.description.data or "").strip() or None)
+            db.session.add(option)
+            db.session.flush()
+            log_event(
+                action="ssp_option_created",
+                entity_type="ssp_option",
+                entity_id=option.id,
+                details={"kind": kind.value, "name": option.name},
+            )
+            db.session.commit()
+            flash(_("admin.ssp_options.flash.created", name=option.name), "success")
+            return redirect(url_for("admin.ssp_options"))
+    elif request.method == "POST":
+        for errors in create_form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+
+    sections = []
+    for kind in SSPOptionKind:
+        options = SSPOption.query.filter_by(kind=kind).order_by(sa.func.lower(SSPOption.name)).all()
+        sections.append(
+            {
+                "kind": kind,
+                "options": options,
+                "usage": {option.id: _ssp_option_usage(option) for option in options},
+                "edit_forms": {
+                    option.id: SSPOptionForm(obj=option, kind=kind.value, formdata=None) for option in options
+                },
+                "create_form": SSPOptionForm(kind=kind.value, formdata=None),
+            }
+        )
+    return render_template(
+        "admin/ssp_options.html",
+        sections=sections,
+        action_form=SSPOptionActionForm(),
+    )
+
+
+@bp.post("/ssp-options/<int:option_id>")
+@login_required
+@require_fresh_login()
+def update_ssp_option(option_id: int):
+    _require_admin()
+    option = db.session.get(SSPOption, option_id) or abort(404)
+    form = SSPOptionForm()
+    if form.validate_on_submit():
+        name = " ".join(form.name.data.split())
+        if _ssp_option_name_taken(option.kind, name, exclude_id=option.id):
+            flash(_("admin.ssp_options.errors.name_exists"), "danger")
+        else:
+            previous_name = option.name
+            option.name = name
+            option.description = (form.description.data or "").strip() or None
+            log_event(
+                action="ssp_option_updated",
+                entity_type="ssp_option",
+                entity_id=option.id,
+                details={"kind": option.kind.value, "name": option.name, "previous_name": previous_name},
+            )
+            db.session.commit()
+            flash(_("admin.ssp_options.flash.updated", name=option.name), "success")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                flash(error, "danger")
+    return redirect(url_for("admin.ssp_options"))
+
+
+@bp.post("/ssp-options/<int:option_id>/toggle")
+@login_required
+@require_fresh_login()
+def toggle_ssp_option(option_id: int):
+    _require_admin()
+    option = db.session.get(SSPOption, option_id) or abort(404)
+    if not SSPOptionActionForm().validate_on_submit():
+        abort(400)
+    option.is_active = not option.is_active
+    log_event(
+        action="ssp_option_toggled",
+        entity_type="ssp_option",
+        entity_id=option.id,
+        details={"kind": option.kind.value, "name": option.name, "is_active": option.is_active},
+    )
+    db.session.commit()
+    key = "admin.ssp_options.flash.activated" if option.is_active else "admin.ssp_options.flash.deactivated"
+    flash(_(key, name=option.name), "info")
+    return redirect(url_for("admin.ssp_options"))
+
+
+@bp.post("/ssp-options/<int:option_id>/delete")
+@login_required
+@require_fresh_login()
+def delete_ssp_option(option_id: int):
+    """Delete an unused option; an option that SSPs use is deactivated instead."""
+    _require_admin()
+    option = db.session.get(SSPOption, option_id) or abort(404)
+    if not SSPOptionActionForm().validate_on_submit():
+        abort(400)
+
+    usage = _ssp_option_usage(option)
+    details = {"kind": option.kind.value, "name": option.name}
+    if usage:
+        option.is_active = False
+        log_event(
+            action="ssp_option_toggled",
+            entity_type="ssp_option",
+            entity_id=option.id,
+            details={**details, "is_active": False, "reason": "in_use", "usage_count": usage},
+        )
+        db.session.commit()
+        flash(_("admin.ssp_options.flash.deactivated_instead", name=option.name, count=usage), "warning")
+        return redirect(url_for("admin.ssp_options"))
+
+    log_event(action="ssp_option_deleted", entity_type="ssp_option", entity_id=option.id, details=details)
+    db.session.delete(option)
+    db.session.commit()
+    flash(_("admin.ssp_options.flash.deleted", name=details["name"]), "success")
+    return redirect(url_for("admin.ssp_options"))
 
 
 @bp.post("/authentication-methods/<int:method_id>")

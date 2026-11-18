@@ -296,3 +296,25 @@ class PartialRestoreExecuteForm(FlaskForm):
     """Confirmation form that triggers the actual partial restore execution."""
 
     submit = SubmitField(_label("admin.backup.partial_restore.preview.submit"))
+
+
+class SSPOptionForm(FlaskForm):
+    """Create or update an SSP list option: a law/regulation/policy or a monitoring frequency."""
+
+    kind = HiddenField(validators=[DataRequired()])
+    name = StringField(
+        _l("admin.ssp_options.form.name"),
+        validators=[DataRequired(), Length(max=255)],
+    )
+    description = TextAreaField(
+        _l("admin.ssp_options.form.description"),
+        validators=[Optional()],
+        render_kw={"rows": 2},
+    )
+    submit = SubmitField(_l("admin.ssp_options.form.add"))
+
+
+class SSPOptionActionForm(FlaskForm):
+    """CSRF-only form for the toggle and delete buttons on SSP list options."""
+
+    submit = SubmitField()
