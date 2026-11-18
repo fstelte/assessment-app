@@ -360,3 +360,65 @@ def test_ticket_link_label_max_length_validation(client, app, admin_user):
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
     assert "80" in html or "label" in html.lower()
+
+
+# ---------------------------------------------------------------------------
+# Mitigated marker and residual assessment on the manual form (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def _manual_form(component_id: int, **overrides) -> dict:
+    data = {
+        "title": "Backup leak",
+        "description": "Backups stored unencrypted",
+        "impact": RiskImpact.MAJOR.value,  # 4
+        "chance": RiskChance.LIKELY.value,  # 4
+        "impact_areas": [RiskImpactArea.OPERATIONAL.value],
+        "component_ids": [str(component_id)],
+        "treatment": RiskTreatmentOption.ACCEPT.value,
+        "mitigated": "y",
+        "residual_impact": RiskImpact.MINOR.value,  # 2
+        "residual_chance": RiskChance.POSSIBLE.value,  # 3
+    }
+    data.update(overrides)
+    return {key: value for key, value in data.items() if value is not None}
+
+
+def test_manual_risk_can_be_mitigated_with_residual(client, app, login):
+    component_id = _seed_component(app)
+    _seed_thresholds(app)
+
+    response = client.post("/risk/new", data=_manual_form(component_id))
+    assert response.status_code == 302
+
+    risk = Risk.query.one()
+    assert risk.is_mitigated
+    assert (risk.residual_impact, risk.residual_chance) == (RiskImpact.MINOR, RiskChance.POSSIBLE)
+
+    page = client.get(f"/risk/{risk.id}/edit").get_data(as_text=True)
+    assert "Initial: 16 → Residual: 6" in page
+
+
+def test_unchecking_mitigated_clears_marker(client, app, login):
+    component_id = _seed_component(app)
+    client.post("/risk/new", data=_manual_form(component_id))
+    risk_id = Risk.query.one().id
+    assert Risk.query.one().is_mitigated
+
+    response = client.post(f"/risk/{risk_id}/edit", data=_manual_form(component_id, mitigated=None))
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    assert db.session.get(Risk, risk_id).mitigated_at is None
+
+
+def test_manual_risk_without_components_is_rejected(client, app, login):
+    component_id = _seed_component(app)
+    client.post("/risk/new", data=_manual_form(component_id))
+    risk_id = Risk.query.one().id
+
+    response = client.post(f"/risk/{risk_id}/edit", data=_manual_form(component_id, component_ids=[]))
+
+    assert response.status_code == 200  # re-rendered with errors
+    db.session.expire_all()
+    assert [c.id for c in db.session.get(Risk, risk_id).components] == [component_id]

@@ -146,6 +146,16 @@ body[data-theme="dark"] .risk-control-preview {
         {% if score is not none %}
         <div class="text-sm text-[var(--color-muted)]">{{ _('Score') }}</div>
         <div class="text-2xl font-bold">{{ score }}</div>
+        {% if risk and risk.is_mitigated %}
+        <div class="mt-1 flex flex-wrap justify-end items-center gap-2 text-xs text-[var(--color-muted)]">
+          <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
+          {% if risk.residual_score() is not none %}
+          <span>{{ _('risk.residual.initial_to_residual').format(initial=risk.score(), residual=risk.residual_score()) }}</span>
+          {% else %}
+          <span>{{ _('risk.residual.not_set_hint') }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
         {% else %}
         <div class="text-sm text-[var(--color-muted)]">{{ _('Score pending') }}</div>
         {% endif %}
@@ -176,6 +186,15 @@ body[data-theme="dark"] .risk-control-preview {
   {% if not component_choices_available %}
   <div class="rounded-xl px-4 py-3 text-sm border bg-yellow-400/10 border-yellow-400/40 text-yellow-200" role="alert">
     {{ _('No eligible BIA components found. Enable risk assessments for at least one component in a BIA context before saving.') }}
+  </div>
+  {% endif %}
+
+  {% if linked_scenario %}
+  <div class="rounded-xl px-4 py-3 text-sm border bg-primary-500/10 border-primary-500/40 text-[var(--color-text)]" role="note">
+    {{ _('risk.managed_by_threat.note') }}
+    {% if linked_scenario_url %}
+    <a class="text-primary-600 hover:underline font-medium" href="{{ linked_scenario_url }}">{{ _('risk.managed_by_threat.link').format(title=linked_scenario.title) }}</a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -239,6 +258,13 @@ body[data-theme="dark"] .risk-control-preview {
         <h2 class="text-base font-semibold mb-4">{{ _('Impact & chance') }}</h2>
         {{ render_field_with_help(form.impact, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
         {{ render_field_with_help(form.chance, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        <div class="mb-4 flex items-center gap-2">
+          {{ form.mitigated(class_="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500") }}
+          <label class="text-sm font-medium text-[var(--color-text)]" for="{{ form.mitigated.id }}">{{ form.mitigated.label.text }}</label>
+        </div>
+        {{ render_field_with_help(form.residual_impact, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        {{ render_field_with_help(form.residual_chance, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30") }}
+        <p class="text-xs text-[var(--color-muted)] -mt-2 mb-4">{{ _('risk.residual.help') }}</p>
         {{ render_field_with_help(form.impact_areas, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=True) }}
       </section>
 
@@ -288,6 +314,7 @@ body[data-theme="dark"] .risk-control-preview {
                        name="{{ form.csa_control_ids.name }}"
                        value="{{ value }}"
                        {% if value in (form.csa_control_ids.data or []) %}checked{% endif %}
+                       {% if form.managed_by_threat %}disabled{% endif %}
                        class="h-4 w-4 rounded border-[var(--color-border)] text-primary-600 focus:ring-primary-500">
                 <span class="text-sm text-[var(--color-text)]">{{ label }}</span>
               </label>
@@ -348,6 +375,7 @@ body[data-theme="dark"] .risk-control-preview {
 <script nonce="{{ csp_nonce }}">
 (function () {
   const mitigateValue = "{{ RiskTreatmentOption.MITIGATE.value }}";
+  const controlsLocked = {{ 'true' if form.managed_by_threat else 'false' }};
   const treatmentField = document.getElementById("{{ form.treatment.id }}");
   const controlWrapper = document.querySelector('[data-control-wrapper]');
   const filterInput = document.getElementById('risk-controls-filter');
@@ -373,7 +401,7 @@ body[data-theme="dark"] .risk-control-preview {
     const shouldShow = treatmentField.value === mitigateValue;
     controlWrapper.style.display = shouldShow ? '' : 'none';
     getCheckboxes().forEach(function (cb) {
-      cb.disabled = !shouldShow;
+      cb.disabled = controlsLocked || !shouldShow;
       if (!shouldShow) cb.checked = false;
     });
     if (!shouldShow && filterInput) {

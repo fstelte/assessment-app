@@ -293,3 +293,70 @@ def test_bulk_sync_includes_mitigated_scenarios(app, client, login):
     assert "/risk/" in response.headers["Location"]
     db.session.expire_all()  # the request used its own session
     assert db.session.get(ThreatScenario, scenario.id).risk_id is not None
+
+
+# ---------------------------------------------------------------------------
+# Risk edit form for threat-linked risks (Task 4)
+# ---------------------------------------------------------------------------
+
+
+def _linked_risk_without_components():
+    scope, _ = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["Unmatched asset"])
+    scenario = _scenario(model, assigned=assets)
+    scenario.status = ScenarioStatus.ANALYSED
+    scenario.treatment = TreatmentOption.MITIGATE
+    scenario.likelihood = 4
+    scenario.impact_score = 4
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+    return scenario, db.session.get(Risk, scenario.risk_id)
+
+
+def test_linked_risk_without_components_saves_editable_fields(app, client, login):
+    _, risk = _linked_risk_without_components()
+    assert risk.components == []
+
+    response = client.post(
+        f"/risk/{risk.id}/edit",
+        data={"impact_areas": ["operational"], "treatment_plan": "Patch monthly"},
+    )
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    assert db.session.get(Risk, risk.id).treatment_plan == "Patch monthly"
+
+
+def test_linked_risk_ignores_posted_sync_owned_fields(app, client, login):
+    _, risk = _linked_risk_without_components()
+
+    response = client.post(
+        f"/risk/{risk.id}/edit",
+        data={
+            "impact_areas": ["operational"],
+            "title": "Changed title",
+            "chance": "rare",
+            "mitigated": "y",
+            "residual_impact": "minor",
+            "residual_chance": "rare",
+        },
+    )
+
+    assert response.status_code == 302  # saved, not rejected
+    db.session.expire_all()
+    stored = db.session.get(Risk, risk.id)
+    assert stored.title == "S"
+    assert stored.chance is RiskChance.LIKELY
+    assert not stored.is_mitigated
+    assert stored.residual_impact is None
+
+
+def test_linked_risk_form_renders_sync_fields_disabled(app, client, login):
+    _, risk = _linked_risk_without_components()
+
+    page = client.get(f"/risk/{risk.id}/edit").get_data(as_text=True)
+
+    assert "managed by a threat scenario" in page
+    for field_id in ("title", "chance", "mitigated", "residual_impact", "component_ids"):
+        tag = page[page.index(f'id="{field_id}"') - 300 : page.index(f'id="{field_id}"') + 300]
+        assert "disabled" in tag, field_id

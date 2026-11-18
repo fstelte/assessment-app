@@ -154,6 +154,20 @@
     }
   },
   "risk": {
+    "residual": {
+      "mitigated": "Gemitigeerd",
+      "impact": "Restimpact",
+      "chance": "Restkans",
+      "not_set": "— Niet ingevuld —",
+      "help": "Restimpact en restkans beschrijven het risico dat na mitigatie overblijft. Zodra het risico als gemitigeerd is gemarkeerd, bepalen ze de risicoscore.",
+      "mitigated_pill": "Gemitigeerd",
+      "initial_to_residual": "Initieel: {initial} → Rest: {residual}",
+      "not_set_hint": "Gemitigeerd – restrisico niet ingevuld"
+    },
+    "managed_by_threat": {
+      "note": "Dit risico wordt beheerd door een dreigingsscenario. Titel, beschrijving, scoring, behandeling, restrisico, componenten en maatregelen worden vanuit het scenario gesynchroniseerd en kunnen alleen daar worden aangepast.",
+      "link": "Open scenario “{title}”"
+    },
     "chance": {
       "rare": "Zeldzaam",
       "unlikely": "Onwaarschijnlijk",

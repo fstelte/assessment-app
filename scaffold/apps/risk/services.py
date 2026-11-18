@@ -233,6 +233,10 @@ def configure_risk_form(
 ) -> None:
     form.impact.choices = impact_choices()
     form.chance.choices = chance_choices()
+    if hasattr(form, "residual_impact"):
+        not_set = [("", _("risk.residual.not_set"))]
+        form.residual_impact.choices = not_set + impact_choices()
+        form.residual_chance.choices = not_set + chance_choices()
     form.impact_areas.choices = impact_area_choices()
     form.component_ids.choices = component_choices(context_scope_id=context_scope_id)
     form.treatment.choices = treatment_choices()

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Sequence
 
 import sqlalchemy as sa
@@ -143,6 +143,25 @@ def _resolve_controls(form: RiskForm) -> list[Control] | None:
         return None
 
 
+def _apply_residual_fields(form: RiskForm, risk: Risk) -> None:
+    """Copy the mitigated marker and residual assessment from the form (decision 20261118-0800)."""
+
+    if form.mitigated.data:
+        risk.mitigated_at = risk.mitigated_at or datetime.now(UTC)
+    else:
+        risk.mitigated_at = None
+    risk.residual_impact = RiskImpact(form.residual_impact.data) if form.residual_impact.data else None
+    risk.residual_chance = RiskChance(form.residual_chance.data) if form.residual_chance.data else None
+
+
+def _residual_audit_details(risk: Risk) -> dict[str, object]:
+    return {
+        "mitigated": risk.is_mitigated,
+        "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+        "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+    }
+
+
 @bp.route("/sync-from-threats", methods=["POST"])
 @login_required
 def sync_from_threats():
@@ -245,6 +264,7 @@ def create():
                 risk.discovered_on = date.today()
             risk.components = components
             risk.controls = controls or []
+            _apply_residual_fields(form, risk)
             set_impact_areas(risk, form.impact_areas.data or [])
             db.session.add(risk)
             db.session.flush()
@@ -264,6 +284,7 @@ def create():
                     "impact": risk.impact.value,
                     "chance": risk.chance.value,
                     "treatment": risk.treatment.value,
+                    **_residual_audit_details(risk),
                 },
             )
             db.session.commit()
@@ -295,46 +316,22 @@ def edit(risk_id: int):
     if risk is None:
         abort(404)
 
-    # If this risk was synced from a threat scenario, keep chance/impact/components
-    # aligned with the latest scenario values.
+    # Threat-linked risks are a projection of their scenario: re-sync on every
+    # visit and keep the sync-owned fields read-only (decision 20261118-0830).
     from ..threat.models import ThreatScenario
-    from ..threat.services import _CHANCE_MAP, _IMPACT_MAP, _components_for_scenario
+    from ..threat.services import sync_scenario_to_risk
     linked_scenario = ThreatScenario.query.filter_by(risk_id=risk_id).first()
     if linked_scenario:
-        dirty = False
-        expected_chance = RiskChance(_CHANCE_MAP.get(linked_scenario.likelihood, "possible"))
-        expected_impact = RiskImpact(_IMPACT_MAP.get(linked_scenario.impact_score, "moderate"))
-        if risk.chance != expected_chance:
-            risk.chance = expected_chance
-            dirty = True
-        if risk.impact != expected_impact:
-            risk.impact = expected_impact
-            dirty = True
-        if not risk.components:
-            components_to_link = _components_for_scenario(linked_scenario)
-            if components_to_link:
-                risk.components = components_to_link
-                dirty = True
-        else:
-            # Re-sync components to match current threat model assets.
-            refreshed = _components_for_scenario(linked_scenario)
-            if refreshed and set(c.id for c in refreshed) != set(c.id for c in risk.components):
-                risk.components = refreshed
-                dirty = True
-        # Re-sync controls from the linked threat scenario.
-        scenario_control_ids = {c.id for c in linked_scenario.controls}
-        risk_control_ids = {c.id for c in risk.controls}
-        if scenario_control_ids != risk_control_ids:
-            risk.controls = list(linked_scenario.controls)
-            dirty = True
-        if dirty:
-            db.session.commit()
+        sync_scenario_to_risk(linked_scenario)
+        db.session.commit()
 
     form = RiskForm(obj=risk)
     _threat_scope_id = linked_scenario.threat_model.context_scope_id if linked_scenario and linked_scenario.threat_model else None
     configure_risk_form(form, extra_components=list(risk.components), context_scope_id=_threat_scope_id)
     form.submit.label.text = _("Save changes")
-    component_choices_available = bool(form.component_ids.choices)
+    if linked_scenario:
+        form.mark_managed_by_threat()
+    component_choices_available = bool(form.component_ids.choices) or linked_scenario is not None
 
     if request.method == "GET":
         form.component_ids.data = [str(component.id) for component in risk.components]
@@ -344,26 +341,35 @@ def edit(risk_id: int):
         form.impact.data = risk.impact.value
         form.chance.data = risk.chance.value
         form.treatment.data = risk.treatment.value
+        form.mitigated.data = risk.is_mitigated
+        form.residual_impact.data = risk.residual_impact.value if risk.residual_impact else ""
+        form.residual_chance.data = risk.residual_chance.value if risk.residual_chance else ""
         form.ticket_url.data = risk.ticket_url or ""
         # Pre-fill template context variable for existing ticket links
         # (rendered by the Jinja template using risk.ticket_links)
 
     if form.validate_on_submit():
-        components = _resolve_components_for_edit(form)
-        controls = _resolve_controls(form)
-        if components and controls is not None:
-            risk.title = (form.title.data or "").strip()
-            risk.description = form.description.data
+        if linked_scenario:
+            # Sync-owned fields are ignored; the scenario stays the source of truth.
+            components, controls = list(risk.components), list(risk.controls)
+        else:
+            components = _resolve_components_for_edit(form)
+            controls = _resolve_controls(form)
+        if components is not None and controls is not None:
+            if not linked_scenario:
+                risk.title = (form.title.data or "").strip()
+                risk.description = form.description.data
+                risk.impact = RiskImpact(form.impact.data)
+                risk.chance = RiskChance(form.chance.data)
+                risk.treatment = RiskTreatmentOption(form.treatment.data)
+                risk.components = components
+                risk.controls = controls or []
+                _apply_residual_fields(form, risk)
             risk.discovered_on = form.discovered_on.data or risk.discovered_on
-            risk.impact = RiskImpact(form.impact.data)
-            risk.chance = RiskChance(form.chance.data)
-            risk.treatment = RiskTreatmentOption(form.treatment.data)
             risk.treatment_plan = form.treatment_plan.data
             risk.treatment_due_date = form.treatment_due_date.data
             risk.treatment_owner_id = optional_int(form.treatment_owner_id.data)
             risk.ticket_url = (form.ticket_url.data or "").strip() or None
-            risk.components = components
-            risk.controls = controls or []
             set_impact_areas(risk, form.impact_areas.data or [])
             # Persist plural ticket links (US4)
             links_data = _parse_ticket_links_from_form(request.form)
@@ -382,6 +388,7 @@ def edit(risk_id: int):
                     "impact": risk.impact.value,
                     "chance": risk.chance.value,
                     "treatment": risk.treatment.value,
+                    **_residual_audit_details(risk),
                 },
             )
             db.session.commit()
@@ -392,8 +399,17 @@ def edit(risk_id: int):
         _flash_form_errors(form)
 
     thresholds = load_thresholds()
-    score = risk.score()
+    score = risk.actual_score()
     severity = determine_severity(score, thresholds)
+    linked_scenario_url = (
+        url_for(
+            "threat.scenario_detail",
+            model_id=linked_scenario.threat_model_id,
+            scenario_id=linked_scenario.id,
+        )
+        if linked_scenario and "threat.scenario_detail" in current_app.view_functions
+        else None
+    )
 
     return render_template(
         "risk/form.html",
@@ -403,6 +419,8 @@ def edit(risk_id: int):
         form_mode="edit",
         score=score,
         severity=severity,
+        linked_scenario=linked_scenario,
+        linked_scenario_url=linked_scenario_url,
         RiskTreatmentOption=RiskTreatmentOption,
     )
 

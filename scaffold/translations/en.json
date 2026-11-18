@@ -2090,6 +2090,20 @@
     "filter": "Filter"
   },
   "risk": {
+    "residual": {
+      "mitigated": "Mitigated",
+      "impact": "Residual impact",
+      "chance": "Residual chance",
+      "not_set": "— Not set —",
+      "help": "Residual impact and chance describe the remaining risk after mitigation. They become the risk score once the risk is marked as mitigated.",
+      "mitigated_pill": "Mitigated",
+      "initial_to_residual": "Initial: {initial} → Residual: {residual}",
+      "not_set_hint": "Mitigated – residual not set"
+    },
+    "managed_by_threat": {
+      "note": "This risk is managed by a threat scenario. Title, description, scoring, treatment, residual risk, components and controls are synchronised from the scenario and can only be changed there.",
+      "link": "Open scenario “{title}”"
+    },
     "chance": {
       "rare": "Rare",
       "unlikely": "Unlikely",
