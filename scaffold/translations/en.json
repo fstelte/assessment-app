@@ -3575,7 +3575,7 @@
       "export": "Export",
       "delete": "Delete SSP",
       "delete_confirm": "Delete the SSP for {name}? This cannot be undone.",
-      "adrs": "ADRs"
+      "adrs": "Security ADRs"
     },
     "sections": {
       "system_identification": "System Identification",
@@ -3591,7 +3591,7 @@
       "monitoring": "Continuous Monitoring",
       "poam": "Plan of Action & Milestones",
       "dates": "Plan Dates",
-      "adrs": "Architecture Decisions",
+      "adrs": "Security ADRs",
       "architecture_overview": "Architecture Overview"
     },
     "labels": {
@@ -3871,14 +3871,19 @@
           "primary_principle": "Required — the architecture principle this decision is anchored to. Cannot be changed after the ADR is created.",
           "secondary_principles": "Optional — other principles this decision also touches.",
           "status": "Proposed, Accepted, Rejected, or Deprecated. \"Superseded\" is only set automatically when another ADR supersedes this one.",
-          "supersedes": "Optional — if this decision replaces an earlier one in this SSP, select it here. The prior ADR's status will automatically become Superseded."
+          "supersedes": "Optional — if this decision replaces an earlier one in this SSP, select it here. The prior ADR's status will automatically become Superseded.",
+          "external_url": "Optional. When the decision is described elsewhere (for example Confluence), paste the link here; Context and Decision then become optional."
+        },
+        "external_url": "Link to ADR description",
+        "errors": {
+          "context_or_link": "Fill this in, or add a link to where the decision is described."
         }
       }
     },
     "adrs": {
-      "page_title": "Architecture Decision Records",
+      "page_title": "Security ADRs",
       "back": "← Back to SSP",
-      "new": "New ADR",
+      "new": "New security ADR",
       "edit": "Edit",
       "cancel": "Cancel",
       "edit_principle_fixed": "Primary principle (fixed at creation):",
@@ -3908,11 +3913,17 @@
         "secondary_principles": "Also touches:",
         "context": "Context",
         "decision": "Decision",
-        "consequences": "Consequences"
+        "consequences": "Consequences",
+        "external": "Described externally"
       },
       "register": {
         "label": "ADR register"
-      }
+      },
+      "intro": "Record only security-relevant architecture decisions for this system, for example authentication, encryption, network segmentation or logging. Link to your ADR page instead of copying it when the decision is documented elsewhere.",
+      "print": {
+        "described_externally": "Described externally"
+      },
+      "edit_title": "Edit security ADR"
     },
     "architecture_overview": {
       "current_alt": "Current architecture overview diagram",

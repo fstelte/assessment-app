@@ -51,15 +51,26 @@
         {% endif %}
     </div>
 
+    {% if adr.external_url %}
+    <div>
+        <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.external') }}</h2>
+        <a href="{{ adr.external_url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-500 hover:underline break-all">{{ adr.external_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a>
+    </div>
+    {% endif %}
+
+    {% if adr.context %}
     <div>
         <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.context') }}</h2>
         <p class="text-sm whitespace-pre-wrap">{{ adr.context }}</p>
     </div>
+    {% endif %}
 
+    {% if adr.decision %}
     <div>
         <h2 class="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)] mb-1">{{ _('ssp.adrs.detail.decision') }}</h2>
         <p class="text-sm whitespace-pre-wrap">{{ adr.decision }}</p>
     </div>
+    {% endif %}
 
     {% if adr.consequences %}
     <div>

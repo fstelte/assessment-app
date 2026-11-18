@@ -816,9 +816,10 @@ def add_adr(ssp_id: int):
             ssp_id=ssp.id,
             title=form.title.data.strip(),
             status=status,
-            context=form.context.data.strip(),
-            decision=form.decision.data.strip(),
+            context=(form.context.data or "").strip() or None,
+            decision=(form.decision.data or "").strip() or None,
             consequences=(form.consequences.data or "").strip() or None,
+            external_url=form.external_url.data or None,
             primary_principle_id=form.primary_principle_id.data,
             author_id=current_user.id,
             decided_on=date.today() if status in (ADRStatus.ACCEPTED, ADRStatus.REJECTED) else None,
@@ -831,6 +832,8 @@ def add_adr(ssp_id: int):
 
         if supersedes_adr is not None:
             adr.supersedes_id = supersedes_adr.id
+            # Remember the status so deleting this ADR can restore it (CHK001).
+            supersedes_adr.status_before_supersede = supersedes_adr.status
             supersedes_adr.status = ADRStatus.SUPERSEDED
             log_event(
                 "adr_superseded",
@@ -905,9 +908,10 @@ def edit_adr(ssp_id: int, adr_id: int):
             )
 
         adr.title = form.title.data.strip()
-        adr.context = form.context.data.strip()
-        adr.decision = form.decision.data.strip()
+        adr.context = (form.context.data or "").strip() or None
+        adr.decision = (form.decision.data or "").strip() or None
         adr.consequences = (form.consequences.data or "").strip() or None
+        adr.external_url = form.external_url.data or None
         adr.secondary_principles = ArchitecturePrinciple.query.filter(
             ArchitecturePrinciple.id.in_(form.secondary_principle_ids.data or [])
         ).all()

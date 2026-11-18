@@ -463,6 +463,7 @@
             <td class="px-4 py-2 text-slate-500 align-top">{{ loop.index }}</td>
             <td class="px-4 py-2 text-white align-top">
               <p>{{ adr.title }}</p>
+              {% if adr.external_url %}<p class="text-xs text-slate-400 mt-1">{{ _('ssp.adrs.print.described_externally') }}: <span class="break-all">{{ adr.external_url }}</span></p>{% endif %}
               {% if adr.supersedes %}<p class="text-xs text-slate-400 mt-1">{{ _('ssp.adrs.detail.supersedes') }} {{ adr.supersedes.title }}</p>{% endif %}
               {% if adr.superseded_by %}<p class="text-xs text-slate-400 mt-1">{{ _('ssp.adrs.detail.superseded_by') }} {{ adr.superseded_by.title }}</p>{% endif %}
             </td>

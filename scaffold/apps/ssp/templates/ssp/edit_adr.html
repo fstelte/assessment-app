@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ _('ssp.adrs.edit') }} — {{ adr.title }}{% endblock %}
+{% block title %}{{ _('ssp.adrs.edit_title') }} — {{ adr.title }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto max-w-3xl px-4 sm:px-6 py-6">
   <div class="mb-4">
     <a href="{{ url_for('ssp.adr_detail', ssp_id=ssp.id, adr_id=adr.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.adrs.back') }}</a>
-    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.adrs.edit') }}</h1>
+    <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.adrs.edit_title') }}</h1>
+    <p class="text-sm text-[var(--color-muted)] mt-2">{{ _('ssp.adrs.intro') }}</p>
     <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
   </div>
 
@@ -32,6 +33,13 @@
         <div>
             <label class="block text-sm font-medium text-[var(--color-text)] mb-1">{{ form.secondary_principle_ids.label.text }}</label>
             {{ form.secondary_principle_ids(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.external_url.id }}">{{ form.external_url.label.text }}</label>
+            {{ form.external_url(class="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm") }}
+            <p class="text-xs text-[var(--color-muted)] mt-1">{{ form.external_url.description }}</p>
+            {% for error in form.external_url.errors %}<span class="text-red-400 text-xs">{{ error }}</span>{% endfor %}
         </div>
 
         <div>

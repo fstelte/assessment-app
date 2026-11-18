@@ -523,6 +523,7 @@
 
   {# ── Architecture Decision Records Summary ── #}
   {{ section_card("ADR", _('ssp.sections.adrs')) }}
+  <p class="text-sm text-[var(--color-muted)] mb-3">{{ _('ssp.adrs.intro') }}</p>
   {% if ssp.adr_register_url %}
   <p class="text-sm mb-3"><span class="text-[var(--color-muted)]">{{ _('ssp.adrs.register.label') }}:</span>
     <a href="{{ ssp.adr_register_url }}" target="_blank" rel="noopener noreferrer" class="text-primary-500 hover:underline break-all">{{ ssp.adr_register_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a></p>

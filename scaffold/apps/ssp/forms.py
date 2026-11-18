@@ -294,7 +294,24 @@ _ADR_STATUS_CHOICES = [
 ]
 
 
-class ADRCreateForm(FlaskForm):
+class _ADRContentRule:
+    """Either an external link, or both context and decision (decision 20261118-1515, CHK017).
+
+    Shared by the create and update forms so the rule is identical in both.
+    """
+
+    def validate(self, extra_validators=None):
+        valid = super().validate(extra_validators=extra_validators)
+        if self.external_url.data:
+            return valid
+        for field in (self.context, self.decision):
+            if not (field.data or "").strip():
+                field.errors = list(field.errors) + [_l("ssp.adr.forms.errors.context_or_link")]
+                valid = False
+        return valid
+
+
+class ADRCreateForm(_ADRContentRule, FlaskForm):
     """Create an Architecture Decision Record (adr.github.io) on an SSP."""
 
     title = StringField(_l("ssp.adr.forms.title"), validators=[DataRequired(), Length(max=255)])
@@ -318,8 +335,14 @@ class ADRCreateForm(FlaskForm):
         choices=_ADR_STATUS_CHOICES,
         description=_l("ssp.adr.forms.help.status"),
     )
-    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
-    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    external_url = StringField(
+        _l("ssp.adr.forms.external_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.adr.forms.help.external_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[Optional()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[Optional()], render_kw={"rows": 4})
     consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
     supersedes_id = SelectField(
         _l("ssp.adr.forms.supersedes"),
@@ -331,7 +354,7 @@ class ADRCreateForm(FlaskForm):
     submit = SubmitField(_l("ssp.adr.forms.submit"))
 
 
-class ADRUpdateForm(FlaskForm):
+class ADRUpdateForm(_ADRContentRule, FlaskForm):
     """Update an existing ADR. No primary_principle_id or supersedes_id field:
 
     the primary principle is immutable after creation (FR-004), and supersession
@@ -353,8 +376,14 @@ class ADRUpdateForm(FlaskForm):
         choices=_ADR_STATUS_CHOICES,
         description=_l("ssp.adr.forms.help.status"),
     )
-    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[DataRequired()], render_kw={"rows": 4})
-    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[DataRequired()], render_kw={"rows": 4})
+    external_url = StringField(
+        _l("ssp.adr.forms.external_url"),
+        validators=[validate_external_url],
+        description=_l("ssp.adr.forms.help.external_url"),
+        render_kw={"placeholder": "https://", "inputmode": "url"},
+    )
+    context = TextAreaField(_l("ssp.adr.forms.context"), validators=[Optional()], render_kw={"rows": 4})
+    decision = TextAreaField(_l("ssp.adr.forms.decision"), validators=[Optional()], render_kw={"rows": 4})
     consequences = TextAreaField(_l("ssp.adr.forms.consequences"), validators=[Optional()], render_kw={"rows": 3})
     submit = SubmitField(_l("ssp.adr.forms.update_submit"))
 

@@ -9,6 +9,12 @@
       <a href="{{ url_for('ssp.view', ssp_id=ssp.id) }}" class="text-xs text-[var(--color-muted)] hover:underline">{{ _('ssp.adrs.back') }}</a>
       <h1 class="text-xl font-bold text-[var(--color-text)] mt-1">{{ _('ssp.adrs.page_title') }}</h1>
       <p class="text-[var(--color-muted)] text-sm">{{ ssp.context_scope.name }}</p>
+      <p class="text-[var(--color-muted)] text-sm mt-2 max-w-3xl">{{ _('ssp.adrs.intro') }}</p>
+      {% if ssp.adr_register_url %}
+      <p class="text-sm mt-2"><span class="text-[var(--color-muted)]">{{ _('ssp.adrs.register.label') }}:</span>
+        <a href="{{ ssp.adr_register_url }}" target="_blank" rel="noopener noreferrer" class="text-primary-500 hover:underline break-all">{{ ssp.adr_register_url }} <i class="fas fa-arrow-up-right-from-square text-[10px]" aria-hidden="true"></i></a>
+      </p>
+      {% endif %}
     </div>
     {% if has_principles %}
     <a href="{{ url_for('ssp.add_adr', ssp_id=ssp.id) }}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors shrink-0">{{ _('ssp.adrs.new') }}</a>

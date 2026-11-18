@@ -3645,7 +3645,7 @@
       "export": "Exporteren",
       "delete": "SSP verwijderen",
       "delete_confirm": "Het SSP voor {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-      "adrs": "ADR's"
+      "adrs": "Beveiligings-ADR's"
     },
     "sections": {
       "system_identification": "Systeemidentificatie",
@@ -3661,7 +3661,7 @@
       "monitoring": "Continue Monitoring",
       "poam": "Plan van Aanpak & Mijlpalen",
       "dates": "Plandatums",
-      "adrs": "Architectuurbeslissingen",
+      "adrs": "Beveiligings-ADR's",
       "architecture_overview": "Architectuuroverzicht"
     },
     "labels": {
@@ -3941,14 +3941,19 @@
           "primary_principle": "Verplicht — het architectuurprincipe waarop deze beslissing is gebaseerd. Kan na aanmaken niet meer worden gewijzigd.",
           "secondary_principles": "Optioneel — andere principes waar deze beslissing ook betrekking op heeft.",
           "status": "Voorgesteld, Geaccepteerd, Afgewezen of Verouderd. \"Vervangen\" wordt alleen automatisch ingesteld wanneer een andere ADR deze vervangt.",
-          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\"."
+          "supersedes": "Optioneel — als deze beslissing een eerdere beslissing in dit SSP vervangt, selecteer die hier. De status van de eerdere ADR wordt automatisch \"Vervangen\".",
+          "external_url": "Optioneel. Als het besluit elders is beschreven (bijvoorbeeld in Confluence), plak dan hier de link; Context en Besluit worden dan optioneel."
+        },
+        "external_url": "Link naar ADR-beschrijving",
+        "errors": {
+          "context_or_link": "Vul dit in, of voeg een link toe naar de plek waar het besluit is beschreven."
         }
       }
     },
     "adrs": {
-      "page_title": "Architectuurbeslissingen (ADR's)",
+      "page_title": "Beveiligings-ADR's",
       "back": "← Terug naar SSP",
-      "new": "Nieuwe ADR",
+      "new": "Nieuwe beveiligings-ADR",
       "edit": "Bewerken",
       "cancel": "Annuleren",
       "edit_principle_fixed": "Primair principe (vastgelegd bij aanmaken):",
@@ -3978,11 +3983,17 @@
         "secondary_principles": "Ook van toepassing op:",
         "context": "Context",
         "decision": "Beslissing",
-        "consequences": "Gevolgen"
+        "consequences": "Gevolgen",
+        "external": "Extern beschreven"
       },
       "register": {
         "label": "ADR-register"
-      }
+      },
+      "intro": "Leg alleen beveiligingsrelevante architectuurbesluiten voor dit systeem vast, bijvoorbeeld over authenticatie, versleuteling, netwerksegmentatie of logging. Verwijs naar je ADR-pagina in plaats van het besluit te kopiëren als het elders is vastgelegd.",
+      "print": {
+        "described_externally": "Extern beschreven"
+      },
+      "edit_title": "Beveiligings-ADR bewerken"
     },
     "architecture_overview": {
       "current_alt": "Huidig architectuuroverzicht diagram",

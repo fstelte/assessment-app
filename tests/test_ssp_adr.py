@@ -309,3 +309,111 @@ def test_principle_delete_allowed_after_referencing_adr_removed(app, client):
     assert response.status_code == 200
     with app.app_context():
         assert db.session.get(ArchitecturePrinciple, principle_id) is None
+
+
+# --- External links, either/or rule, security wording (Task 9; decision 20261118-1515) --
+
+
+def _adr_payload(principle_id, **data):
+    payload = {"title": "Use mTLS", "primary_principle_id": str(principle_id), "status": "proposed"}
+    payload.update(data)
+    return payload
+
+
+def _setup(app, client):
+    _make_user(app)
+    _login(client)
+    return _make_ssp(app), _make_principle(app)
+
+
+def test_link_only_adr_saves_and_shows_link(app, client):
+    ssp_id, principle_id = _setup(app, client)
+    link = "https://wiki.example.com/adr/0007"
+
+    response = client.post(f"/ssp/{ssp_id}/adrs/add", data=_adr_payload(principle_id, external_url=link))
+    assert response.status_code == 302
+    with app.app_context():
+        adr = ADRRecord.query.one()
+        assert (adr.external_url, adr.context, adr.decision) == (link, None, None)
+        adr_id = adr.id
+
+    detail = client.get(f"/ssp/{ssp_id}/adrs/{adr_id}").get_data(as_text=True)
+    assert f'href="{link}" target="_blank" rel="noopener noreferrer"' in detail
+    assert "Described externally" in detail
+    assert "Context</h2>" not in detail
+    assert f"Described externally: <span class=\"break-all\">{link}</span>" in client.get(
+        f"/ssp/{ssp_id}/export/pdf"
+    ).get_data(as_text=True)
+
+
+def test_without_link_context_and_decision_are_required(app, client):
+    ssp_id, principle_id = _setup(app, client)
+
+    response = client.post(f"/ssp/{ssp_id}/adrs/add", data=_adr_payload(principle_id, context="only context"))
+
+    assert response.status_code == 200
+    assert "Fill this in, or add a link to where the decision is described." in response.get_data(as_text=True)
+    with app.app_context():
+        assert ADRRecord.query.count() == 0
+
+
+def test_removing_link_on_edit_requires_context_and_decision(app, client):
+    ssp_id, principle_id = _setup(app, client)
+    client.post(f"/ssp/{ssp_id}/adrs/add", data=_adr_payload(principle_id, external_url="https://wiki/x"))
+    with app.app_context():
+        adr_id = ADRRecord.query.one().id
+    edit = {"adr_id": str(adr_id), "title": "Use mTLS", "status": "proposed"}
+
+    response = client.post(f"/ssp/{ssp_id}/adrs/{adr_id}/edit", data={**edit, "external_url": ""})
+    assert response.status_code == 200
+    with app.app_context():
+        assert db.session.get(ADRRecord, adr_id).external_url == "https://wiki/x"
+
+    client.post(f"/ssp/{ssp_id}/adrs/{adr_id}/edit", data={**edit, "external_url": "", "context": "c", "decision": "d"})
+    with app.app_context():
+        adr = db.session.get(ADRRecord, adr_id)
+        assert (adr.external_url, adr.context, adr.decision) == (None, "c", "d")
+
+
+def test_bad_external_link_rejected(app, client):
+    ssp_id, principle_id = _setup(app, client)
+
+    response = client.post(f"/ssp/{ssp_id}/adrs/add", data=_adr_payload(principle_id, external_url="javascript:alert(1)"))
+
+    assert response.status_code == 200
+    with app.app_context():
+        assert ADRRecord.query.count() == 0
+
+
+def test_superseding_stores_previous_status(app, client):
+    ssp_id, principle_id = _setup(app, client)
+    client.post(f"/ssp/{ssp_id}/adrs/add", data=_adr_payload(principle_id, title="Old", context="c", decision="d"))
+    with app.app_context():
+        old_id = ADRRecord.query.filter_by(title="Old").one().id
+
+    client.post(
+        f"/ssp/{ssp_id}/adrs/add",
+        data=_adr_payload(principle_id, title="New", context="c", decision="d", supersedes_id=str(old_id)),
+    )
+
+    with app.app_context():
+        old = db.session.get(ADRRecord, old_id)
+        assert old.status is ADRStatus.SUPERSEDED
+        assert old.status_before_supersede is ADRStatus.PROPOSED
+
+
+def test_register_link_and_security_wording_on_adr_pages(app, client):
+    ssp_id, _principle_id = _setup(app, client)
+    with app.app_context():
+        db.session.get(SSPlan, ssp_id).adr_register_url = "https://wiki.example.com/adrs"
+        db.session.commit()
+    intro = "Record only security-relevant architecture decisions for this system"
+
+    listing = client.get(f"/ssp/{ssp_id}/adrs").get_data(as_text=True)
+    assert 'href="https://wiki.example.com/adrs" target="_blank" rel="noopener noreferrer"' in listing
+    assert "Security ADRs" in listing and intro in listing
+    view = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert "Security ADRs" in view and intro in view
+    add = client.get(f"/ssp/{ssp_id}/adrs/add").get_data(as_text=True)
+    assert "New security ADR" in add and intro in add
+    assert "Security ADRs" in client.get(f"/ssp/{ssp_id}/export/pdf").get_data(as_text=True)
