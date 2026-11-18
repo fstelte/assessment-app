@@ -100,7 +100,7 @@ def test_oversized_upload_rejected_and_nothing_persisted(app, client):
     _login(client)
     ssp_id = _make_ssp(app)
 
-    oversized = _png_bytes() + b"\x00" * (6 * 1024 * 1024)
+    oversized = _png_bytes() + b"\x00" * (11 * 1024 * 1024)
     response = _upload(client, ssp_id, content=oversized)
     assert response.status_code == 200
     with app.app_context():
@@ -181,3 +181,94 @@ def test_upload_and_restore_write_audit_log_rows(app, client):
         ).first()
         assert restore_entry is not None
         assert restore_entry.payload.get("restored_from_version") == 1
+
+
+_PDF_BYTES = b"%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"
+
+
+def _flashes(client):
+    with client.session_transaction() as sess:
+        return [message for _category, message in sess.get("_flashes", [])]
+
+
+def _upload_no_follow(client, ssp_id, filename, content, mimetype=None):
+    file_tuple = (io.BytesIO(content), filename, mimetype) if mimetype else (io.BytesIO(content), filename)
+    return client.post(
+        f"/ssp/{ssp_id}/architecture-overview",
+        data={"image": file_tuple},
+        content_type="multipart/form-data",
+    )
+
+
+def test_pdf_upload_is_stored_and_downloaded_as_attachment(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload(client, ssp_id, filename="My Diagram.PDF", content=_PDF_BYTES)
+    with app.app_context():
+        version = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).one()
+        assert version.mime_type == "application/pdf"
+        assert version.original_filename == "my_diagram.pdf"
+        version_id = version.id
+
+    page = client.get(f"/ssp/{ssp_id}")
+    assert b"Download PDF" in page.data
+    assert f"/ssp/{ssp_id}/architecture-overview/{version_id}/image".encode() in page.data
+
+    response = client.get(f"/ssp/{ssp_id}/architecture-overview/{version_id}/image")
+    assert response.mimetype == "application/pdf"
+    assert response.headers["Content-Disposition"] == 'attachment; filename="my_diagram.pdf"'
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+
+def test_renamed_non_pdf_rejected_with_invalid_pdf_message(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload_no_follow(client, ssp_id, "report.pdf", b"just text")
+    assert "The file is not a valid PDF." in _flashes(client)
+    with app.app_context():
+        assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
+
+
+def test_svg_rejected_with_invalid_type_message(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload_no_follow(client, ssp_id, "diagram.svg", b"<svg xmlns='http://www.w3.org/2000/svg'/>")
+    assert any(message.startswith("Only PNG, JPEG or PDF") for message in _flashes(client))
+    with app.app_context():
+        assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
+
+
+def test_oversized_upload_names_the_size_limit(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload_no_follow(client, ssp_id, "big.pdf", _PDF_BYTES + b"\x00" * (11 * 1024 * 1024))
+    assert "The file must be 10 MB or smaller." in _flashes(client)
+
+
+def test_image_mime_type_is_detected_not_taken_from_browser(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload_no_follow(client, ssp_id, "overview.png", _png_bytes(), mimetype="application/octet-stream")
+    with app.app_context():
+        version = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).one()
+        assert version.mime_type == "image/png"
+
+
+def test_upload_form_explains_what_can_be_uploaded(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert 'accept=".png,.jpg,.jpeg,.pdf"' in page
+    assert "PNG, JPEG or PDF, max 10 MB" in page

@@ -3830,23 +3830,30 @@
     },
     "architecture_overview": {
       "current_alt": "Current architecture overview diagram",
-      "none_uploaded": "No architecture overview image has been uploaded yet.",
+      "none_uploaded": "No architecture overview has been uploaded yet.",
       "upload": {
         "field": {
-          "label": "Upload image (PNG or JPEG)"
+          "label": "Upload architecture overview (PNG, JPEG or PDF)"
         },
         "submit": "Upload",
         "errors": {
-          "required": "Please choose an image to upload.",
-          "invalid_image": "File must be a genuine PNG or JPEG image.",
-          "too_large": "Image must be 5 MB or smaller.",
-          "dimensions_too_large": "Image dimensions are too large."
-        }
+          "required": "Please choose a file to upload.",
+          "invalid_image": "The file is not a valid PNG or JPEG image.",
+          "too_large": "The file must be 10 MB or smaller.",
+          "dimensions_too_large": "The image may be at most 8000×8000 pixels.",
+          "invalid_type": "Only PNG, JPEG or PDF files can be uploaded. Export other formats (such as SVG, Visio or draw.io) to PNG or PDF first.",
+          "invalid_pdf": "The file is not a valid PDF."
+        },
+        "help": "PNG, JPEG or PDF, max 10 MB; images max 8000×8000 px. Export Visio, draw.io or SVG diagrams as PNG or PDF first."
       },
       "history": {
         "heading": "Version history",
         "entry": "Version {version} — uploaded by {uploader} on {date}",
         "restore": "Restore"
+      },
+      "pdf": {
+        "meta": "PDF · {size} MB · uploaded by {uploader} on {date}",
+        "download": "Download PDF"
       }
     }
   }

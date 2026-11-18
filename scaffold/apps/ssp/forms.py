@@ -10,34 +10,63 @@ from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 from scaffold.core.i18n import lazy_gettext as _l
 
-MAX_ARCHITECTURE_OVERVIEW_BYTES = 5 * 1024 * 1024
+MAX_ARCHITECTURE_OVERVIEW_BYTES = 10 * 1024 * 1024
 MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX = 8000
+ARCHITECTURE_OVERVIEW_EXTENSIONS = ("png", "jpg", "jpeg", "pdf")
+_IMAGE_MIME_TYPES = {"PNG": "image/png", "JPEG": "image/jpeg"}
 
 
-def _validate_architecture_overview_image(form, field):
-    """Decode the upload to confirm it's a genuine PNG/JPEG within size limits.
+def detect_architecture_overview_mime(stream) -> str | None:
+    """Return the real MIME type of an upload (PNG, JPEG or PDF), or None.
 
-    FileAllowed only checks the filename extension; this reopens the actual
-    bytes with Pillow so a renamed non-image file is rejected too.
+    Looks at the bytes, not the browser-supplied type or the filename, and
+    rewinds the stream before returning.
+    """
+    stream.seek(0)
+    try:
+        if stream.read(5) == b"%PDF-":
+            return "application/pdf"
+        stream.seek(0)
+        try:
+            image = Image.open(stream)
+            return _IMAGE_MIME_TYPES.get(image.format)
+        except (UnidentifiedImageError, OSError):
+            return None
+    finally:
+        stream.seek(0)
+
+
+def _validate_architecture_overview_file(form, field):
+    """Check the upload's real content: a PDF header, or a genuine PNG/JPEG within limits.
+
+    FileAllowed only checks the extension; this inspects the bytes so a
+    renamed file is rejected with the specific reason (decision 20261118-1530).
     """
     file_storage = field.data
     if not file_storage:
         return
 
-    file_storage.stream.seek(0)
+    stream = file_storage.stream
+    extension = (file_storage.filename or "").rsplit(".", 1)[-1].lower()
+    if extension == "pdf":
+        if detect_architecture_overview_mime(stream) != "application/pdf":
+            raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_pdf"))
+        return
+
+    stream.seek(0)
     try:
-        image = Image.open(file_storage.stream)
+        image = Image.open(stream)
         image.verify()
-        file_storage.stream.seek(0)
-        image = Image.open(file_storage.stream)
-        if image.format not in {"PNG", "JPEG"}:
+        stream.seek(0)
+        image = Image.open(stream)
+        if image.format not in _IMAGE_MIME_TYPES:
             raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
         if image.width > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX or image.height > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX:
             raise ValidationError(_l("ssp.architecture_overview.upload.errors.dimensions_too_large"))
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
         raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
     finally:
-        file_storage.stream.seek(0)
+        stream.seek(0)
 
 
 class SSPEditForm(FlaskForm):
@@ -316,18 +345,23 @@ class POAMMilestoneForm(FlaskForm):
 
 
 class SSPArchitectureOverviewUploadForm(FlaskForm):
-    """Upload a new architecture overview image version for an SSP."""
+    """Upload a new architecture overview version (PNG, JPEG or PDF) for an SSP."""
 
     image = FileField(
         _l("ssp.architecture_overview.upload.field.label"),
+        description=_l("ssp.architecture_overview.upload.help"),
+        render_kw={"accept": ".png,.jpg,.jpeg,.pdf"},
         validators=[
             FileRequired(message=_l("ssp.architecture_overview.upload.errors.required")),
-            FileAllowed(["png", "jpg", "jpeg"], message=_l("ssp.architecture_overview.upload.errors.invalid_image")),
+            FileAllowed(
+                list(ARCHITECTURE_OVERVIEW_EXTENSIONS),
+                message=_l("ssp.architecture_overview.upload.errors.invalid_type"),
+            ),
             FileSize(
                 max_size=MAX_ARCHITECTURE_OVERVIEW_BYTES,
                 message=_l("ssp.architecture_overview.upload.errors.too_large"),
             ),
-            _validate_architecture_overview_image,
+            _validate_architecture_overview_file,
         ],
     )
     submit = SubmitField(_l("ssp.architecture_overview.upload.submit"))

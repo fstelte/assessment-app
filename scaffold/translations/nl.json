@@ -3900,23 +3900,30 @@
     },
     "architecture_overview": {
       "current_alt": "Huidig architectuuroverzicht diagram",
-      "none_uploaded": "Er is nog geen architectuuroverzicht geupload.",
+      "none_uploaded": "Er is nog geen architectuuroverzicht geüpload.",
       "upload": {
         "field": {
-          "label": "Afbeelding uploaden (PNG of JPEG)"
+          "label": "Architectuuroverzicht uploaden (PNG, JPEG of PDF)"
         },
         "submit": "Uploaden",
         "errors": {
-          "required": "Kies een afbeelding om te uploaden.",
-          "invalid_image": "Bestand moet een geldige PNG- of JPEG-afbeelding zijn.",
-          "too_large": "Afbeelding mag maximaal 5 MB zijn.",
-          "dimensions_too_large": "Afbeeldingsafmetingen zijn te groot."
-        }
+          "required": "Kies een bestand om te uploaden.",
+          "invalid_image": "Het bestand is geen geldige PNG- of JPEG-afbeelding.",
+          "too_large": "Het bestand mag maximaal 10 MB zijn.",
+          "dimensions_too_large": "De afbeelding mag maximaal 8000×8000 pixels zijn.",
+          "invalid_type": "Alleen PNG-, JPEG- of PDF-bestanden kunnen worden geüpload. Exporteer andere formaten (zoals SVG, Visio of draw.io) eerst naar PNG of PDF.",
+          "invalid_pdf": "Het bestand is geen geldige PDF."
+        },
+        "help": "PNG, JPEG of PDF, max. 10 MB; afbeeldingen max. 8000×8000 px. Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF."
       },
       "history": {
         "heading": "Versiegeschiedenis",
         "entry": "Versie {version} — geupload door {uploader} op {date}",
         "restore": "Herstellen"
+      },
+      "pdf": {
+        "meta": "PDF · {size} MB · geüpload door {uploader} op {date}",
+        "download": "PDF downloaden"
       }
     }
   }

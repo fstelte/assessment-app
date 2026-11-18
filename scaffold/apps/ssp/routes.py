@@ -15,6 +15,7 @@ from ...extensions import db
 from ..bia.models import ContextScope
 from . import bp
 from .forms import (
+    detect_architecture_overview_mime,
     ADRCreateForm,
     ADRUpdateForm,
     POAMItemForm,
@@ -51,6 +52,16 @@ def _safe_filename(name: str) -> str:
     name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
     name = re.sub(r"[^\w\s-]", "", name).strip().lower()
     return re.sub(r"[-\s]+", "_", name)
+
+
+def _safe_upload_filename(filename: str | None) -> str:
+    """Sanitise an uploaded filename but keep its extension (``my diagram.PDF`` -> ``my_diagram.pdf``)."""
+    stem, dot, extension = (filename or "").rpartition(".")
+    if not dot:
+        stem, extension = extension, ""
+    safe_stem = _safe_filename(stem) or "architecture_overview"
+    safe_extension = re.sub(r"[^a-z0-9]", "", extension.lower())
+    return f"{safe_stem}.{safe_extension}" if safe_extension else safe_stem
 
 
 def _get_ssp_or_404(ssp_id: int) -> SSPlan:
@@ -887,7 +898,7 @@ def _next_architecture_overview_version(ssp_id: int) -> int:
 @bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
 @login_required
 def upload_architecture_overview(ssp_id: int):
-    """Upload a new architecture overview image version (FR-002/FR-004)."""
+    """Upload a new architecture overview version: PNG, JPEG or PDF (decision 20261118-1505)."""
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPArchitectureOverviewUploadForm()
 
@@ -898,13 +909,15 @@ def upload_architecture_overview(ssp_id: int):
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
     file_storage = form.image.data
+    # Store the type detected from the bytes; browsers may send octet-stream.
+    mime_type = detect_architecture_overview_mime(file_storage.stream)
     image_bytes = file_storage.stream.read()
     version = SSPArchitectureOverview(
         ssp_id=ssp.id,
         version_number=_next_architecture_overview_version(ssp.id),
         image_data=image_bytes,
-        mime_type=file_storage.mimetype,
-        original_filename=_safe_filename(file_storage.filename or "architecture_overview"),
+        mime_type=mime_type,
+        original_filename=_safe_upload_filename(file_storage.filename),
         file_size_bytes=len(image_bytes),
         uploaded_by_id=current_user.id,
     )
@@ -925,12 +938,22 @@ def upload_architecture_overview(ssp_id: int):
 @bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/image", methods=["GET"])
 @login_required
 def architecture_overview_image(ssp_id: int, version_id: int):
-    """Stream a stored architecture overview image (current or historical)."""
+    """Stream a stored architecture overview version (current or historical).
+
+    Images are shown inline; PDFs are always downloaded so user-supplied PDFs
+    never render from the app's origin (decision 20261118-1530, CHK020).
+    """
     ssp = _get_ssp_or_404(ssp_id)
     version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
 
     response = current_app.response_class(version.image_data, mimetype=version.mime_type)
-    response.headers["Content-Disposition"] = "inline"
+    if version.mime_type == "application/pdf":
+        filename = version.original_filename or "architecture_overview"
+        if not filename.lower().endswith(".pdf"):
+            filename = f"{filename}.pdf"
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    else:
+        response.headers["Content-Disposition"] = "inline"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
 

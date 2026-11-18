@@ -173,7 +173,20 @@
   {{ section_card("—", _('ssp.sections.architecture_overview')) }}
   {% set overview_versions = ssp.architecture_overview_versions %}
   {% set current_overview = overview_versions[0] if overview_versions else none %}
-  {% if current_overview %}
+  {% if current_overview and current_overview.mime_type == 'application/pdf' %}
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-white/4 px-4 py-3 mb-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <i class="fas fa-file-pdf text-red-400 text-xl shrink-0" aria-hidden="true"></i>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ current_overview.original_filename }}</p>
+        <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.architecture_overview.pdf.meta', size="%.1f"|format(current_overview.file_size_bytes / 1048576), uploader=(current_overview.uploaded_by.email if current_overview.uploaded_by else "—"), date=current_overview.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}</p>
+      </div>
+    </div>
+    <a href="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap self-start sm:self-auto">
+      <i class="fas fa-download text-xs" aria-hidden="true"></i> {{ _('ssp.architecture_overview.pdf.download') }}
+    </a>
+  </div>
+  {% elif current_overview %}
   <img
     src="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}"
     alt="{{ _('ssp.architecture_overview.current_alt') }}"
@@ -186,7 +199,8 @@
   <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     {{ architecture_overview_form.hidden_tag() }}
     <div>
-      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]") }}
+      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]", **{"aria-describedby": "architecture-overview-help"}) }}
+      <p id="architecture-overview-help" class="text-xs text-[var(--color-muted)] mt-1">{{ architecture_overview_form.image.description }}</p>
       {% for error in architecture_overview_form.image.errors %}
       <span class="block text-red-400 text-xs mt-1">{{ error }}</span>
       {% endfor %}
