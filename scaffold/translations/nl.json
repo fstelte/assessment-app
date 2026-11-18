@@ -312,6 +312,10 @@
       "back_link": "Risicowerkruimte",
       "source_threat": "Dreiging",
       "source_pasta": "PASTA"
+    },
+    "closed_banner": {
+      "title": "Dit risico is afgesloten",
+      "threat_note": "Wordt heropend zodra het dreigingsscenario wordt heropend."
     }
   },
   "bia": {

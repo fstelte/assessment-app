@@ -2248,6 +2248,10 @@
       "back_link": "Risk workspace",
       "source_threat": "Threat",
       "source_pasta": "PASTA"
+    },
+    "closed_banner": {
+      "title": "This risk is closed",
+      "threat_note": "Reopens when its threat scenario is reopened."
     }
   },
   "assessments": {

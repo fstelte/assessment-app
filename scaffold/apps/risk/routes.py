@@ -545,6 +545,7 @@ def edit(risk_id: int):
         linked_scenario_url=linked_scenario_url,
         RiskTreatmentOption=RiskTreatmentOption,
         approval=_approval_panel(risk),
+        action_form=RiskActionForm(),
     )
 
 

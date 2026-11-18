@@ -189,6 +189,26 @@ body[data-theme="dark"] .risk-control-preview {
   </div>
   {% endif %}
 
+  {% if risk and risk.is_closed %}
+  {# Closed banner (decision 20261118-1203): reopen manual/PASTA risks here; threat-linked ones follow their scenario. #}
+  <section class="risk-form-card" aria-labelledby="risk-closed-heading" data-risk-closed-banner>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 id="risk-closed-heading" class="text-lg font-semibold">{{ _('risk.closed_banner.title') }}</h2>
+        <p class="mt-1 text-sm text-[var(--color-muted)]">{{ _('risk.status.closed_on').format(date=risk.closed_at.strftime('%d %b %Y')) }}</p>
+      </div>
+      {% if linked_scenario %}
+      <p class="text-sm text-[var(--color-muted)]" data-risk-closed-threat-note>{{ _('risk.closed_banner.threat_note') }}</p>
+      {% elif action_form %}
+      <form method="post" action="{{ url_for('risk.reopen', risk_id=risk.id) }}">
+        {{ action_form.csrf_token }}
+        <button type="submit" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent bg-primary-600 text-white hover:bg-primary-700">{{ _('risk.actions.reopen') }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   {% if approval %}
   {% set approval_pills = {
     'approved': 'risk-pill risk-pill--low',
