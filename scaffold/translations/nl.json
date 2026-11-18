@@ -169,7 +169,9 @@
       "approval_filter_mine": "Wacht op mijn goedkeuring ({count})",
       "approval_filter_empty": "Geen risico's voldoen aan het goedkeuringsfilter.",
       "no_open_risks": "Geen open risico's.",
-      "no_open_risks_hint": "Afgesloten risico's staan in het risico-overzicht."
+      "no_open_risks_hint": "Afgesloten risico's staan in het risico-overzicht.",
+      "expand_all": "Alles uitklappen",
+      "collapse_all": "Alles inklappen"
     },
     "residual": {
       "mitigated": "Gemitigeerd",

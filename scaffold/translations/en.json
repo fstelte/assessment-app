@@ -2105,7 +2105,9 @@
       "approval_filter_mine": "Awaiting my approval ({count})",
       "approval_filter_empty": "No risks match the approval filter.",
       "no_open_risks": "No open risks.",
-      "no_open_risks_hint": "Closed risks are listed on the Risk overview."
+      "no_open_risks_hint": "Closed risks are listed on the Risk overview.",
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all"
     },
     "residual": {
       "mitigated": "Mitigated",

@@ -70,10 +70,7 @@ body[data-theme="dark"] .risk-hero {
   border-radius: 1.25rem;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  padding: 1rem 1.25rem;
   box-shadow: 0 1.5rem 3rem rgba(15, 23, 42, 0.12);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -85,6 +82,55 @@ body[data-theme="dark"] .risk-card {
 .risk-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 2rem 3.25rem rgba(15, 23, 42, 0.18);
+}
+/* Collapsible cards (decisions 20261118-1202, -1210). */
+.risk-card__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 0.75rem;
+}
+.risk-card__summary::-webkit-details-marker {
+  display: none;
+}
+.risk-card__summary::before {
+  content: "\25B8";
+  color: var(--color-muted);
+  transition: transform 0.15s ease;
+}
+.risk-card[open] > .risk-card__summary::before {
+  transform: rotate(90deg);
+}
+.risk-card__summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+.risk-card__title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.risk-card__summary-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.risk-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+@media (max-width: 640px) {
+  .risk-card__title {
+    white-space: normal;
+  }
 }
 .risk-card__header {
   display: flex;
@@ -224,6 +270,7 @@ body[data-theme="dark"] .risk-control-card {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr));
   gap: 1.5rem;
+  align-items: start;
 }
 .risk-matrix {
   display: flex;
@@ -700,28 +747,36 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
       'no_owner': 'risk-pill--muted'
     } %}
     {% if risk_cards %}
-    <div class="risk-card-grid">
+    <div class="flex flex-wrap gap-2 mb-3">
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-risk-expand aria-controls="risk-card-grid">{{ _('risk.dashboard.expand_all') }}</button>
+      <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-[var(--color-border)] text-[var(--color-muted)] hover:bg-slate-500/10" data-risk-collapse aria-controls="risk-card-grid">{{ _('risk.dashboard.collapse_all') }}</button>
+    </div>
+    <div class="risk-card-grid" id="risk-card-grid">
       {% for card in risk_cards %}
-      <article class="risk-card" id="risk-{{ card.id }}">
+      <details class="risk-card" id="risk-{{ card.id }}">
+        <summary class="risk-card__summary">
+          <span class="risk-pill {{ card.severity_class }}">
+            {% if card.severity %}
+            {{ _('risk.severity.' + card.severity.value) }}
+            {% else %}
+            {{ _('Severity pending') }}
+            {% endif %}
+          </span>
+          <h3 class="h5 risk-card__title" title="{{ card.title }}">{{ card.title }}</h3>
+          <span class="risk-card__summary-score" aria-label="{{ _('Score') }} {{ card.score }}">{{ card.score }}</span>
+          <span class="risk-pill {{ approval_pills[card.approval_state] }}" data-approval-state="{{ card.approval_state }}">{{ _('risk.approval.state.' + card.approval_state) }}</span>
+          <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
+          {% if card.is_mitigated %}
+          <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
+          {% endif %}
+        </summary>
+        <div class="risk-card__body">
         <header class="risk-card__header">
           <div>
-            <div class="risk-pill {{ card.severity_class }}">
-              {% if card.severity %}
-              {{ _('risk.severity.' + card.severity.value) }}
-              {% else %}
-              {{ _('Severity pending') }}
-              {% endif %}
-            </div>
-            <div class="flex flex-wrap gap-2 mt-2">
+            <div class="flex flex-wrap gap-2">
               <span class="risk-pill risk-pill--muted">{{ _('risk.treatment.' + card.treatment.value) }}</span>
-              {% if card.is_mitigated %}
-              <span class="risk-pill risk-pill--low">{{ _('risk.residual.mitigated_pill') }}</span>
-              {% endif %}
-              <span class="risk-pill {{ approval_pills[card.approval_state] }}" data-approval-state="{{ card.approval_state }}">{{ _('risk.approval.state.' + card.approval_state) }}</span>
-              <span class="risk-pill {{ card.status_class }}">{{ status_labels.get(card.status, _('No due date')) }}</span>
             </div>
-            <h3 class="h5 mt-3 mb-1">{{ card.title }}</h3>
-            <p class="text-[var(--color-muted)] text-sm mb-0">{{ card.description }}</p>
+            <p class="text-[var(--color-muted)] text-sm mt-2 mb-0">{{ card.description }}</p>
             {% if card.pasta_origin %}
             <div class="mt-2">
               <a href="{{ url_for('threat.pasta_risk_conclusion_edit', model_id=card.pasta_origin.finding.stage_record.threat_model_id, finding_id=card.pasta_origin.finding_id) }}"
@@ -888,7 +943,8 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
             <button class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm transition-colors border border-transparent px-2.5 py-1 text-xs border-red-400 text-red-400 hover:bg-red-400/10" type="submit">{{ _('risk.actions.delete') }}</button>
           </form>
         </div>
-      </article>
+        </div>
+      </details>
       {% endfor %}
     </div>
     {% elif selected_approval %}
@@ -923,6 +979,29 @@ body[data-theme="dark"] .risk-matrix-chip--muted {
       event.preventDefault();
     }
   });
+
+  // Expand all / Collapse all (decision 20261118-1202).
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-risk-expand], [data-risk-collapse]');
+    if (!button) {
+      return;
+    }
+    const open = button.hasAttribute('data-risk-expand');
+    document.querySelectorAll('details.risk-card').forEach(function (card) {
+      card.open = open;
+    });
+  });
+
+  // Open the card named by a #risk-<id> fragment; an unknown id does nothing.
+  function openCardFromHash() {
+    const match = /^#risk-(\d+)$/.exec(window.location.hash);
+    const card = match && document.getElementById('risk-' + match[1]);
+    if (card && card.tagName === 'DETAILS') {
+      card.open = true;
+    }
+  }
+  openCardFromHash();
+  window.addEventListener('hashchange', openCardFromHash);
 })();
 </script>
 {% endblock %}

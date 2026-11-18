@@ -720,3 +720,43 @@ def test_empty_workspace_still_shows_first_risk_prompt(client, app, login):
 
     assert "No risks recorded yet." in page
     assert "data-no-open-risks" not in page
+
+
+# ---------------------------------------------------------------------------
+# Collapsible cards (Task 18)
+# ---------------------------------------------------------------------------
+
+
+def test_workspace_cards_are_collapsed_details_with_summary(client, app, login):
+    import re
+
+    _seed_thresholds(app)
+    _mitigated, open_risk = _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    cards = re.findall(r'<details class="risk-card"[^>]*>', page)
+    assert len(cards) == 2
+    assert all(" open" not in card for card in cards)
+    assert f'<details class="risk-card" id="risk-{open_risk.id}">' in page
+    summary = page.split(f'id="risk-{open_risk.id}">', 1)[1].split("</summary>", 1)[0]
+    assert "Open leak" in summary
+    assert 'class="risk-card__summary-score"' in summary and ">16<" in summary
+    assert "data-approval-state=" in summary
+
+
+def test_workspace_has_expand_and_collapse_controls(client, app, login):
+    _seed_mitigated_and_open_risk(app)
+
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert 'data-risk-expand aria-controls="risk-card-grid"' in page
+    assert 'data-risk-collapse aria-controls="risk-card-grid"' in page
+    assert "Expand all" in page and "Collapse all" in page
+
+
+def test_empty_workspace_has_no_expand_controls(client, app, login):
+    page = client.get("/risk/").get_data(as_text=True)
+
+    assert "data-risk-expand aria-controls" not in page
+    assert 'id="risk-card-grid"' not in page
