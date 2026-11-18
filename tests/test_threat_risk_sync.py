@@ -5,20 +5,27 @@ Feature 20261118-074624-risk-workspace-sync-bia-filter.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
+from flask import g, request_started
 
 from scaffold import create_app
 from scaffold.apps.bia.models import Component, ContextScope
+from scaffold.apps.risk.models import Risk, RiskChance, RiskImpact
 from scaffold.apps.threat.models import (
-    StrideCategory,
     AssetType,
+    ScenarioStatus,
+    StrideCategory,
     ThreatModel,
     ThreatModelAsset,
     ThreatScenario,
+    TreatmentOption,
 )
-from scaffold.apps.threat.services import _components_for_scenario
+from scaffold.apps.threat.services import _components_for_scenario, sync_scenario_to_risk
 from scaffold.config import Settings
 from scaffold.extensions import db
+from scaffold.models.audit import AuditLog
 
 
 @pytest.fixture
@@ -44,6 +51,13 @@ def app():
     )
     flask_app = create_app(settings)
     flask_app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
+
+    # Same as conftest: drop Flask-Login's cached user (audit hooks cache an
+    # anonymous one during setup) so each request resolves the session user.
+    def _reset_login_cache(sender, **extra):
+        g.pop("_login_user", None)
+
+    request_started.connect(_reset_login_cache, flask_app)
     with flask_app.app_context():
         db.create_all()
         yield flask_app
@@ -154,3 +168,128 @@ def test_duplicate_component_names_are_all_linked(app):
     scenario = _scenario(model, assigned=assets)
 
     assert [c.id for c in _components_for_scenario(scenario)] == [comps[0].id, comps[1].id]
+
+
+# ---------------------------------------------------------------------------
+# Mitigated state, residual values and audit (Task 3)
+# ---------------------------------------------------------------------------
+
+
+def _synced_scenario(status=ScenarioStatus.ANALYSED, treatment=TreatmentOption.MITIGATE, **kwargs):
+    scope, _ = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["App"])
+    scenario = _scenario(model, assigned=assets)
+    scenario.status = status
+    scenario.treatment = treatment
+    scenario.likelihood = kwargs.get("likelihood", 4)
+    scenario.impact_score = kwargs.get("impact_score", 4)
+    scenario.residual_likelihood = kwargs.get("residual_likelihood")
+    scenario.residual_impact = kwargs.get("residual_impact")
+    sync_scenario_to_risk(scenario)
+    db.session.flush()
+    return scenario, db.session.get(Risk, scenario.risk_id) if scenario.risk_id else None
+
+
+def _sync_events(risk):
+    return AuditLog.query.filter_by(event_type="risk_synced_from_threat", target_id=str(risk.id)).all()
+
+
+def test_mitigated_scenario_keeps_risk_open_with_residual(app):
+    scenario, risk = _synced_scenario()
+    scenario.status = ScenarioStatus.MITIGATED
+    scenario.residual_likelihood = 3
+    scenario.residual_impact = 2
+    sync_scenario_to_risk(scenario)
+
+    assert not risk.is_closed
+    assert risk.is_mitigated
+    assert (risk.residual_chance, risk.residual_impact) == (RiskChance.POSSIBLE, RiskImpact.MINOR)
+    assert risk.actual_score() == 6
+
+
+def test_resync_keeps_original_mitigated_at(app):
+    scenario, risk = _synced_scenario(status=ScenarioStatus.MITIGATED)
+    original = datetime(2026, 1, 1, tzinfo=UTC)
+    risk.mitigated_at = original
+    sync_scenario_to_risk(scenario)
+
+    assert risk.mitigated_at == original
+
+
+def test_back_to_open_clears_mitigated_and_remitigation_is_new(app):
+    scenario, risk = _synced_scenario(status=ScenarioStatus.MITIGATED)
+    first = datetime.now(UTC) - timedelta(days=30)
+    risk.mitigated_at = first
+
+    scenario.status = ScenarioStatus.ANALYSED
+    sync_scenario_to_risk(scenario)
+    assert risk.mitigated_at is None
+
+    scenario.status = ScenarioStatus.MITIGATED
+    sync_scenario_to_risk(scenario)
+    assert risk.mitigated_at is not None and risk.mitigated_at != first
+
+
+@pytest.mark.parametrize(
+    ("status", "treatment"),
+    [
+        (ScenarioStatus.ACCEPTED, TreatmentOption.MITIGATE),
+        (ScenarioStatus.CLOSED, TreatmentOption.MITIGATE),
+        (ScenarioStatus.MITIGATED, TreatmentOption.ACCEPT),
+    ],
+)
+def test_closing_status_or_non_mitigate_treatment_closes_risk(app, status, treatment):
+    scenario, risk = _synced_scenario()
+    scenario.status = status
+    scenario.treatment = treatment
+    sync_scenario_to_risk(scenario)
+
+    assert risk.is_closed
+
+
+def test_archived_risk_of_mitigated_scenario_reopens(app):
+    scenario, risk = _synced_scenario(status=ScenarioStatus.MITIGATED)
+    risk.closed_at = datetime.now(UTC)  # archived by the old sync behaviour
+    sync_scenario_to_risk(scenario)
+
+    assert not risk.is_closed
+
+
+def test_new_risk_logs_creation_event(app):
+    scenario, risk = _synced_scenario()
+
+    event = AuditLog.query.filter_by(event_type="risk_created_from_threat").one()
+    assert event.target_id == str(risk.id)
+    assert event.payload["scenario_id"] == scenario.id
+
+
+def test_noop_resync_logs_nothing_and_change_logs_only_changed_fields(app):
+    scenario, risk = _synced_scenario()
+    sync_scenario_to_risk(scenario)
+    assert _sync_events(risk) == []
+
+    scenario.status = ScenarioStatus.MITIGATED
+    scenario.residual_likelihood = 3
+    scenario.residual_impact = 2
+    sync_scenario_to_risk(scenario)
+
+    (event,) = _sync_events(risk)
+    assert event.payload["scenario_id"] == scenario.id
+    assert set(event.payload["changes"]) == {"mitigated", "residual_chance", "residual_impact"}
+    assert event.payload["changes"]["mitigated"] == {"before": False, "after": True}
+
+
+def test_bulk_sync_includes_mitigated_scenarios(app, client, login):
+    scope, _ = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["App"])
+    scenario = _scenario(model, assigned=assets)
+    scenario.status = ScenarioStatus.MITIGATED
+    scenario.treatment = TreatmentOption.MITIGATE
+    db.session.commit()
+
+    response = client.post("/risk/sync-from-threats")
+
+    assert response.status_code == 302
+    assert "/risk/" in response.headers["Location"]
+    db.session.expire_all()  # the request used its own session
+    assert db.session.get(ThreatScenario, scenario.id).risk_id is not None

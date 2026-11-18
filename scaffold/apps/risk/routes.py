@@ -148,17 +148,16 @@ def _resolve_controls(form: RiskForm) -> list[Control] | None:
 def sync_from_threats():
     """Sync all eligible threat scenarios into the risk workspace (create or update)."""
     _require_risk_access()
-    from ..threat.models import ScenarioStatus, ThreatScenario, TreatmentOption
-    from ..threat.services import sync_scenario_to_risk
+    from ..threat.models import ThreatScenario, TreatmentOption
+    from ..threat.services import _CLOSING_STATUSES, sync_scenario_to_risk
 
-    _EXCLUDED = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
     scenarios = ThreatScenario.query.filter_by(is_archived=False).all()
     created = 0
     updated = 0
     for scenario in scenarios:
         if scenario.treatment is not TreatmentOption.MITIGATE:
             continue
-        if scenario.status in _EXCLUDED:
+        if scenario.status in _CLOSING_STATUSES:
             continue
         was_new = scenario.risk_id is None
         sync_scenario_to_risk(scenario)

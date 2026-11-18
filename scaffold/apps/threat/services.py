@@ -234,7 +234,9 @@ def export_scenarios_csv(scenarios: list[ThreatScenario]) -> str:
 # Risk workspace synchronisation
 # ---------------------------------------------------------------------------
 
-_EXCLUDED_STATUSES = {ScenarioStatus.MITIGATED, ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
+# Statuses that close the linked risk. Mitigated keeps it open so the residual
+# score is shown (decision 20261118-0751).
+_CLOSING_STATUSES = {ScenarioStatus.ACCEPTED, ScenarioStatus.CLOSED}
 
 _CHANCE_MAP = {
     1: "rare",
@@ -296,26 +298,64 @@ def _components_for_scenario(scenario: ThreatScenario) -> list:
     )
 
 
+def _risk_sync_snapshot(risk) -> dict:
+    """Return the audited, sync-managed fields of a risk (decision 20261118-0830)."""
+
+    return {
+        "components": sorted(component.id for component in risk.components),
+        "mitigated": risk.is_mitigated,
+        "residual_impact": risk.residual_impact.value if risk.residual_impact else None,
+        "residual_chance": risk.residual_chance.value if risk.residual_chance else None,
+        "chance": risk.chance.value if risk.chance else None,
+        "impact": risk.impact.value if risk.impact else None,
+        "closed": risk.is_closed,
+    }
+
+
+def _log_risk_sync(risk, scenario: ThreatScenario, before: dict) -> None:
+    """Write one audit event listing only the sync-managed fields that changed."""
+    from ...core.audit import log_event
+
+    after = _risk_sync_snapshot(risk)
+    changes = {
+        key: {"before": before[key], "after": after[key]}
+        for key in after
+        if before[key] != after[key]
+    }
+    if changes:
+        log_event(
+            action="risk_synced_from_threat",
+            entity_type="risk",
+            entity_id=risk.id,
+            details={"scenario_id": scenario.id, "changes": changes},
+        )
+
+
 def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
     """Create, update, or close the linked Risk entry based on the scenario state.
 
-    When the scenario status is mitigated, accepted, or closed the linked risk
-    (if any) is closed.  For all other statuses the risk is created or kept in
-    sync with the scenario's inherent risk fields.
+    Accepted or closed scenarios, and scenarios not treated by mitigation,
+    close the linked risk (if any).  All other scenarios create or update it,
+    including the mitigated marker and residual assessment; a mitigated
+    scenario keeps its risk open.  Changes are audited (decision 20261118-0830).
     """
+    from ...core.audit import log_event
     from ...extensions import db
     from ..risk.models import Risk, RiskChance, RiskImpact, RiskTreatmentOption
 
-    if scenario.status in _EXCLUDED_STATUSES or scenario.treatment is not TreatmentOption.MITIGATE:
+    if scenario.status in _CLOSING_STATUSES or scenario.treatment is not TreatmentOption.MITIGATE:
         if scenario.risk_id:
             risk = db.session.get(Risk, scenario.risk_id)
             if risk and not risk.is_closed:
+                before = _risk_sync_snapshot(risk)
                 risk.closed_at = datetime.now(UTC)
+                _log_risk_sync(risk, scenario, before)
         return
 
     likelihood = max(1, min(5, scenario.likelihood or 1))
     impact = max(1, min(5, scenario.impact_score or 1))
     treatment_str = _TREATMENT_MAP.get(scenario.treatment, "mitigate") if scenario.treatment else "mitigate"
+    has_residual = scenario.residual_likelihood and scenario.residual_impact
 
     fields: dict = {
         "title": scenario.title,
@@ -323,26 +363,48 @@ def sync_scenario_to_risk(scenario: ThreatScenario) -> None:
         "chance": RiskChance(str(_CHANCE_MAP[likelihood])),
         "impact": RiskImpact(str(_IMPACT_MAP[impact])),
         "treatment": RiskTreatmentOption(treatment_str),
+        "residual_chance": (
+            RiskChance(_CHANCE_MAP[max(1, min(5, scenario.residual_likelihood))])
+            if has_residual else None
+        ),
+        "residual_impact": (
+            RiskImpact(_IMPACT_MAP[max(1, min(5, scenario.residual_impact))])
+            if has_residual else None
+        ),
     }
+    is_mitigated = scenario.status is ScenarioStatus.MITIGATED
 
     if scenario.risk_id is None:
         risk = Risk(discovered_on=date.today(), **fields)
+        risk.mitigated_at = datetime.now(UTC) if is_mitigated else None
         risk.components = _components_for_scenario(scenario)
         risk.controls = list(scenario.controls)
         db.session.add(risk)
         db.session.flush()
         scenario.risk_id = risk.id
+        log_event(
+            action="risk_created_from_threat",
+            entity_type="risk",
+            entity_id=risk.id,
+            details={"scenario_id": scenario.id, **_risk_sync_snapshot(risk)},
+        )
     else:
         risk = db.session.get(Risk, scenario.risk_id)
         if risk:
+            before = _risk_sync_snapshot(risk)
             for key, value in fields.items():
                 setattr(risk, key, value)
             if risk.is_closed:
                 risk.closed_at = None
+            if not is_mitigated:
+                risk.mitigated_at = None
+            elif risk.mitigated_at is None:
+                risk.mitigated_at = datetime.now(UTC)
             # Always keep components in sync with the threat model's assets.
             risk.components = _components_for_scenario(scenario)
             # Keep controls in sync with the linked threat scenario.
             risk.controls = list(scenario.controls)
+            _log_risk_sync(risk, scenario, before)
 
 
 # ---------------------------------------------------------------------------
