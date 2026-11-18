@@ -28,7 +28,6 @@ from .models import (
     ADRRecord,
     ADRStatus,
     ArchitecturePrinciple,
-    FipsRating,
     POAMItem,
     POAMMilestone,
     POAMStatus,
@@ -275,9 +274,6 @@ def edit(ssp_id: int):
     if form.validate_on_submit():
         ssp.laws_regulations = form.laws_regulations.data
         ssp.authorization_boundary = form.authorization_boundary.data
-        ssp.fips_confidentiality = FipsRating(form.fips_confidentiality.data)
-        ssp.fips_integrity = FipsRating(form.fips_integrity.data)
-        ssp.fips_availability = FipsRating(form.fips_availability.data)
         ssp.plan_completion_date = form.plan_completion_date.data
         ssp.plan_approval_date = form.plan_approval_date.data
         ssp.monitoring_kpis_kris = form.monitoring_kpis_kris.data or None
@@ -296,12 +292,8 @@ def edit(ssp_id: int):
         flash("SSP updated.", "success")
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
-    # Pre-fill enum select values; auto-populate boundary from BIA when empty
+    # Auto-populate the boundary from the BIA when empty
     if request.method == "GET":
-        form.fips_confidentiality.data = ssp.fips_confidentiality.value if ssp.fips_confidentiality else "not_set"
-        form.fips_integrity.data = ssp.fips_integrity.value if ssp.fips_integrity else "not_set"
-        form.fips_availability.data = ssp.fips_availability.value if ssp.fips_availability else "not_set"
-
         if not ssp.authorization_boundary:
             all_auto = auto_components + auto_interconnections
             if all_auto:

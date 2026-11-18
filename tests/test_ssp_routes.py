@@ -206,26 +206,32 @@ def test_ssp_edit_get(ssp_app, scope_with_ssp, logged_in_user):
 
 
 def test_ssp_edit_post(ssp_app, scope_with_ssp, logged_in_user):
+    """Regression: the edit page renders no FIPS override fields, and saving must still persist.
+
+    The form used to declare three unrendered FIPS selects, so every real POST failed
+    validation silently (decision 20261118-1450).
+    """
     _, ssp_id = scope_with_ssp
     resp = logged_in_user.post(
         f"/ssp/{ssp_id}/edit",
         data={
             "laws_regulations": "GDPR, NIS2",
             "authorization_boundary": "Internal network only",
-            "fips_confidentiality": "moderate",
-            "fips_integrity": "low",
-            "fips_availability": "high",
             "plan_completion_date": "2026-12-31",
             "plan_approval_date": "",
+            "monitoring_kpis_kris": "Patch latency",
+            "monitoring_frequency": "Monthly",
         },
-        follow_redirects=True,
+        follow_redirects=False,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith(f"/ssp/{ssp_id}")
     with ssp_app.app_context():
-        ssp = SSPlan.query.get(ssp_id)
+        ssp = db.session.get(SSPlan, ssp_id)
         assert ssp.laws_regulations == "GDPR, NIS2"
-        assert ssp.fips_confidentiality.value == "moderate"
-        assert ssp.fips_availability.value == "high"
+        assert ssp.authorization_boundary == "Internal network only"
+        assert ssp.monitoring_kpis_kris == "Patch latency"
+        assert ssp.monitoring_frequency == "Monthly"
 
 
 def test_ssp_add_interconnection(ssp_app, scope_with_ssp, logged_in_user):

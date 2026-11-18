@@ -55,33 +55,6 @@ class SSPEditForm(FlaskForm):
         description=_l("ssp.forms.help.authorization_boundary"),
         render_kw={"rows": 4},
     )
-    fips_confidentiality = SelectField(
-        "Confidentiality Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
-    )
-    fips_integrity = SelectField(
-        "Integrity Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
-    )
-    fips_availability = SelectField(
-        "Availability Override",
-        choices=[
-            ("not_set", "Use derived (auto)"),
-            ("low", "Low"),
-            ("moderate", "Moderate"),
-            ("high", "High"),
-        ],
-    )
     plan_completion_date = DateField(
         _l("ssp.forms.plan_completion_date"),
         validators=[Optional()],
