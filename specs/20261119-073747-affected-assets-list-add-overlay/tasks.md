@@ -133,9 +133,12 @@ Decisions: 20261119-0740, 0741 and 0742.
 
 #### Task 5: Docs, release notes, graph update
 - **Estimate:** ~30 lines
-- **Files:** `docs/risk.md`, `specs/20261119-073747-affected-assets-list-add-overlay/release-notes.md` (new)
+- **Files:** `docs/risk.md`, `specs/20261119-073747-affected-assets-list-add-overlay/release-notes.md` (new), `docs/history.md`
 - **Description:** Document the new picker and the read-only behaviour for
-  threat-linked risks. Write release notes (no migration). Run
+  threat-linked risks. Write release notes (no migration). Link the release notes
+  from a new row in `docs/history.md`, together with the release notes of every
+  change since the last history entry (2026-10-21). That meant writing release
+  notes for 6 features that had none. Run
   `graphify update .`.
 - **Depends on:** Tasks 3, 4
 - **Acceptance:** The docs match the behaviour.

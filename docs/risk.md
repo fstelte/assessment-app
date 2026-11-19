@@ -24,6 +24,12 @@ The risk module provides a single workspace for tracking identified risks across
 6. Choose a treatment strategy. When selecting **Mitigate**, the form and API both require at least one CSA control reference. Accept/Avoid/Transfer strategies can omit the control.
 7. Optionally assign a treatment owner, due date, and supporting plan text before saving. The owner is also the person who approves the risk (see below).
 
+### Changing a risk's components
+
+On the edit page (`/risk/<id>/edit`), **Related components** lists the components the risk is linked to. Remove one with its **×** button. To link more, select **Add component**: an overlay lists the eligible components that are not linked yet, as "BIA - component", with a search box. Tick the ones you need and select **Add**. **Cancel**, Esc or a click outside the overlay closes it without changes. Nothing is stored until you save the risk, and a manual risk needs at least one component. The **New risk** page still uses a multi-select.
+
+For a **threat-linked risk**, the list is read-only. Its components come from the scenario's **Threatened assets** (matched by name to components in the threat model's BIA), and every sync applies them again. Select **Open scenario** under the list to go to the scenario. Users with the `admin` or `assessment_manager` role can edit its threatened assets there, with the same list and an **Add asset** overlay. A scenario must keep at least one threatened asset. Saving it with none is refused, except for old scenarios that only have the legacy single asset.
+
 ### Owner of threat-linked risks
 
 For risks that come from a threat scenario or a PASTA conclusion, the **owner is set by the threat**: the scenario's owner, or the threat model's owner when the scenario has none (PASTA risks always use the threat model's owner). Every sync applies it again. If neither is set, the risk owner is cleared. You can still change the owner on the risk, but the next threat sync overwrites it, and the owner field says so. To change the owner permanently, change it on the scenario or threat model. Existing linked risks pick up the threat owner at their next sync, for example with **Sync from threats** on the workspace.
@@ -102,6 +108,9 @@ Every card shows its approval state: **Awaiting approval**, **Approved**, **Reje
 ## Troubleshooting
 
 - **No components in the selector** – ensure at least one BIA context scope has a risk flag enabled and contains components.
+- **"Add component" says everything is already selected** – every eligible component is linked to the risk already. Components only appear when their BIA context has a risk flag enabled.
+- **No Add or × buttons on a risk's components** – the risk is linked to a threat scenario. Change the scenario's threatened assets instead (**Open scenario** under the list).
+- **"Select at least one threatened asset." when saving a scenario** – every threatened asset was removed. Add at least one with **Add asset**.
 - **CSA control required errors** – select at least one control whenever the treatment is `mitigate`. The error string is `Select at least one CSA control when the treatment strategy is Mitigate.`
 - **Overlapping severity ranges** – update the surrounding ranges so `max_score` for one severity is strictly less than the `min_score` of the next severity.
 - **403 errors on `/risk`** – the workspace only requires a signed-in user; check that the session hasn't expired. The `/api/risks` endpoints also require the `admin` role and a fresh login.

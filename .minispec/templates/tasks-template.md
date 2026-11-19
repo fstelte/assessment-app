@@ -41,6 +41,15 @@ description: "Task list template for feature implementation"
   - Delivered as an MVP increment
   
   DO NOT keep these sample tasks in the generated tasks.md file.
+
+  EXCEPTION – ALWAYS KEEP (project rule): every generated tasks.md MUST end
+  with a documentation task that includes
+    1. specs/[feature]/release-notes.md (What's new, Who can do what,
+       Behaviour changes, Upgrade, Known limitations), and
+    2. a new top row in docs/history.md (newest first) that links it:
+       `[Release notes](../specs/[feature]/release-notes.md)`.
+  Before adding the row, check that every specs/*/release-notes.md newer
+  than the last history.md entry is linked; add missing rows too.
   ============================================================================
 -->
 
@@ -151,6 +160,7 @@ Examples of foundational tasks (adjust based on your project):
 **Purpose**: Improvements that affect multiple user stories
 
 - [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX Release notes in specs/[feature]/release-notes.md and a linked row in docs/history.md (REQUIRED – never drop this task)
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
