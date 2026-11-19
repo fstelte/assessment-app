@@ -612,3 +612,147 @@ def test_owner_hint_only_shown_for_threat_linked_risks(app, client, login):
 
     assert hint in client.get(f"/risk/{linked.id}/edit").data
     assert hint not in client.get(f"/risk/{manual.id}/edit").data
+
+
+# --- Feature 20261119-073747: affected assets list with add overlay ---------
+
+
+def _make_admin(user) -> None:
+    from scaffold.apps.identity.models import ROLE_ADMIN, Role
+
+    role = Role.query.filter_by(name=ROLE_ADMIN).first() or Role(name=ROLE_ADMIN)
+    user.roles.append(role)
+    db.session.commit()
+
+
+_SCENARIO_POST = {
+    "stride_category": "spoofing",
+    "title": "Renamed",
+    "likelihood": "2",
+    "impact_score": "2",
+    "status": "identified",
+}
+
+
+def test_scenario_edit_shows_asset_picker(app, client, login):
+    """Edit lists the threatened assets with an "Add asset" overlay; new keeps the select (0740)."""
+    _make_admin(login)
+    model, (front, back) = _model(None, ["Frontend", "Backend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    html = client.get(f"/threat/{model.id}/scenarios/{scenario.id}/edit").get_data(as_text=True)
+    assert "data-asset-picker" in html
+    assert f'data-value="{front.id}"' in html
+    assert f'data-value="{back.id}"' not in html  # an option in the select, not a listed row
+    assert "Add asset" in html
+    new_html = client.get(f"/threat/{model.id}/scenarios/new").get_data(as_text=True)
+    assert "data-asset-picker" not in new_html
+
+
+def test_scenario_edit_requires_an_asset(app, client, login):
+    """Removing every threatened asset is rejected and nothing is saved (0800)."""
+    _make_admin(login)
+    model, (front,) = _model(None, ["Frontend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    response = client.post(f"/threat/{model.id}/scenarios/{scenario.id}/edit", data=_SCENARIO_POST)
+
+    assert response.status_code == 200
+    assert "Select at least one threatened asset." in response.get_data(as_text=True)
+    db.session.expire_all()
+    saved = db.session.get(ThreatScenario, scenario.id)
+    assert saved.title == "S"
+    assert [a.id for a in saved.assigned_assets] == [front.id]
+
+
+def test_legacy_scenario_saves_without_assets(app, client, login):
+    """A legacy scalar-asset scenario keeps its silent backfill (0800 legacy exemption)."""
+    _make_admin(login)
+    model, (legacy,) = _model(None, ["Legacy"])
+    scenario = _scenario(model, legacy=legacy)
+    db.session.commit()
+
+    response = client.post(f"/threat/{model.id}/scenarios/{scenario.id}/edit", data=_SCENARIO_POST)
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    saved = db.session.get(ThreatScenario, scenario.id)
+    assert saved.title == "Renamed"
+    assert [a.id for a in saved.assigned_assets] == [legacy.id]
+
+
+def test_scenario_edit_saves_posted_assets(app, client, login):
+    """The hidden select is still what gets submitted: posted ids replace the assignment."""
+    _make_admin(login)
+    model, (front, back) = _model(None, ["Frontend", "Backend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    response = client.post(
+        f"/threat/{model.id}/scenarios/{scenario.id}/edit",
+        data={**_SCENARIO_POST, "asset_ids": [str(back.id)]},
+    )
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    assert [a.id for a in db.session.get(ThreatScenario, scenario.id).assigned_assets] == [back.id]
+
+
+def _linked_risk_with_component():
+    scope, (app_component,) = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["App"])
+    scenario = _scenario(model, assigned=assets)
+    scenario.status = ScenarioStatus.ANALYSED
+    scenario.treatment = TreatmentOption.MITIGATE
+    scenario.likelihood = 4
+    scenario.impact_score = 4
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+    return scenario, db.session.get(Risk, scenario.risk_id), app_component
+
+
+def test_linked_risk_edit_shows_read_only_component_list(app, client, login):
+    """Threat-linked risk: listed components, no add/remove, note links to scenario detail (0741, 0800)."""
+    scenario, risk, component = _linked_risk_with_component()
+
+    html = client.get(f"/risk/{risk.id}/edit").get_data(as_text=True)
+
+    assert "data-asset-picker" in html
+    assert f'data-value="{component.id}"' in html
+    assert "data-asset-picker-add" not in html
+    assert "data-asset-picker-remove" not in html
+    assert "These components come from the threatened assets" in html
+    assert f'href="/threat/{scenario.threat_model_id}/scenarios/{scenario.id}"' in html
+    assert "Linked components" not in html  # old summary block is gone
+
+
+def test_linked_risk_read_only_list_survives_failed_post(app, client, login):
+    """The disabled select is not posted; a re-rendered page still lists the components."""
+    _, risk, component = _linked_risk_with_component()
+
+    response = client.post(f"/risk/{risk.id}/edit", data={"impact_areas": ["not-an-area"]})
+
+    assert response.status_code == 200
+    assert f'data-value="{component.id}"' in response.get_data(as_text=True)
+
+
+def test_manual_risk_edit_has_add_component_picker(app, client, login):
+    """Manual risk edit gets the editable picker; the create page keeps the select (0740)."""
+    _, (component,) = _bia("BIA", ["App"])
+    manual = Risk(
+        title="Manual",
+        description="Manual risk",
+        chance=RiskChance.POSSIBLE,
+        impact=RiskImpact.MODERATE,
+    )
+    manual.components = [component]
+    db.session.add(manual)
+    db.session.commit()
+
+    html = client.get(f"/risk/{manual.id}/edit").get_data(as_text=True)
+    assert "data-asset-picker-add" in html
+    assert "Add component" in html
+    assert f'data-value="{component.id}"' in html
+    assert "data-asset-picker" not in client.get("/risk/new").get_data(as_text=True)

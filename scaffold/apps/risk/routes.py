@@ -464,6 +464,9 @@ def edit(risk_id: int):
     form.submit.label.text = _("Save changes")
     if linked_scenario:
         form.mark_managed_by_threat()
+        # The disabled select is never posted; keep the read-only list filled on
+        # a re-rendered POST too (decision 20261119-0741).
+        form.component_ids.data = [str(component.id) for component in risk.components]
     component_choices_available = bool(form.component_ids.choices) or linked_scenario is not None
 
     if request.method == "GET":

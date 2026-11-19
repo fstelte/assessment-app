@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_help %}
+{% from "partials/asset_picker.html" import asset_picker with context %}
 {% block title %}{% if scenario %}{{ _("threat.scenario_form.title_edit") }}{% else %}{{ _("threat.scenario_form.title_new") }}{% endif %}{% endblock %}
 {% block extra_css %}
 <style nonce="{{ csp_nonce }}">
@@ -160,9 +161,14 @@ body[data-theme="dark"] .threat-form-panel {
       <!-- Asset + title row -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
         <div class="md:col-span-5">
+          {% if scenario %}
+          {# Edit: list + "Add asset" overlay (decisions 20261119-0740, 0800) #}
+          {{ asset_picker(form.asset_ids, add_label=_("asset_picker.add_asset"), title=_("asset_picker.title_asset"), label=_("threat.scenario_form.label_assets")) }}
+          {% else %}
           {# Multi-select asset picker (US1) #}
           <label class="block text-sm font-medium mb-1">{{ _("threat.scenario_form.label_assets") }}</label>
           {{ form.asset_ids(class="block w-full rounded border border-[var(--color-border)] bg-[var(--bs-body-bg)] text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500", size="4") }}
+          {% endif %}
           {# Kept for backward compat with non-STRIDE routes that still submit asset_id #}
           {{ form.asset_id(class="hidden") }}
         </div>

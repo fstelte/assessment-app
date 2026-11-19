@@ -3227,7 +3227,8 @@
       "error": {
         "assets_required": "Select at least one asset.",
         "stride_categories_required": "Select at least one STRIDE-LM category."
-      }
+      },
+      "assets_required": "Select at least one threatened asset."
     },
     "scenario_detail": {
       "back": "Back to model",
@@ -3968,5 +3969,20 @@
     "monitoring": {
       "intro": "Continuous monitoring describes how progress on this System Security Plan is tracked: which KPIs and KRIs are measured, what is monitored, who does it, with which tools and how often."
     }
+  },
+  "asset_picker": {
+    "add_component": "Add component",
+    "add_asset": "Add asset",
+    "title_component": "Add components",
+    "title_asset": "Add threatened assets",
+    "search": "Search…",
+    "confirm": "Add",
+    "cancel": "Cancel",
+    "empty_selected": "Nothing selected yet.",
+    "empty_available": "Everything is already selected.",
+    "no_matches": "No matching items.",
+    "remove": "Remove {label}",
+    "readonly_note": "These components come from the threatened assets of the linked threat scenario.",
+    "open_scenario": "Open scenario"
   }
 }

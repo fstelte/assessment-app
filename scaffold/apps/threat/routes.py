@@ -985,7 +985,14 @@ def scenario_edit(model_id: int, scenario_id: int):
         form.stride_category_ids.data = [link.stride_category for link in scenario.stride_category_links] or (
             [scenario.stride_category.value] if scenario.stride_category else []
         )
-    if form.validate_on_submit():
+    submitted = form.validate_on_submit()
+    # A scenario needs at least one threatened asset (decision 20261119-0800).
+    # Legacy scenarios (only the scalar asset_id) keep their silent backfill.
+    is_legacy = not scenario.assigned_assets and scenario.asset_id
+    if form.is_submitted() and not any(form.asset_ids.data or []) and not is_legacy:
+        form.asset_ids.errors.append(_("threat.scenario_form.assets_required"))
+        submitted = False
+    if submitted:
         cia = _build_cia(form)
         stride_cat_value = form.stride_category.data or "spoofing"
         prev_assets = list(scenario.assigned_assets)

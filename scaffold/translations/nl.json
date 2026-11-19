@@ -3297,7 +3297,8 @@
       "error": {
         "assets_required": "Selecteer minstens één asset.",
         "stride_categories_required": "Selecteer minstens één STRIDE-LM categorie."
-      }
+      },
+      "assets_required": "Selecteer minstens één bedreigd asset."
     },
     "scenario_detail": {
       "back": "Terug naar model",
@@ -4038,5 +4039,20 @@
     "monitoring": {
       "intro": "Continue monitoring beschrijft hoe de voortgang van dit System Security Plan wordt gevolgd: welke KPI's en KRI's worden gemeten, wat wordt gemonitord, wie dat doet, met welke tools en hoe vaak."
     }
+  },
+  "asset_picker": {
+    "add_component": "Component toevoegen",
+    "add_asset": "Asset toevoegen",
+    "title_component": "Componenten toevoegen",
+    "title_asset": "Bedreigde assets toevoegen",
+    "search": "Zoeken…",
+    "confirm": "Toevoegen",
+    "cancel": "Annuleren",
+    "empty_selected": "Nog niets geselecteerd.",
+    "empty_available": "Alles is al geselecteerd.",
+    "no_matches": "Geen overeenkomende items.",
+    "remove": "{label} verwijderen",
+    "readonly_note": "Deze componenten komen uit de bedreigde assets van het gekoppelde dreigingsscenario.",
+    "open_scenario": "Scenario openen"
   }
 }
