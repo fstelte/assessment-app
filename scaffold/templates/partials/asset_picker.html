@@ -1,0 +1,83 @@
+{#
+  Asset picker macro (decisions 20261119-0740, 0741, 0742, 0800).
+
+  Shows the selected options of a WTForms SelectMultipleField as a list with a
+  remove button per row, plus an "add" button that opens an overlay to pick
+  more of the field's existing choices. The original <select multiple> stays in
+  the form (hidden) and is still what gets submitted; ui.js keeps it in sync.
+
+  Usage:
+    {% from "partials/asset_picker.html" import asset_picker with context %}
+    {{ asset_picker(form.asset_ids, add_label=_('asset_picker.add_asset'),
+                    title=_('asset_picker.title_asset')) }}
+
+  Parameters:
+    field          – SelectMultipleField with choices
+    add_label      – text of the add button
+    title          – overlay title
+    label          – field label (defaults to field.label.text)
+    readonly       – list only: no remove/add buttons, no overlay
+    readonly_note  – optional HTML-safe note under a read-only list
+#}
+{% macro asset_picker(field, add_label, title, label=None, readonly=False, readonly_note=None) %}
+{%- set modal_id = field.id ~ '-picker-modal' -%}
+{%- set selected = field.data or [] -%}
+{%- set selected_choices = (field.choices or []) | selectattr(0, 'in', selected | map('string') | list) | list -%}
+<div class="mb-4" data-asset-picker
+     data-remove-template="{{ _('asset_picker.remove', label='{label}') }}">
+  <label for="{{ field.id }}" class="block text-sm font-medium text-[var(--color-text)] mb-1.5">{{ label or field.label.text }}</label>
+  {{ field(class="hidden") }}
+
+  <ul class="space-y-1.5" data-asset-picker-list aria-live="polite">
+    {% for value, text in selected_choices %}
+    <li class="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)]" data-value="{{ value }}">
+      <span>{{ text }}</span>
+      {% if not readonly %}
+      <button type="button" class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--color-muted)] hover:bg-slate-500/10 hover:text-[var(--color-text)]" data-asset-picker-remove aria-label="{{ _('asset_picker.remove', label=text) }}">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="text-sm text-[var(--color-muted)] {% if selected_choices %}hidden{% endif %}" data-asset-picker-empty>{{ _('asset_picker.empty_selected') }}</p>
+
+  {% if field.errors %}
+  <div class="text-red-400 text-xs mt-1">
+    {% for error in field.errors %}<div>{{ error }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if readonly %}
+    {% if readonly_note %}<p class="mt-2 text-xs text-[var(--color-muted)]">{{ readonly_note }}</p>{% endif %}
+  {% else %}
+  <button type="button" class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-text)] hover:bg-slate-500/10" data-asset-picker-add data-modal-target="#{{ modal_id }}">
+    <i class="fas fa-plus text-xs" aria-hidden="true"></i>{{ add_label }}
+  </button>
+
+  <div class="modal opacity-0 invisible fixed inset-0 z-50 flex items-center justify-center transition-all duration-200" id="{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="{{ modal_id }}-label" aria-hidden="true">
+    <div class="modal-backdrop absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" data-modal-close></div>
+    <div class="modal-dialog relative mx-4 my-8 w-full max-w-lg transform transition-all scale-95 opacity-0 sm:mx-auto">
+      <div class="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+          <h2 class="font-semibold text-lg" id="{{ modal_id }}-label">{{ title }}</h2>
+          <button type="button" class="text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors" data-modal-close aria-label="{{ _('actions.close') }}">
+            <i class="fas fa-times text-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <input type="search" class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30" placeholder="{{ _('asset_picker.search') }}" aria-label="{{ _('asset_picker.search') }}" data-asset-picker-search>
+          <div class="max-h-[60vh] overflow-y-auto space-y-1" data-asset-picker-options></div>
+          <p class="hidden text-sm text-[var(--color-muted)]" data-asset-picker-no-matches>{{ _('asset_picker.no_matches') }}</p>
+          <p class="hidden text-sm text-[var(--color-muted)]" data-asset-picker-none-available>{{ _('asset_picker.empty_available') }}</p>
+        </div>
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-2">
+          <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm border border-[var(--color-border)] text-[var(--color-text)] hover:bg-slate-500/10" data-modal-close>{{ _('asset_picker.cancel') }}</button>
+          <button type="button" class="inline-flex items-center justify-center font-medium rounded-md px-4 py-2 text-sm border border-transparent bg-primary-600 text-white hover:bg-primary-700" data-asset-picker-confirm>{{ _('asset_picker.confirm') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
