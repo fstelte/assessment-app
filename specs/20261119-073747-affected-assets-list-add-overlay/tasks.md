@@ -170,7 +170,7 @@ Decisions: 20261119-0740, 0741 and 0742.
 - [x] Task 1: Picker macro and translations
 - [x] Task 2: Picker JS
 - [x] Task 3: Scenario edit page
-- [ ] Task 4: Risk edit page and read-only synced risk
+- [x] Task 4: Risk edit page and read-only synced risk
 - [ ] Task 5: Docs, release notes, graph update
 - [ ] Task 6: Repair test_threat_routes.py fixtures
 
@@ -188,3 +188,10 @@ Decisions: 20261119-0740, 0741 and 0742.
   legacy-exemption test. Evidence: test_threat_risk_sync 37/37,
   test_threat_pasta_scenarios 14/14, test_risk_routes 35/44 (the same 9
   failures as main). The empty-assets test fails without the route change.
+- Task 4: one route line (`edit()`) for linked risks fills `component_ids` from
+  `risk.components` on every request, because the disabled select is never
+  posted. Without it, a failed POST showed an empty read-only list. The
+  "Linked components" summary and its CSS are removed. Evidence:
+  test_threat_risk_sync 40/40, and the new re-render test fails without the
+  route line. test_risk_approval 61/61, test_risk_routes 35/44 and
+  test_risk_actions 4/6 match main exactly (the failures were already there).

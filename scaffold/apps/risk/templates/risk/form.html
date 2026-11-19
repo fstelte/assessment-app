@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/forms.html" import render_field_with_help %}
+{% from "partials/asset_picker.html" import asset_picker with context %}
 {% block title %}
 {% if form_mode == 'edit' %}
   {{ _('Edit risk') }}
@@ -113,19 +114,6 @@
 }
 body[data-theme="dark"] .risk-control-preview {
   background: rgba(23, 190, 187, 0.18);
-}
-.risk-component-summary {
-  border-radius: 1rem;
-  border: 1px dashed var(--color-border);
-  padding: 1rem 1.25rem;
-}
-.risk-component-summary ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 </style>
 {% endblock %}
@@ -338,7 +326,13 @@ body[data-theme="dark"] .risk-control-preview {
 
       <section class="risk-form-card">
         <h2 class="text-base font-semibold mb-4">{{ _('Related components') }}</h2>
+        {% if risk %}
+        {# Edit: list + "Add component" overlay; read-only for threat-linked risks (decisions 20261119-0740, 0741, 0800) #}
+        {% set threat_note %}{{ _('asset_picker.readonly_note') }}{% if linked_scenario_url %} <a class="text-primary-600 hover:underline font-medium" href="{{ linked_scenario_url }}">{{ _('asset_picker.open_scenario') }}</a>{% endif %}{% endset %}
+        {{ asset_picker(form.component_ids, add_label=_('asset_picker.add_component'), title=_('asset_picker.title_component'), readonly=form.managed_by_threat, readonly_note=threat_note) }}
+        {% else %}
         {{ render_field_with_help(form.component_ids, class="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3.5 py-2.5 text-[var(--color-text)] transition focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30", multiple=True) }}
+        {% endif %}
         <div class="mb-4">
           <label class="block text-sm font-medium text-[var(--color-text)] mb-1" for="{{ form.treatment_owner_id.id }}">{{ form.treatment_owner_id.label.text }}</label>
           {{ form.treatment_owner_id(class_="w-full rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50") }}
@@ -427,19 +421,6 @@ body[data-theme="dark"] .risk-control-preview {
   </div>
   {% endif %}
 
-  {% if risk and risk.components %}
-  <div class="risk-component-summary">
-    <p class="font-semibold mb-2">{{ _('Linked components') }}</p>
-    <ul>
-      {% for component in risk.components %}
-      <li>
-        <strong>{{ component.name or _('Untitled component') }}</strong>
-        <span class="text-[var(--color-muted)] text-sm">{{ component.context_scope.name if component.context_scope else _('No context scope') }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
 {% block extra_js %}

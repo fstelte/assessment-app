@@ -698,3 +698,61 @@ def test_scenario_edit_saves_posted_assets(app, client, login):
     assert response.status_code == 302
     db.session.expire_all()
     assert [a.id for a in db.session.get(ThreatScenario, scenario.id).assigned_assets] == [back.id]
+
+
+def _linked_risk_with_component():
+    scope, (app_component,) = _bia("BIA", ["App"])
+    model, assets = _model(scope, ["App"])
+    scenario = _scenario(model, assigned=assets)
+    scenario.status = ScenarioStatus.ANALYSED
+    scenario.treatment = TreatmentOption.MITIGATE
+    scenario.likelihood = 4
+    scenario.impact_score = 4
+    sync_scenario_to_risk(scenario)
+    db.session.commit()
+    return scenario, db.session.get(Risk, scenario.risk_id), app_component
+
+
+def test_linked_risk_edit_shows_read_only_component_list(app, client, login):
+    """Threat-linked risk: listed components, no add/remove, note links to scenario detail (0741, 0800)."""
+    scenario, risk, component = _linked_risk_with_component()
+
+    html = client.get(f"/risk/{risk.id}/edit").get_data(as_text=True)
+
+    assert "data-asset-picker" in html
+    assert f'data-value="{component.id}"' in html
+    assert "data-asset-picker-add" not in html
+    assert "data-asset-picker-remove" not in html
+    assert "These components come from the threatened assets" in html
+    assert f'href="/threat/{scenario.threat_model_id}/scenarios/{scenario.id}"' in html
+    assert "Linked components" not in html  # old summary block is gone
+
+
+def test_linked_risk_read_only_list_survives_failed_post(app, client, login):
+    """The disabled select is not posted; a re-rendered page still lists the components."""
+    _, risk, component = _linked_risk_with_component()
+
+    response = client.post(f"/risk/{risk.id}/edit", data={"impact_areas": ["not-an-area"]})
+
+    assert response.status_code == 200
+    assert f'data-value="{component.id}"' in response.get_data(as_text=True)
+
+
+def test_manual_risk_edit_has_add_component_picker(app, client, login):
+    """Manual risk edit gets the editable picker; the create page keeps the select (0740)."""
+    _, (component,) = _bia("BIA", ["App"])
+    manual = Risk(
+        title="Manual",
+        description="Manual risk",
+        chance=RiskChance.POSSIBLE,
+        impact=RiskImpact.MODERATE,
+    )
+    manual.components = [component]
+    db.session.add(manual)
+    db.session.commit()
+
+    html = client.get(f"/risk/{manual.id}/edit").get_data(as_text=True)
+    assert "data-asset-picker-add" in html
+    assert "Add component" in html
+    assert f'data-value="{component.id}"' in html
+    assert "data-asset-picker" not in client.get("/risk/new").get_data(as_text=True)
