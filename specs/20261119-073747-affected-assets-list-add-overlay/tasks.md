@@ -3,7 +3,7 @@ feature: 20261119-073747-affected-assets-list-add-overlay
 status: planned
 created: 2026-11-19
 chunk_size: adaptive
-total_tasks: 5
+total_tasks: 6
 estimated_lines: 265
 ---
 
@@ -141,6 +141,22 @@ Decisions: 20261119-0740, 0741 and 0742.
 - **Acceptance:** The docs match the behaviour.
 - **Evidence:** The full pytest suite passes. The graph update ran.
 
+### Follow-up
+
+#### Task 6: Repair test_threat_routes.py fixtures
+- **Estimate:** ~30 lines
+- **Files:** `tests/test_threat_routes.py`
+- **Description:** 19 of its 21 tests fail on main with
+  `DetachedInstanceError`. Its local fixtures never got the fixes from commit
+  53793aa. Apply the same three fixes: commit `admin_user` in the fixture's own
+  app context instead of a nested one, authenticate through the session instead
+  of password login (MFA enrolment), and clear `g._login_user` on
+  `request_started`.
+- **Depends on:** None (test-only)
+- **Acceptance:** `tests/test_threat_routes.py` passes, including
+  `test_legacy_single_asset_scenario_saves_without_reassignment`.
+- **Evidence:** The pytest run for that file is green.
+
 ## Notes
 - The open question is resolved: component labels already read
   "<BIA> - <component>" (`component_choice_label`), so the overlay shows the
@@ -153,9 +169,10 @@ Decisions: 20261119-0740, 0741 and 0742.
 ## Progress
 - [x] Task 1: Picker macro and translations
 - [x] Task 2: Picker JS
-- [ ] Task 3: Scenario edit page
+- [x] Task 3: Scenario edit page
 - [ ] Task 4: Risk edit page and read-only synced risk
 - [ ] Task 5: Docs, release notes, graph update
+- [ ] Task 6: Repair test_threat_routes.py fixtures
 
 ## Implementation Log
 - Task 2: the picker owns its overlay because the ui.js modal helpers style
@@ -163,4 +180,11 @@ Decisions: 20261119-0740, 0741 and 0742.
   27/27 headless Chromium checks against the real macro, ui.js and compiled
   Tailwind CSS (scratchpad `drive.py`, not committed). The existing failure
   `test_threat_routes.py::test_csv_export_includes_plural_columns`
-  (DetachedInstanceError) was already there before this feature.
+  (DetachedInstanceError) was already there before this feature. **Correction
+  (Task 3):** 19 of 21 tests in that file fail on main, not 1. The earlier
+  check only read the last output line. See Task 6.
+- Task 3: the tests went to `tests/test_threat_risk_sync.py`, whose fixtures
+  work, instead of the broken `test_threat_routes.py`. Added an explicit
+  legacy-exemption test. Evidence: test_threat_risk_sync 37/37,
+  test_threat_pasta_scenarios 14/14, test_risk_routes 35/44 (the same 9
+  failures as main). The empty-assets test fails without the route change.

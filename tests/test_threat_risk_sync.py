@@ -612,3 +612,89 @@ def test_owner_hint_only_shown_for_threat_linked_risks(app, client, login):
 
     assert hint in client.get(f"/risk/{linked.id}/edit").data
     assert hint not in client.get(f"/risk/{manual.id}/edit").data
+
+
+# --- Feature 20261119-073747: affected assets list with add overlay ---------
+
+
+def _make_admin(user) -> None:
+    from scaffold.apps.identity.models import ROLE_ADMIN, Role
+
+    role = Role.query.filter_by(name=ROLE_ADMIN).first() or Role(name=ROLE_ADMIN)
+    user.roles.append(role)
+    db.session.commit()
+
+
+_SCENARIO_POST = {
+    "stride_category": "spoofing",
+    "title": "Renamed",
+    "likelihood": "2",
+    "impact_score": "2",
+    "status": "identified",
+}
+
+
+def test_scenario_edit_shows_asset_picker(app, client, login):
+    """Edit lists the threatened assets with an "Add asset" overlay; new keeps the select (0740)."""
+    _make_admin(login)
+    model, (front, back) = _model(None, ["Frontend", "Backend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    html = client.get(f"/threat/{model.id}/scenarios/{scenario.id}/edit").get_data(as_text=True)
+    assert "data-asset-picker" in html
+    assert f'data-value="{front.id}"' in html
+    assert f'data-value="{back.id}"' not in html  # an option in the select, not a listed row
+    assert "Add asset" in html
+    new_html = client.get(f"/threat/{model.id}/scenarios/new").get_data(as_text=True)
+    assert "data-asset-picker" not in new_html
+
+
+def test_scenario_edit_requires_an_asset(app, client, login):
+    """Removing every threatened asset is rejected and nothing is saved (0800)."""
+    _make_admin(login)
+    model, (front,) = _model(None, ["Frontend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    response = client.post(f"/threat/{model.id}/scenarios/{scenario.id}/edit", data=_SCENARIO_POST)
+
+    assert response.status_code == 200
+    assert "Select at least one threatened asset." in response.get_data(as_text=True)
+    db.session.expire_all()
+    saved = db.session.get(ThreatScenario, scenario.id)
+    assert saved.title == "S"
+    assert [a.id for a in saved.assigned_assets] == [front.id]
+
+
+def test_legacy_scenario_saves_without_assets(app, client, login):
+    """A legacy scalar-asset scenario keeps its silent backfill (0800 legacy exemption)."""
+    _make_admin(login)
+    model, (legacy,) = _model(None, ["Legacy"])
+    scenario = _scenario(model, legacy=legacy)
+    db.session.commit()
+
+    response = client.post(f"/threat/{model.id}/scenarios/{scenario.id}/edit", data=_SCENARIO_POST)
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    saved = db.session.get(ThreatScenario, scenario.id)
+    assert saved.title == "Renamed"
+    assert [a.id for a in saved.assigned_assets] == [legacy.id]
+
+
+def test_scenario_edit_saves_posted_assets(app, client, login):
+    """The hidden select is still what gets submitted: posted ids replace the assignment."""
+    _make_admin(login)
+    model, (front, back) = _model(None, ["Frontend", "Backend"])
+    scenario = _scenario(model, assigned=[front])
+    db.session.commit()
+
+    response = client.post(
+        f"/threat/{model.id}/scenarios/{scenario.id}/edit",
+        data={**_SCENARIO_POST, "asset_ids": [str(back.id)]},
+    )
+
+    assert response.status_code == 302
+    db.session.expire_all()
+    assert [a.id for a in db.session.get(ThreatScenario, scenario.id).assigned_assets] == [back.id]

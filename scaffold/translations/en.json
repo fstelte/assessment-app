@@ -3227,7 +3227,8 @@
       "error": {
         "assets_required": "Select at least one asset.",
         "stride_categories_required": "Select at least one STRIDE-LM category."
-      }
+      },
+      "assets_required": "Select at least one threatened asset."
     },
     "scenario_detail": {
       "back": "Back to model",

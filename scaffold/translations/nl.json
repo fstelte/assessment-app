@@ -3297,7 +3297,8 @@
       "error": {
         "assets_required": "Selecteer minstens één asset.",
         "stride_categories_required": "Selecteer minstens één STRIDE-LM categorie."
-      }
+      },
+      "assets_required": "Selecteer minstens één bedreigd asset."
     },
     "scenario_detail": {
       "back": "Terug naar model",
