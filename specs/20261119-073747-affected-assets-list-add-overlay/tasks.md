@@ -152,7 +152,15 @@ Decisions: 20261119-0740, 0741 and 0742.
 
 ## Progress
 - [x] Task 1: Picker macro and translations
-- [ ] Task 2: Picker JS
+- [x] Task 2: Picker JS
 - [ ] Task 3: Scenario edit page
 - [ ] Task 4: Risk edit page and read-only synced risk
 - [ ] Task 5: Docs, release notes, graph update
+
+## Implementation Log
+- Task 2: the picker owns its overlay because the ui.js modal helpers style
+  nothing (decision 0742 amendment). About 145 lines instead of ~70. Evidence:
+  27/27 headless Chromium checks against the real macro, ui.js and compiled
+  Tailwind CSS (scratchpad `drive.py`, not committed). The existing failure
+  `test_threat_routes.py::test_csv_export_includes_plural_columns`
+  (DetachedInstanceError) was already there before this feature.

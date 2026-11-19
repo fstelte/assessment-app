@@ -31,7 +31,8 @@ pages use it.
 - The macro `asset_picker(field, add_label, readonly=False, readonly_note=None)`
   renders three things: the original `<select multiple>` (hidden, still named
   and submitted as before), the selected list, and an overlay that uses the
-  existing modal classes and attributes.
+  existing modal classes and attributes. (Amended below: the picker opens
+  and closes its own overlay.)
 - A small handler in `ui.js` (`[data-asset-picker]`) builds the list and the
   overlay from the select's `<option>`s and sets `option.selected` on add and
   remove. No new endpoints.
@@ -47,6 +48,24 @@ pages use it.
 ### Negative
 - ⚠️ The picker does not work without JS. That matches the rest of the app's
   modals.
+
+## Amendment (2026-11-19, during Task 2)
+
+`ui.js` `openModal` and `closeModal` only toggle a `.show` class, and no CSS
+styles it. The BIA modals this design copied open with page-local scripts
+instead. So the picker **owns its overlay**:
+
+- The macro uses `data-asset-picker-modal`, `-dialog` and `-close` instead of
+  `.modal`, `data-modal-target` and `data-modal-close`.
+- `bindAssetPickers` toggles the same Tailwind classes as the BIA modals
+  (`opacity-0`, `invisible`, `scale-95`). It closes on Esc (listening on
+  `document` while open), backdrop click, × and Cancel.
+- The wrapper uses `transition-opacity` and the dialog uses `transition`, not
+  `transition-all`. Visibility is inherited, and transitioning it delayed
+  focus: the search box was still `visibility: hidden` in the first frame.
+
+The engineer chose this over fixing the shared `ui.js` helpers, which would
+also change the DPIA page's modals.
 
 ## Related Decisions
 

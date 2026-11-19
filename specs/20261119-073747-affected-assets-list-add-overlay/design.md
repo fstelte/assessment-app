@@ -38,7 +38,8 @@ forms and validation stay the same.
 2. `<ul data-asset-picker-list>`: one row per selected option, showing the label
    and a × remove button (not shown when `readonly`).
 3. An "Add component" button (`data-modal-target`), not shown when `readonly`.
-4. The overlay, using the existing `.modal` markup and `data-modal-close`: a
+4. The overlay, styled like the BIA modals but opened and closed by the picker
+   itself (decision 0742 amendment): a
    search input, a checkbox list of the options not selected yet, and Add and
    Cancel buttons. If every option is already selected, it shows an empty-state
    message.

@@ -132,10 +132,159 @@
     });
   };
 
+  // Asset picker (partials/asset_picker.html, decisions 20261119-0740/0742/0800).
+  // The hidden <select multiple> is the source of truth; the list and the
+  // overlay are views on its options. Labels go in via textContent only.
+  const bindAssetPickers = () => {
+    document.querySelectorAll("[data-asset-picker]").forEach((picker) => {
+      const select = picker.querySelector("select");
+      const addButton = picker.querySelector("[data-asset-picker-add]");
+      if (!select || !addButton) {
+        return; // read-only picker: the server-rendered list is final
+      }
+      const list = picker.querySelector("[data-asset-picker-list]");
+      const empty = picker.querySelector("[data-asset-picker-empty]");
+      const modal = picker.querySelector("[data-asset-picker-modal]");
+      const dialog = modal.querySelector("[data-asset-picker-dialog]");
+      const search = modal.querySelector("[data-asset-picker-search]");
+      const optionsBox = modal.querySelector("[data-asset-picker-options]");
+      const noMatches = modal.querySelector("[data-asset-picker-no-matches]");
+      const noneAvailable = modal.querySelector("[data-asset-picker-none-available]");
+      const removeTemplate = picker.dataset.removeTemplate || "{label}";
+      const options = () => Array.from(select.options);
+
+      const renderList = () => {
+        list.replaceChildren(
+          ...options()
+            .filter((option) => option.selected)
+            .map((option) => {
+              const row = document.createElement("li");
+              row.className = "flex items-center justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)]";
+              row.dataset.value = option.value;
+              const text = document.createElement("span");
+              text.textContent = option.text;
+              const remove = document.createElement("button");
+              remove.type = "button";
+              remove.className = "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--color-muted)] hover:bg-slate-500/10 hover:text-[var(--color-text)]";
+              remove.dataset.assetPickerRemove = "";
+              remove.setAttribute("aria-label", removeTemplate.replace("{label}", option.text));
+              remove.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+              row.append(text, remove);
+              return row;
+            })
+        );
+        empty.classList.toggle("hidden", list.children.length > 0);
+      };
+
+      // Remove: deselect, re-render, then move focus to the next row's ×,
+      // else the previous row's ×, else the add button (CHK016).
+      list.addEventListener("click", (event) => {
+        const remove = event.target.closest("[data-asset-picker-remove]");
+        if (!remove) {
+          return;
+        }
+        const row = remove.closest("li");
+        const index = Array.from(list.children).indexOf(row);
+        const option = options().find((opt) => opt.value === row.dataset.value);
+        if (option) {
+          option.selected = false;
+        }
+        renderList();
+        const buttons = list.querySelectorAll("[data-asset-picker-remove]");
+        (buttons[index] || buttons[index - 1] || addButton).focus();
+      });
+
+      const applySearch = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        optionsBox.querySelectorAll("label").forEach((row) => {
+          const match = row.textContent.toLowerCase().includes(query);
+          row.classList.toggle("hidden", !match);
+          visible += match ? 1 : 0;
+        });
+        const available = optionsBox.children.length;
+        noneAvailable.classList.toggle("hidden", available > 0);
+        noMatches.classList.toggle("hidden", available === 0 || visible > 0);
+      };
+
+      // The picker opens/closes its own overlay with the same Tailwind classes
+      // as the BIA modals; ui.js openModal only toggles an unstyled .show.
+      const closeOverlay = () => {
+        dialog.classList.add("opacity-0", "scale-95");
+        dialog.classList.remove("opacity-100", "scale-100");
+        modal.classList.add("opacity-0", "invisible");
+        modal.setAttribute("aria-hidden", "true");
+        addButton.focus(); // CHK015
+      };
+
+      addButton.addEventListener("click", () => {
+        optionsBox.replaceChildren(
+          ...options()
+            .filter((option) => !option.selected)
+            .map((option) => {
+              const row = document.createElement("label");
+              row.className = "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--color-text)] hover:bg-slate-500/10 cursor-pointer";
+              const box = document.createElement("input");
+              box.type = "checkbox";
+              box.value = option.value;
+              const text = document.createElement("span");
+              text.textContent = option.text;
+              row.append(box, text);
+              return row;
+            })
+        );
+        search.value = "";
+        applySearch();
+        modal.classList.remove("opacity-0", "invisible");
+        modal.removeAttribute("aria-hidden");
+        void modal.offsetWidth; // let the dialog transition run
+        dialog.classList.remove("opacity-0", "scale-95");
+        dialog.classList.add("opacity-100", "scale-100");
+        // The wrapper only transitions opacity, so visibility flips at once
+        // and the search can take focus immediately.
+        search.focus(); // CHK015
+      });
+
+      modal.querySelectorAll("[data-asset-picker-close]").forEach((button) => {
+        button.addEventListener("click", closeOverlay);
+      });
+      // On document, so Esc works wherever focus is while the overlay is open.
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.getAttribute("aria-hidden") !== "true") {
+          closeOverlay();
+        }
+      });
+
+      search.addEventListener("input", applySearch);
+      // The overlay sits inside the form: Enter must not submit it.
+      search.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+        }
+      });
+
+      modal.querySelector("[data-asset-picker-confirm]").addEventListener("click", () => {
+        const chosen = new Set(
+          Array.from(optionsBox.querySelectorAll("input:checked")).map((box) => box.value)
+        );
+        options().forEach((option) => {
+          if (chosen.has(option.value)) {
+            option.selected = true;
+          }
+        });
+        renderList();
+        closeOverlay();
+      });
+
+      renderList(); // sync with restored form state (back/forward cache)
+    });
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     // Ensure scroll lock is cleared on page load
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
+    bindAssetPickers();
     bindCollapseToggles();
     bindModalTriggers();
   });
