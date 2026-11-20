@@ -260,6 +260,6 @@ several files.
 - [x] Task 1: Remove restore and history
 - [x] Task 2: Migration: prune history, drop `version_number`
 - [x] Task 3: Stacked file list display (manual browser check: approved by engineer at commit)
-- [ ] Task 4: Multi-file upload, all or nothing
+- [x] Task 4: Multi-file upload, all or nothing (manual browser check: approved by engineer at commit)
 - [ ] Task 5: Request size: gateway 100m and browser check
 - [ ] Task 6: Docs and release notes
