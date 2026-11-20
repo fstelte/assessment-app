@@ -245,12 +245,20 @@ several files.
 - **Accepted risks:** `MAX_CONTENT_LENGTH` stays unset. Werkzeug
   `max_form_parts = 1000` is accepted. Up to about 100 MB per batch is held
   in memory.
+- **Migration logging (found in Task 2, accepted):** under `flask db upgrade`,
+  `migrations/env.py` looks for `migrations/alembic.ini`, which doesn't exist,
+  so no logging is configured and the `pruned …` line (CHK001) is not shown.
+  This predates the feature. The release notes in Task 6 carry the data-loss
+  warning instead.
+- **The migration chain doesn't run on SQLite (found in Task 2, predates
+  this feature):** `20251115_0006` alters constraints without batch mode.
+  Task 2 was verified on Postgres 16.
 - **Deferred:** captions, reordering, in-place replace, thumbnails, count
   limits, and partial-restore compatibility for pre-upgrade backups.
 
 ## Progress
 - [x] Task 1: Remove restore and history
-- [ ] Task 2: Migration: prune history, drop `version_number`
+- [x] Task 2: Migration: prune history, drop `version_number`
 - [ ] Task 3: Stacked file list display
 - [ ] Task 4: Multi-file upload, all or nothing
 - [ ] Task 5: Request size: gateway 100m and browser check
