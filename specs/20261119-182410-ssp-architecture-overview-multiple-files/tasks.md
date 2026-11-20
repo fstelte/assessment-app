@@ -1,6 +1,6 @@
 ---
 feature: 20261119-182410-ssp-architecture-overview-multiple-files
-status: planned
+status: implemented
 created: 2026-11-19
 chunk_size: adaptive
 total_tasks: 6
@@ -262,4 +262,4 @@ several files.
 - [x] Task 3: Stacked file list display (manual browser check: approved by engineer at commit)
 - [x] Task 4: Multi-file upload, all or nothing (manual browser check: approved by engineer at commit)
 - [x] Task 5: Request size: gateway 100m and browser check (manual browser check: approved by engineer at commit)
-- [ ] Task 6: Docs and release notes
+- [x] Task 6: Docs and release notes

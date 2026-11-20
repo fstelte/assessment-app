@@ -1,6 +1,6 @@
 ---
 feature: 20261119-182410-ssp-architecture-overview-multiple-files
-status: planned
+status: implemented
 created: 2026-11-19
 decisions:
   - 20261119-1825-architecture-overview-flat-file-list
