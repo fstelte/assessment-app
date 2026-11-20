@@ -47,10 +47,12 @@ def _png_bytes(size=(10, 10)) -> bytes:
     return buf.getvalue()
 
 
-def _upload(client, ssp_id, filename="overview.png", content=None):
+def _upload(client, ssp_id, filename="overview.png", content=None, files=None):
+    """Upload one file, or several when ``files`` is a list of ``(filename, bytes)``."""
+    files = files if files is not None else [(filename, content or _png_bytes())]
     return client.post(
         f"/ssp/{ssp_id}/architecture-overview",
-        data={"image": (io.BytesIO(content or _png_bytes()), filename)},
+        data={"files": [(io.BytesIO(data), name) for name, data in files]},
         content_type="multipart/form-data",
         follow_redirects=True,
     )
@@ -166,7 +168,7 @@ def _upload_no_follow(client, ssp_id, filename, content, mimetype=None):
     file_tuple = (io.BytesIO(content), filename, mimetype) if mimetype else (io.BytesIO(content), filename)
     return client.post(
         f"/ssp/{ssp_id}/architecture-overview",
-        data={"image": file_tuple},
+        data={"files": file_tuple},
         content_type="multipart/form-data",
     )
 
@@ -199,7 +201,7 @@ def test_renamed_non_pdf_rejected_with_invalid_pdf_message(app, client):
     ssp_id = _make_ssp(app)
 
     _upload_no_follow(client, ssp_id, "report.pdf", b"just text")
-    assert "The file is not a valid PDF." in _flashes(client)
+    assert "report.pdf: The file is not a valid PDF." in _flashes(client)
     with app.app_context():
         assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
 
@@ -210,7 +212,7 @@ def test_svg_rejected_with_invalid_type_message(app, client):
     ssp_id = _make_ssp(app)
 
     _upload_no_follow(client, ssp_id, "diagram.svg", b"<svg xmlns='http://www.w3.org/2000/svg'/>")
-    assert any(message.startswith("Only PNG, JPEG or PDF") for message in _flashes(client))
+    assert any(message.startswith("diagram.svg: Only PNG, JPEG or PDF") for message in _flashes(client))
     with app.app_context():
         assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
 
@@ -221,7 +223,7 @@ def test_oversized_upload_names_the_size_limit(app, client):
     ssp_id = _make_ssp(app)
 
     _upload_no_follow(client, ssp_id, "big.pdf", _PDF_BYTES + b"\x00" * (11 * 1024 * 1024))
-    assert "The file must be 10 MB or smaller." in _flashes(client)
+    assert "big.pdf: The file must be 10 MB or smaller." in _flashes(client)
 
 
 def test_image_mime_type_is_detected_not_taken_from_browser(app, client):
@@ -343,3 +345,80 @@ def test_delete_version_writes_audit_log(app, client):
         ).one()
         assert "version_number" not in entry.payload
         assert entry.payload.get("original_filename") == "overview.png"
+
+
+# --- Multi-file upload, all or nothing (Task 4) ----------------------------------
+
+
+def test_upload_several_files_stores_each_in_order_with_audit(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    response = _upload(client, ssp_id, files=[("c.png", _png_bytes()), ("a.png", _png_bytes()), ("b.png", _png_bytes())])
+    assert response.status_code == 200
+    assert "3 file(s) uploaded." in response.get_data(as_text=True)
+    assert _filenames(app, ssp_id) == ["c.png", "a.png", "b.png"]
+    with app.app_context():
+        entries = AuditLog.query.filter_by(event_type="ssp_architecture_overview_uploaded").all()
+        assert sorted(e.payload["original_filename"] for e in entries) == ["a.png", "b.png", "c.png"]
+
+
+def test_one_invalid_file_blocks_the_whole_batch(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    client.post(
+        f"/ssp/{ssp_id}/architecture-overview",
+        data={"files": [
+            (io.BytesIO(_png_bytes()), "context.png"),
+            (io.BytesIO(b"<svg xmlns='http://www.w3.org/2000/svg'/>"), "network.svg"),
+            (io.BytesIO(_PDF_BYTES), "flow.pdf"),
+        ]},
+        content_type="multipart/form-data",
+    )
+    messages = _flashes(client)
+    assert any(message.startswith("network.svg: Only PNG, JPEG or PDF") for message in messages)
+    assert not any(message.startswith(("context.png", "flow.pdf")) for message in messages)
+    assert _filenames(app, ssp_id) == []
+    with app.app_context():
+        assert AuditLog.query.filter_by(event_type="ssp_architecture_overview_uploaded").count() == 0
+
+
+def test_png_and_pdf_together_keep_their_detected_types(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload(client, ssp_id, files=[("context.png", _png_bytes()), ("flow.pdf", _PDF_BYTES)])
+    with app.app_context():
+        rows = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).order_by(SSPArchitectureOverview.id).all()
+        assert [(r.original_filename, r.mime_type) for r in rows] == [
+            ("context.png", "image/png"),
+            ("flow.pdf", "application/pdf"),
+        ]
+
+
+def test_empty_submit_reports_required(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    client.post(
+        f"/ssp/{ssp_id}/architecture-overview",
+        data={"files": (io.BytesIO(b""), "")},
+        content_type="multipart/form-data",
+    )
+    assert "Please choose a file to upload." in _flashes(client)
+    assert _filenames(app, ssp_id) == []
+
+
+def test_named_zero_byte_png_is_rejected_as_invalid_image(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    _upload_no_follow(client, ssp_id, "empty.png", b"")
+    assert "empty.png: The file is not a valid PNG or JPEG image." in _flashes(client)
+    assert _filenames(app, ssp_id) == []

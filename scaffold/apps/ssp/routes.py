@@ -930,7 +930,12 @@ def edit_adr(ssp_id: int, adr_id: int):
 @bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
 @login_required
 def upload_architecture_overview(ssp_id: int):
-    """Upload an architecture overview file: PNG, JPEG or PDF (decisions 20261118-1505, 20261119-1825)."""
+    """Upload one or more architecture overview files: PNG, JPEG or PDF.
+
+    All or nothing: if any file is invalid, nothing is saved (decision
+    20261119-1827). Valid files are stored in submission order and committed
+    once, with one audit event per file (decision 20261120-0900).
+    """
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPArchitectureOverviewUploadForm()
 
@@ -940,29 +945,33 @@ def upload_architecture_overview(ssp_id: int):
                 flash(error, "danger")
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
-    file_storage = form.image.data
-    # Store the type detected from the bytes; browsers may send octet-stream.
-    mime_type = detect_architecture_overview_mime(file_storage.stream)
-    image_bytes = file_storage.stream.read()
-    version = SSPArchitectureOverview(
-        ssp_id=ssp.id,
-        image_data=image_bytes,
-        mime_type=mime_type,
-        original_filename=_safe_upload_filename(file_storage.filename),
-        file_size_bytes=len(image_bytes),
-        uploaded_by_id=current_user.id,
-    )
-    db.session.add(version)
+    uploaded = []
+    for file_storage in form.files.data:
+        # Store the type detected from the bytes; browsers may send octet-stream.
+        mime_type = detect_architecture_overview_mime(file_storage.stream)
+        file_bytes = file_storage.stream.read()
+        uploaded.append(
+            SSPArchitectureOverview(
+                ssp_id=ssp.id,
+                image_data=file_bytes,
+                mime_type=mime_type,
+                original_filename=_safe_upload_filename(file_storage.filename),
+                file_size_bytes=len(file_bytes),
+                uploaded_by_id=current_user.id,
+            )
+        )
+    db.session.add_all(uploaded)
     db.session.flush()
 
-    log_event(
-        "ssp_architecture_overview_uploaded",
-        entity_type="ssp_architecture_overview",
-        entity_id=version.id,
-        details={"ssp_id": ssp.id, "original_filename": version.original_filename},
-    )
+    for overview_file in uploaded:
+        log_event(
+            "ssp_architecture_overview_uploaded",
+            entity_type="ssp_architecture_overview",
+            entity_id=overview_file.id,
+            details={"ssp_id": ssp.id, "original_filename": overview_file.original_filename},
+        )
     db.session.commit()
-    flash("Architecture overview uploaded.", "success")
+    flash(_("ssp.architecture_overview.upload.flash", count=len(uploaded)), "success")
     return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
 

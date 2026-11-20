@@ -4008,7 +4008,7 @@
       "none_uploaded": "Er is nog geen architectuuroverzicht geüpload.",
       "upload": {
         "field": {
-          "label": "Architectuuroverzicht uploaden (PNG, JPEG of PDF)"
+          "label": "Bestanden architectuuroverzicht"
         },
         "submit": "Uploaden",
         "errors": {
@@ -4017,9 +4017,11 @@
           "too_large": "Het bestand mag maximaal 10 MB zijn.",
           "dimensions_too_large": "De afbeelding mag maximaal 8000×8000 pixels zijn.",
           "invalid_type": "Alleen PNG-, JPEG- of PDF-bestanden kunnen worden geüpload. Exporteer andere formaten (zoals SVG, Visio of draw.io) eerst naar PNG of PDF.",
-          "invalid_pdf": "Het bestand is geen geldige PDF."
+          "invalid_pdf": "Het bestand is geen geldige PDF.",
+          "file_prefix": "{filename}: {error}"
         },
-        "help": "PNG, JPEG of PDF, max. 10 MB; afbeeldingen max. 8000×8000 px. Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF."
+        "help": "PNG, JPEG of PDF, max. 10 MB per bestand; afbeeldingen max. 8000×8000 px. Je kunt meerdere bestanden selecteren (max. 100 MB samen). Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF.",
+        "flash": "{count} bestand(en) geüpload."
       },
       "pdf": {
         "download": "PDF downloaden"

@@ -211,9 +211,9 @@
   <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     {{ architecture_overview_form.hidden_tag() }}
     <div>
-      {{ architecture_overview_form.image(class="text-sm text-[var(--color-text)]", **{"aria-describedby": "architecture-overview-help"}) }}
-      <p id="architecture-overview-help" class="text-xs text-[var(--color-muted)] mt-1">{{ architecture_overview_form.image.description }}</p>
-      {% for error in architecture_overview_form.image.errors %}
+      {{ architecture_overview_form.files(class="text-sm text-[var(--color-text)]", **{"aria-label": architecture_overview_form.files.label.text, "aria-describedby": "architecture-overview-help"}) }}
+      <p id="architecture-overview-help" class="text-xs text-[var(--color-muted)] mt-1">{{ architecture_overview_form.files.description }}</p>
+      {% for error in architecture_overview_form.files.errors %}
       <span class="block text-red-400 text-xs mt-1">{{ error }}</span>
       {% endfor %}
     </div>

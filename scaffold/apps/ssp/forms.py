@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import os
 from urllib.parse import urlsplit
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
+from flask_wtf.file import MultipleFileField
 from PIL import Image, UnidentifiedImageError
 from wtforms import DateField, HiddenField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional, ValidationError
+from wtforms.validators import DataRequired, Length, Optional, StopValidation, ValidationError
 
+from scaffold.core.i18n import gettext as _
 from scaffold.core.i18n import lazy_gettext as _l
 
 MAX_ARCHITECTURE_OVERVIEW_BYTES = 10 * 1024 * 1024
@@ -38,37 +40,63 @@ def detect_architecture_overview_mime(stream) -> str | None:
         stream.seek(0)
 
 
-def _validate_architecture_overview_file(form, field):
-    """Check the upload's real content: a PDF header, or a genuine PNG/JPEG within limits.
+_ERRORS = "ssp.architecture_overview.upload.errors."
 
-    FileAllowed only checks the extension; this inspects the bytes so a
-    renamed file is rejected with the specific reason (decision 20261118-1530).
+
+def _architecture_overview_file_error(file_storage) -> str | None:
+    """Return the translation key of the first problem with one uploaded file, or None.
+
+    Checks the extension, the size and then the real content: a PDF header, or
+    a genuine PNG/JPEG within the pixel limit, so a renamed file is rejected
+    with the specific reason (decision 20261118-1530).
     """
-    file_storage = field.data
-    if not file_storage:
-        return
-
     stream = file_storage.stream
     extension = (file_storage.filename or "").rsplit(".", 1)[-1].lower()
-    if extension == "pdf":
-        if detect_architecture_overview_mime(stream) != "application/pdf":
-            raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_pdf"))
-        return
+    if extension not in ARCHITECTURE_OVERVIEW_EXTENSIONS:
+        return _ERRORS + "invalid_type"
 
+    stream.seek(0, os.SEEK_END)
+    size = stream.tell()
     stream.seek(0)
+    if size > MAX_ARCHITECTURE_OVERVIEW_BYTES:
+        return _ERRORS + "too_large"
+
+    if extension == "pdf":
+        return None if detect_architecture_overview_mime(stream) == "application/pdf" else _ERRORS + "invalid_pdf"
+
     try:
         image = Image.open(stream)
         image.verify()
         stream.seek(0)
         image = Image.open(stream)
         if image.format not in _IMAGE_MIME_TYPES:
-            raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
+            return _ERRORS + "invalid_image"
         if image.width > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX or image.height > MAX_ARCHITECTURE_OVERVIEW_DIMENSION_PX:
-            raise ValidationError(_l("ssp.architecture_overview.upload.errors.dimensions_too_large"))
+            return _ERRORS + "dimensions_too_large"
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
-        raise ValidationError(_l("ssp.architecture_overview.upload.errors.invalid_image"))
+        return _ERRORS + "invalid_image"
     finally:
         stream.seek(0)
+    return None
+
+
+def _validate_architecture_overview_files(form, field):
+    """Validate every selected file and report each failure with its filename.
+
+    WTForms keeps one error per raised ValidationError, so the per-file errors
+    are appended to ``field.errors`` directly; ``Field.validate`` fails when
+    that list is non-empty (decision 20261119-1827, all or nothing).
+    """
+    files = field.data or []
+    if not files:
+        raise StopValidation(_l(_ERRORS + "required"))
+    for file_storage in files:
+        error_key = _architecture_overview_file_error(file_storage)
+        if error_key:
+            # The raw browser filename is what the user recognises; flashes are autoescaped (CHK004).
+            field.errors.append(
+                _(_ERRORS + "file_prefix", filename=(file_storage.filename or "")[:100], error=_(error_key))
+            )
 
 
 EXTERNAL_URL_MAX_LENGTH = 500
@@ -410,23 +438,12 @@ class POAMMilestoneForm(FlaskForm):
 
 
 class SSPArchitectureOverviewUploadForm(FlaskForm):
-    """Upload a new architecture overview version (PNG, JPEG or PDF) for an SSP."""
+    """Upload one or more architecture overview files (PNG, JPEG or PDF) for an SSP."""
 
-    image = FileField(
+    files = MultipleFileField(
         _l("ssp.architecture_overview.upload.field.label"),
         description=_l("ssp.architecture_overview.upload.help"),
         render_kw={"accept": ".png,.jpg,.jpeg,.pdf"},
-        validators=[
-            FileRequired(message=_l("ssp.architecture_overview.upload.errors.required")),
-            FileAllowed(
-                list(ARCHITECTURE_OVERVIEW_EXTENSIONS),
-                message=_l("ssp.architecture_overview.upload.errors.invalid_type"),
-            ),
-            FileSize(
-                max_size=MAX_ARCHITECTURE_OVERVIEW_BYTES,
-                message=_l("ssp.architecture_overview.upload.errors.too_large"),
-            ),
-            _validate_architecture_overview_file,
-        ],
+        validators=[_validate_architecture_overview_files],
     )
     submit = SubmitField(_l("ssp.architecture_overview.upload.submit"))
