@@ -4,7 +4,7 @@ id: 20261118-1505-architecture-overview-pdf-and-delete
 date: 2026-11-18
 status: accepted
 supersedes: 20260829-1230-architecture-overview-image-design
-superseded_by: null
+superseded_by: 20261119-1825-architecture-overview-flat-file-list (partial: versioning, history, restore)
 impacts:
   - scaffold/apps/ssp/forms.py
   - scaffold/apps/ssp/routes.py

@@ -42,6 +42,7 @@ The scaffold application consolidates entity models from the legacy `bia_app` an
 
 - `ArchitecturePrinciple`: admin-governed catalogue entry (`name`, `description`) that ADRs are anchored to. Global, not scoped to a single SSP — administered the same way as `Control` (`/admin/principles`), including bulk JSON import.
 - `ADRRecord`: an Architecture Decision Record belonging to exactly one `SSPlan`. Required primary `ArchitecturePrinciple`, optional secondary principles (`adr_secondary_principles` M2M table), adr.github.io fields (`title`, `status`, `context`, `decision`, `consequences`), authorship, and an optional self-referential `supersedes_id` (unique — an ADR can be superseded at most once).
+- `SSPArchitectureOverview` (table `ssp_architecture_overview_versions`, legacy name): one uploaded architecture overview file of an `SSPlan` — `image_data` (blob), `mime_type` detected from the bytes (PNG, JPEG or PDF), `original_filename`, `file_size_bytes`, `uploaded_by_id`, `uploaded_at`. An SSP can have several; they are listed by `uploaded_at, id`. There is no `version_number` since migration `20261119_0001` (decision 20261119-1825).
 
 ## Maturity Domain
 

@@ -20,7 +20,7 @@ The reference Compose file runs the web application alongside PostgreSQL.
 - Decide how Nginx integrates into your network perimeter:
   - If a platform load balancer already terminates TLS, keep the gateway internal-only and follow `docker/nginx/nginx.conf.example.behind-proxy.md`.
   - If the compose stack must face the public internet, pair it with the Certbot/security overlays and use `docker/nginx/nginx.conf.example.public.md` as the reference configuration.
-- **Upload size limit.** The gateway sets `client_max_body_size 12m;` in the `http` block, so it applies to every server block, including the Certbot TLS listener. The SSP architecture overview accepts files up to 10 MB, and the extra 2 MB covers multipart overhead. Without this directive nginx falls back to its 1 MB default and rejects larger uploads with a bare `413 Request Entity Too Large` before the app can show a message. If you maintain your own gateway config, add the same line. An upstream load balancer or reverse proxy in front of the gateway needs a limit of at least 12 MB as well. Flask's `MAX_CONTENT_LENGTH` is deliberately left unset so the admin backup-restore upload is not capped. After changing the config, redeploy the `gateway` container (`docker compose up -d gateway`).
+- **Upload size limit.** The gateway sets `client_max_body_size 100m;` in the `http` block, so it applies to every server block, including the Certbot TLS listener. The SSP architecture overview accepts several files in one upload: up to 10 MB per file and up to 100 MB per batch. The page blocks a selection over 100 MB (decimal, which leaves room for multipart overhead) with a clear message before it is sent. Without this directive nginx falls back to its 1 MB default and rejects larger uploads with a bare `413 Request Entity Too Large` before the app can show a message. If you maintain your own gateway config, add the same line. An upstream load balancer or reverse proxy in front of the gateway needs a limit of at least 100 MB as well; with a lower limit, batches above it fail with that proxy's 413. Flask's `MAX_CONTENT_LENGTH` is deliberately left unset so the admin backup-restore upload is not capped. After changing the config, redeploy the `gateway` container (`docker compose up -d gateway`).
 
 ## Kubernetes (Optional)
 
@@ -126,7 +126,7 @@ Refer to `docs/authentication.md` for the full end-to-end setup guide, troublesh
 - **Logout loops to maintenance page** – Ensure `SAML_LOGOUT_RETURN_URL` points
   to a reachable URL and that the maintenance gateway is healthy.
 - **Uploads fail with a plain `413` page** – The gateway, or a proxy in front of
-  it, has a smaller body-size limit than 12 MB. Check `client_max_body_size` in
+  it, has a smaller body-size limit than 100 MB. Check `client_max_body_size` in
   the gateway config and the equivalent setting on the upstream proxy.
 - **Unexpected password login form** – Set `PASSWORD_LOGIN_ENABLED=false` after
   break-glass tests to return to SSO-only mode.

@@ -927,19 +927,15 @@ def edit_adr(ssp_id: int, adr_id: int):
 # ---------------------------------------------------------------------------
 
 
-def _next_architecture_overview_version(ssp_id: int) -> int:
-    current_max = (
-        db.session.query(sa.func.coalesce(sa.func.max(SSPArchitectureOverview.version_number), 0))
-        .filter(SSPArchitectureOverview.ssp_id == ssp_id)
-        .scalar()
-    )
-    return current_max + 1
-
-
 @bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
 @login_required
 def upload_architecture_overview(ssp_id: int):
-    """Upload a new architecture overview version: PNG, JPEG or PDF (decision 20261118-1505)."""
+    """Upload one or more architecture overview files: PNG, JPEG or PDF.
+
+    All or nothing: if any file is invalid, nothing is saved (decision
+    20261119-1827). Valid files are stored in submission order and committed
+    once, with one audit event per file (decision 20261120-0900).
+    """
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPArchitectureOverviewUploadForm()
 
@@ -949,30 +945,33 @@ def upload_architecture_overview(ssp_id: int):
                 flash(error, "danger")
         return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
-    file_storage = form.image.data
-    # Store the type detected from the bytes; browsers may send octet-stream.
-    mime_type = detect_architecture_overview_mime(file_storage.stream)
-    image_bytes = file_storage.stream.read()
-    version = SSPArchitectureOverview(
-        ssp_id=ssp.id,
-        version_number=_next_architecture_overview_version(ssp.id),
-        image_data=image_bytes,
-        mime_type=mime_type,
-        original_filename=_safe_upload_filename(file_storage.filename),
-        file_size_bytes=len(image_bytes),
-        uploaded_by_id=current_user.id,
-    )
-    db.session.add(version)
+    uploaded = []
+    for file_storage in form.files.data:
+        # Store the type detected from the bytes; browsers may send octet-stream.
+        mime_type = detect_architecture_overview_mime(file_storage.stream)
+        file_bytes = file_storage.stream.read()
+        uploaded.append(
+            SSPArchitectureOverview(
+                ssp_id=ssp.id,
+                image_data=file_bytes,
+                mime_type=mime_type,
+                original_filename=_safe_upload_filename(file_storage.filename),
+                file_size_bytes=len(file_bytes),
+                uploaded_by_id=current_user.id,
+            )
+        )
+    db.session.add_all(uploaded)
     db.session.flush()
 
-    log_event(
-        "ssp_architecture_overview_uploaded",
-        entity_type="ssp_architecture_overview",
-        entity_id=version.id,
-        details={"ssp_id": ssp.id, "version_number": version.version_number},
-    )
+    for overview_file in uploaded:
+        log_event(
+            "ssp_architecture_overview_uploaded",
+            entity_type="ssp_architecture_overview",
+            entity_id=overview_file.id,
+            details={"ssp_id": ssp.id, "original_filename": overview_file.original_filename},
+        )
     db.session.commit()
-    flash("Architecture overview uploaded.", "success")
+    flash(_("ssp.architecture_overview.upload.flash", count=len(uploaded)), "success")
     return redirect(url_for("ssp.view", ssp_id=ssp.id))
 
 
@@ -999,44 +998,10 @@ def architecture_overview_image(ssp_id: int, version_id: int):
     return response
 
 
-@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/restore", methods=["POST"])
-@login_required
-def restore_architecture_overview(ssp_id: int, version_id: int):
-    """Restore a past version by copying its bytes into a new version (FR-006)."""
-    ssp = _get_ssp_or_404(ssp_id)
-    source = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
-
-    restored = SSPArchitectureOverview(
-        ssp_id=ssp.id,
-        version_number=_next_architecture_overview_version(ssp.id),
-        image_data=source.image_data,
-        mime_type=source.mime_type,
-        original_filename=source.original_filename,
-        file_size_bytes=source.file_size_bytes,
-        uploaded_by_id=current_user.id,
-    )
-    db.session.add(restored)
-    db.session.flush()
-
-    log_event(
-        "ssp_architecture_overview_restored",
-        entity_type="ssp_architecture_overview",
-        entity_id=restored.id,
-        details={"ssp_id": ssp.id, "restored_from_version": source.version_number},
-    )
-    db.session.commit()
-    flash("Architecture overview restored.", "success")
-    return redirect(url_for("ssp.view", ssp_id=ssp.id))
-
-
 @bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/delete", methods=["POST"])
 @login_required
 def delete_architecture_overview(ssp_id: int, version_id: int):
-    """Delete one architecture overview version (decision 20261118-1505).
-
-    The highest remaining version becomes current again; the next upload uses
-    max(remaining) + 1, so a deleted top number may be reused.
-    """
+    """Delete one architecture overview file (decisions 20261118-1505, 20261119-1825)."""
     ssp = _get_ssp_or_404(ssp_id)
     version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
 
@@ -1044,11 +1009,7 @@ def delete_architecture_overview(ssp_id: int, version_id: int):
         "ssp_architecture_overview_deleted",
         entity_type="ssp_architecture_overview",
         entity_id=version.id,
-        details={
-            "ssp_id": ssp.id,
-            "version_number": version.version_number,
-            "original_filename": version.original_filename,
-        },
+        details={"ssp_id": ssp.id, "original_filename": version.original_filename},
     )
     db.session.delete(version)
     db.session.commit()
