@@ -69,7 +69,7 @@ def test_upload_becomes_current_version(app, client):
         assert versions[0].version_number == 1
 
 
-def test_second_upload_keeps_first_in_history(app, client):
+def test_second_upload_keeps_both_files(app, client):
     _make_user(app)
     _login(client)
     ssp_id = _make_ssp(app)
@@ -107,32 +107,6 @@ def test_oversized_upload_rejected_and_nothing_persisted(app, client):
         assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
 
 
-def test_restore_creates_new_version_without_mutating_old(app, client):
-    _make_user(app)
-    _login(client)
-    ssp_id = _make_ssp(app)
-
-    _upload(client, ssp_id)
-    _upload(client, ssp_id)
-    with app.app_context():
-        first_version = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id, version_number=1).first()
-        first_id, first_bytes = first_version.id, first_version.image_data
-
-    response = client.post(
-        f"/ssp/{ssp_id}/architecture-overview/{first_id}/restore",
-        follow_redirects=True,
-    )
-    assert response.status_code == 200
-    with app.app_context():
-        versions = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).order_by(
-            SSPArchitectureOverview.version_number
-        ).all()
-        assert [v.version_number for v in versions] == [1, 2, 3]
-        assert versions[0].id == first_id
-        assert versions[0].image_data == first_bytes
-        assert versions[2].image_data == first_bytes
-
-
 def test_image_route_returns_correct_headers(app, client):
     _make_user(app)
     _login(client)
@@ -161,7 +135,7 @@ def test_ssp_delete_cascades_architecture_overview_versions(app, client):
         assert SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).count() == 0
 
 
-def test_upload_and_restore_write_audit_log_rows(app, client):
+def test_upload_writes_audit_log_row(app, client):
     _make_user(app)
     _login(client)
     ssp_id = _make_ssp(app)
@@ -172,15 +146,6 @@ def test_upload_and_restore_write_audit_log_rows(app, client):
             event_type="ssp_architecture_overview_uploaded", target_type="ssp_architecture_overview"
         ).first()
         assert upload_entry is not None
-        first_id = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).first().id
-
-    client.post(f"/ssp/{ssp_id}/architecture-overview/{first_id}/restore", follow_redirects=True)
-    with app.app_context():
-        restore_entry = AuditLog.query.filter_by(
-            event_type="ssp_architecture_overview_restored", target_type="ssp_architecture_overview"
-        ).first()
-        assert restore_entry is not None
-        assert restore_entry.payload.get("restored_from_version") == 1
 
 
 _PDF_BYTES = b"%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"

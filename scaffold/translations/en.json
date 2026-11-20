@@ -3950,18 +3950,12 @@
         },
         "help": "PNG, JPEG or PDF, max 10 MB; images max 8000×8000 px. Export Visio, draw.io or SVG diagrams as PNG or PDF first."
       },
-      "history": {
-        "heading": "Version history",
-        "entry": "Version {version} — uploaded by {uploader} on {date}",
-        "restore": "Restore"
-      },
       "pdf": {
         "meta": "PDF · {size} MB · uploaded by {uploader} on {date}",
         "download": "Download PDF"
       },
       "delete": {
         "current": "Delete this version",
-        "history": "Delete",
         "confirm": "Delete version {version} of the architecture overview? This cannot be undone.",
         "flash": "Architecture overview version deleted."
       }

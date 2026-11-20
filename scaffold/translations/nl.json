@@ -4020,18 +4020,12 @@
         },
         "help": "PNG, JPEG of PDF, max. 10 MB; afbeeldingen max. 8000×8000 px. Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF."
       },
-      "history": {
-        "heading": "Versiegeschiedenis",
-        "entry": "Versie {version} — geupload door {uploader} op {date}",
-        "restore": "Herstellen"
-      },
       "pdf": {
         "meta": "PDF · {size} MB · geüpload door {uploader} op {date}",
         "download": "PDF downloaden"
       },
       "delete": {
         "current": "Deze versie verwijderen",
-        "history": "Verwijderen",
         "confirm": "Versie {version} van het architectuuroverzicht verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "flash": "Versie van het architectuuroverzicht verwijderd."
       }

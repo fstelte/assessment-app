@@ -999,36 +999,6 @@ def architecture_overview_image(ssp_id: int, version_id: int):
     return response
 
 
-@bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/restore", methods=["POST"])
-@login_required
-def restore_architecture_overview(ssp_id: int, version_id: int):
-    """Restore a past version by copying its bytes into a new version (FR-006)."""
-    ssp = _get_ssp_or_404(ssp_id)
-    source = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
-
-    restored = SSPArchitectureOverview(
-        ssp_id=ssp.id,
-        version_number=_next_architecture_overview_version(ssp.id),
-        image_data=source.image_data,
-        mime_type=source.mime_type,
-        original_filename=source.original_filename,
-        file_size_bytes=source.file_size_bytes,
-        uploaded_by_id=current_user.id,
-    )
-    db.session.add(restored)
-    db.session.flush()
-
-    log_event(
-        "ssp_architecture_overview_restored",
-        entity_type="ssp_architecture_overview",
-        entity_id=restored.id,
-        details={"ssp_id": ssp.id, "restored_from_version": source.version_number},
-    )
-    db.session.commit()
-    flash("Architecture overview restored.", "success")
-    return redirect(url_for("ssp.view", ssp_id=ssp.id))
-
-
 @bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/delete", methods=["POST"])
 @login_required
 def delete_architecture_overview(ssp_id: int, version_id: int):
