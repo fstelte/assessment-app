@@ -249,7 +249,7 @@ several files.
   limits, and partial-restore compatibility for pre-upgrade backups.
 
 ## Progress
-- [ ] Task 1: Remove restore and history
+- [x] Task 1: Remove restore and history
 - [ ] Task 2: Migration: prune history, drop `version_number`
 - [ ] Task 3: Stacked file list display
 - [ ] Task 4: Multi-file upload, all or nothing
