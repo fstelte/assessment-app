@@ -1,5 +1,21 @@
 <!--
-Sync Impact Report
+Sync Impact Report (2026-11-20)
+Version change: 1.0.0 -> 1.1.0 (MINOR: new mandatory delivery rule)
+Modified principles:
+- None
+Modified sections:
+- Delivery Workflow and Quality Gates: every feature branch raises the
+  pyproject.toml version once, format YEAR.MONTH.N (month without leading zero,
+  N restarts at 1 each month), and names it in docs/history.md and the release
+  notes. Codifies the existing practice (2026.8.x … 2026.11.7).
+Templates requiring updates:
+- None (the rule applies at release time; task templates are unchanged)
+Follow-up TODOs:
+- None
+-->
+
+<!--
+Sync Impact Report (2026-05-17)
 Version change: unversioned template -> 1.0.0
 Modified principles:
 - Principle slot 1 -> I. Modular Domain Boundaries
@@ -106,6 +122,18 @@ runtime assumptions turn directly into release failures.
 	concerns are in scope.
 - When a change introduces justified complexity, the implementation plan MUST
 	record why a simpler option was rejected.
+- Every new feature branch MUST raise the application version in
+	`pyproject.toml` (`[tool.poetry] version`) exactly once, on that branch.
+	Versions use the format `YEAR.MONTH.N`:
+	- `YEAR` is the four-digit year and `MONTH` the numeric month without a
+		leading zero (`2026.9.6`, not `2026.09.6`), both taken from the date the
+		bump is committed.
+	- `N` starts at `1` for the first feature in a month and goes up by one for
+		each following feature in that same month (`2026.11.6` → `2026.11.7`).
+		The first feature of a new month starts again at `1` (`2026.10.4` →
+		`2026.11.1`).
+	- The feature's `docs/history.md` entry and release notes MUST name that
+		version.
 
 ## Governance
 
@@ -129,4 +157,4 @@ Compliance review expectations:
 	and [docs/deployment.md](c:/Users/fstelte/Documents/assessment-app/docs/deployment.md)
 	as the primary runtime guidance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-17 | **Last Amended**: 2026-05-17
+**Version**: 1.1.0 | **Ratified**: 2026-05-17 | **Last Amended**: 2026-11-20

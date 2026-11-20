@@ -1,4 +1,4 @@
-# Release notes: multiple files in the SSP architecture overview
+# Release notes: multiple files in the SSP architecture overview (2026.11.7)
 
 ## What's new
 
