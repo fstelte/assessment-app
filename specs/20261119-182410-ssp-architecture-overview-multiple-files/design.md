@@ -116,7 +116,7 @@ and the 12 MB gateway limit (now 100 MB, decision 20261120-0900).
   inline `<img loading="lazy" decoding="async">` (CHK018) or the existing PDF
   download card.
 - Keep the empty state and the upload form. The input gets `multiple`, and
-  the form gets `data-max-total-bytes="104857600"` and
+  the form gets `data-max-total-bytes="100000000"` and
   `data-max-total-message`.
 - Remove the history `<details>` block and the restore and delete-current
   buttons.

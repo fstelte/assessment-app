@@ -208,7 +208,9 @@
   <p class="text-[var(--color-muted)] italic text-sm mb-4">{{ _('ssp.architecture_overview.none_uploaded') }}</p>
   {% endfor %}
 
-  <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+  {# 100 MB in decimal bytes leaves headroom for multipart overhead under nginx's 100m (decision 20261120-0900). #}
+  <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4"
+        data-max-total-bytes="100000000" data-max-total-message="{{ _('ssp.architecture_overview.upload.errors.total_too_large') }}">
     {{ architecture_overview_form.hidden_tag() }}
     <div>
       {{ architecture_overview_form.files(class="text-sm text-[var(--color-text)]", **{"aria-label": architecture_overview_form.files.label.text, "aria-describedby": "architecture-overview-help"}) }}
@@ -216,6 +218,7 @@
       {% for error in architecture_overview_form.files.errors %}
       <span class="block text-red-400 text-xs mt-1">{{ error }}</span>
       {% endfor %}
+      <span class="block text-red-400 text-xs mt-1" role="alert" data-max-total-error hidden></span>
     </div>
     <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap self-start">{{ _('ssp.architecture_overview.upload.submit') }}</button>
   </form>

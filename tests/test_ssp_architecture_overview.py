@@ -422,3 +422,14 @@ def test_named_zero_byte_png_is_rejected_as_invalid_image(app, client):
     _upload_no_follow(client, ssp_id, "empty.png", b"")
     assert "empty.png: The file is not a valid PNG or JPEG image." in _flashes(client)
     assert _filenames(app, ssp_id) == []
+
+
+def test_upload_form_carries_the_batch_size_limit_for_the_browser_check(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert 'data-max-total-bytes="100000000"' in page
+    assert "The selected files are larger than 100 MB in total." in page
+    assert "data-max-total-error" in page

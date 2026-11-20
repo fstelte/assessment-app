@@ -190,13 +190,13 @@ several files.
     `preventDefault()` and put the `data-max-total-message` text
     (`textContent`) into the form's error slot. Otherwise disable the submit
     buttons.
-  - Template: add `data-max-total-bytes="104857600"` and
+  - Template: add `data-max-total-bytes="100000000"` and
     `data-max-total-message="{{ _('…upload.errors.total_too_large') }}"` on
     the upload form, plus an empty error slot.
   - `docs/deployment.md`: update the "Upload size limit" paragraph (12m →
     100m, the reason, upstream load balancer ≥100 MB, redeploy `gateway`) and
     the troubleshooting line at about line 129.
-  - Test: the view renders the form with `data-max-total-bytes="104857600"`.
+  - Test: the view renders the form with `data-max-total-bytes="100000000"`.
 - **Depends on:** Task 4
 - **Acceptance:** a selection over 100 MB in total is blocked in the browser
   with the translated message, and a valid submit disables the button.
@@ -261,5 +261,5 @@ several files.
 - [x] Task 2: Migration: prune history, drop `version_number`
 - [x] Task 3: Stacked file list display (manual browser check: approved by engineer at commit)
 - [x] Task 4: Multi-file upload, all or nothing (manual browser check: approved by engineer at commit)
-- [ ] Task 5: Request size: gateway 100m and browser check
+- [x] Task 5: Request size: gateway 100m and browser check (manual browser check: approved by engineer at commit)
 - [ ] Task 6: Docs and release notes

@@ -49,7 +49,11 @@ makes "no count limit" (20261119-1827) a 12 MB per-batch cap in practice.
   - Add a small `ui.js` handler on forms with `data-max-total-bytes`. When the
     selected files add up to more than the limit, it blocks the submit and
     shows a translated message passed in through `data-max-total-message`.
-  - The upload form sets the limit to 100 MB (104857600 bytes).
+  - The upload form sets the limit to 100 MB as 100000000 bytes (decimal).
+    *Amended in Task 5:* not 104857600 (100 MiB), because nginx `100m`
+    caps the whole body including multipart overhead. The decimal value
+    leaves about 4.8 MB of headroom, so a selection at the limit never
+    reaches nginx's bare 413.
   - Flask's `MAX_CONTENT_LENGTH` stays unset (backup restore must not be
     capped).
   - Werkzeug's default `max_form_parts = 1000` is accepted as a hard cap

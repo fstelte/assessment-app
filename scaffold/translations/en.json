@@ -3948,7 +3948,8 @@
           "dimensions_too_large": "The image may be at most 8000×8000 pixels.",
           "invalid_type": "Only PNG, JPEG or PDF files can be uploaded. Export other formats (such as SVG, Visio or draw.io) to PNG or PDF first.",
           "invalid_pdf": "The file is not a valid PDF.",
-          "file_prefix": "{filename}: {error}"
+          "file_prefix": "{filename}: {error}",
+          "total_too_large": "The selected files are larger than 100 MB in total. Upload them in smaller batches."
         },
         "help": "PNG, JPEG or PDF, max 10 MB per file; images max 8000×8000 px. You can select several files (max 100 MB in total). Export Visio, draw.io or SVG diagrams as PNG or PDF first.",
         "flash": "{count} file(s) uploaded."
