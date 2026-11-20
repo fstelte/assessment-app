@@ -3933,7 +3933,8 @@
       }
     },
     "architecture_overview": {
-      "current_alt": "Current architecture overview diagram",
+      "image_alt": "Architecture overview: {filename}",
+      "meta": "{type} · {size} MB · uploaded by {uploader} on {date}",
       "none_uploaded": "No architecture overview has been uploaded yet.",
       "upload": {
         "field": {
@@ -3951,11 +3952,10 @@
         "help": "PNG, JPEG or PDF, max 10 MB; images max 8000×8000 px. Export Visio, draw.io or SVG diagrams as PNG or PDF first."
       },
       "pdf": {
-        "meta": "PDF · {size} MB · uploaded by {uploader} on {date}",
         "download": "Download PDF"
       },
       "delete": {
-        "current": "Delete this version",
+        "button": "Delete",
         "confirm": "Delete \"{filename}\"? This cannot be undone.",
         "flash": "Architecture overview file deleted."
       }

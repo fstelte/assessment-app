@@ -204,9 +204,8 @@ class SSPlan(db.Model):
         "SSPArchitectureOverview",
         back_populates="ssp",
         cascade="all, delete-orphan",
-        # Interim newest-first so the single-file view's [0] stays current;
-        # Task 3 switches to oldest-first for the list display.
-        order_by="[SSPArchitectureOverview.uploaded_at.desc(), SSPArchitectureOverview.id.desc()]",
+        # Oldest first; within one batch, id keeps the submission order (decision 20261120-0900, CHK003).
+        order_by="[SSPArchitectureOverview.uploaded_at, SSPArchitectureOverview.id]",
     )
 
     def __repr__(self) -> str:  # pragma: no cover

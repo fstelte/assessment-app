@@ -4003,7 +4003,8 @@
       }
     },
     "architecture_overview": {
-      "current_alt": "Huidig architectuuroverzicht diagram",
+      "image_alt": "Architectuuroverzicht: {filename}",
+      "meta": "{type} · {size} MB · geüpload door {uploader} op {date}",
       "none_uploaded": "Er is nog geen architectuuroverzicht geüpload.",
       "upload": {
         "field": {
@@ -4021,11 +4022,10 @@
         "help": "PNG, JPEG of PDF, max. 10 MB; afbeeldingen max. 8000×8000 px. Exporteer Visio-, draw.io- of SVG-diagrammen eerst als PNG of PDF."
       },
       "pdf": {
-        "meta": "PDF · {size} MB · geüpload door {uploader} op {date}",
         "download": "PDF downloaden"
       },
       "delete": {
-        "current": "Deze versie verwijderen",
+        "button": "Verwijderen",
         "confirm": "\"{filename}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "flash": "Bestand van het architectuuroverzicht verwijderd."
       }

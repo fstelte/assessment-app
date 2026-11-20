@@ -171,38 +171,42 @@
 
   {# ── Architecture Overview ── #}
   {{ section_card("—", _('ssp.sections.architecture_overview')) }}
-  {% set overview_versions = ssp.architecture_overview_versions %}
-  {% set current_overview = overview_versions[0] if overview_versions else none %}
-  {% if current_overview and current_overview.mime_type == 'application/pdf' %}
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-white/4 px-4 py-3 mb-4">
-    <div class="flex items-center gap-3 min-w-0">
-      <i class="fas fa-file-pdf text-red-400 text-xl shrink-0" aria-hidden="true"></i>
-      <div class="min-w-0">
-        <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ current_overview.original_filename }}</p>
-        <p class="text-xs text-[var(--color-muted)]">{{ _('ssp.architecture_overview.pdf.meta', size="%.1f"|format(current_overview.file_size_bytes / 1048576), uploader=(current_overview.uploaded_by.email if current_overview.uploaded_by else "—"), date=current_overview.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}</p>
+  {% set overview_files = ssp.architecture_overview_versions %}
+  {% for overview_file in overview_files %}
+  {% set file_url = url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=overview_file.id) %}
+  <div class="mb-6" data-architecture-overview-file>
+    <div class="flex items-center gap-3 mb-2">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium text-[var(--color-text)] truncate">{{ overview_file.original_filename }}</p>
+        <p class="text-xs text-[var(--color-muted)] truncate">{{ _('ssp.architecture_overview.meta', type=('PDF' if overview_file.mime_type == 'application/pdf' else overview_file.mime_type.split('/')[-1]|upper), size="%.1f"|format(overview_file.file_size_bytes / 1048576), uploader=(overview_file.uploaded_by.email if overview_file.uploaded_by else "—"), date=overview_file.uploaded_at.strftime("%Y-%m-%d %H:%M")) }}</p>
       </div>
+      <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=overview_file.id) }}" class="shrink-0" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', filename=overview_file.original_filename) }}')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="inline-flex items-center gap-1.5 text-xs text-red-400 hover:underline">
+          <i class="fas fa-trash text-[10px]" aria-hidden="true"></i> {{ _('ssp.architecture_overview.delete.button') }}
+        </button>
+      </form>
     </div>
-    <a href="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap self-start sm:self-auto">
-      <i class="fas fa-download text-xs" aria-hidden="true"></i> {{ _('ssp.architecture_overview.pdf.download') }}
-    </a>
+    {% if overview_file.mime_type == 'application/pdf' %}
+    <div class="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-white/4 px-4 py-3">
+      <i class="fas fa-file-pdf text-red-400 text-xl shrink-0" aria-hidden="true"></i>
+      <a href="{{ file_url }}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text)] hover:bg-white/8 transition-colors whitespace-nowrap">
+        <i class="fas fa-download text-xs" aria-hidden="true"></i> {{ _('ssp.architecture_overview.pdf.download') }}
+      </a>
+    </div>
+    {% else %}
+    <img
+      src="{{ file_url }}"
+      alt="{{ _('ssp.architecture_overview.image_alt', filename=overview_file.original_filename) }}"
+      loading="lazy"
+      decoding="async"
+      class="max-w-full rounded-lg border border-[var(--color-border)]"
+    >
+    {% endif %}
   </div>
-  {% elif current_overview %}
-  <img
-    src="{{ url_for('ssp.architecture_overview_image', ssp_id=ssp.id, version_id=current_overview.id) }}"
-    alt="{{ _('ssp.architecture_overview.current_alt') }}"
-    class="max-w-full rounded-lg border border-[var(--color-border)] mb-4"
-  >
   {% else %}
   <p class="text-[var(--color-muted)] italic text-sm mb-4">{{ _('ssp.architecture_overview.none_uploaded') }}</p>
-  {% endif %}
-  {% if current_overview %}
-  <form method="POST" action="{{ url_for('ssp.delete_architecture_overview', ssp_id=ssp.id, version_id=current_overview.id) }}" class="mb-4" onsubmit="return confirm('{{ _('ssp.architecture_overview.delete.confirm', filename=current_overview.original_filename) }}')">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="inline-flex items-center gap-1.5 text-xs text-red-400 hover:underline">
-      <i class="fas fa-trash text-[10px]" aria-hidden="true"></i> {{ _('ssp.architecture_overview.delete.current') }}
-    </button>
-  </form>
-  {% endif %}
+  {% endfor %}
 
   <form method="POST" action="{{ url_for('ssp.upload_architecture_overview', ssp_id=ssp.id) }}" enctype="multipart/form-data" class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     {{ architecture_overview_form.hidden_tag() }}

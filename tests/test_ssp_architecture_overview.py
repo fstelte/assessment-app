@@ -245,7 +245,32 @@ def test_upload_form_explains_what_can_be_uploaded(app, client):
     assert "PNG, JPEG or PDF, max 10 MB" in page
 
 
-def test_delete_current_version_makes_previous_current(app, client):
+def _image_url(ssp_id, file_id):
+    return f"/ssp/{ssp_id}/architecture-overview/{file_id}/image"
+
+
+def test_all_files_are_shown_oldest_first(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id, filename="context.png")
+    _upload(client, ssp_id, filename="network.png")
+    # Give the later row an earlier upload time: the order must follow uploaded_at, not id.
+    with app.app_context():
+        network = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id, original_filename="network.png").one()
+        network.uploaded_at = datetime(2020, 1, 1, tzinfo=UTC)
+        db.session.commit()
+    context_id, network_id = _file_id(app, ssp_id, "context.png"), _file_id(app, ssp_id, "network.png")
+
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert page.count("data-architecture-overview-file") == 2
+    assert page.index(_image_url(ssp_id, network_id)) < page.index(_image_url(ssp_id, context_id))
+    for file_id in (context_id, network_id):
+        assert f"/ssp/{ssp_id}/architecture-overview/{file_id}/delete" in page
+    assert 'Delete &#34;context.png&#34;? This cannot be undone.' in page
+
+
+def test_delete_one_file_keeps_the_others(app, client):
     _make_user(app)
     _login(client)
     ssp_id = _make_ssp(app)
@@ -257,7 +282,20 @@ def test_delete_current_version_makes_previous_current(app, client):
     assert _filenames(app, ssp_id) == ["overview.png"]
 
     page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
-    assert f"/ssp/{ssp_id}/architecture-overview/{_file_id(app, ssp_id, 'overview.png')}/image" in page
+    assert _image_url(ssp_id, _file_id(app, ssp_id, "overview.png")) in page
+    assert page.count("data-architecture-overview-file") == 1
+
+
+def test_overview_images_are_lazy_loaded(app, client):
+    _make_user(app)
+    _login(client)
+    ssp_id = _make_ssp(app)
+    _upload(client, ssp_id)
+
+    page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
+    assert 'loading="lazy"' in page
+    assert 'decoding="async"' in page
+    assert 'alt="Architecture overview: overview.png"' in page
 
 
 def test_delete_only_version_shows_none_uploaded(app, client):
