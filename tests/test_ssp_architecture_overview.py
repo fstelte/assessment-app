@@ -56,17 +56,27 @@ def _upload(client, ssp_id, filename="overview.png", content=None):
     )
 
 
-def test_upload_becomes_current_version(app, client):
+def _filenames(app, ssp_id):
+    with app.app_context():
+        return [
+            f.original_filename
+            for f in SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).order_by(SSPArchitectureOverview.id)
+        ]
+
+
+def _file_id(app, ssp_id, filename):
+    with app.app_context():
+        return SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id, original_filename=filename).one().id
+
+
+def test_upload_stores_one_file(app, client):
     _make_user(app)
     _login(client)
     ssp_id = _make_ssp(app)
 
     response = _upload(client, ssp_id)
     assert response.status_code == 200
-    with app.app_context():
-        versions = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).all()
-        assert len(versions) == 1
-        assert versions[0].version_number == 1
+    assert _filenames(app, ssp_id) == ["overview.png"]
 
 
 def test_second_upload_keeps_both_files(app, client):
@@ -75,13 +85,9 @@ def test_second_upload_keeps_both_files(app, client):
     ssp_id = _make_ssp(app)
 
     _upload(client, ssp_id)
-    _upload(client, ssp_id)
+    _upload(client, ssp_id, filename="second.png")
 
-    with app.app_context():
-        versions = SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id).order_by(
-            SSPArchitectureOverview.version_number
-        ).all()
-        assert [v.version_number for v in versions] == [1, 2]
+    assert _filenames(app, ssp_id) == ["overview.png", "second.png"]
 
 
 def test_non_image_upload_rejected_and_nothing_persisted(app, client):
@@ -144,8 +150,8 @@ def test_upload_writes_audit_log_row(app, client):
     with app.app_context():
         upload_entry = AuditLog.query.filter_by(
             event_type="ssp_architecture_overview_uploaded", target_type="ssp_architecture_overview"
-        ).first()
-        assert upload_entry is not None
+        ).one()
+        assert upload_entry.payload == {"ssp_id": ssp_id, "original_filename": "overview.png"}
 
 
 _PDF_BYTES = b"%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"
@@ -239,21 +245,6 @@ def test_upload_form_explains_what_can_be_uploaded(app, client):
     assert "PNG, JPEG or PDF, max 10 MB" in page
 
 
-def _version_numbers(app, ssp_id):
-    with app.app_context():
-        return [
-            v.version_number
-            for v in SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id)
-            .order_by(SSPArchitectureOverview.version_number)
-            .all()
-        ]
-
-
-def _version_id(app, ssp_id, number):
-    with app.app_context():
-        return SSPArchitectureOverview.query.filter_by(ssp_id=ssp_id, version_number=number).one().id
-
-
 def test_delete_current_version_makes_previous_current(app, client):
     _make_user(app)
     _login(client)
@@ -261,16 +252,12 @@ def test_delete_current_version_makes_previous_current(app, client):
     _upload(client, ssp_id)
     _upload(client, ssp_id, filename="second.png")
 
-    response = client.post(f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 2)}/delete")
+    response = client.post(f"/ssp/{ssp_id}/architecture-overview/{_file_id(app, ssp_id, 'second.png')}/delete")
     assert response.status_code == 302
-    assert _version_numbers(app, ssp_id) == [1]
+    assert _filenames(app, ssp_id) == ["overview.png"]
 
     page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
-    assert f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/image" in page
-
-    # Next upload uses max(remaining) + 1, so the deleted number 2 is reused.
-    _upload(client, ssp_id, filename="third.png")
-    assert _version_numbers(app, ssp_id) == [1, 2]
+    assert f"/ssp/{ssp_id}/architecture-overview/{_file_id(app, ssp_id, 'overview.png')}/image" in page
 
 
 def test_delete_only_version_shows_none_uploaded(app, client):
@@ -279,8 +266,8 @@ def test_delete_only_version_shows_none_uploaded(app, client):
     ssp_id = _make_ssp(app)
     _upload(client, ssp_id)
 
-    client.post(f"/ssp/{ssp_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/delete")
-    assert _version_numbers(app, ssp_id) == []
+    client.post(f"/ssp/{ssp_id}/architecture-overview/{_file_id(app, ssp_id, 'overview.png')}/delete")
+    assert _filenames(app, ssp_id) == []
     page = client.get(f"/ssp/{ssp_id}").get_data(as_text=True)
     assert "No architecture overview has been uploaded yet." in page
 
@@ -299,9 +286,9 @@ def test_delete_version_of_other_ssp_returns_404(app, client):
         db.session.commit()
         other_id = other.id
 
-    response = client.post(f"/ssp/{other_id}/architecture-overview/{_version_id(app, ssp_id, 1)}/delete")
+    response = client.post(f"/ssp/{other_id}/architecture-overview/{_file_id(app, ssp_id, 'overview.png')}/delete")
     assert response.status_code == 404
-    assert _version_numbers(app, ssp_id) == [1]
+    assert _filenames(app, ssp_id) == ["overview.png"]
 
 
 def test_delete_version_writes_audit_log(app, client):
@@ -309,12 +296,12 @@ def test_delete_version_writes_audit_log(app, client):
     _login(client)
     ssp_id = _make_ssp(app)
     _upload(client, ssp_id, filename="overview.png")
-    version_id = _version_id(app, ssp_id, 1)
+    version_id = _file_id(app, ssp_id, 'overview.png')
 
     client.post(f"/ssp/{ssp_id}/architecture-overview/{version_id}/delete")
     with app.app_context():
         entry = AuditLog.query.filter_by(
             event_type="ssp_architecture_overview_deleted", target_type="ssp_architecture_overview"
         ).one()
-        assert entry.payload.get("version_number") == 1
+        assert "version_number" not in entry.payload
         assert entry.payload.get("original_filename") == "overview.png"

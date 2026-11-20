@@ -4026,8 +4026,8 @@
       },
       "delete": {
         "current": "Deze versie verwijderen",
-        "confirm": "Versie {version} van het architectuuroverzicht verwijderen? Dit kan niet ongedaan worden gemaakt.",
-        "flash": "Versie van het architectuuroverzicht verwijderd."
+        "confirm": "\"{filename}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+        "flash": "Bestand van het architectuuroverzicht verwijderd."
       }
     },
     "monitoring": {

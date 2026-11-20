@@ -3956,8 +3956,8 @@
       },
       "delete": {
         "current": "Delete this version",
-        "confirm": "Delete version {version} of the architecture overview? This cannot be undone.",
-        "flash": "Architecture overview version deleted."
+        "confirm": "Delete \"{filename}\"? This cannot be undone.",
+        "flash": "Architecture overview file deleted."
       }
     },
     "monitoring": {

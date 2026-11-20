@@ -927,19 +927,10 @@ def edit_adr(ssp_id: int, adr_id: int):
 # ---------------------------------------------------------------------------
 
 
-def _next_architecture_overview_version(ssp_id: int) -> int:
-    current_max = (
-        db.session.query(sa.func.coalesce(sa.func.max(SSPArchitectureOverview.version_number), 0))
-        .filter(SSPArchitectureOverview.ssp_id == ssp_id)
-        .scalar()
-    )
-    return current_max + 1
-
-
 @bp.route("/<int:ssp_id>/architecture-overview", methods=["POST"])
 @login_required
 def upload_architecture_overview(ssp_id: int):
-    """Upload a new architecture overview version: PNG, JPEG or PDF (decision 20261118-1505)."""
+    """Upload an architecture overview file: PNG, JPEG or PDF (decisions 20261118-1505, 20261119-1825)."""
     ssp = _get_ssp_or_404(ssp_id)
     form = SSPArchitectureOverviewUploadForm()
 
@@ -955,7 +946,6 @@ def upload_architecture_overview(ssp_id: int):
     image_bytes = file_storage.stream.read()
     version = SSPArchitectureOverview(
         ssp_id=ssp.id,
-        version_number=_next_architecture_overview_version(ssp.id),
         image_data=image_bytes,
         mime_type=mime_type,
         original_filename=_safe_upload_filename(file_storage.filename),
@@ -969,7 +959,7 @@ def upload_architecture_overview(ssp_id: int):
         "ssp_architecture_overview_uploaded",
         entity_type="ssp_architecture_overview",
         entity_id=version.id,
-        details={"ssp_id": ssp.id, "version_number": version.version_number},
+        details={"ssp_id": ssp.id, "original_filename": version.original_filename},
     )
     db.session.commit()
     flash("Architecture overview uploaded.", "success")
@@ -1002,11 +992,7 @@ def architecture_overview_image(ssp_id: int, version_id: int):
 @bp.route("/<int:ssp_id>/architecture-overview/<int:version_id>/delete", methods=["POST"])
 @login_required
 def delete_architecture_overview(ssp_id: int, version_id: int):
-    """Delete one architecture overview version (decision 20261118-1505).
-
-    The highest remaining version becomes current again; the next upload uses
-    max(remaining) + 1, so a deleted top number may be reused.
-    """
+    """Delete one architecture overview file (decisions 20261118-1505, 20261119-1825)."""
     ssp = _get_ssp_or_404(ssp_id)
     version = SSPArchitectureOverview.query.filter_by(id=version_id, ssp_id=ssp.id).first_or_404()
 
@@ -1014,11 +1000,7 @@ def delete_architecture_overview(ssp_id: int, version_id: int):
         "ssp_architecture_overview_deleted",
         entity_type="ssp_architecture_overview",
         entity_id=version.id,
-        details={
-            "ssp_id": ssp.id,
-            "version_number": version.version_number,
-            "original_filename": version.original_filename,
-        },
+        details={"ssp_id": ssp.id, "original_filename": version.original_filename},
     )
     db.session.delete(version)
     db.session.commit()
