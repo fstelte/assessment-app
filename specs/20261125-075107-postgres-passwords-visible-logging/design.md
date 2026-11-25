@@ -1,6 +1,6 @@
 ---
 feature: 20261125-075107-postgres-passwords-visible-logging
-status: planned
+status: implemented
 created: 2026-11-25
 decisions:
   - 20261125-0753-pg-password-via-pgpassword-env

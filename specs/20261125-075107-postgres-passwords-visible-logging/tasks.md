@@ -1,6 +1,6 @@
 ---
 feature: 20261125-075107-postgres-passwords-visible-logging
-status: planned
+status: done
 created: 2026-11-25
 chunk_size: adaptive
 total_tasks: 3
@@ -126,4 +126,4 @@ Helper behaviour for all `pg_conn` copies: design §Shared behaviour of `pg_conn
 ## Progress
 - [x] Task 1: Restore container passes the password through PGPASSWORD
 - [x] Task 2: Backup script, backup entrypoint, wait_for_db and app manual backup
-- [ ] Task 3: Documentation, release notes and version
+- [x] Task 3: Documentation, release notes and version
