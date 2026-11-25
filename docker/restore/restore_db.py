@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Optional
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import unquote, urlparse, urlsplit, urlunparse, urlunsplit
 
 try:  # docker client optional during linting
     import docker
@@ -67,6 +67,23 @@ def normalize_postgres_uri(db_uri: str) -> str:
     if db_uri.startswith("postgres://"):
         return "postgresql://" + db_uri.split("://", 1)[1]
     return db_uri
+
+
+def pg_conn(uri: str) -> tuple[str, dict[str, str]]:
+    """Return the URI without its password, and an environment with PGPASSWORD for the client tool.
+
+    Keeps the password out of argv, log lines and CalledProcessError text
+    (decision 20261125-0753). urlsplit takes the userinfo up to the last '@'.
+    """
+    parts = urlsplit(uri)
+    env = dict(os.environ)
+    if parts.password is None:
+        return uri, env
+    env["PGPASSWORD"] = unquote(parts.password)
+    userinfo, _, hostport = parts.netloc.rpartition("@")
+    user = userinfo.partition(":")[0]
+    netloc = f"{user}@{hostport}" if user else hostport
+    return urlunsplit(parts._replace(netloc=netloc)), env
 
 
 def sqlite_target_path(db_uri: str) -> Path:
@@ -244,7 +261,7 @@ def restore_sqlite(db_uri: str, backup_path: Path) -> None:
             temp_path.unlink(missing_ok=True)
 
 
-def terminate_pg_sessions(pg_admin_uri: str, database: str) -> None:
+def terminate_pg_sessions(pg_admin_uri: str, database: str, env: Optional[dict] = None) -> None:
     sql = (
         "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
         "WHERE datname = %s AND pid <> pg_backend_pid();"
@@ -256,29 +273,29 @@ def terminate_pg_sessions(pg_admin_uri: str, database: str) -> None:
         "ON_ERROR_STOP=1",
         "-c",
         sql % (f"'{database}'"),
-    ])
+    ], env=env)
 
 
-def recreate_pg_database(pg_admin_uri: str, database: str, owner: Optional[str]) -> None:
+def recreate_pg_database(pg_admin_uri: str, database: str, owner: Optional[str], env: Optional[dict] = None) -> None:
     drop_sql = f'DROP DATABASE IF EXISTS "{database}";'
     create_sql = f'CREATE DATABASE "{database}"'
     if owner:
         create_sql += f' WITH OWNER "{owner}"'
     create_sql += ';'
-    run_command(["psql", pg_admin_uri, "-v", "ON_ERROR_STOP=1", "-c", drop_sql])
-    run_command(["psql", pg_admin_uri, "-v", "ON_ERROR_STOP=1", "-c", create_sql])
+    run_command(["psql", pg_admin_uri, "-v", "ON_ERROR_STOP=1", "-c", drop_sql], env=env)
+    run_command(["psql", pg_admin_uri, "-v", "ON_ERROR_STOP=1", "-c", create_sql], env=env)
 
 
 def restore_postgres(db_uri: str, backup_path: Path) -> None:
-    pg_uri = normalize_postgres_uri(db_uri)
+    pg_uri, env = pg_conn(normalize_postgres_uri(db_uri))
     parsed = urlparse(pg_uri)
     database = parsed.path.lstrip("/") or "postgres"
     owner = parsed.username
     admin_path = parsed._replace(path="/postgres")
     pg_admin_uri = urlunparse(admin_path)
 
-    terminate_pg_sessions(pg_admin_uri, database)
-    recreate_pg_database(pg_admin_uri, database, owner)
+    terminate_pg_sessions(pg_admin_uri, database, env)
+    recreate_pg_database(pg_admin_uri, database, owner, env)
 
     temp_path, was_temp = decompress_if_needed(backup_path)
     sanitized_path, was_sanitized = sanitize_sql_file(temp_path)
@@ -293,7 +310,7 @@ def restore_postgres(db_uri: str, backup_path: Path) -> None:
                 "-d",
                 pg_uri,
                 str(sanitized_path),
-            ])
+            ], env=env)
         else:
             run_command([
                 "psql",
@@ -302,7 +319,7 @@ def restore_postgres(db_uri: str, backup_path: Path) -> None:
                 "ON_ERROR_STOP=1",
                 "-f",
                 str(sanitized_path),
-            ])
+            ], env=env)
     finally:
         if was_temp:
             temp_path.unlink(missing_ok=True)
@@ -312,9 +329,10 @@ def restore_postgres(db_uri: str, backup_path: Path) -> None:
 
 def psql_scalar(pg_uri: str, sql: str) -> str:
     """Run one SQL statement with psql and return its single value."""
+    pg_uri, env = pg_conn(pg_uri)
     result = subprocess.run(
         ["psql", pg_uri, "-v", "ON_ERROR_STOP=1", "-tA", "-c", sql],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=True, env=env,
     )
     return result.stdout.strip()
 

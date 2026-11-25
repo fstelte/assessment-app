@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 from .backup_crypto import encrypt_bytes
 
@@ -1331,6 +1332,23 @@ def create_sqlite_backup(db_uri: str, backup_dir: Path, encryption_key: str | No
     return out_gz
 
 
+def _pg_conn(uri: str) -> tuple[str, dict[str, str]]:
+    """Return the URI without its password, and an environment with PGPASSWORD for pg_dump.
+
+    Keeps the password out of the pg_dump argv (visible in ps). Same behaviour as
+    pg_conn() in docker/restore/restore_db.py (decisions 20261125-0753, -0805).
+    """
+    parts = urlsplit(uri)
+    env = dict(os.environ)
+    if parts.password is None:
+        return uri, env
+    env["PGPASSWORD"] = unquote(parts.password)
+    userinfo, _, hostport = parts.netloc.rpartition("@")
+    user = userinfo.partition(":")[0]
+    netloc = f"{user}@{hostport}" if user else hostport
+    return urlunsplit(parts._replace(netloc=netloc)), env
+
+
 def create_postgres_backup(db_uri: str, backup_dir: Path, encryption_key: str | None = None) -> Path:
     """
     Create a gzip-compressed pg_dump backup. If encryption_key is provided,
@@ -1349,10 +1367,12 @@ def create_postgres_backup(db_uri: str, backup_dir: Path, encryption_key: str | 
     out_sql = backup_dir / f"pg_dump-manual-{stamp}.sql"
     out_gz = out_sql.with_suffix(".sql.gz")
 
+    pg_uri, env = _pg_conn(db_uri)
     result = subprocess.run(
-        ["pg_dump", db_uri, "--format=plain", "--no-owner", "--no-privileges", f"--file={out_sql}"],
+        ["pg_dump", pg_uri, "--format=plain", "--no-owner", "--no-privileges", f"--file={out_sql}"],
         capture_output=True,
         text=True,
+        env=env,
     )
     if result.returncode != 0:
         raise RuntimeError(f"pg_dump failed: {result.stderr}")

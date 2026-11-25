@@ -17,6 +17,23 @@ def _log(message: str) -> None:
     print(f"[wait-for-db] {message}", flush=True)
 
 
+def _mask_url(value: str) -> str:
+    """Replace the password in a URL (or a message containing one) with ***.
+
+    Works on the raw string, so it also covers URLs SQLAlchemy can't parse. The
+    userinfo runs up to the last '@', so a password containing '@' is masked too
+    (decision 20261125-0800).
+    """
+    prefix, sep, rest = value.partition("://")
+    userinfo, at, hostpart = rest.rpartition("@")
+    if not sep or not at or ":" not in userinfo:
+        return value
+    return f"{prefix}://{userinfo.partition(':')[0]}:***@{hostpart}"
+
+
+_URL_HINT = "URL-encode special characters in the password (e.g. @ -> %40)"
+
+
 def _database_exists(conn, backend: str, database_name: str) -> bool:
     """Check whether the target database already exists before CREATE."""
     if backend in {"postgresql", "postgres"}:
@@ -57,7 +74,7 @@ def _ensure_database(url: URL, deadline: float) -> None:
                 break
             except OperationalError as exc:
                 if time.time() >= deadline:
-                    _log(f"database ensure timed out after {DEFAULT_TIMEOUT}s: {exc}")
+                    _log(f"database ensure timed out after {DEFAULT_TIMEOUT}s: {_mask_url(str(exc))}")
                     raise
                 _log("waiting for admin connection to ensure database...")
                 time.sleep(SLEEP_INTERVAL)
@@ -91,7 +108,7 @@ def wait_for_database(url: URL) -> None:
                 break
         except OperationalError as exc:
             if time.time() >= deadline:
-                _log(f"database timed out after {DEFAULT_TIMEOUT}s: {exc}")
+                _log(f"database timed out after {DEFAULT_TIMEOUT}s: {_mask_url(str(exc))}")
                 raise SystemExit(1)
             _log("waiting for database to be ready...")
             time.sleep(SLEEP_INTERVAL)
@@ -105,10 +122,16 @@ def main() -> None:
         _log("DATABASE_URL not set; falling back to sqlite")
         return
 
+    # SQLAlchemy splits at the first '@', so a literal '@' in the password would put the
+    # rest of the password in the host name and in every connection error.
+    if "@" in database_url.partition("://")[2].rpartition("@")[0]:
+        _log(f"invalid DATABASE_URL '{_mask_url(database_url)}': the password contains '@'; {_URL_HINT}")
+        raise SystemExit(1)
     try:
         url = make_url(database_url)
-    except Exception as exc:  # pragma: no cover - defensive
-        _log(f"invalid DATABASE_URL '{database_url}': {exc}")
+    except Exception:
+        # The exception text is not printed: it adds nothing and may contain the URL.
+        _log(f"invalid DATABASE_URL '{_mask_url(database_url)}'; {_URL_HINT}")
         raise SystemExit(1)
 
     wait_for_database(url)
@@ -118,5 +141,5 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as exc:  # pragma: no cover - defensive runtime guard
-        _log(f"database bootstrap failed: {exc}")
+        _log(f"database bootstrap failed: {_mask_url(str(exc))}")
         raise SystemExit(1)

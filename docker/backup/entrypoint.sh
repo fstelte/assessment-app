@@ -25,9 +25,10 @@ if command -v pg_isready >/dev/null 2>&1 && ([ -n "$DATABASE_URL" ] || [ -n "$SQ
   SCHEME=${SCHEME_WITH_PLUS%%+*}
 
   if [ "$SCHEME" = "postgres" ] || [ "$SCHEME" = "postgresql" ]; then
-      # Reconstruct URI with simple scheme
+      # Reconstruct URI with simple scheme, without user and password: pg_isready doesn't
+      # authenticate, and argv is visible in ps (decision 20261125-0830).
       rest=${DB_URI#*://}
-      PG_URI="$SCHEME://$rest"
+      PG_URI="$SCHEME://${rest##*@}"
 
       printf '%s - backup-entrypoint: waiting for database to be ready...\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 

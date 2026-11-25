@@ -87,3 +87,73 @@ def test_process_backup_rotates_after_restore(sqlite_db, monkeypatch):
 
     assert restore_db.process_backup(uri, path) == {"status": "rotated", "users": 0}
     assert order == ["restore", "rotate"]
+
+
+# --- Password stays out of argv, logs and error text (decision 20261125-0753, Task 1) ---
+
+_ENCODED = "S3nt%40in%3Ael%2F%25pw"
+_DECODED = "S3nt@in:el/%pw"
+_LITERAL = "p@ss-S3ntinel"
+_SENTINELS = (_ENCODED, _DECODED, _LITERAL)
+
+
+def _leaks(text: str) -> list[str]:
+    return [s for s in _SENTINELS if s in text]
+
+
+@pytest.mark.parametrize(
+    ("uri", "stripped", "password"),
+    [
+        (f"postgresql://app:{_ENCODED}@db:5432/app", "postgresql://app@db:5432/app", _DECODED),
+        (f"postgresql://app:{_LITERAL}@db/app", "postgresql://app@db/app", _LITERAL),
+        ("postgresql://app@db/app", "postgresql://app@db/app", None),
+        ("postgresql://db/app", "postgresql://db/app", None),
+        ("postgresql://app:@db/app", "postgresql://app@db/app", ""),
+        ("postgresql://:pw@db/app", "postgresql://db/app", "pw"),
+        ("postgresql://app:pw@db/app?sslmode=require", "postgresql://app@db/app?sslmode=require", "pw"),
+        ("postgresql://app:pw@[::1]:5432/app", "postgresql://app@[::1]:5432/app", "pw"),
+    ],
+)
+def test_pg_conn_moves_password_to_env(monkeypatch, uri, stripped, password):
+    monkeypatch.delenv("PGPASSWORD", raising=False)
+    result_uri, env = restore_db.pg_conn(uri)
+    assert result_uri == stripped
+    assert env.get("PGPASSWORD") == password
+
+
+def test_pg_conn_without_password_keeps_existing_pgpassword(monkeypatch):
+    monkeypatch.setenv("PGPASSWORD", "from-env")
+    assert restore_db.pg_conn("postgresql://app@db/app")[1]["PGPASSWORD"] == "from-env"
+
+
+@pytest.mark.parametrize("password", [_ENCODED, _LITERAL])
+@pytest.mark.parametrize("suffix", [".sql", ".dump"])
+def test_restore_postgres_keeps_password_out_of_argv_and_log(tmp_path, monkeypatch, capsys, password, suffix):
+    calls: list[tuple[list[str], dict]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs.get("env") or {}))
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(restore_db.subprocess, "run", fake_run)
+    backup = tmp_path / f"backup{suffix}"
+    backup.write_text("SELECT 1;\n")
+
+    restore_db.restore_postgres(f"postgresql+psycopg://app:{password}@db:5432/app", backup)
+
+    assert len(calls) == 4  # terminate, drop, create, restore
+    for cmd, env in calls:
+        assert not _leaks(" ".join(cmd))
+        assert env.get("PGPASSWORD") == (_DECODED if password == _ENCODED else _LITERAL)
+    assert "postgresql://app@db:5432/postgres" in calls[0][0]
+    assert not _leaks(capsys.readouterr().out)
+
+
+def test_rotation_failure_error_has_no_password(monkeypatch):
+    def failing_run(cmd, **kwargs):
+        raise subprocess.CalledProcessError(2, cmd, stderr="connection refused")
+
+    monkeypatch.setattr(restore_db.subprocess, "run", failing_run)
+    result = restore_db.rotate_session_tokens(f"postgresql://app:{_ENCODED}@db/app")
+    assert result["status"] == "failed"
+    assert not _leaks(result["error"])

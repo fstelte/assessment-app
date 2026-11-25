@@ -37,6 +37,52 @@ The reference Compose file runs the web application alongside PostgreSQL.
 - Backup strategy: `pg_dump -Fc scaffold > scaffold.dump`.
 - Tune `pool_size` and `max_overflow` via `SQLALCHEMY_ENGINE_OPTIONS` if needed.
 
+### Database password
+
+**Characters.** The example compose files build `DATABASE_URL` from the raw `POSTGRES_PASSWORD`,
+and Postgres uses that same raw value. With those files, use only URL-safe characters in the
+password: `A–Z a–z 0–9 - . _ ~`. If you write `DATABASE_URL` yourself, percent-encode other
+characters (`@` → `%40`, `:` → `%3A`, `/` → `%2F`, `%` → `%25`).
+
+A literal `@` in the password stops the app container at startup:
+
+```
+[wait-for-db] invalid DATABASE_URL 'postgresql+psycopg://scaffold:***@postgres:5432/scaffold': the password contains '@'; URL-encode special characters in the password (e.g. @ -> %40)
+```
+
+Before 2026.11.7 the app started with a mis-parsed host name and printed part of the password in
+every connection error.
+
+**Not in logs.** The backup (`backup-db.sh`, the entrypoint's `pg_isready`), restore and manual
+admin backup tools give the password to `pg_dump`, `psql` and `pg_restore` through `PGPASSWORD`,
+for that one process only. It is not in their log lines, error text, `restore-state.json` or
+process arguments (`ps`). `wait_for_db` prints URLs with the password replaced by `***`.
+
+**Upgrading to 2026.11.7: rotate the password.** Earlier releases wrote the password to the
+backup and restore logs. Rotate it once after upgrading:
+
+1. Set a new password on the role from an interactive `psql` in the `postgres` container, so it
+   doesn't end up in shell history or process arguments:
+
+   ```bash
+   docker compose exec postgres psql -U scaffold -d scaffold
+   scaffold=# \password scaffold
+   ```
+
+2. Update `POSTGRES_PASSWORD` (and `DATABASE_URL`, if you set it directly) in every env file that
+   the `web`, `worker`, `db-backup` and `db-restore` services read. Changing `POSTGRES_PASSWORD` alone does
+   **not** change the role's password: Postgres only applies it when the data volume is first
+   created.
+3. Recreate those containers (`docker compose ... up -d web worker db-backup db-restore`).
+
+The old password may still be in older copies. Rotating makes them worthless, but clean them up
+where you can:
+
+- `docker logs` output: the json log files under `/var/lib/docker/containers/` (removed when
+  the container is recreated, unless you use another logging driver);
+- any log shipper or SIEM that collected container logs;
+- `restore-state.json` (`last_processed.session_rotation.error`).
+
 ### Database Backups via Docker Compose
 
 The backup helper in `docker/compose.backup.yml` expects a fully qualified `DATABASE_URL` (or `SQLALCHEMY_DATABASE_URI`). When you start the compose file, make sure Docker Compose reads the same `.env.production` that the container uses:
