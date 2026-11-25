@@ -8,7 +8,7 @@ users maintain by hand. The implementation background is in
 ## Access
 
 Any signed-in user can view and edit an SSP, including deleting
-interconnections, POA&M items, architecture overview versions and ADRs.
+interconnections, POA&M items, architecture overview files and ADRs.
 Every delete asks for confirmation and is written to the audit log with the
 user who did it. The SSP lists (laws/regulations/policies and monitoring
 frequencies) are maintained by administrators only.
@@ -59,22 +59,28 @@ type, data direction, security contact and notes.
 
 ## Architecture overview
 
-Upload the architecture diagram on the SSP page.
+Upload the architecture diagrams on the SSP page. An SSP can have several
+files (for example a context, network and data-flow diagram), and all of them
+are shown, oldest first.
 
-- **Accepted:** PNG, JPEG or PDF, at most 10 MB. Images can be at most
-  8000×8000 pixels. Export Visio, draw.io or SVG diagrams as PNG or PDF
+- **Accepted:** PNG, JPEG or PDF, at most 10 MB per file. Images can be at
+  most 8000×8000 pixels. Export Visio, draw.io or SVG diagrams as PNG or PDF
   first.
-- If an upload is refused, the message names the reason: wrong file type, not
-  a valid image or PDF, too large, or too many pixels.
-- Images are shown on the page. PDFs are shown as a card with **Download
-  PDF**; they are downloaded rather than opened inside the application.
-- Each upload is a new version. Older versions are under **Version history**,
-  where you can **Restore** one (it becomes the newest version) or
-  **Delete** it. Deleting the current version makes the previous one current.
-  Deleting the only version leaves the SSP without an overview.
+- **Several at once:** select several files in one upload, up to 100 MB in
+  total. A larger selection is blocked in the browser with a message; upload
+  it in smaller batches.
+- **All or nothing:** if any selected file is refused, nothing is uploaded.
+  Each message names the file and the reason: wrong file type, not a valid
+  image or PDF, too large, or too many pixels. Remove or fix that file and
+  upload again.
+- Each file shows its name, type, size, uploader and date. Images are shown on
+  the page. PDFs are shown with **Download PDF**; they are downloaded rather
+  than opened inside the application.
+- **Delete** removes one file; the others stay. There is no version history:
+  to replace a diagram, delete it and upload the new one.
 
-Uploads larger than 1 MB need the gateway's `client_max_body_size` to be set
-(see `docs/deployment.md`, "Upload size limit").
+Batches up to 100 MB need the gateway's `client_max_body_size` to be at least
+`100m` (see `docs/deployment.md`, "Upload size limit").
 
 ## POA&M
 
@@ -131,7 +137,7 @@ ADR is anchored to an architecture principle that administrators maintain.
 |---|---|
 | `ssp_updated` | Metadata saved; includes the selected law and frequency option IDs |
 | `ssp_interconnections_reconciled` | BIA interfaces added or adopted as interconnections (`added`, `adopted`) |
-| `ssp_architecture_overview_uploaded` / `_restored` / `_deleted` | Architecture overview versions |
+| `ssp_architecture_overview_uploaded` / `_deleted` | One event per architecture overview file (`ssp_id`, `original_filename`) |
 | `adr_created` / `adr_status_changed` / `adr_superseded` | ADR changes |
 | `adr_deleted` / `adr_unsuperseded` | ADR deleted; the ADR it replaced got its earlier status back |
 | `ssp_option_*` | SSP list maintenance (admin) |

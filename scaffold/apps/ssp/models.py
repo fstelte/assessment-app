@@ -204,7 +204,8 @@ class SSPlan(db.Model):
         "SSPArchitectureOverview",
         back_populates="ssp",
         cascade="all, delete-orphan",
-        order_by="SSPArchitectureOverview.version_number.desc()",
+        # Oldest first; within one batch, id keeps the submission order (decision 20261120-0900, CHK003).
+        order_by="[SSPArchitectureOverview.uploaded_at, SSPArchitectureOverview.id]",
     )
 
     def __repr__(self) -> str:  # pragma: no cover
@@ -477,12 +478,12 @@ class ADRRecord(db.Model):
 
 
 class SSPArchitectureOverview(db.Model):
-    """An uploaded architecture overview image version for an SSP (append-only)."""
+    """An uploaded architecture overview file for an SSP (decision 20261119-1825).
+
+    The table keeps its legacy ``..._versions`` name (decision 20261120-0900, CHK010).
+    """
 
     __tablename__ = "ssp_architecture_overview_versions"
-    __table_args__ = (
-        sa.UniqueConstraint("ssp_id", "version_number", name="uq_ssp_architecture_overview_version"),
-    )
 
     id = db.Column(db.Integer, primary_key=True)
     ssp_id = db.Column(
@@ -490,7 +491,6 @@ class SSPArchitectureOverview(db.Model):
         db.ForeignKey("ssp_plans.id", ondelete="CASCADE"),
         nullable=False,
     )
-    version_number = db.Column(db.Integer, nullable=False)
     image_data = db.Column(db.LargeBinary, nullable=False)
     mime_type = db.Column(db.String(20), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
@@ -506,4 +506,4 @@ class SSPArchitectureOverview(db.Model):
     uploaded_by = db.relationship("User", foreign_keys=[uploaded_by_id])
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"<SSPArchitectureOverview ssp_id={self.ssp_id} version_number={self.version_number}>"
+        return f"<SSPArchitectureOverview ssp_id={self.ssp_id} filename={self.original_filename!r}>"

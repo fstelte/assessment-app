@@ -280,11 +280,50 @@
     });
   };
 
+  // Block an upload whose selected files exceed the form's total limit, so the
+  // user gets a translated message instead of the gateway's bare 413, and
+  // disable the submit button once a valid upload starts (decision 20261120-0900).
+  const bindUploadSizeLimits = () => {
+    document.querySelectorAll("form[data-max-total-bytes]").forEach((form) => {
+      const limit = Number(form.dataset.maxTotalBytes);
+      const errorSlot = form.querySelector("[data-max-total-error]");
+      const submitButtons = () => form.querySelectorAll('[type="submit"]');
+
+      form.addEventListener("submit", (event) => {
+        const total = Array.from(form.querySelectorAll('input[type="file"]'))
+          .flatMap((input) => Array.from(input.files || []))
+          .reduce((sum, file) => sum + file.size, 0);
+        if (total > limit) {
+          event.preventDefault();
+          if (errorSlot) {
+            errorSlot.textContent = form.dataset.maxTotalMessage || "";
+            errorSlot.hidden = false;
+          }
+          return;
+        }
+        if (errorSlot) {
+          errorSlot.hidden = true;
+        }
+        submitButtons().forEach((button) => {
+          button.disabled = true;
+        });
+      });
+
+      // Back/forward cache restores the page with the button still disabled.
+      window.addEventListener("pageshow", () => {
+        submitButtons().forEach((button) => {
+          button.disabled = false;
+        });
+      });
+    });
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     // Ensure scroll lock is cleared on page load
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
     bindAssetPickers();
+    bindUploadSizeLimits();
     bindCollapseToggles();
     bindModalTriggers();
   });
