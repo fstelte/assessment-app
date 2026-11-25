@@ -100,6 +100,9 @@ Helper behaviour for all `pg_conn` copies: design §Shared behaviour of `pg_conn
      (`\password` in interactive psql, update every env file, recreate web/db-backup/
      db-restore; `POSTGRES_PASSWORD` only applies on first volume init); where old copies
      remain (docker json logs, log shippers, `restore-state.json`).
+     **Behaviour change:** a literal `@` in the `DATABASE_URL` password now stops the app
+     container at startup (wait_for_db exits 1 with a hint) instead of starting with a
+     mis-parsed host (found in Task 2).
   2. `release-notes.md` with What's new, Who can do what, Behaviour changes, Upgrade,
      Known limitations; marked as a security fix.
   3. New top row in `docs/history.md` linking
@@ -122,5 +125,5 @@ Helper behaviour for all `pg_conn` copies: design §Shared behaviour of `pg_conn
 
 ## Progress
 - [x] Task 1: Restore container passes the password through PGPASSWORD
-- [ ] Task 2: Backup script, backup entrypoint, wait_for_db and app manual backup
+- [x] Task 2: Backup script, backup entrypoint, wait_for_db and app manual backup
 - [ ] Task 3: Documentation, release notes and version

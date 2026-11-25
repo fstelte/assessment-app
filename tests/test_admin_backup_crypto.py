@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
 from datetime import UTC, datetime
 
 import pytest
@@ -163,3 +164,35 @@ class TestFullRestoreRoute:
         resp = _upload(client, DUMP, FILENAME, typed_key)
         assert resp.status_code == 302
         assert (restore_env / FILENAME).read_bytes() == DUMP
+
+
+# --- Manual pg_dump keeps the password out of argv (decision 20261125-0753, Task 2) ---
+
+_PG_ENCODED = "S3nt%40in%3Ael%2F%25pw"
+_PG_DECODED = "S3nt@in:el/%pw"
+_PG_LITERAL = "p@ss-S3ntinel"
+
+
+@pytest.mark.parametrize(("password", "expected"), [(_PG_ENCODED, _PG_DECODED), (_PG_LITERAL, _PG_LITERAL)])
+def test_create_postgres_backup_passes_password_via_env(tmp_path, monkeypatch, password, expected):
+    import subprocess
+
+    from scaffold.apps.admin import backup_utils
+
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs.get("env") or {}))
+        out = next(a for a in cmd if a.startswith("--file=")).removeprefix("--file=")
+        Path(out).write_text("-- dump\n")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(backup_utils.subprocess, "run", fake_run)
+    path = backup_utils.create_postgres_backup(f"postgresql+psycopg://app:{password}@db:5432/app", tmp_path)
+
+    assert path.name.endswith(".sql.gz")
+    (cmd, env), = calls
+    argv = " ".join(cmd)
+    assert "postgresql://app@db:5432/app" in argv
+    assert not any(s in argv for s in (_PG_ENCODED, _PG_DECODED, _PG_LITERAL))
+    assert env["PGPASSWORD"] == expected

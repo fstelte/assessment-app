@@ -38,7 +38,8 @@ userinfo instead. Security fix, no schema change, no new environment variables.
 | 2 | `restore_db.py` `main` `restore failed: {exc}` | `CalledProcessError` text includes argv | Fixed by #1 (argv has no password) |
 | 3 | `restore_db.py` `rotate_session_tokens` → state file `session_rotation.error` | Same exception text, logged and saved | Stripped URI + `PGPASSWORD` in `psql_scalar` |
 | 4 | `docker/backup-db.sh` | `running pg_dump for postgresql://u:PW@...` | Stripped URI + `PGPASSWORD` |
-| 5 | `docker/wait_for_db.py` | `invalid DATABASE_URL '<raw>': <ArgumentError with raw URL>` | Masked URL + hint, exception text not printed |
+| 5 | `docker/wait_for_db.py` | `invalid DATABASE_URL '<raw>': <exc>` (our own print of the raw URL; SQLAlchemy 2.0.58's `ArgumentError` text does not repeat it) | Masked URL + hint, exception text not printed |
+| 5b | `docker/wait_for_db.py` with a literal `@` in the password | SQLAlchemy splits at the **first** `@`: `app:p@ss-x@db` parses as password `p`, host `ss-x@db`, and every retry logs `failed to resolve host 'ss-x@db'` | Reject before connecting: masked URL + hint, exit 1 (found in Task 2) |
 | 6 | `scaffold/apps/admin/backup_utils.py` `create_postgres_backup` | Password in `pg_dump` argv (`ps` only) | Stripped URI + `PGPASSWORD` |
 | 7 | `docker/backup-db.sh` `fail "Unsupported or unknown DB URI scheme: $DB_URI"` | Full URI in the log on an unsupported scheme | Print only `$SCHEME` |
 | 8 | `docker/backup/entrypoint.sh` `pg_isready -d "$PG_URI"` | Password in argv (`ps` only) on every container start | Drop the userinfo; `pg_isready` doesn't authenticate |
@@ -99,9 +100,14 @@ behave identically, and their tests use the same cases:
   between is the userinfo. If it contains `:`, everything from the first `:` to the `@`
   becomes `:***`. Results: `user:pw@h` → `user:***@h`, `user:@h` → `user:***@h`,
   `:pw@h` → `:***@h`, `user@h` → unchanged, no `@` or no `://` → unchanged.
+- Before `make_url`: if the userinfo (up to the last `@`) contains another `@`, print
+  `invalid DATABASE_URL '<masked>': the password contains '@'; URL-encode …` and exit 1.
+  SQLAlchemy would otherwise split at the first `@` and leak the rest of the password as
+  the host name in every connection error. The entrypoint's `set -e` keeps gunicorn from
+  starting with that URL.
 - Parse failure prints `invalid DATABASE_URL '<masked>'; URL-encode special
-  characters in the password (e.g. @ -> %40)`, without `{exc}`: the exception only repeats
-  the raw URL, so it adds nothing.
+  characters in the password (e.g. @ -> %40)`, without `{exc}` (it adds nothing for the
+  operator and may contain the URL in other SQLAlchemy versions).
 - Every other line that prints an exception (`database ensure timed out …: {exc}`,
   `database timed out …: {exc}`, `database bootstrap failed: {exc}`) prints
   `_mask_url(str(exc))`. Those exceptions are not known to contain the URL, so the text is

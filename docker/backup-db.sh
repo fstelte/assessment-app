@@ -79,11 +79,39 @@ elif [ "$SCHEME" = "postgres" ] || [ "$SCHEME" = "postgresql" ]; then
   rest=${DB_URI#*://}
   PG_URI="$SCHEME://$rest"
 
+  # Keep the password out of argv and the log (decision 20261125-0753): python reads the
+  # URI from the environment; the password goes to pg_dump only and is never exported.
+  PG_URI=$(PG_URI_IN="$PG_URI" python -c '
+import os, urllib.parse as u
+uri = os.environ["PG_URI_IN"]
+p = u.urlsplit(uri)
+if p.password is not None:
+    userinfo, _, hostport = p.netloc.rpartition("@")
+    user = userinfo.partition(":")[0]
+    uri = u.urlunsplit(p._replace(netloc=f"{user}@{hostport}" if user else hostport))
+print(uri)
+') || fail "Could not parse the database URI"
+  HAS_PG_PASS=no
+  if PG_PASS=$(PG_URI_IN="$SCHEME://$rest" python -c '
+import os, sys, urllib.parse as u
+p = u.urlsplit(os.environ["PG_URI_IN"])
+sys.exit(1) if p.password is None else sys.stdout.write(u.unquote(p.password))
+'); then
+    HAS_PG_PASS=yes
+  fi
+  run_pg_dump() {
+    if [ "$HAS_PG_PASS" = yes ]; then
+      PGPASSWORD="$PG_PASS" pg_dump "$@"
+    else
+      pg_dump "$@"
+    fi
+  }
+
   STAMP=$(timestamp)
   OUT_FILE_BASE="$BACKUP_DIR/pg_dump-$STAMP.sql"
   OUT_FILE_GZ="$OUT_FILE_BASE.gz"
   printf '%s - backup-db: running pg_dump for %s -> %s\n' "$(timestamp)" "$PG_URI" "$OUT_FILE_GZ"
-  if pg_dump "$PG_URI" --format=plain --no-owner --no-privileges --file="$OUT_FILE_BASE"; then
+  if run_pg_dump "$PG_URI" --format=plain --no-owner --no-privileges --file="$OUT_FILE_BASE"; then
     if gzip -9 "$OUT_FILE_BASE"; then
       # gzip automatically appends .gz and removes the original
       printf '%s - backup-db: success: %s\n' "$(timestamp)" "$OUT_FILE_GZ"
@@ -98,7 +126,7 @@ elif [ "$SCHEME" = "postgres" ] || [ "$SCHEME" = "postgresql" ]; then
   fi
 
 else
-  fail "Unsupported or unknown DB URI scheme: $DB_URI"
+  fail "Unsupported or unknown DB URI scheme: $SCHEME"
 fi
 
 # --- Optional Encryption ---

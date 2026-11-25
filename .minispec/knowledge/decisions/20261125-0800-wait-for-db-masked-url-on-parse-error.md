@@ -40,6 +40,13 @@ is the only place where it shows.
   in the password (e.g. @ -> %40)`. The exception text is **not** printed, because
   it contains the raw URL.
 - The final `database bootstrap failed: {exc}` also goes through the mask.
+- **Added in Task 2 (2026-11-25):** a URL whose userinfo contains a literal `@`
+  is rejected before `make_url` (masked URL, hint, exit 1). SQLAlchemy 2.0.58
+  splits at the first `@`, so `app:p@ss@db` parses without error as host `ss@db`,
+  and every connection retry logs `failed to resolve host 'ss@db'`. Masking
+  can't catch that line because it has no `://`. Also corrected: the
+  `ArgumentError` text of this SQLAlchemy version does not contain the URL; the
+  leak was our own print of the raw value.
 - The mask helper is inline in `wait_for_db.py`
   ([[20261125-0805-pg-credential-helpers-inline-per-script]]).
 
